@@ -1,0 +1,43 @@
+:orphan:
+:description: Privacy at planex2d.org: the anonymized data the site collects, the opt-out cookie, and the companies that host and serve the site.
+
+Privacy
+=======
+
+.. meta::
+   :robots: noindex
+
+In order to operate, this website collects and shares data as outlined below.
+
+Data
+----
+
+We collect anonymized data to provide our service:
+
+- anonymized IP address
+- the time of your visit (bucketed)
+- how long you stay on planex2d.org (bucketed)
+- how you navigate planex2d.org
+- the first 100 characters of text or code you copy
+
+.. raw:: html
+
+   <p>If you do not want this, you can set an opt-out cookie by pressing <a href="#" onclick="setOptOut(); return false;">here</a>.</p>
+
+Third parties
+-------------
+
+We use the following services and companies:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Company
+     - Company location
+     - Reason
+   * - GitHub
+     - USA
+     - web hosting
+   * - Cloudflare
+     - USA
+     - content delivery network and DDoS protection
