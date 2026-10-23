@@ -1,0 +1,30 @@
+# Comparison with other libraries
+
+These pages run the same tasks in planex2d, in OpenCASCADE (the netgen-occt build, used through `netgen.occ`) and in
+four polygon libraries: shapely (GEOS), pyclipper (Clipper), gdstk and manifold3d (Clipper2). OpenCASCADE is the
+kernel that planex2d passes its results to, and both keep lines, arcs and splines exact. The polygon libraries work
+with straight edges only, so round shapes reach them as polygons. The method:
+
+- the polygons are shapely buffers, tessellated finely enough that the area agrees with the exact planex2d area to
+  about 10⁻⁷, and all four polygon libraries get the same polygons;
+- the polygons are converted for each library before the clock starts, and only the Boolean operation is timed;
+- the times are the best of three runs, and for OpenCASCADE of one run;
+- as on the landing page, the three libraries built on Clipper share one bar, which shows the fastest of them;
+- the code is `comparison_libraries.py` in the docs folder.
+
+The timings are measured every time the documentation is built, on the machine that builds it:
+
+```python
+import platform
+print(platform.processor() or platform.machine(), "Python", platform.python_version())
+```
+
+```text
+x86_64 Python 3.12.15
+```
+
+- [Union of many discs](discs.md)
+- [Union of traces](traces.md)
+- [Merging split edges](merge.md)
+- [Nearly coincident edges](accuracy.md)
+- [Gluing many faces](glue.md)

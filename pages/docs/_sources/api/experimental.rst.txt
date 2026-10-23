@@ -1,0 +1,11 @@
+Experimental
+============
+
+.. currentmodule:: planex
+
+Experimental parts, proofs of concept. See :doc:`Deformable shapes <../experimental/deformable/index>` for the guide.
+
+.. autoclass:: DeformableShape
+   :members:
+   :inherited-members:
+

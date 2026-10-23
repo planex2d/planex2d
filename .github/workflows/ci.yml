@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Tests every push to any branch and every pull request: compiles planex2d from the checkout as the installation page
+# describes, with NGSolve and the optional packages, and runs the whole test suite. The type stub is tested as it is
+# committed (tests/test_stubs.py fails when it is out of date: python tools/stubgen.py writes it). Nothing is
+# published here; releases go through publish.yml. A newer push to the same branch cancels the run still going.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # NGSolve before planex2d: it pins netgen-mesher to its own version, which planex2d is then compiled against
+      - name: Install, as the installation page describes, with NGSolve
+        run: |
+          python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core
+          python -m pip install --no-build-isolation .
+      # gmsh (its wheel needs X11) and dolfinx (no pip package) are not installed, and their tests skip
+      - name: The test suite, with the optional packages
+        run: |
+          python -m pip install pytest hypothesis numpy scipy shapely ezdxf matplotlib plotly
+          python -m pytest tests -q

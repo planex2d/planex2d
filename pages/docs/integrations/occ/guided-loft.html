@@ -1,0 +1,873 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="description" content="A planex2d loft steered by guide curves: constraint-sketched sections of a blower nozzle, guide splines through their named corners, sections cut from the guides, one OpenCASCADE ThruSections; against the plain loft, which pinches the slot." /><meta property="og:title" content="Lofts with guide curves" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/integrations/occ/guided-loft.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="A planex2d loft steered by guide curves: constraint-sketched sections of a blower nozzle, guide splines through their named corners, sections cut from the guides, one OpenCASCADE ThruSections; against the plain loft, which pinches the slot." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_integrations_occ_guided-loft_c1d662c0.png" />
+<meta property="og:image:alt" content="A loft through a few sections is smooth, but between the sections it goes wherever its splines take it. When the sections change quickly, its walls overshoot, and a passage can pinch shut where it ..." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lofts with guide curves &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/integrations/occ/guided-loft.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+      <script src="../../_static/custom.js?v=14a98ede"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="netgen and NGSolve" href="../netgen/index.html" />
+    <link rel="prev" title="Lofting sections" href="loft.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/plotting/index.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Sketches">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/sketches.html">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/sketch/index.html">Quick sketch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Editing">Editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/extending.html">Extending edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/offsets.html">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">OpenCASCADE</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#Modeling">Modeling</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="loft.html">Lofting sections</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../netgen/index.html">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../netgen/index.html#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../netgen/index.html#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../netgen/levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pytorch.html">PyTorch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/selections.html">Selections and views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/files.html">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">OpenCASCADE</a></li>
+      <li class="breadcrumb-item active">Lofts with guide curves</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/integrations/occ/guided-loft.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Lofts-with-guide-curves">
+<h1>Lofts with guide curves<a class="headerlink" href="#Lofts-with-guide-curves" title="Link to this heading"></a></h1>
+<p>A loft through a few sections is smooth, but between the sections it goes wherever its splines take it. When the sections change quickly, its walls overshoot, and a passage can pinch shut where it should stay open. Guide curves steer a loft. In planex2d, the guides go through the named corners of the sections, they are cut every few millimeters, and every cut becomes a section of its own, so <code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> has no room left between the sections. The construction is the same as for the <a class="reference external" href="../pytorch-duct.md">3D
+duct</a>, here on a simpler part.</p>
+<p>A blower nozzle takes air from a hose fitting, a rounded square of 40 × 40, and blows it out of a flat slot of 120 × 8 at 100 along the axis. It flattens early, to a neck of 60 × 10 at 30, and then fans out to the slot.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">netgen.occ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">occ</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">planex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+</pre></div>
+</div>
+</div>
+<section id="The-sections">
+<h2>The sections<a class="headerlink" href="#The-sections" title="Link to this heading"></a></h2>
+<p>Each section is a rounded rectangle in a constraint sketch on its own plane, the xy plane lifted to its height with <code class="docutils literal notranslate"><span class="pre">px.XY.Offset(z)</span></code>. It is made of four lines and four arcs that are tangent all around, centered on the axis, with the dimensions <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code> and <code class="docutils literal notranslate"><span class="pre">r</span></code>. Figure 1 shows the three sketched sections at one scale. The dots are the eight named corners of each section, <code class="docutils literal notranslate"><span class="pre">bottom.start</span></code>, <code class="docutils literal notranslate"><span class="pre">bottom.end</span></code>, <code class="docutils literal notranslate"><span class="pre">right.start</span></code> and so on, through which the guides will pass.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">section</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"section"</span><span class="p">):</span>
+    <span class="n">sk</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Sketch</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">XY</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="o">-</span><span class="n">w</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">r</span><span class="p">,</span> <span class="o">-</span><span class="n">h</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a1"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Vertical</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"right"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a2"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"top"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a3"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">),</span> <span class="n">px</span><span class="o">.</span><span class="n">Vertical</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"left"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a4"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a4.end"</span><span class="p">,</span> <span class="s2">"bottom.start"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a4"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Radius</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"a2"</span><span class="p">,</span> <span class="s2">"a3"</span><span class="p">,</span> <span class="s2">"a4"</span><span class="p">):</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a1"</span><span class="p">,</span> <span class="n">arc</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Equal</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"w"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"h"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bottom.mid"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"left.mid"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sk</span>
+
+
+<span class="n">inlet</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"inlet"</span><span class="p">)</span>
+<span class="n">neck</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s2">"neck"</span><span class="p">)</span>
+<span class="n">slot</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"slot"</span><span class="p">)</span>
+<span class="n">sketched</span> <span class="o">=</span> <span class="p">[</span><span class="n">inlet</span><span class="p">,</span> <span class="n">neck</span><span class="p">,</span> <span class="n">slot</span><span class="p">]</span>
+<span class="n">CORNERS</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">edge</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">,</span> <span class="s2">"left"</span><span class="p">)</span>
+           <span class="k">for</span> <span class="n">end</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="s2">"end"</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.33%; text-align: center"><img src="fig_8266af445e4edb7c.svg" alt="inlet, 40 × 40, z 0" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="528" height="187"><br>(a) inlet, 40 × 40, z 0</div><div style="width: 31.33%; text-align: center"><img src="fig_f348177b5a0c858a.svg" alt="neck, 60 × 10, z 30" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(b) neck, 60 × 10, z 30</div><div style="width: 31.33%; text-align: center"><img src="fig_8a0692302859c091.svg" alt="slot, 120 × 8, z 100" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(c) slot, 120 × 8, z 100</div></div><figcaption>Figure 1: The three sketched sections and their named corners</figcaption></figure></div>
+</div>
+</section>
+<section id="The-plain-loft">
+<h2>The plain loft<a class="headerlink" href="#The-plain-loft" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> through the three sketches gives a smooth solid. The height of its passage along the axis, read from the loft’s long edges (the top ones are the highest points of each cross-section), shows the problem. After the neck, the walls swing past the slot’s height, and the passage closes almost completely before it opens up to the slot again.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plain</span> <span class="o">=</span> <span class="n">occ</span><span class="o">.</span><span class="n">ThruSections</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">ToOCCWire</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sketched</span><span class="p">],</span> <span class="n">solid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">points</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+    <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">parameter_interval</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">t0</span> <span class="o">+</span> <span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">k</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">passage</span><span class="p">(</span><span class="n">solid</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="n">top</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">solid</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">points</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">q</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">z</span> <span class="o">-</span> <span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">z</span> <span class="o">&gt;</span> <span class="mi">99</span><span class="p">:</span>
+            <span class="n">top</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">z</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">],</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">top</span>
+
+
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"plain loft: smallest height"</span><span class="p">,</span> <span class="n">passage</span><span class="p">(</span><span class="n">plain</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="s2">"slot"</span><span class="p">,</span> <span class="n">slot</span><span class="p">[</span><span class="s2">"h"</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+plain loft: smallest height 0.40861213982749645 slot 8.0
+</pre></div></div>
+</div>
+</section>
+<section id="Guides">
+<h2>Guides<a class="headerlink" href="#Guides" title="Link to this heading"></a></h2>
+<p>Two interpolated sections in each gap, at a third and at two thirds of the way, with width, height and corner radius interpolated linearly between their neighbors, make seven sections. A spline through each named corner of all seven, leaving the inlet and reaching the slot along the axis, is a guide (Figure 2a).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">z_of</span><span class="p">(</span><span class="n">sk</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">sk</span><span class="o">.</span><span class="n">ToXYZ</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))[</span><span class="mi">2</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">sk</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sk</span><span class="p">(</span><span class="s2">"right.start"</span><span class="p">)</span><span class="o">.</span><span class="n">center</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="n">sk</span><span class="p">(</span><span class="s2">"bottom.start"</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">bottom</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">between</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+    <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">size</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z_of</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">z_of</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">-</span> <span class="n">z_of</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span> <span class="s2">"interpolated"</span><span class="p">)</span>
+
+
+<span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">inlet</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sketched</span><span class="p">,</span> <span class="n">sketched</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+    <span class="n">sections</span> <span class="o">+=</span> <span class="p">[</span><span class="n">between</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">),</span> <span class="n">between</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">3</span><span class="p">),</span> <span class="n">b</span><span class="p">]</span>
+<span class="n">axial</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span> <span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">}</span>
+<span class="n">guides</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CORNERS</span><span class="p">:</span>
+    <span class="n">corners</span> <span class="o">=</span> <span class="p">[</span><span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="o">*</span><span class="n">s</span><span class="o">.</span><span class="n">ToXYZ</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">s</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">[:</span><span class="mi">2</span><span class="p">])))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">]</span>
+    <span class="n">guides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">SplineInterpolation</span><span class="p">(</span><span class="n">corners</span><span class="p">,</span> <span class="n">tangents</span><span class="o">=</span><span class="n">axial</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Sections-cut-from-the-guides">
+<h2>Sections cut from the guides<a class="headerlink" href="#Sections-cut-from-the-guides" title="Link to this heading"></a></h2>
+<p>Every 2.5 along the axis, the eight guides are cut, and their points give a new section, with the sides through the outermost corners and the corner radius from the corners between them. These sections cost little and hold the loft to the guides between the sketches (Figure 2b). One <code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> through all of them gives the nozzle.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">meet</span><span class="p">(</span><span class="n">guide</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">guide</span><span class="o">.</span><span class="n">parameter_interval</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">guide</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">z</span> <span class="o">&lt;</span> <span class="n">z</span> <span class="k">else</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">guide</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">from_corners</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">y</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">right</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">right</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+                 <span class="n">x</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">-</span> <span class="n">left</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">left</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">right</span> <span class="o">-</span> <span class="n">left</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="s2">"cut"</span><span class="p">)</span>
+
+
+<span class="n">step</span> <span class="o">=</span> <span class="mf">2.5</span>
+<span class="n">known</span> <span class="o">=</span> <span class="p">[</span><span class="n">z_of</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">]</span>
+<span class="n">cuts</span> <span class="o">=</span> <span class="p">[</span><span class="n">from_corners</span><span class="p">([</span><span class="n">meet</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">at</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">guides</span><span class="p">],</span> <span class="n">at</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">z_of</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span> <span class="n">step</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">at</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">known</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">]</span>
+<span class="n">everything</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sections</span> <span class="o">+</span> <span class="n">cuts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">z_of</span><span class="p">)</span>
+<span class="n">nozzle</span> <span class="o">=</span> <span class="n">occ</span><span class="o">.</span><span class="n">ThruSections</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">ToOCCWire</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">everything</span><span class="p">],</span> <span class="n">solid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sketched</span><span class="p">),</span> <span class="s2">"sketched,"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">sketched</span><span class="p">),</span> <span class="s2">"interpolated,"</span><span class="p">,</span>
+      <span class="nb">len</span><span class="p">(</span><span class="n">cuts</span><span class="p">),</span> <span class="s2">"cut sections"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+3 sketched, 4 interpolated, 36 cut sections
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_72a95882b126e400.svg" alt="The seven sections and the guides" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(a) The seven sections and the guides</div><div style="width: 48.50%; text-align: center"><img src="fig_0c60b48eaa749471.svg" alt="all sections of the loft" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(b) all sections of the loft</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 1.4px solid #6fb0cf; vertical-align: middle; margin-right: 0.35em"></span>cut from the guides</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 2: The sections and the guide curves</figcaption></figure></div>
+</div>
+</section>
+<section id="Plain-and-guided">
+<h2>Plain and guided<a class="headerlink" href="#Plain-and-guided" title="Link to this heading"></a></h2>
+<p>Figure 3 shows the plain loft, drawn by its edges (c), and the guided one (d), together with the height of their passages along the axis. The guided loft goes from the neck to the slot without the pinch.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_0d6787384fce3d25.svg" alt="The plain loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(c) The plain loft, its edges</div><div style="width: 48.50%; text-align: center"><img src="fig_9581ed4a35d2d065.svg" alt="The guided loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(d) The guided loft, its edges</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Chart</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="s2">"height of the passage"</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="p">{</span><span class="s2">"plain loft"</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">passage</span><span class="p">(</span><span class="n">plain</span><span class="p">,</span> <span class="n">z</span><span class="p">)))},</span>
+      <span class="n">curves</span><span class="o">=</span><span class="p">{</span><span class="s2">"guided loft"</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">passage</span><span class="p">(</span><span class="n">nozzle</span><span class="p">,</span> <span class="n">z</span><span class="p">)))},</span>
+      <span class="n">dots</span><span class="o">=</span><span class="p">{</span><span class="s2">"sketched"</span><span class="p">:</span> <span class="p">([</span><span class="n">z_of</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sketched</span><span class="p">],</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s2">"h"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sketched</span><span class="p">])},</span>
+      <span class="n">title</span><span class="o">=</span><span class="s2">"The height of the nozzle's passage along its axis"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_26bf837912497f02.svg" alt="height of the passage over z: sketched 0 40, 30 10, 100 8; guided loft 0 40, 8 34.5, 16 23.4, 24 15.8, 32 8.89, 40 7.59, 48 8.58, 56 9.56, 64 9.64, 72 9.11, 80 8.38, 88 8.06, 96 8" style="width: 100%" loading="lazy" decoding="async" width="320" height="168"></div><figcaption>Figure 3: The height of the nozzle&#x27;s passage along its axis</figcaption></figure></div>
+</div>
+</section>
+<section id="Checks">
+<h2>Checks<a class="headerlink" href="#Checks" title="Link to this heading"></a></h2>
+<p>The end caps of the loft are the sketched inlet and slot. Its long edges, which leave the planes of the sections and run through their corners, lie on the guides up to the distance printed below. Its volume agrees with the areas of the sections summed along the axis by the trapezoidal rule, which is close because the sections are dense. Finally, the passage stays open, as its smallest height compared with that of the plain loft shows.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">cap</span> <span class="ow">in</span> <span class="p">((</span><span class="n">inlet</span><span class="p">,</span> <span class="n">nozzle</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">Min</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">)),</span> <span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">nozzle</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">))):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"cap"</span><span class="p">,</span> <span class="n">cap</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"sketch"</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+<span class="n">tracks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">guides</span><span class="p">:</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">points</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="mi">4000</span><span class="p">)</span>
+    <span class="n">tracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">p</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+<span class="n">worst</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">nozzle</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">points</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">z</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">z</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+        <span class="k">continue</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">q</span><span class="p">:</span>
+        <span class="n">off</span> <span class="o">=</span> <span class="p">[</span><span class="n">math</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">gx</span><span class="p">),</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">gy</span><span class="p">))</span> <span class="k">for</span> <span class="n">gz</span><span class="p">,</span> <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="ow">in</span> <span class="n">tracks</span><span class="p">]</span>
+        <span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">worst</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">off</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"long edges off the guides: at most"</span><span class="p">,</span> <span class="n">worst</span><span class="p">)</span>
+
+<span class="n">areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span><span class="o">.</span><span class="n">mass</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">everything</span><span class="p">])</span>
+<span class="n">zs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">z_of</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">everything</span><span class="p">])</span>
+<span class="n">summed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">zs</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">areas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">areas</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"volume"</span><span class="p">,</span> <span class="n">nozzle</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"sections summed"</span><span class="p">,</span> <span class="n">summed</span><span class="p">,</span> <span class="s2">"relative"</span><span class="p">,</span> <span class="p">(</span><span class="n">nozzle</span><span class="o">.</span><span class="n">mass</span> <span class="o">-</span> <span class="n">summed</span><span class="p">)</span> <span class="o">/</span> <span class="n">summed</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"smallest height: guided"</span><span class="p">,</span> <span class="n">passage</span><span class="p">(</span><span class="n">nozzle</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="s2">"plain"</span><span class="p">,</span> <span class="n">passage</span><span class="p">(</span><span class="n">plain</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+inlet cap 1431.7521598176133 sketch 1431.7521601035994
+slot cap 952.2743338691761 sketch 952.274333882308
+long edges off the guides: at most 0.3344470312668278
+volume 88110.88359715887 sections summed 88102.51107996187 relative 9.503153876512192e-05
+smallest height: guided 7.57039630381177 plain 0.40861213982749645
+</pre></div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="loft.html" class="btn btn-neutral float-left" title="Lofting sections" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../netgen/index.html" class="btn btn-neutral float-right" title="netgen and NGSolve" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

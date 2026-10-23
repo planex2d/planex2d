@@ -1,0 +1,21 @@
+Boolean operations and transformations
+======================================
+
+.. currentmodule:: planex
+
+Operations on lists of parts and the transformations. The operators ``+``, ``-`` and ``*`` and the methods of the objects are listed with their classes. See :doc:`Boolean operations <../core/booleans/index>` for the guide.
+
+.. autofunction:: Unify
+
+.. autofunction:: Subtract
+
+.. autofunction:: Intersect
+
+.. autofunction:: Glue
+
+.. autofunction:: Translation
+
+.. autofunction:: Rotation
+
+.. autofunction:: GetTransformation
+

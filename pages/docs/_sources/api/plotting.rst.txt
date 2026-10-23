@@ -1,0 +1,15 @@
+Plotting
+========
+
+.. currentmodule:: planex
+
+Drawing planex2d objects, fields and meshes with matplotlib and plotly, and in 3D. See :doc:`Plotting <../core/plotting/index>` for the guide.
+
+.. autofunction:: Plot
+
+.. autofunction:: Plot3d
+
+.. autofunction:: PlotField
+
+.. autofunction:: PlotMesh
+

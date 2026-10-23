@@ -1,0 +1,89 @@
+# Basics
+
+<!-- #raw raw_mimetype="text/html" -->
+<div class="px-hero">
+<a href="../../examples/toy-plane.html" style="width: 23.2%"><img src="../../_static/gallery/toy-plane.png" alt="A toy airliner built from sketches on planes in 3D, with NACA spline wings, lofted through its sections"><span><em class="px-tag">Example</em> A toy plane from sketches on planes in 3D</span></a>
+<a href="../../core/basics/motions.html" style="width: 20.3%"><img src="../../_static/sections/basics/hero-disc.png" alt="A brake disc perforated by 24 copies of one hole"><span>A brake disc: one hole, 24 copies</span></a>
+<a href="../../core/basics/splines.html" style="width: 52.5%"><img src="../../_static/sections/basics/hero-coating.png" alt="A coating 0.5 thick offset from a NACA 0012 airfoil spline, its trailing edge enlarged"><span>A coating offset from an airfoil spline</span></a>
+</div>
+<!-- #endraw -->
+
+planex2d has a small set of geometry objects, each with clearly defined properties. Edges can be lines, circular arcs
+or full circles, or splines. Lines and circular edges use exact geometry.
+
+A wire is one chain of edges, open or closed, that does not cross, overlap or branch. A figure eight, for example,
+consists of two wires, and so does a T. A face is one region bounded by an outer loop and any holes, with no
+overlapping regions, free edges or zero-length edges. A shape groups faces and wires that have been cut against each
+other, and faces that meet share their edges. A compound is a simple collection of objects.
+
+Every wire, face and shape lies in a plane that can be positioned anywhere in 3D. Names, colors and mesh sizes travel
+with the geometry through Boolean operations and export. Geometry has no built-in unit. Lines and arcs are exact, and
+rounding matters only where two independent computations have to agree. See [Objects in planex2d](objects.md) for an
+overview of the geometry model.
+
+<!-- #raw raw_mimetype="text/html" -->
+<p class="px-label">In this section</p>
+<!-- #endraw -->
+
+## Objects
+
+<!-- #region nbsphinx-toctree={"hidden": true} -->
+- [Objects in planex2d](objects.md)
+- [Lines and arcs](edges.md)
+- [Splines](splines.md)
+- [Wires and faces](wires-and-faces.md)
+- [Faces, shapes and compounds](faces-shapes-compounds.md)
+<!-- #endregion -->
+
+<!-- #raw raw_mimetype="text/html" -->
+<div class="px-cards">
+<a class="px-card" href="objects.html"><div class="thumb"><img src="../../_static/sections/basics/objects.png" alt="Objects in planex2d"></div><b>Objects in planex2d</b><span>The geometry objects, their guarantees and how to construct them.</span></a>
+<a class="px-card" href="edges.html"><div class="thumb"><img src="../../_static/sections/basics/edges.png" alt="Lines and arcs"></div><b>Lines and arcs</b><span>Lines, circular arcs and full circles, with shared vertices and edge data.</span></a>
+<a class="px-card" href="splines.html"><div class="thumb"><img src="../../_static/sections/basics/splines.png" alt="Splines"></div><b>Splines</b><span>Smooth curves in Boolean operations and offsets, from airfoils to cams.</span></a>
+<a class="px-card" href="wires-and-faces.html"><div class="thumb"><img src="../../_static/sections/basics/wires-and-faces.png" alt="Wires and faces"></div><b>Wires and faces</b><span>Building wires and faces from edges, with holes determined by nesting.</span></a>
+<a class="px-card" href="faces-shapes-compounds.html"><div class="thumb"><img src="../../_static/sections/basics/faces-shapes-compounds.png" alt="Faces, shapes and compounds"></div><b>Faces, shapes and compounds</b><span>Boolean results, regions built from wires and faces that share edges.</span></a>
+</div>
+<!-- #endraw -->
+
+## In space
+
+<!-- #region nbsphinx-toctree={"hidden": true} -->
+- [The plane in 3D](plane.md)
+- [Moving, rotating, mirroring, scaling](motions.md)
+<!-- #endregion -->
+
+<!-- #raw raw_mimetype="text/html" -->
+<div class="px-cards">
+<a class="px-card" href="plane.html"><div class="thumb"><img src="../../_static/sections/basics/plane.png" alt="The plane in 3D"></div><b>The plane in 3D</b><span>Working on any plane, including a solid face or another object&#x27;s plane.</span></a>
+<a class="px-card" href="motions.html"><div class="thumb"><img src="../../_static/sections/basics/motions.png" alt="Moving, rotating, mirroring, scaling"></div><b>Moving, rotating, mirroring, scaling</b><span>Transformations, symmetry and patterns, from a T-slot nut to a brake disc.</span></a>
+</div>
+<!-- #endraw -->
+
+## Data
+
+<!-- #region nbsphinx-toctree={"hidden": true} -->
+- [Names and colors](properties.md)
+- [Units](units.md)
+- [Tolerances](tolerances.md)
+<!-- #endregion -->
+
+<!-- #raw raw_mimetype="text/html" -->
+<div class="px-cards">
+<a class="px-card" href="properties.html"><div class="thumb"><img src="../../_static/sections/basics/properties.png" alt="Names and colors"></div><b>Names and colors</b><span>Names, colors and mesh sizes on edges, faces and vertices, including their behaviour in Boolean operations.</span></a>
+<a class="px-card" href="units.html"><div class="thumb"><img src="../../_static/sections/basics/units.png" alt="Units"></div><b>Units</b><span>Geometry has no built-in unit; learn how to interpret lengths and imported files.</span></a>
+<a class="px-card" href="tolerances.html"><div class="thumb"><img src="../../_static/sections/basics/tolerances.png" alt="Tolerances"></div><b>Tolerances</b><span>Where geometric calculations are exact and where floating-point rounding matters.</span></a>
+</div>
+<!-- #endraw -->
+
+## 3D
+
+<!-- #region nbsphinx-toctree={"hidden": true} -->
+- [Pad and Pocket](pad-pocket.md)
+<!-- #endregion -->
+
+<!-- #raw raw_mimetype="text/html" -->
+<div class="px-cards">
+<a class="px-card" href="pad-pocket.html"><div class="thumb"><img src="../../_static/sections/basics/pad-pocket.png" alt="Pad and Pocket"></div><b>Pad and Pocket</b><span>Solids from faces and sketches, extruded and cut with OpenCASCADE, named after the profile.</span></a>
+</div>
+<!-- #endraw -->
+

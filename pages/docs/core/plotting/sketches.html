@@ -1,0 +1,918 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="description" content="Sketch plots in planex2d: elements in the color of their constraint state, constraint signs, start and end pieces, directions, the solid a sketch lies on with show_parent, and ids on hover with plotly." /><meta property="og:title" content="Sketch plots" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/core/plotting/sketches.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="Sketch plots in planex2d: elements in the color of their constraint state, constraint signs, start and end pieces, directions, the solid a sketch lies on with show_parent, and ids on hover with plotly." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_core_plotting_sketches_a635f512.png" />
+<meta property="og:image:alt" content="sk.Plot() and px.Plot(sk) draw a sketch in its own style, on a light grid. The color of every element shows its constraint state: green: fully constrained;, black: free, with degrees of freedom lef..." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sketch plots &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/core/plotting/sketches.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+      <script src="../../_static/custom.js?v=14a98ede"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Measurements" href="measurements.html" />
+    <link rel="prev" title="In 3D" href="in-3d.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Plotting</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#Sketches">Sketches</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../sketch/index.html">Quick sketch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#Editing">Editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/extending.html">Extending edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/offsets.html">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sketch/parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../sketch/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/occ/index.html">OpenCASCADE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Modeling">Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/loft.html">Lofting sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/guided-loft.html">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/netgen/index.html">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/netgen/index.html#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/netgen/index.html#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/pytorch.html">PyTorch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/selections.html">Selections and views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/files.html">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Plotting</a></li>
+      <li class="breadcrumb-item active">Sketch plots</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/core/plotting/sketches.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Sketch-plots">
+<h1>Sketch plots<a class="headerlink" href="#Sketch-plots" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">sk.Plot()</span></code> and <code class="docutils literal notranslate"><span class="pre">px.Plot(sk)</span></code> draw a sketch in its own style, on a light grid. The color of every element shows its constraint state:</p>
+<ul class="simple">
+<li><p>green: fully constrained;</p></li>
+<li><p>black: free, with degrees of freedom left;</p></li>
+<li><p>pink: over-constrained, where a constraint contradicts the others.</p></li>
+</ul>
+<p>Construction elements are dashed, and projected elements are gold. Four options add what you need to see while a sketch is drawn and constrained:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Adds</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">show_constraints=True</span></code></p></td>
+<td><p>A sign for every constraint and the value of every dimension</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">show_ends=True</span></code></p></td>
+<td><p>A blue start piece and an orange end piece on every line and arc</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">show_direction=True</span></code></p></td>
+<td><p>An arrow from start to end on every line and arc</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">show_parent=solid</span></code></p></td>
+<td><p>An OpenCASCADE solid projected under the sketch, its faces lightly filled and its edges black</p></td>
+</tr>
+</tbody>
+</table>
+<p>With <code class="docutils literal notranslate"><span class="pre">backend=&quot;plotly&quot;</span></code>, every element shows its id when hovered. This page uses constraint sketches, which have a section of their own. See <a class="reference internal" href="../constraints/index.html"><span class="doc">Constraint sketches</span></a> for how they are drawn and dimensioned.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">netgen.occ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">occ</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">planex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+</pre></div>
+</div>
+</div>
+<section id="The-state-of-a-sketch">
+<h2>The state of a sketch<a class="headerlink" href="#The-state-of-a-sketch" title="Link to this heading"></a></h2>
+<p>The example is a plate of 40 × 20 with a hole, dimensioned step by step. Without dimensions, all its elements are free and drawn in black (a). With a corner fixed, the bottom horizontal and both sides dimensioned, the rectangle is fully constrained and turns green, while the hole is still free (b). Once the diameter and the position of the hole are dimensioned as well, the whole sketch is fully constrained (c).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plate</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">sk</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Sketch</span><span class="p">()</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"plate"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"hole"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Point.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Fix</span><span class="p">)</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Line.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">)</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Line.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a"</span><span class="p">)</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Line.2"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"b"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"hole"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Diameter</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"d"</span><span class="p">)</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"hole.center"</span><span class="p">,</span> <span class="s2">"plate.Line.4"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"hole.center"</span><span class="p">,</span> <span class="s2">"plate.Line.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sk</span>
+
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mf">2.8</span><span class="p">))</span>
+<span class="n">titles</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"(a) Free"</span><span class="p">,</span> <span class="s2">"(b) The rectangle constrained"</span><span class="p">,</span> <span class="s2">"(c) Fully constrained"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">titles</span><span class="p">)):</span>
+    <span class="n">sk</span> <span class="o">=</span> <span class="n">plate</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">sk</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">sk</span><span class="o">.</span><span class="n">dof</span><span class="p">,</span> <span class="s2">"degrees of freedom"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(a) Free - under 8 degrees of freedom
+(b) The rectangle constrained - under 3 degrees of freedom
+(c) Fully constrained - full 0 degrees of freedom
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../../_images/core_plotting_sketches_3_1.webp" type="image/webp"><img alt="../../_images/core_plotting_sketches_3_1.png" src="../../_images/core_plotting_sketches_3_1.png" loading="eager" fetchpriority="high" decoding="async" width="1055" height="221"></picture>
+</div>
+</div>
+</section>
+<section id="Redundant-and-contradicting-constraints">
+<h2>Redundant and contradicting constraints<a class="headerlink" href="#Redundant-and-contradicting-constraints" title="Link to this heading"></a></h2>
+<p>A second length of 40, on the top side, repeats what the rectangle already fixes. It is redundant, and with <code class="docutils literal notranslate"><span class="pre">show_constraints=True</span></code>, the redundant constraints are drawn in pink (a). A second length of 41 contradicts the first. <code class="docutils literal notranslate"><span class="pre">Constrain</span></code> keeps it but suspends it: a <code class="docutils literal notranslate"><span class="pre">PlanexWarning</span></code> names the constraints it contradicts, the status of the sketch is <code class="docutils literal notranslate"><span class="pre">&quot;over&quot;</span></code>, and the geometry stays at its last solution. The suspended constraint and the ones it contradicts are drawn in pink (b).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">redundant</span> <span class="o">=</span> <span class="n">plate</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">PlanexWarning</span><span class="p">)</span>
+    <span class="n">redundant</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Line.3"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a again"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"redundant:"</span><span class="p">,</span> <span class="n">redundant</span><span class="o">.</span><span class="n">redundant</span><span class="p">)</span>
+
+<span class="n">contradicting</span> <span class="o">=</span> <span class="n">plate</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">caught</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"always"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">PlanexWarning</span><span class="p">)</span>
+    <span class="n">contradicting</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"plate.Line.3"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">41</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"41:"</span><span class="p">,</span> <span class="n">contradicting</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">caught</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">))</span>
+<span class="n">redundant</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">show_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">contradicting</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">show_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">left</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"(a) A redundant length of 40"</span><span class="p">)</span>
+<span class="n">right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"(b) A contradicting length of 41"</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+redundant: [&#39;plate.Perpendicular.2&#39;, &#39;plate.Perpendicular.3&#39;, &#39;a&#39;, &#39;a again&#39;]
+41: over - &#34;plate.Line.3&#34;, px.Distance, 41: no solution, it contradicts the constraints there are (plate.Perpendicular.2, plate.Perpendicular.3, a); Distance.3 is kept but not solved, the sketch is over-constrained
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../../_images/core_plotting_sketches_5_1.webp" type="image/webp"><img alt="../../_images/core_plotting_sketches_5_1.png" src="../../_images/core_plotting_sketches_5_1.png" loading="lazy" decoding="async" width="979" height="288"></picture>
+</div>
+</div>
+<p>See <a class="reference internal" href="../constraints/diagnosis.html"><span class="doc">Fully, under- and over-constrained</span></a> for finding and resolving such constraints.</p>
+</section>
+<section id="Constraints,-ends-and-directions">
+<h2>Constraints, ends and directions<a class="headerlink" href="#Constraints,-ends-and-directions" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">show_constraints</span></code> writes the value of every dimension and a sign for every other constraint: H and V for horizontal and vertical, a square for a right angle, and an anchor for a fixed point (a). <code class="docutils literal notranslate"><span class="pre">show_ends</span></code> and <code class="docutils literal notranslate"><span class="pre">show_direction</span></code> show how the elements were drawn. This matters for references to the start or the end of an element, such as <code class="docutils literal notranslate"><span class="pre">&quot;Line.3.end&quot;</span></code>, and for options that depend on the drawing direction. The example is the fully constrained plate from above and a slot drawn
+counterclockwise, with each arc continuing its line (b, c).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">slot</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">((</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">))</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">180</span><span class="p">)</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">180</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">))</span>
+<span class="n">plate</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">show_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">slot</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">show_ends</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">slot</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">show_direction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">title</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="p">(</span><span class="s2">"(a) show_constraints=True"</span><span class="p">,</span> <span class="s2">"(b) show_ends=True"</span><span class="p">,</span> <span class="s2">"(c) show_direction=True"</span><span class="p">)):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../../_images/core_plotting_sketches_7_0.webp" type="image/webp"><img alt="../../_images/core_plotting_sketches_7_0.png" src="../../_images/core_plotting_sketches_7_0.png" loading="lazy" decoding="async" width="1055" height="221"></picture>
+</div>
+</div>
+</section>
+<section id="On-a-solid">
+<h2>On a solid<a class="headerlink" href="#On-a-solid" title="Link to this heading"></a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">show_parent</span></code>, a sketch on a face of an OpenCASCADE solid is drawn on top of that solid. The solid is projected into the sketch’s plane, with its faces lightly filled and all its edges in black, hidden ones included.</p>
+<p>The example is a block of 80 × 50 × 20 with two bolt holes and a slot of 12 × 6 along its bottom. First the block, its top face, and its front bottom edge, which will place the pocket:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">block</span> <span class="o">=</span> <span class="n">occ</span><span class="o">.</span><span class="n">Box</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">68</span><span class="p">):</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="n">block</span> <span class="o">-</span> <span class="n">occ</span><span class="o">.</span><span class="n">Cylinder</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">block</span> <span class="o">=</span> <span class="n">block</span> <span class="o">-</span> <span class="n">occ</span><span class="o">.</span><span class="n">Box</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">top</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+<span class="n">bottom_edge</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">block</span><span class="o">.</span><span class="n">edges</span> <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">z</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Then a pocket of 28 × 24 and a bore of diameter 10 are sketched on the top face. <code class="docutils literal notranslate"><span class="pre">px.Sketch(top)</span></code> puts the sketch on the top face, with the global origin and x axis projected onto it. <code class="docutils literal notranslate"><span class="pre">Project</span></code> brings the front bottom edge into the sketch as a construction line, drawn in gold. The pocket’s first corner is dimensioned 13 from it, and its left side 26 from the origin. The sketch is fully constrained, so everything is green.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sk</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Sketch</span><span class="p">(</span><span class="n">top</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="n">bottom_edge</span><span class="p">,</span> <span class="n">construction</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="mi">26</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"pocket"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"pocket.Line.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"pocket.Point.1"</span><span class="p">,</span> <span class="s2">"bottom.Edge.0"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"e"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="n">sk</span><span class="o">.</span><span class="n">origin</span><span class="p">,</span> <span class="s2">"pocket.Line.4"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"pocket.Line.1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"w"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"pocket.Line.2"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"b"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bore"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bore"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Diameter</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"d"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bore.center"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Fix</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sk</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">sk</span><span class="o">.</span><span class="n">dof</span><span class="p">,</span> <span class="s2">"degrees of freedom,"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sk</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span><span class="o">.</span><span class="n">edges</span><span class="p">),</span> <span class="s2">"edges in the face"</span><span class="p">)</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">show_parent</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">show_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+full 0 degrees of freedom, 5 edges in the face
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../../_images/core_plotting_sketches_11_1.webp" type="image/webp"><img alt="../../_images/core_plotting_sketches_11_1.png" src="../../_images/core_plotting_sketches_11_1.png" loading="lazy" decoding="async" width="672" height="447"></picture>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">px.Plot3d</span></code> shows the same in 3D, with the sketch’s wires on the top face of the block:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">Plot3d</span><span class="p">([</span><span class="n">block</span><span class="p">,</span> <span class="n">sk</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
+<img id='webgpu1_img' src='webgpu_f5ece2775e4803d2.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
+ onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
+ onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_f5ece2775e4803d2) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_f5ece2775e4803d2); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_f5ece2775e4803d2.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+<canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
+<div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
+</div></div>
+</div>
+<p>See <a class="reference internal" href="../sketch/placement.html"><span class="doc">Placing a sketch</span></a> for more on sketches on solids.</p>
+</section>
+<section id="Ids-on-hover">
+<h2>Ids on hover<a class="headerlink" href="#Ids-on-hover" title="Link to this heading"></a></h2>
+<p>With plotly, hovering over an element or a point shows its id, and with <code class="docutils literal notranslate"><span class="pre">show_parent</span></code>, the solid’s edges show their names. This is the quickest way to find the id that a constraint or a reference needs. The example is the link from <a class="reference internal" href="../sketch/tangent.html"><span class="doc">Tangents</span></a>, a quick sketch of two bosses joined by tangent lines:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">link</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">()</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"boss1"</span><span class="p">,</span> <span class="n">construction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"boss2"</span><span class="p">,</span> <span class="n">construction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">tangent</span><span class="o">=</span><span class="p">(</span><span class="s2">"boss1"</span><span class="p">,</span> <span class="s2">"boss2"</span><span class="p">),</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"upper"</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">tangent</span><span class="o">=</span><span class="p">(</span><span class="s2">"boss1"</span><span class="p">,</span> <span class="s2">"boss2"</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"lower"</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">,</span> <span class="s2">"upper"</span><span class="p">,</span> <span class="n">congruent</span><span class="o">=</span><span class="s2">"boss2"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"end2"</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="s2">"upper"</span><span class="p">,</span> <span class="s2">"lower"</span><span class="p">,</span> <span class="n">congruent</span><span class="o">=</span><span class="s2">"boss1"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"end1"</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"hole1"</span><span class="p">)</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"hole2"</span><span class="p">)</span>
+<span class="n">link</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">"plotly"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<div style="height:273.7402885682575px; width:650.0px;">                            
+                        <div id="2f0c30de-01bd-4d31-a67e-29f1a40a6a85" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/plotly-lazy">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("2f0c30de-01bd-4d31-a67e-29f1a40a6a85")) {                    Plotly.newPlot(                        "2f0c30de-01bd-4d31-a67e-29f1a40a6a85",                        [{"hoverinfo":"skip","line":{"color":"black","dash":"solid","width":2},"mode":"lines","showlegend":false,"x":[0.125,6.083333333333333,null,0.125,6.083333333333333,null,6.083333333333333,6.114167403810933,6.144891861622831,6.17547720807141,6.205894078020528,6.236113268089132,6.266105764689558,6.295842771883618,6.325295739029711,6.3544363881944355,6.3832367413023645,6.411669146997927,6.439706307193607,6.467321303278969,6.49448762196534,6.521179180741346,6.547370352914854,6.573035992217277,6.598151456946636,6.62269263362616,6.646635960155766,6.669958448434127,6.692637706429671,6.714651959679264,6.735980072193987,6.756601566751891,6.776496644558278,6.795646204254616,6.81403186025785,6.831635960412476,6.848441602938472,6.864432652658765,6.879593756490703,6.893910358186613,6.907368712309325,6.919955897429238,6.931659828530238,6.942469268612584,6.9523738394816,6.9613640317118355,6.9694312137771055,6.976567640337659,6.982766459676519,6.988021720277849,6.992328376541028,6.995682293624959,6.998080251417948,6.999519947629348,7.0,6.999519947629348,6.998080251417948,6.995682293624959,6.992328376541028,6.988021720277849,6.982766459676519,6.976567640337659,6.9694312137771055,6.9613640317118355,6.9523738394816,6.942469268612584,6.931659828530238,6.919955897429238,6.907368712309325,6.893910358186613,6.879593756490704,6.864432652658765,6.848441602938472,6.831635960412476,6.81403186025785,6.795646204254616,6.776496644558278,6.756601566751891,6.735980072193987,6.714651959679264,6.692637706429671,6.669958448434127,6.646635960155766,6.62269263362616,6.598151456946636,6.573035992217278,6.547370352914854,6.521179180741346,6.49448762196534,6.467321303278969,6.439706307193607,6.411669146997927,6.3832367413023645,6.354436388194436,6.325295739029711,6.295842771883618,6.266105764689558,6.236113268089132,6.205894078020528,6.17547720807141,6.144891861622832,6.114167403810933,6.083333333333333,null,0.1250000000000001,0.07342120508528181,0.021755216301127762,-0.029936608636048828,-0.08159288132722639,-0.1331522555946711,-0.18455350033569473,-0.23573557223974992,-0.28663768828250613,-0.33719939791081555,-0.387360654832838,-0.43706188832807513,-0.4862440739926211,-0.5348488038356186,-0.5828183556436691,-0.6300957615308276,-0.6766248755927682,-0.7223504405847795,-0.7672181535443963,-0.8111747302807498,-0.85416796865403,-0.8961468105699312,-0.9370614026154399,-0.9768631552639642,-1.0155048005794947,-1.0529404483512608,-1.0891256405922227,-1.1240174043366817,-1.1575743026742946,-1.1897564839599017,-1.2205257291407117,-1.2498454971446478,-1.277680968275953,-1.303999085566511,-1.328768594033785,-1.3519600777987417,-1.3735459950196869,-1.3935007106005246,-1.4118005266345954,-1.428423710547936,-1.4433505209085438,-1.4565632308709906,-1.468046149228547,-1.4777856390478108,-1.485770133863717,-1.4919901514156888,-1.4964383049086212,-1.4991093117853234,-1.5,-1.4991093117853234,-1.4964383049086212,-1.491990151415689,-1.485770133863717,-1.4777856390478108,-1.468046149228547,-1.4565632308709908,-1.443350520908544,-1.4284237105479363,-1.4118005266345954,-1.3935007106005246,-1.3735459950196867,-1.3519600777987417,-1.3287685940337852,-1.3039990855665113,-1.2776809682759531,-1.2498454971446478,-1.220525729140712,-1.1897564839599024,-1.1575743026742948,-1.1240174043366817,-1.089125640592223,-1.052940448351261,-1.015504800579495,-0.976863155263965,-0.9370614026154402,-0.8961468105699315,-0.8541679686540299,-0.8111747302807502,-0.7672181535443967,-0.7223504405847803,-0.6766248755927692,-0.6300957615308279,-0.5828183556436691,-0.5348488038356196,-0.48624407399262176,-0.43706188832807646,-0.387360654832839,-0.3371993979108162,-0.2866376882825065,-0.2357355722397496,-0.1845535003356954,-0.13315225559467145,-0.08159288132722776,-0.029936608636049855,0.021755216301127398,0.07342120508528178,0.12499999999999908,null,0.6,0.5987153539431621,0.5948669168242862,0.5884711682419382,0.579555495773441,0.5681580776970634,0.5543277195067721,0.538123644919613,0.5196152422706632,0.4988817673815271,0.4760120041747411,0.4511038844873864,0.4242640687119285,0.3956074890600413,0.3652568574052324,0.3333421398117614,0.30000000000000004,0.26537321413140075,0.22961005941905388,0.192863679181897,0.15529142706151244,0.117054193209677,0.07831571533203102,0.03924187753808596,3.6739403974420595e-17,-0.03924187753808588,-0.07831571533203095,-0.11705419320967692,-0.15529142706151236,-0.19286367918189695,-0.22961005941905369,-0.2653732141314007,-0.2999999999999999,-0.33334213981176136,-0.3652568574052324,-0.3956074890600413,-0.42426406871192845,-0.45110388448738636,-0.476012004174741,-0.498881767381527,-0.5196152422706632,-0.5381236449196128,-0.5543277195067721,-0.5681580776970633,-0.5795554957734409,-0.5884711682419382,-0.5948669168242862,-0.5987153539431621,-0.6,-0.5987153539431621,-0.5948669168242862,-0.5884711682419383,-0.579555495773441,-0.5681580776970634,-0.5543277195067721,-0.538123644919613,-0.5196152422706632,-0.49888176738152723,-0.4760120041747411,-0.4511038844873865,-0.42426406871192873,-0.39560748906004145,-0.3652568574052325,-0.3333421398117613,-0.30000000000000027,-0.2653732141314008,-0.22961005941905369,-0.1928636791818971,-0.15529142706151236,-0.1170541932096772,-0.07831571533203098,-0.03924187753808563,-1.1021821192326178e-16,0.03924187753808542,0.07831571533203076,0.11705419320967697,0.15529142706151217,0.19286367918189687,0.2296100594190535,0.2653732141314006,0.30000000000000004,0.3333421398117611,0.3652568574052319,0.39560748906004145,0.4242640687119284,0.4511038844873865,0.47601200417474093,0.49888176738152684,0.519615242270663,0.538123644919613,0.5543277195067721,0.5681580776970633,0.5795554957734408,0.5884711682419381,0.5948669168242862,0.5987153539431621,0.6,null,6.4,6.3991435692954415,6.3965779445495246,6.3923141121612925,6.386370330515628,6.378772051798042,6.369551813004515,6.358749096613075,6.346410161513775,6.332587844921018,6.317341336116494,6.300735922991591,6.282842712474619,6.263738326040028,6.243504571603488,6.222228093207841,6.2,6.176915476087601,6.153073372946036,6.128575786121265,6.103527618041008,6.078036128806452,6.05221047688802,6.0261612516920575,6.0,5.9738387483079425,5.94778952311198,5.921963871193549,5.896472381958992,5.871424213878735,5.846926627053964,5.823084523912399,5.8,5.777771906792159,5.756495428396512,5.736261673959972,5.717157287525381,5.699264077008409,5.682658663883506,5.667412155078982,5.653589838486225,5.641250903386925,5.630448186995485,5.621227948201958,5.613629669484372,5.6076858878387075,5.6034220554504754,5.6008564307045585,5.6,5.6008564307045585,5.6034220554504754,5.6076858878387075,5.613629669484372,5.621227948201958,5.630448186995485,5.641250903386925,5.653589838486225,5.667412155078981,5.682658663883506,5.699264077008409,5.717157287525381,5.736261673959972,5.756495428396511,5.777771906792159,5.8,5.823084523912399,5.846926627053964,5.871424213878735,5.896472381958992,5.921963871193548,5.94778952311198,5.9738387483079425,6.0,6.026161251692057,6.05221047688802,6.078036128806452,6.103527618041008,6.128575786121265,6.153073372946036,6.176915476087601,6.2,6.222228093207841,6.243504571603488,6.263738326040028,6.282842712474619,6.300735922991591,6.317341336116494,6.332587844921018,6.346410161513775,6.358749096613075,6.369551813004515,6.378772051798042,6.386370330515628,6.3923141121612925,6.3965779445495246,6.3991435692954415,6.4,null],"y":[1.4947825928876748,0.9965217285917831,null,-1.4947825928876748,-0.9965217285917831,null,-0.9965217285917831,-0.9934615261332826,-0.989447496553238,-0.9844834937404806,-0.9785742836576469,-0.9717255397653546,-0.9639438375750868,-0.9552366483360119,-0.9456123318618015,-0.9350801285043346,-0.9236501502819909,-0.9113333711710548,-0.8981416165695482,-0.8840875519436102,-0.8691846706673227,-0.8534472810676583,-0.8368904926869873,-0.8195302017763347,-0.8013830760333144,-0.7824665385993932,-0.7627987513318505,-0.7423985973664928,-0.7212856629878658,-0.699480218824369,-0.6770032003863301,-0.6538761879657219,-0.6301213859168215,-0.6057616013377052,-0.5808202221730442,-0.5553211947592291,-0.5292890008333788,-0.502748634028308,-0.4757255758760224,-0.4482457713427782,-0.42033560391919794,-0.392021870289356,-0.36333175460315387,-0.33429280237669073,-0.3049328940456819,-0.2752802181973199,-0.24536324450627955,-0.21521069640084656,-0.18485152348541967,-0.15431487374585726,-0.12363006556435763,-0.09282655957074164,-0.061933930357162784,-0.030981838083400604,0.0,0.030981838083400604,0.061933930357162784,0.09282655957074164,0.12363006556435763,0.15431487374585703,0.18485152348541967,0.21521069640084656,0.24536324450627933,0.2752802181973199,0.3049328940456819,0.3342928023766909,0.36333175460315387,0.392021870289356,0.42033560391919816,0.448245771342778,0.4757255758760223,0.5027486340283083,0.5292890008333788,0.5553211947592291,0.5808202221730442,0.605761601337705,0.6301213859168214,0.6538761879657218,0.6770032003863301,0.699480218824369,0.7212856629878659,0.742398597366493,0.7627987513318505,0.7824665385993932,0.8013830760333145,0.8195302017763346,0.8368904926869872,0.8534472810676583,0.8691846706673227,0.8840875519436103,0.8981416165695483,0.9113333711710547,0.9236501502819909,0.9350801285043344,0.9456123318618015,0.9552366483360117,0.9639438375750868,0.9717255397653546,0.9785742836576469,0.9844834937404806,0.989447496553238,0.9934615261332826,0.9965217285917831,null,1.4947825928876748,1.4982020313174806,1.4998422285572877,1.4997012367346279,1.497779223289174,1.4940784707738919,1.488603374144316,1.4813604355391694,1.4723582565585256,1.4616075280486838,1.4491210174058877,1.4349135534139668,1.4190020086339055,1.401405279366254,1.3821442632101792,1.361241834245806,1.338722815869316,1.3146139513130748,1.2889438718857882,1.2617430629704103,1.2330438278201825,1.2028802491957957,1.1712881488892408,1.1383050451824115,1.1039701082909812,1.06832411384647,1.0314093944717493,0.9932697895074776,0.9539505929491949,0.9134984996568807,0.8719615499008737,0.8293890723100037,0.7858316252896822,0.7413409369795404,0.6959698438218986,0.6497722278140396,0.6028029525187965,0.5551177979094468,0.5067733941262891,0.4578271542235847,0.4083372059867132,0.3583623229005265,0.30796185435088375,0.2571956551422545,0.20612401441509032,0.15480758404739034,0.10330730662548629,0.05168434306958049,1.8369701987210297e-16,-0.05168434306958012,-0.10330730662548593,-0.15480758404738998,-0.20612401441508998,-0.2571956551422542,-0.30796185435088336,-0.35836232290052616,-0.40833720598671275,-0.4578271542235844,-0.5067733941262887,-0.5551177979094465,-0.6028029525187967,-0.6497722278140392,-0.6959698438218983,-0.7413409369795401,-0.785831625289682,-0.8293890723100034,-0.8719615499008736,-0.9134984996568799,-0.9539505929491946,-0.9932697895074772,-1.031409394471749,-1.06832411384647,-1.103970108290981,-1.1383050451824108,-1.1712881488892406,-1.2028802491957955,-1.2330438278201827,-1.2617430629704103,-1.288943871885788,-1.3146139513130741,-1.3387228158693156,-1.361241834245806,-1.3821442632101792,-1.4014052793662535,-1.4190020086339052,-1.4349135534139665,-1.4491210174058875,-1.4616075280486835,-1.4723582565585254,-1.4813604355391696,-1.488603374144316,-1.4940784707738919,-1.4977792232891738,-1.4997012367346279,-1.4998422285572877,-1.4982020313174806,-1.4947825928876748,null,0.0,0.039241877538085834,0.07831571533203094,0.11705419320967694,0.15529142706151244,0.19286367918189695,0.22961005941905385,0.26537321413140075,0.29999999999999993,0.3333421398117613,0.3652568574052324,0.3956074890600413,0.42426406871192845,0.4511038844873864,0.4760120041747411,0.49888176738152706,0.5196152422706631,0.538123644919613,0.5543277195067721,0.5681580776970633,0.579555495773441,0.5884711682419382,0.5948669168242862,0.5987153539431621,0.6,0.5987153539431621,0.5948669168242862,0.5884711682419382,0.579555495773441,0.5681580776970634,0.5543277195067721,0.538123644919613,0.5196152422706632,0.49888176738152706,0.4760120041747411,0.4511038844873864,0.4242640687119285,0.39560748906004134,0.3652568574052325,0.3333421398117615,0.29999999999999993,0.265373214131401,0.22961005941905394,0.19286367918189704,0.1552914270615126,0.11705419320967689,0.07831571533203119,0.03924187753808587,7.347880794884119e-17,-0.039241877538085716,-0.07831571533203106,-0.11705419320967675,-0.15529142706151247,-0.19286367918189692,-0.2296100594190538,-0.26537321413140086,-0.2999999999999998,-0.33334213981176114,-0.3652568574052324,-0.3956074890600413,-0.4242640687119283,-0.45110388448738636,-0.47601200417474093,-0.4988817673815271,-0.519615242270663,-0.538123644919613,-0.5543277195067721,-0.5681580776970633,-0.579555495773441,-0.5884711682419381,-0.5948669168242862,-0.5987153539431621,-0.6,-0.5987153539431621,-0.5948669168242863,-0.5884711682419382,-0.579555495773441,-0.5681580776970634,-0.5543277195067722,-0.5381236449196131,-0.5196152422706631,-0.49888176738152723,-0.47601200417474143,-0.45110388448738625,-0.4242640687119286,-0.39560748906004123,-0.3652568574052325,-0.33334213981176175,-0.30000000000000027,-0.26537321413140086,-0.2296100594190537,-0.19286367918189712,-0.15529142706151294,-0.11705419320967722,-0.07831571533203101,-0.039241877538085675,-1.4695761589768238e-16,null,0.0,0.026161251692057227,0.052210476888020635,0.0780361288064513,0.1035276180410083,0.12857578612126463,0.15307337294603593,0.1769154760876005,0.19999999999999998,0.22222809320784087,0.24350457160348826,0.26373832604002756,0.282842712474619,0.30073592299159096,0.31734133611649407,0.33258784492101806,0.34641016151377546,0.35874909661307536,0.36955181300451473,0.37877205179804224,0.38637033051562736,0.3923141121612922,0.39657794454952416,0.3991435692954414,0.4,0.3991435692954414,0.39657794454952416,0.3923141121612922,0.38637033051562736,0.3787720517980423,0.3695518130045148,0.35874909661307536,0.3464101615137755,0.33258784492101806,0.31734133611649407,0.30073592299159096,0.28284271247461906,0.2637383260400276,0.24350457160348837,0.222228093207841,0.19999999999999998,0.1769154760876007,0.15307337294603596,0.12857578612126472,0.1035276180410084,0.07803612880645128,0.0522104768880208,0.026161251692057248,4.898587196589413e-17,-0.026161251692057148,-0.05221047688802071,-0.07803612880645117,-0.10352761804100832,-0.1285757861212646,-0.15307337294603587,-0.1769154760876006,-0.1999999999999999,-0.2222280932078408,-0.24350457160348826,-0.26373832604002756,-0.28284271247461884,-0.3007359229915909,-0.317341336116494,-0.3325878449210181,-0.34641016151377535,-0.3587490966130753,-0.3695518130045148,-0.37877205179804224,-0.38637033051562736,-0.39231411216129214,-0.39657794454952416,-0.3991435692954414,-0.4,-0.3991435692954415,-0.3965779445495242,-0.3923141121612922,-0.3863703305156274,-0.3787720517980423,-0.3695518130045148,-0.3587490966130754,-0.34641016151377546,-0.3325878449210182,-0.3173413361164943,-0.3007359229915909,-0.28284271247461906,-0.2637383260400275,-0.24350457160348837,-0.2222280932078412,-0.20000000000000018,-0.17691547608760058,-0.15307337294603585,-0.12857578612126475,-0.10352761804100863,-0.0780361288064515,-0.05221047688802068,-0.02616125169205712,-9.797174393178826e-17,null],"type":"scatter"},{"hoverinfo":"skip","line":{"color":"black","dash":"dash","width":1.2},"mode":"lines","showlegend":false,"x":[1.5,1.496788384857905,1.4871672920607155,1.4711779206048456,1.4488887394336025,1.4203951942426585,1.38581929876693,1.3453091122990326,1.299038105676658,1.2472044184538178,1.1900300104368529,1.127759711218466,1.0606601717798214,0.9890187226501033,0.913142143513081,0.8333553495294036,0.7500000000000002,0.6634330353285018,0.5740251485476348,0.48215919795474255,0.3882285676537811,0.2926354830241925,0.19578928833007758,0.0981046938452149,9.184850993605148e-17,-0.09810469384521472,-0.19578928833007742,-0.2926354830241923,-0.38822856765378094,-0.4821591979547424,-0.5740251485476342,-0.6634330353285017,-0.7499999999999997,-0.8333553495294035,-0.913142143513081,-0.9890187226501033,-1.0606601717798212,-1.1277597112184659,-1.1900300104368526,-1.2472044184538176,-1.299038105676658,-1.3453091122990322,-1.38581929876693,-1.4203951942426585,-1.4488887394336023,-1.4711779206048456,-1.4871672920607155,-1.496788384857905,-1.5,-1.496788384857905,-1.4871672920607155,-1.4711779206048459,-1.4488887394336025,-1.4203951942426585,-1.3858192987669302,-1.3453091122990324,-1.2990381056766582,-1.2472044184538182,-1.1900300104368529,-1.1277597112184663,-1.0606601717798219,-0.9890187226501036,-0.9131421435130813,-0.8333553495294033,-0.7500000000000007,-0.6634330353285021,-0.5740251485476342,-0.4821591979547427,-0.38822856765378094,-0.292635483024193,-0.19578928833007744,-0.09810469384521409,-2.755455298081545e-16,0.09810469384521356,0.19578928833007692,0.29263548302419246,0.38822856765378044,0.4821591979547422,0.5740251485476338,0.6634330353285015,0.7500000000000002,0.8333553495294028,0.9131421435130798,0.9890187226501036,1.060660171779821,1.1277597112184663,1.1900300104368524,1.2472044184538171,1.2990381056766576,1.3453091122990324,1.3858192987669302,1.4203951942426585,1.448888739433602,1.4711779206048454,1.4871672920607155,1.496788384857905,1.5,null,7.0,6.997858923238604,6.99144486137381,6.98078528040323,6.965925826289069,6.946930129495105,6.923879532511287,6.896872741532689,6.866025403784438,6.831469612302545,6.793353340291235,6.751839807478977,6.707106781186548,6.659345815100069,6.60876142900872,6.555570233019602,6.5,6.4422886902190015,6.38268343236509,6.321439465303162,6.258819045102521,6.195090322016128,6.130526192220052,6.065403129230143,6.0,5.934596870769857,5.869473807779948,5.804909677983872,5.741180954897479,5.678560534696839,5.61731656763491,5.5577113097809985,5.5,5.444429766980398,5.39123857099128,5.340654184899931,5.292893218813452,5.248160192521023,5.206646659708765,5.168530387697455,5.133974596215562,5.103127258467312,5.076120467488713,5.053069870504895,5.034074173710932,5.01921471959677,5.00855513862619,5.002141076761396,5.0,5.002141076761396,5.00855513862619,5.01921471959677,5.034074173710931,5.053069870504895,5.076120467488713,5.103127258467312,5.133974596215561,5.168530387697454,5.206646659708765,5.248160192521023,5.292893218813452,5.340654184899931,5.391238570991279,5.444429766980398,5.5,5.5577113097809985,5.61731656763491,5.678560534696838,5.741180954897479,5.804909677983871,5.869473807779948,5.934596870769857,6.0,6.065403129230142,6.130526192220051,6.195090322016128,6.25881904510252,6.321439465303161,6.38268343236509,6.442288690219001,6.5,6.555570233019602,6.6087614290087195,6.659345815100069,6.707106781186547,6.751839807478977,6.793353340291235,6.831469612302545,6.866025403784438,6.896872741532688,6.923879532511287,6.946930129495105,6.965925826289068,6.98078528040323,6.99144486137381,6.997858923238604,7.0,null],"y":[0.0,0.09810469384521459,0.19578928833007736,0.2926354830241924,0.3882285676537811,0.4821591979547424,0.5740251485476346,0.6634330353285018,0.7499999999999999,0.8333553495294033,0.913142143513081,0.9890187226501033,1.0606601717798212,1.127759711218466,1.1900300104368529,1.2472044184538178,1.299038105676658,1.3453091122990326,1.38581929876693,1.4203951942426585,1.4488887394336025,1.4711779206048456,1.4871672920607155,1.496788384857905,1.5,1.496788384857905,1.4871672920607155,1.4711779206048456,1.4488887394336025,1.4203951942426585,1.3858192987669302,1.3453091122990326,1.299038105676658,1.2472044184538178,1.1900300104368529,1.127759711218466,1.0606601717798214,0.9890187226501035,0.9131421435130813,0.8333553495294037,0.7499999999999999,0.6634330353285025,0.5740251485476349,0.4821591979547426,0.38822856765378155,0.29263548302419223,0.19578928833007797,0.09810469384521467,1.8369701987210297e-16,-0.09810469384521431,-0.19578928833007764,-0.29263548302419184,-0.3882285676537812,-0.48215919795474227,-0.5740251485476345,-0.6634330353285022,-0.7499999999999996,-0.8333553495294029,-0.913142143513081,-0.9890187226501033,-1.0606601717798207,-1.1277597112184659,-1.1900300104368524,-1.2472044184538178,-1.2990381056766576,-1.3453091122990324,-1.3858192987669302,-1.4203951942426585,-1.4488887394336025,-1.4711779206048454,-1.4871672920607155,-1.496788384857905,-1.5,-1.4967883848579053,-1.4871672920607157,-1.4711779206048456,-1.4488887394336025,-1.4203951942426585,-1.3858192987669304,-1.3453091122990326,-1.299038105676658,-1.2472044184538182,-1.1900300104368535,-1.1277597112184656,-1.0606601717798214,-0.989018722650103,-0.9131421435130813,-0.8333553495294044,-0.7500000000000007,-0.6634330353285021,-0.5740251485476343,-0.4821591979547428,-0.38822856765378233,-0.29263548302419307,-0.19578928833007753,-0.0981046938452142,-3.6739403974420594e-16,null,0.0,0.06540312923014306,0.13052619222005157,0.19509032201612825,0.25881904510252074,0.3214394653031616,0.3826834323650898,0.44228869021900125,0.49999999999999994,0.5555702330196022,0.6087614290087207,0.6593458151000688,0.7071067811865475,0.7518398074789774,0.7933533402912352,0.8314696123025451,0.8660254037844386,0.8968727415326884,0.9238795325112867,0.9469301294951056,0.9659258262890683,0.9807852804032304,0.9914448613738104,0.9978589232386035,1.0,0.9978589232386035,0.9914448613738104,0.9807852804032304,0.9659258262890683,0.9469301294951057,0.9238795325112868,0.8968727415326884,0.8660254037844387,0.8314696123025451,0.7933533402912352,0.7518398074789774,0.7071067811865476,0.659345815100069,0.6087614290087209,0.5555702330196025,0.49999999999999994,0.4422886902190017,0.3826834323650899,0.32143946530316175,0.258819045102521,0.19509032201612816,0.130526192220052,0.06540312923014312,1.2246467991473532e-16,-0.06540312923014287,-0.13052619222005177,-0.19509032201612792,-0.2588190451025208,-0.32143946530316153,-0.38268343236508967,-0.44228869021900147,-0.4999999999999997,-0.555570233019602,-0.6087614290087207,-0.6593458151000688,-0.7071067811865471,-0.7518398074789773,-0.7933533402912349,-0.8314696123025452,-0.8660254037844384,-0.8968727415326883,-0.9238795325112868,-0.9469301294951056,-0.9659258262890683,-0.9807852804032303,-0.9914448613738104,-0.9978589232386035,-1.0,-0.9978589232386036,-0.9914448613738105,-0.9807852804032304,-0.9659258262890684,-0.9469301294951057,-0.923879532511287,-0.8968727415326885,-0.8660254037844386,-0.8314696123025455,-0.7933533402912357,-0.7518398074789772,-0.7071067811865477,-0.6593458151000687,-0.6087614290087209,-0.555570233019603,-0.5000000000000004,-0.4422886902190014,-0.38268343236508956,-0.32143946530316186,-0.25881904510252157,-0.19509032201612872,-0.13052619222005168,-0.0654031292301428,-2.4492935982947064e-16,null],"type":"scatter"},{"hoverinfo":"text","hovertext":["upper","lower","end2","end1","boss1 (construction)","boss2 (construction)","hole1","hole2"],"marker":{"color":["black","black","black","black","black","black","black","black"],"opacity":[0,0,0,0,0,0,0,0],"size":[10,10,10,10,10,10,10,10]},"mode":"markers","showlegend":false,"x":[3.1041666666666665,3.1041666666666665,7.0,-1.5,-1.5,5.0,-0.6,5.6],"y":[1.2456521607397288,-1.2456521607397288,-1.4224732503009818e-16,1.1587952819525071e-15,1.4710455076283324e-15,2.3592239273284576e-16,-3.703726309766568e-16,1.0755285551056204e-16],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"rgb(36,36,36)"},"error_y":{"color":"rgb(36,36,36)"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"rgb(36,36,36)","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"rgb(36,36,36)"},"baxis":{"endlinecolor":"rgb(36,36,36)","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"rgb(36,36,36)"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"type":"histogram2d"}],"histogram":[{"marker":{"line":{"color":"white","width":0.6}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scattergl"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"},"colorscale":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"rgb(237,237,237)"},"line":{"color":"white"}},"header":{"fill":{"color":"rgb(217,217,217)"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":1,"tickcolor":"rgb(36,36,36)","ticks":"outside"}},"colorscale":{"diverging":[[0.0,"rgb(103,0,31)"],[0.1,"rgb(178,24,43)"],[0.2,"rgb(214,96,77)"],[0.3,"rgb(244,165,130)"],[0.4,"rgb(253,219,199)"],[0.5,"rgb(247,247,247)"],[0.6,"rgb(209,229,240)"],[0.7,"rgb(146,197,222)"],[0.8,"rgb(67,147,195)"],[0.9,"rgb(33,102,172)"],[1.0,"rgb(5,48,97)"]],"sequential":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]],"sequentialminus":[[0.0,"#440154"],[0.1111111111111111,"#482878"],[0.2222222222222222,"#3e4989"],[0.3333333333333333,"#31688e"],[0.4444444444444444,"#26828e"],[0.5555555555555556,"#1f9e89"],[0.6666666666666666,"#35b779"],[0.7777777777777778,"#6ece58"],[0.8888888888888888,"#b5de2b"],[1.0,"#fde725"]]},"colorway":["#1F77B4","#FF7F0E","#2CA02C","#D62728","#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF"],"font":{"color":"rgb(36,36,36)"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside"},"bgcolor":"white","radialaxis":{"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside"}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"rgb(232,232,232)","gridwidth":2,"linecolor":"rgb(36,36,36)","showbackground":true,"showgrid":false,"showline":true,"ticks":"outside","zeroline":false,"zerolinecolor":"rgb(36,36,36)"},"yaxis":{"backgroundcolor":"white","gridcolor":"rgb(232,232,232)","gridwidth":2,"linecolor":"rgb(36,36,36)","showbackground":true,"showgrid":false,"showline":true,"ticks":"outside","zeroline":false,"zerolinecolor":"rgb(36,36,36)"},"zaxis":{"backgroundcolor":"white","gridcolor":"rgb(232,232,232)","gridwidth":2,"linecolor":"rgb(36,36,36)","showbackground":true,"showgrid":false,"showline":true,"ticks":"outside","zeroline":false,"zerolinecolor":"rgb(36,36,36)"}},"shapedefaults":{"fillcolor":"black","line":{"width":0},"opacity":0.3},"ternary":{"aaxis":{"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside"},"baxis":{"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside"},"bgcolor":"white","caxis":{"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside"}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside","title":{"standoff":15},"zeroline":false,"zerolinecolor":"rgb(36,36,36)"},"yaxis":{"automargin":true,"gridcolor":"rgb(232,232,232)","linecolor":"rgb(36,36,36)","showgrid":false,"showline":true,"ticks":"outside","title":{"standoff":15},"zeroline":false,"zerolinecolor":"rgb(36,36,36)"}}},"margin":{"l":40,"r":10,"t":10,"b":30},"width":650.0,"height":273.7402885682575,"showlegend":false,"hovermode":"closest","xaxis":{"minor":{"showgrid":true,"gridcolor":"#ececec","griddash":"2px,3px","tick0":0,"dtick":0.2},"range":[-1.755,7.255],"constrain":"domain","showgrid":true,"gridcolor":"#d9d9d9","tick0":0,"dtick":1.0},"yaxis":{"minor":{"showgrid":true,"gridcolor":"#ececec","griddash":"2px,3px","tick0":0,"dtick":0.2},"range":[-1.755,1.755],"scaleanchor":"x","scaleratio":1,"constrain":"domain","showgrid":true,"gridcolor":"#d9d9d9","tick0":0,"dtick":1.0}},                        {"responsive": true}                    ).then(function(){
+
+var gd = document.getElementById('2f0c30de-01bd-4d31-a67e-29f1a40a6a85');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })                };            </script>        </div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="in-3d.html" class="btn btn-neutral float-left" title="In 3D" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="measurements.html" class="btn btn-neutral float-right" title="Measurements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+---
+jupyter:
+  description: "A Reuleaux triangle turning inside a square drills an almost square\
+    \ hole: the union of its positions covers 2\u221A3 + \u03C0/6 - 3, about 98.77\
+    \ %, of the square."
+---
+
+# Drilling a square hole with a Reuleaux triangle
+
+A Reuleaux triangle has the same width in every direction, so when it turns inside a square, it touches all four
+sides at once. A drill bit of that shape, guided to follow it, cuts an almost square hole. Only the corners stay
+slightly round, and the hole covers 2√3 + π/6 − 3, about 98.77 %, of the square. The example is a triangle of width
+20, built from three arcs and turned through a third of a revolution, and every position is united into the hole.
+
+![A Reuleaux triangle turning inside a square and the almost square hole it drills](../_static/gallery/square-hole.gif){.result}
+
+```python
+import math
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+import planex as px
+```
+
+```python nbsphinx="hidden"
+from docs_figures import LIGHT, Row
+```
+
+## The triangle
+
+The triangle consists of three arcs, each centered on the opposite corner of an equilateral triangle with the side
+`s` = 20 (Figure 1).
+
+```python
+s = 20.0
+A = (0.0, 0.0)
+B = (s, 0.0)
+C = (s / 2, s * math.sqrt(3) / 2)
+triangle = px.QuickSketch(B).Arc(center=A, sweep=60).Arc(center=B, sweep=60).Arc(center=C, sweep=60).Face()
+center = (s / 2, s * math.sqrt(3) / 6)
+```
+
+```python nbsphinx="hide-input"
+Row((triangle, "Three arcs around the corners"), caption="A Reuleaux triangle of width 20")
+```
+
+**Check:** its area is (π − √3) s² / 2:
+
+```python
+print("area", triangle.mass, "exact", (math.pi - math.sqrt(3)) / 2 * s**2)
+```
+
+## Constant width
+
+Turned to any angle, the triangle's bounding box is s by s. Moving it so that the box sits on the square's lower left
+corner places it touching all four sides. **Check:** in 360 positions over a third of a turn, the box keeps its size:
+
+```python
+def placed(angle):
+    t = triangle.Rotated(center, angle)
+    (x0, y0), (x1, y1) = t.bounding_box
+    return t.Translated((-x0, -y0)), (x1 - x0, y1 - y0)
+
+
+boxes = [placed(120 * n / 360)[1] for n in range(360)]
+print("bounding box differs from s by at most", max(max(abs(w - s), abs(h - s)) for w, h in boxes))
+```
+
+## The hole
+
+The hole is the union of all positions over a third of a turn, which by the triangle's symmetry covers every position
+there is. **Check:** with more positions, the scallops between them shrink, and the area approaches the exact value:
+
+```python
+exact = (2 * math.sqrt(3) + math.pi / 6 - 3) * s**2
+for count in (30, 120, 360, 1440):
+    hole = px.Unify([placed(120 * n / count)[0] for n in range(count)])
+    print(count, "positions:", round(hole.mass / s**2, 6), "of the square, exact", round(exact / s**2, 6))
+```
+
+The hole of 1440 positions in the square, with some of the positions dashed, and one of its round corners:
+
+```python nbsphinx="hide-input"
+square = px.QuickSketch().Rectangle(s, s).Face()
+positions = [placed(120 * n / 1440)[0].outer for n in range(0, 1440, 160)]
+Row((square, "The hole in the square", {"fill": False, "fills": [(hole, LIGHT)], "dashed": positions}),
+    (square, "A corner", {"fill": False, "fills": [(hole, LIGHT)], "view": ((-0.2, 3), (-0.2, 3))}),
+    caption="The almost square hole")
+```
+
+## In motion
+
+The triangle drilling the hole:
+
+```python nbsphinx="hide-input"
+fig, ax = plt.subplots(figsize=(5, 5))
+
+
+def frame(n):
+    ax.clear()
+    square.Plot(ax=ax, face_col="whitesmoke", legend=False)
+    if n:
+        drilled = px.Unify([placed(120 * q / 240)[0] for q in range(0, 4 * n + 1, 2)])
+        drilled.Plot(ax=ax, face_col="lightsteelblue", legend=False)
+    placed(120 * 4 * n / 240)[0].Plot(ax=ax, face_col="tab:orange", legend=False)
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlim(-1, s + 1)
+    ax.set_ylim(-1, s + 1)
+    ax.axis("off")
+
+
+animation = FuncAnimation(fig, frame, frames=60, interval=80)
+plt.close(fig)
+HTML(animation.to_jshtml())
+```
+
+```python nbsphinx="hidden"
+import sys
+sys.path.insert(0, "..")
+from gallery import save_scene, save_figure, save_animation, HIDDEN
+save_animation(animation, "square-hole")
+```

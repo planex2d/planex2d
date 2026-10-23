@@ -1,0 +1,189 @@
+# Formulas: a dipstick for a tank
+
+A horizontal cylindrical tank holds 10 % of its volume below a height that no formula gives: the area of a circular
+segment of height h is
+
+A(h) = r² acos((r − h)/r) − (r − h) √(2rh − h²),
+
+and it cannot be solved for h, which is why tank makers print tables. In a planex2d sketch, the formula itself is the
+rule. A mark is a horizontal chord with both ends on the tank's shell, and one `Expression` states that the segment
+below it holds its share of the circle. The solver finds every mark at once, and the dimensions of the tank remain
+free to change.
+
+```python
+import math
+import planex as px
+```
+
+## One rule per mark
+
+The tank has a diameter of 2 m and is 5 m long. Its section is sketched in millimeters with the bottom of the shell
+at the sketch's origin and the center on the vertical axis, so the height of a mark above the bottom is simply the
+v coordinate of its start, `mark1.start.v`. The marks are drawn evenly spaced, by eye, and each gets the formula as its
+rule: segment area = k/10 of π r². Expressions take angles in degrees, so `acos` is turned into radians with
+`pi/180`.
+
+```python
+r, length = 1000, 5000
+segment = "r^2*acos((r - {h})/r)*pi/180 - (r - {h})*sqrt(2*r*{h} - {h}^2)"
+
+tank = px.Sketch(id="tank")
+tank.Circle(0, r, r, id="shell")
+tank.Constrain(tank.origin, "shell", px.Coincident)
+tank.Constrain("shell.center", px.V, px.Coincident)
+tank.Constrain("shell", px.Radius, r, id="r")
+for k in range(1, 10):
+    tank.Move((-r, k * r / 5)).Line(2 * r, 0, px.Horizontal, id=f"mark{k}")
+    tank.Constrain(f"mark{k}.start", "shell", px.Coincident)
+    tank.Constrain(f"mark{k}.end", "shell", px.Coincident)
+    tank.Expression(segment.format(h=f"mark{k}.start.v") + f" = {k / 10}*pi*r^2")
+print(tank.status, tank.dof)
+```
+
+```text
+full 0
+```
+
+Marks at equal steps of height would be far off, because the bands between them hold from 5.2 % of the volume at
+the bottom to 12.6 % in the middle (Figure 1a). The solved marks crowd together where the tank is wide and spread out
+near the bottom and the top, and every band holds 10 % (Figure 1b).
+
+```python
+view = ((-1.15 * r, 1.15 * r), (-0.08 * r, 2.08 * r))
+disc = px.QuickSketch().Circle(0, r, r).Face()
+cut = px.Line((-2 * r, r / 5), (2 * r, r / 5))
+for k in range(2, 10):
+    cut = cut + px.Line((-2 * r, k * r / 5), (2 * r, k * r / 5))
+even = sorted(disc.Split(cut), key=lambda b: b.bounding_box[0][1])
+labels = [(f"{100 * b.mass / (math.pi * r * r):.1f} %", (0, (k + 0.5) * r / 5))
+          for k, b in enumerate(even)]
+solved, opt = section(tank, view)
+Row((disc, "Marks at equal steps of height",
+     {"fills": [(b, SHADES[k % 2]) for k, b in enumerate(even)], "labels": labels,
+      "fill": False, "names": False, "view": view}),
+    (solved, "The solved marks: 10 % each", opt),
+    caption="A tank section with marks at equal steps and at equal volumes")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## Checks
+
+Three checks follow, none of which is part of the rules. Each solved height is compared with a bisection of the
+formula in plain Python. The 50 % mark lies on the axis, and the marks are symmetric, so h_k + h_(10−k) = 2r.
+Finally, the exact Boolean operations of planex2d measure the result independently of the formula: the disc split by
+the nine solved chords gives ten bands, each a tenth of π r².
+
+```python
+def area(h, r):
+    return r * r * math.acos((r - h) / r) - (r - h) * math.sqrt(2 * r * h - h * h)
+
+
+def bisect(target, r):
+    lo, hi = 0.0, 2.0 * r
+    for _ in range(80):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if area(mid, r) < target else (lo, mid)
+    return (lo + hi) / 2
+
+
+heights = [tank.Location(f"mark{k}.start")[1] for k in range(1, 10)]
+for k, h in enumerate(heights, 1):
+    exact = bisect(k / 10 * math.pi * r**2, r)
+    print(f"{10 * k:3d} %  h {h:17.12f}, bisection {exact:17.12f}, {h - exact:.1e}")
+print("50 % mark - r:", heights[4] - r)
+print("symmetry:", max(abs(heights[k] + heights[8 - k] - 2 * r) for k in range(9)))
+
+marks = px.Unify([tank.Edge(f"mark{k}") for k in range(1, 10)])
+bands = px.Circle((0, r), r).Face().Split(marks)
+share = [b.mass / (math.pi * r**2) for b in bands]
+print(len(bands), "bands, largest |share - 0.1|:", max(abs(s - 0.1) for s in share))
+```
+
+```text
+ 10 %  h  312.951173867459, bisection  312.951173867459, -5.7e-14
+ 20 %  h  508.138167236290, bisection  508.138167236290, 0.0e+00
+ 30 %  h  680.308490209496, bisection  680.308490209496, -3.4e-13
+ 40 %  h  842.263806199984, bisection  842.263806199984, -3.4e-13
+ 50 %  h 1000.000000000000, bisection 1000.000000000000, 1.1e-13
+ 60 %  h 1157.736193800016, bisection 1157.736193800016, -2.3e-13
+ 70 %  h 1319.691509790504, bisection 1319.691509790503, 2.3e-13
+ 80 %  h 1491.861832763710, bisection 1491.861832763710, 0.0e+00
+ 90 %  h 1687.048826132540, bisection 1687.048826132540, -4.5e-13
+50 % mark - r: -1.1368683772161603e-13
+symmetry: 9.094947017729282e-13
+10 bands, largest |share - 0.1|: 2.498001805406602e-16
+```
+
+## The dipstick
+
+The tank is 5 m long, so every band holds a tenth of π r² times the length. The dipstick stands next to the tank at
+the same scale, with its foot on the bottom of the shell. It has a long tick at every solved mark, with the volume
+below it in liters on one side and its height in millimeters on the other, and a short tick every 100 mm. The chart
+shows why the marks cannot be spaced evenly. The fill height over the volume is the handbook formula turned around:
+steep at the bottom and the top, and flat in the middle, where a liter adds the least height.
+
+```python
+disc, opt = dipstick(tank, length)
+Row((disc, "The tank and its dipstick, 10 % between two marks", opt))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+H = [2 * r * j / 400 for j in range(401)]
+V = [area(h, r) * length / 1e6 for h in H]
+full = math.pi * r * r * length / 1e6
+Chart("Volume [L]", "Fill height [mm]",
+      lines={"Handbook formula": (V, H), "A box of the same volume": ([0, full], [0, 2 * r])},
+      dots={"The solved marks": ([k / 10 * full for k in range(1, 10)], heights)},
+      title="The fill height over the volume, tank 2 m by 5 m")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## One number changes the tank
+
+The radius is a dimension, and the rules refer to `r`, so a larger tank takes a single `Update`, and every mark
+follows. A circle scales as a whole, so each height grows by exactly the ratio of the radii, and each band still holds
+a tenth.
+
+```python
+before = tank.Copy()
+tank.Update({"r": 1250})
+R = tank["r"]
+grown = [tank.Location(f"mark{k}.start")[1] for k in range(1, 10)]
+worst = max(abs(b - 1.25 * a) for a, b in zip(heights, grown))
+print("largest |h - 1.25 h_before|:", worst)
+marks = px.Unify([tank.Edge(f"mark{k}") for k in range(1, 10)])
+bands = px.Circle((0, R), R).Face().Split(marks)
+share = [b.mass / (math.pi * R**2) for b in bands]
+print(len(bands), "bands, largest |share - 0.1|:", max(abs(s - 0.1) for s in share))
+```
+
+```text
+largest |h - 1.25 h_before|: 6.821210263296962e-13
+10 bands, largest |share - 0.1|: 1.8041124150158794e-16
+```
+
+```python
+view = ((-1.3 * R, 1.3 * R), (-0.05 * R, 2.05 * R))
+small, small_opt = section(before, view, False)
+large, large_opt = section(tank, view, False)
+Row((small, "r = 1000", small_opt), (large, 'Update({"r": 1250})', large_opt),
+    caption="The same rules on a larger tank")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+The same works for any formula an engineer looks up rather than derives: write it once as a rule, place one element
+per value it must take, and the sketch solves them together. More rules between dimensions and the geometry:
+[expressions](expressions.md).

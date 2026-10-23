@@ -1,0 +1,33 @@
+Files and other libraries
+=========================
+
+.. currentmodule:: planex
+
+Reading and writing files, conversions to and from other Python libraries, and wires from arrays of points. See :doc:`Files <../core/files>` for the guide.
+
+.. autofunction:: FromPolyline
+
+.. autofunction:: FromDXF
+
+.. autofunction:: WriteDXF
+
+.. autofunction:: FromOCC
+
+.. autofunction:: WriteStep
+
+.. autofunction:: WriteBrep
+
+.. autofunction:: WriteGeo
+
+.. autofunction:: FromKiCad
+
+.. autofunction:: WriteKiCad
+
+.. autofunction:: FromShapely
+
+.. autofunction:: ToShapely
+
+.. autofunction:: ToSVG
+
+.. autofunction:: FromNACA
+

@@ -1,11 +1,20 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Builds planex2d's sdist, with the type stub written from the module compiled from this checkout (tools/stubgen.py,
-# so that the stub cannot be forgotten), checks it (the license files are in, the Netgen submodule is not), installs it
-# on a clean runner as the installation page describes and runs a smoke test: on every published GitHub release, and
-# when run by hand. It publishes only when run by hand (Actions > publish > Run workflow) with the target "testpypi" or "pypi"; the
-# target "pypi" publishes to TestPyPI first and then, after approval in the "pypi" environment, to PyPI.
+# A release is a published GitHub release with a tag such as v0.1.0. This workflow then writes the tag's version
+# (0.1.0) into pyproject.toml, builds planex2d's sdist with the type stub written from the module compiled from this
+# checkout (tools/stubgen.py, so that the stub cannot be forgotten), checks it (the version, the license files, no
+# Netgen submodule), installs it on a clean runner as the installation page describes, with NGSolve and the optional
+# packages, runs a smoke test and the whole test suite of the sdist, publishes it to TestPyPI and, after approval in
+# the "pypi" environment, to PyPI. A failing check or test stops the run before anything is published: each publish
+# job needs the one before it to succeed.
+#
+# Run by hand (Actions > publish > Run workflow), it builds and tests the sdist and publishes only to the target chosen
+# ("none", "testpypi", or "pypi" through TestPyPI). The version: the one typed in, else the tag's when the run is on a
+# tag ("Use workflow from" a tag vX.Y.Z), else the one in pyproject.toml, which a run that publishes refuses. TestPyPI
+# and PyPI accept each version only once (a file name is never reused, not even after deleting it), so a trial run to
+# TestPyPI needs a version of its own, e.g. 0.1.0rc1. A version already on TestPyPI is skipped there, so that a
+# release whose PyPI step was not approved can still go to PyPI later: run this by hand from its tag, target "pypi".
 #
 # Publishing uses PyPI's trusted publishing, without an API token. Once, before the first release:
 # - on https://pypi.org and https://test.pypi.org: add a trusted publisher for this repository with the workflow file
@@ -23,6 +32,10 @@ on:
         type: choice
         options: [none, testpypi, pypi]
         default: none
+      version:
+        description: "Version (empty: the one in pyproject.toml)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -37,9 +50,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - name: The version
+        env:
+          VERSION: ${{ inputs.version || (github.ref_type == 'tag' && github.ref_name || '') }}
+          PUBLISH: ${{ github.event_name == 'release' || inputs.target != 'none' }}
+        run: |
+          if [ -n "$VERSION" ]; then
+            sed -i "s/^version = \".*\"/version = \"${VERSION#v}\"/" pyproject.toml
+          elif [ "$PUBLISH" = "true" ]; then
+            echo "::error::a run that publishes needs a version: run it from a tag vX.Y.Z or type the version"
+            exit 1
+          fi
+          grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/' > version.txt
+          echo "planex2d $(cat version.txt)"
+      # NGSolve first, as in the test job: both compile against the netgen it pins, so the stub written here is the one
+      # the test job checks against
       - name: Write the type stub from the built module
         run: |
-          python -m pip install netgen-mesher netgen-occt-devel scikit-build-core
+          python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core
           python -m pip install --no-build-isolation .
           python tools/stubgen.py
           git diff --quiet -- src/python/planex/_planex.pyi \
@@ -49,6 +77,7 @@ jobs:
       - name: Check the sdist
         run: |
           ls -l dist
+          test -f "dist/planex2d-$(cat version.txt).tar.gz" || { echo "the sdist does not carry the version $(cat version.txt)"; exit 1; }
           tar tzf dist/*.tar.gz > files.txt
           for f in pyproject.toml CMakeLists.txt LICENSE THIRD_PARTY_NOTICES.md README.md \
                    external_dependencies/eigen/COPYING.MPL2 external_dependencies/eigen/COPYING.APACHE \
@@ -72,9 +101,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Install from the sdist, as the installation page describes
+      # NGSolve before planex2d: it pins netgen-mesher to its own version, which planex2d is then compiled against
+      - name: Install from the sdist, as the installation page describes, with NGSolve
         run: |
-          python -m pip install netgen-mesher netgen-occt-devel scikit-build-core
+          python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core
           python -m pip install --no-build-isolation dist/*.tar.gz
       - name: Smoke test
         run: |
@@ -84,15 +114,17 @@ jobs:
           assert abs(face.mass - 2) < 1e-12, face.mass
           print('planex2d imported, a 2 x 1 rectangle has the area', face.mass)
           "
-      - name: The type stub ships and is current
+      # the whole suite of the sdist, the type stub's check included; gmsh (its wheel needs X11) and dolfinx (no pip
+      # package) are not installed, and their tests skip
+      - name: The test suite, with the optional packages
         run: |
           mkdir unpacked && tar xzf dist/*.tar.gz -C unpacked --strip-components=1
-          python -m pip install pytest
-          python -m pytest unpacked/tests/test_stubs.py -q
+          python -m pip install pytest hypothesis numpy scipy shapely ezdxf matplotlib plotly
+          python -m pytest unpacked/tests -q
 
   testpypi:
     needs: test
-    if: github.event_name == 'workflow_dispatch' && inputs.target != 'none'
+    if: github.event_name == 'release' || inputs.target != 'none'
     runs-on: ubuntu-latest
     environment: testpypi
     permissions:
@@ -105,10 +137,11 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
 
   pypi:
     needs: testpypi
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'pypi'
+    if: github.event_name == 'release' || inputs.target == 'pypi'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

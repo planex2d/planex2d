@@ -1,0 +1,39 @@
+# Solids and meshes in the webgui
+
+netgen's webgui draws the OpenCASCADE solids made from planex2d faces and the meshes that netgen makes of them, which
+can be rotated, zoomed and clicked on to identify faces and edges. See [In 3D](../../core/plotting/in-3d.md) for
+drawing planex2d objects themselves on their planes in 3D. The example is a plate 4 × 2 with a hole:
+
+```python
+from netgen.webgui import Draw
+import planex as px
+
+plate = px.QuickSketch().RectangleC(4, 2).Face()
+part = plate - px.QuickSketch().Circle(0.5).Face()
+```
+
+## Solids
+
+The plate extruded by 0.5 with OpenCASCADE:
+
+```python
+Draw(part.ToOCCShape().Extrude(0.5))
+```
+
+## Meshes
+
+The solid meshed by netgen with curved elements:
+
+```python
+mesh = px.OCCGeometry(part).GenerateMesh(maxh=0.3)
+mesh.Curve(3)
+Draw(mesh)
+```
+
+## On a plane in space
+
+When the plate is turned by 60° about the x axis and lifted by 1, its export lies on that plane.
+
+```python
+Draw(part.Rotated((0, 0, 0), (1, 0, 0), 60).Translated((0, 0, 1)).ToOCCShape())
+```

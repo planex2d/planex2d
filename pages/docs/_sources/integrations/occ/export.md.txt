@@ -1,0 +1,58 @@
+---
+jupyter:
+  description: 'planex2d faces, wires and sketches exported to OpenCASCADE shapes: exact lines, arcs and B-splines with shared
+    vertices, their names and colors kept, with ToOCCShape, ToOCCFace and ToOCCWires.'
+---
+
+# To OCC shapes
+
+Faces, wires and sketches become OpenCASCADE shapes with exact lines, arcs, full circles and B-splines, shared
+vertices, names and colors. The export needs OpenCASCADE through `netgen.occ` (`pip install netgen-mesher`, which
+brings OpenCASCADE as `netgen-occt`). On the way out, the export can apply everything that `Simplify` does. See
+[Defeaturing](../../core/defeaturing/index.md) for details.
+
+![A model rocket exported to OpenCASCADE](../../_static/gallery/rocket.png){.preview}
+
+The [rocket example](../../examples/rocket.md) is revolved, lofted and extruded from planex2d sketches.
+
+The example is a plate 4 × 2 with a bore of radius 0.5, with its outline and bore named (Figure 1):
+
+```python
+import planex as px
+
+plate = px.QuickSketch((-2, -1)).Rectangle(4, 2, name="outline").Face()
+part = plate - px.QuickSketch().Circle(0.5, name="bore").Face()
+shape = part.ToOCCShape()
+print(len(shape.edges), "edges:", sorted({e.name for e in shape.edges}))
+```
+
+```python nbsphinx="hidden"
+from docs_figures import Row, Vertices
+```
+
+```python nbsphinx="hide-input"
+Row((part, "The plate, its bore highlighted", {"highlight": list(part.edges(name="bore"))}),
+    caption="A plate with a named bore")
+```
+
+## Faces and wires
+
+A face, its wires, or a wire on its own can each be exported as OpenCASCADE objects. The example exports the
+plate as a face and as its wires, and a slot of width 1 along a spine of 3 as one wire:
+
+```python
+face = part.ToOCCFace()
+wires = part.ToOCCWires()
+slot = px.QuickSketch().Slot(3, 1).Wire().ToOCCWire()
+print(type(face).__name__, len(wires.edges), len(slot.edges))
+```
+
+## Everything at a glance
+
+| Object | `ToOCCShape()` gives | Also |
+|---|---|---|
+| Face | The face | `ToOCCFace`, `ToOCCWire`, `ToOCCWires` |
+| Wire | Its wires | `ToOCCWire`, `ToOCCWires`, `ToOCCFace` |
+| Sketch | The face of everything drawn | `ToOCCFace`, `ToOCCWire`, `ToOCCWires` |
+| Compound | Faces and wires glued together | |
+

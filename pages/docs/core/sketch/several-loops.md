@@ -1,0 +1,87 @@
+# Several loops
+
+`Move` lifts the pen, so one sketch can hold many loops. `Face()` takes all drawn edges together and decides what is
+material by nesting: a loop inside another loop is a hole, and a loop inside a hole is material again. The same rule
+applies where separately drawn loops overlap: a region inside two loops counts as a hole. Parts that overlap and
+should become one region are therefore drawn as separate faces and united.
+
+```python
+import math
+import planex as px
+```
+
+## A pipe flange gasket
+
+The example is a gasket with an outer diameter of 150, an inner diameter of 90 and eight holes of 14 on a bolt circle
+of 120 (Figure 1). The first hole is drawn at 22.5°, and `CircularPattern` repeats it eight times around the origin.
+These are ten circles in one sketch, and the nesting makes nine of them holes.
+
+```python
+s = px.QuickSketch().Circle(75).Circle(45)
+a = math.radians(22.5)
+s.Circle(60 * math.cos(a), 60 * math.sin(a), 7, id="hole")
+s.CircularPattern("hole", "origin", 8)
+gasket = s.Face()
+```
+
+```python
+Row((gasket, "A pipe flange gasket: ten circles, one face"))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+print("area", gasket.mass, "exact", math.pi / 4 * (150**2 - 90**2 - 8 * 14**2))
+```
+
+```text
+area 10078.229232716058 exact 10078.229232716056
+```
+
+## A dog bone
+
+The example is a dog bone: two discs of radius 10, 40 apart, and a bar 8 wide between their centers (Figure 2a).
+Drawn into one sketch, the parts of the bar inside the discs lie inside two loops and become holes. The outline then
+falls apart into three regions, so `Face()` raises an error, and `Shape()` keeps all three (Figure 2b). As separate
+faces, `px.Unify` joins the three parts into one dog bone (Figure 2c).
+
+```python
+one_sketch = px.QuickSketch().Circle(10).Circle(40, 0, 10).Move((0, -4)).Rectangle(40, 8)
+try:
+    one_sketch.Face()
+except ValueError as err:
+    print(err)
+
+discs = [px.Circle((0, 0), 10).Face(), px.Circle((40, 0), 10).Face()]
+bar = px.QuickSketch((0, -4)).Rectangle(40, 8).Face()
+bone = px.Unify([*discs, bar])
+```
+
+```text
+Face(): the edges bound 3 regions; Shape() keeps them all
+```
+
+```python
+Row((px.Compound([*discs, bar]), "Two discs and a bar"), (one_sketch.Shape(), "In one sketch: the overlaps are holes"),
+    (bone, "United"), caption="A dog bone from overlapping parts")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+The united area is the two discs and the bar, less the two pieces of the bar inside the discs:
+
+```python
+inside = 4 * math.sqrt(10**2 - 4**2) + 10**2 * math.asin(8 / 20)
+print("area", bone.mass, "exact", 2 * math.pi * 10**2 + 40 * 8 - 2 * inside)
+```
+
+```text
+area 792.6939503851675 exact 792.6939503851676
+```
+
+See [Faces, shapes and compounds](../basics/faces-shapes-compounds.md) for faces of several regions, and
+[Boolean operations](../booleans/index.md) for unions and differences.

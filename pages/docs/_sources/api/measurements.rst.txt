@@ -1,0 +1,10 @@
+Measurements
+============
+
+.. currentmodule:: planex
+
+The analysis functions of ``planex.measurements``. The measurements of every object, such as ``mass``, ``center`` and ``Measure()``, are listed with their classes. See :doc:`Measuring <../core/measuring/index>` for the guide.
+
+.. automodule:: planex.measurements
+   :members:
+

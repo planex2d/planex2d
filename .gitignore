@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# macOS Finder
+.DS_Store
+
+# a local build: pip install / python -m build (scikit-build-core), and the editable install's build folder
+/build/
+/dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# test runs
+.pytest_cache/
+.hypothesis/
