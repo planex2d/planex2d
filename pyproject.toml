@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+[build-system]
+requires = ["scikit-build-core>=0.10"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "planex2d"
+# a release takes its version from its git tag: the publish workflow writes it here (v0.1.0 gives 0.1.0)
+version = "0.0.1"
+description = "Fast, exact 2D geometry for Python: sketches, constraint solving, exact Boolean operations and offsets, with export to OpenCASCADE, netgen/NGSolve and gmsh"
+readme = "README.md"
+authors = [{name = "Sebastian Hirnschall"}]
+keywords = ["geometry", "2D", "CAD", "sketch", "constraint solver", "Boolean operations", "offset", "OpenCASCADE",
+            "netgen", "NGSolve", "meshing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+requires-python = ">=3.11"
+dependencies = ["numpy"]
+# planex's own code is LGPL-2.1-or-later; the rest is the code compiled in: Eigen (MPL-2.0, one file Apache-2.0, one
+# BSD-3-Clause), pybind11 (BSD-3-Clause) and Taskflow (MIT), see THIRD_PARTY_NOTICES.md
+license = "LGPL-2.1-or-later AND MPL-2.0 AND Apache-2.0 AND BSD-3-Clause AND MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "external_dependencies/eigen/COPYING.MPL2",
+                 "external_dependencies/eigen/COPYING.APACHE", "external_dependencies/eigen/COPYING.BSD",
+                 "external_dependencies/taskflow/LICENSE"]
+
+[project.urls]
+Homepage = "https://planex2d.org"
+Documentation = "https://planex2d.org/docs/"
+Source = "https://github.com/planex2d/planex2d"
+Issues = "https://github.com/planex2d/planex2d/issues"
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+editable.rebuild = true
+wheel.packages = ["src/python/planex"]
+
+# the sdist (what pip builds from) holds only what the build and the licenses need: planex's sources and tests (with
+# tools/stubgen.py, which tests/test_stubs.py compares the stub with), the
+# compiled-in Eigen and Taskflow headers with their license files; not the Netgen submodule (Netgen comes from its
+# pip wheel), the docs, the notebooks or anything else of the repository
+sdist.exclude = ["*"]
+sdist.include = ["/pyproject.toml", "/CMakeLists.txt", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/README.md", "/src/**",
+                 "/tests/*.py", "/tests/data/**", "/tests/fuzz/**",
+                 "/tools/stubgen.py", "/external_dependencies/eigen/Eigen/**",
+                 "/external_dependencies/eigen/COPYING.*", "/external_dependencies/taskflow/taskflow/**",
+                 "/external_dependencies/taskflow/LICENSE"]
+
+[tool.scikit-build.cmake.define]
+# default: the pip wheels of the building Python, see CMakeLists.txt; NETGEN_CMAKE_DIR selects another netgen
+Netgen_DIR = { env = "NETGEN_CMAKE_DIR" }

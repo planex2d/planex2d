@@ -1,0 +1,155 @@
+# Planetary gearbox: sun, planets and ring gear
+
+The example is a planetary gearbox with a sun of 18 teeth, three planets of 18 and a ring gear of 54, all of module
+`m` = 2, with a pressure angle `alpha` of 20° and 15 wide. The ring is a housing disc minus an external gear whose
+teeth are the ring's gaps. Every tooth is slightly thinner than nominal, so the meshes have backlash. Lengths are in
+mm.
+
+![A planetary gearbox: sun, three planets, ring gear, carrier and shaft](planetary-gearbox_files/planetary-gearbox_1.png){.result}
+
+```python
+import math
+import netgen.occ as occ
+from ngsolve_webgpu.jupyter import Draw
+import planex as px
+```
+
+## The tooth counts
+
+**Checks:** the tooth counts have to fit together:
+
+- the planets fill the space between the sun and the ring, so the ring has the sun's teeth plus two planets';
+- the sum of the sun's and the ring's teeth divided by the number of planets is whole, so the planets sit at equal
+  angles;
+- with the ring held, the carrier turns 1 + 54 / 18 = 4 times slower than the sun and carries 4 times its torque.
+
+```python
+z_sun = 18
+z_planet = 18
+z_ring = 54
+print("ring", z_ring, "sun + 2 planets", z_sun + 2 * z_planet)
+print("(sun + ring) / planets", (z_sun + z_ring) / 3)
+print("ratio with the ring held", 1 + z_ring / z_sun)
+```
+
+```text
+ring 54 sun + 2 planets 54
+(sun + ring) / planets 24.0
+ratio with the ring held 4.0
+```
+
+## The gears
+
+`gear` is the involute gear of the [spur gear example](spur-gears.md), with the addendum and the dedendum as
+arguments and flanks that can be made thinner. The planets sit at the center distance `a` from the sun.
+
+```python
+m = 2.0
+alpha = math.radians(20)
+a = m * (z_sun + z_planet) / 2
+
+
+def inv(t):
+    return math.tan(t) - t
+
+
+def gear(z, addendum=m, dedendum=1.25 * m, thinner=0.0):
+    r = m * z / 2
+    rb, ra, rf = r * math.cos(alpha), r + addendum, r - dedendum
+    beta = math.pi / (2 * z) + inv(alpha) - thinner / r
+    ta = math.sqrt((ra / rb) ** 2 - 1)
+    flank = []
+    for i in range(21):
+        t = ta * i / 20
+        rt, phi = rb * math.sqrt(1 + t * t), -(beta - inv(math.atan(t)))
+        flank.append((rt * math.cos(phi), rt * math.sin(phi)))
+    other = [(x, -y) for x, y in flank]
+    tip = 2 * math.degrees(beta - inv(math.atan(ta)))
+    tooth = px.QuickSketch().Line(flank[0]).Spline(flank[1:]).Arc(center=(0, 0), sweep=tip)
+    tooth = tooth.Spline(other[::-1][1:]).Close().Face()
+    teeth = [tooth.Rotated((0, 0), 360 * k / z) for k in range(z)]
+    return px.Unify(teeth + [px.QuickSketch().Circle(rf).Face()])
+```
+
+## The parts
+
+The backlash is 0.1, so each flank is a quarter of it, 0.025, thinner. In the ring, that makes the gaps wider, so its
+cutter gets thicker teeth. The parts:
+
+- the sun, with a bore of 12;
+- the ring: a housing disc of 136, minus the cutter and six bolt holes of 4.4 on a circle of 126. The cutter is
+  turned by half its pitch, so that the ring's teeth sit in the planets' gaps on the outside;
+- the three planets, with bores of 10. The sun has a tooth pointing at each planet, so each planet is turned by half a
+  tooth pitch to meet it with a gap.
+
+```python
+def disc(x, y, r):
+    return px.QuickSketch().Circle(x, y, r).Face()
+
+
+sun = gear(z_sun, thinner=0.025) - disc(0, 0, 6)
+cutter = gear(z_ring, addendum=1.25 * m, dedendum=m, thinner=-0.025).Rotated((0, 0), 180 / z_ring)
+bolts = [disc(63 * math.cos(math.radians(30 + 60 * k)), 63 * math.sin(math.radians(30 + 60 * k)), 2.2) for k in range(6)]
+ring = px.Subtract([disc(0, 0, 68), cutter, *bolts])
+centers = [(a * math.cos(math.radians(120 * k)), a * math.sin(math.radians(120 * k))) for k in range(3)]
+planet_faces = [gear(z_planet, thinner=0.025).Rotated((0, 0), 180 / z_planet).Translated(c) - disc(*c, 5)
+                for c in centers]
+```
+
+```python
+Row((ring, "Ring, sun and planets", {"fills": [(sun, GUIDE)] + [(q, LIGHT) for q in planet_faces]}),
+    caption="The gearbox from the front")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+**Check:** the meshing parts do not overlap anywhere, and the backlash leaves a gap between the closest flanks:
+
+```python
+pairs = [(sun, q) for q in planet_faces] + [(ring, q) for q in planet_faces]
+print("overlap between meshing parts", max((x * y).mass for x, y in pairs))
+print("closest flanks", round(min(x.Distance(y) for x, y in pairs), 4), "mm")
+```
+
+```text
+overlap between meshing parts 0.0
+closest flanks 0.047 mm
+```
+
+## In 3D
+
+The gears are extruded to their width of 15 and joined by a carrier plate 5 thick behind the planets, with the pins
+through them, and the sun's shaft.
+
+```python
+def solid(face, z0, h, col):
+    s = face.ToOCCShape().Extrude(h).Move((0, 0, z0))
+    s.faces.col = col
+    return s
+
+
+def cylinder(c, r, z0, h, col):
+    s = occ.Cylinder(occ.Pnt(c[0], c[1], z0), occ.Z, r, h)
+    s.faces.col = col
+    return s
+
+
+colors = {"steel": (0.62, 0.63, 0.66), "brass": (0.85, 0.55, 0.20), "blue": (0.20, 0.45, 0.75),
+          "dark": (0.18, 0.18, 0.20)}
+carrier = disc(0, 0, a + 9) - disc(0, 0, 8)
+gearbox = occ.Compound([
+    solid(ring, 0, 15, colors["steel"]),
+    solid(sun, 0, 15, colors["brass"]),
+    *[solid(q, 0, 15, colors["blue"]) for q in planet_faces],
+    solid(carrier, -7, 5, colors["dark"]),
+    *[cylinder(c, 5, -7, 25, colors["dark"]) for c in centers],
+    cylinder((0, 0), 6, -25, 60, colors["steel"]),
+])
+Draw(gearbox, euler_angles=[-4.90, 29.47, -3.60])
+```
+
+```text
+<IPython.core.display.HTML object>
+```

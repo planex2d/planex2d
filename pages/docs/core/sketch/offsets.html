@@ -1,0 +1,1006 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="description" content="Offsets in planex2d: a wire grown into a band with Wire().Offset(d), and offsets in a sketch: a band around a line with round caps, a loop around a closed chain, one side of an open chain, and a cam from its pitch curve." /><meta property="og:title" content="Offsets" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/core/sketch/offsets.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="Offsets in planex2d: a wire grown into a band with Wire().Offset(d), and offsets in a sketch: a band around a line with round caps, a loop around a closed chain, one side of an open chain, and a cam from its pitch curve." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_core_sketch_offsets_a5590891.png" />
+<meta property="og:image:alt" content="An offset is the geometry at a constant distance from a path. planex2d has two kinds: Wire().Offset(d) grows a wire into a face of width 2d, with round ends. Like a union, it is a result., sketch.O..." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offsets &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/core/sketch/offsets.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+      <script src="../../_static/custom.js?v=14a98ede"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Trimming and splitting" href="trimming.html" />
+    <link rel="prev" title="Extending edges" href="extending.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../plotting/index.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../plotting/index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plotting/index.html#Sketches">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/sketches.html">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plotting/index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plotting/fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../plotting/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Quick sketch</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#Editing">Editing</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extending.html">Extending edges</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/occ/index.html">OpenCASCADE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Modeling">Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/loft.html">Lofting sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/occ/guided-loft.html">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/occ/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/netgen/index.html">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/netgen/index.html#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/netgen/index.html#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/netgen/levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/pytorch.html">PyTorch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/selections.html">Selections and views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/files.html">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Quick sketch</a></li>
+      <li class="breadcrumb-item active">Offsets</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/core/sketch/offsets.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Offsets">
+<h1>Offsets<a class="headerlink" href="#Offsets" title="Link to this heading"></a></h1>
+<p>An offset is the geometry at a constant distance from a path. planex2d has two kinds:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Wire().Offset(d)</span></code> grows a wire into a face of width 2d, with round ends. Like a union, it is a result.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sketch.Offset(source,</span> <span class="pre">d)</span></code> adds new elements to the sketch at the distance d from a line, an arc, a spline or a chain of them. They are sketch elements like any other, with ids that later calls can refer to.</p></li>
+</ul>
+<p>A slot around its center line, a seal groove around its seal line, a sheet from its inner surface and a cam from the path of its roller are all offsets. In a constraint sketch, the offset also stays tied to its source and its distance becomes a dimension. See <a class="reference internal" href="../constraints/offsets-profiles.html"><span class="doc">Offsets and profiles revisited</span></a> for details.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">planex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+</pre></div>
+</div>
+</div>
+<section id="A-heater-track-and-a-ring">
+<h2>A heater track and a ring<a class="headerlink" href="#A-heater-track-and-a-ring" title="Link to this heading"></a></h2>
+<p>The first example is a meander heater track, a path of six runs of 40 joined by half circles of radius 3, grown into a track 2 wide (Figure 1a). The second is a ring, the offset of a closed wire, a circle of radius 20, so it has no ends (b).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">40</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">180</span> <span class="k">if</span> <span class="n">k</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">180</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">heater</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">Wire</span><span class="p">()</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ring</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.96%; align-items: flex-start; justify-content: center; width: 75.71%; margin: 4px auto 8px"><div style="width: 56.41%; text-align: center"><img src="fig_dabb983a132d2d0d.svg" alt="A meander heater track" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="267" height="187"><br>(a) A meander heater track</div><div style="width: 39.62%; text-align: center"><img src="fig_e14df87a85938fb2.svg" alt="A ring" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) A ring</div></div><figcaption>Figure 1: Wire offsets: a heater track and a ring</figcaption></figure></div>
+</div>
+<p>Where the path is smooth and the band does not overlap itself, its area is exactly 2d times the length of the path, plus the two round end caps:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">length</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="mi">40</span> <span class="o">+</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"heater area"</span><span class="p">,</span> <span class="n">heater</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">length</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ring area"</span><span class="p">,</span> <span class="n">ring</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+heater area 577.3893722612839 exact 577.3893722612836
+ring area 376.99111843077503 exact 376.99111843077515
+</pre></div></div>
+</div>
+</section>
+<section id="A-slot-around-a-line">
+<h2>A slot around a line<a class="headerlink" href="#A-slot-around-a-line" title="Link to this heading"></a></h2>
+<p>In a sketch, the offset of a line is a band with one side on its left and one on its right, joined by round caps at the ends. The example is a motor plate of 120 × 80 with two adjustment slots for M8 screws (Figure 2). Each slot is 9 wide, around a center line 20 long, 25 above or below the middle. Around it, a construction offset of 8 marks the clearance for the washer, 16 across.</p>
+<p>The offset takes its properties from its source. The center lines are construction, so the slots are switched to drawn edges afterwards.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plate</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">()</span><span class="o">.</span><span class="n">RectangleC</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"outline"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">((</span><span class="o">-</span><span class="mi">25</span><span class="p">,</span> <span class="mi">25</span><span class="p">)):</span>
+    <span class="n">plate</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"center</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">construction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">plate</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="sa">f</span><span class="s2">"center</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"slot</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"slot edge"</span><span class="p">)</span>
+    <span class="n">plate</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="sa">f</span><span class="s2">"center</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"washer</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"washer"</span><span class="p">)</span>
+    <span class="n">plate</span><span class="p">(</span><span class="sa">f</span><span class="s2">"slot</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">construction</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">part</span> <span class="o">=</span> <span class="n">plate</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_3e8839db90071093.svg" alt="Slot edges (blue), center lines and washers dashed" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) Slot edges (blue), center lines and washers dashed</div><div style="width: 47.97%; text-align: center"><img src="fig_e7095ad82e57982e.svg" alt="The motor plate" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The motor plate</div></div><figcaption>Figure 2: A motor plate with two adjustment slots</figcaption></figure></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Measure</span></code> takes the id of a whole offset. The plate’s area and the length of the washer outlines follow from the slot and washer sizes:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">washers</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">plate</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="sa">f</span><span class="s2">"washer</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"area"</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">120</span> <span class="o">*</span> <span class="mi">80</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">20</span> <span class="o">*</span> <span class="mi">9</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">9</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"washers"</span><span class="p">,</span> <span class="n">washers</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">16</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+area 9112.765497529614 exact 9112.765497529614
+washers 180.53096491487338 exact 180.53096491487338
+</pre></div></div>
+</div>
+</section>
+<section id="A-loop-around-a-closed-chain">
+<h2>A loop around a closed chain<a class="headerlink" href="#A-loop-around-a-closed-chain" title="Link to this heading"></a></h2>
+<p>The offset of a closed chain is one loop, outside for d &gt; 0 and inside for d &lt; 0. <code class="docutils literal notranslate"><span class="pre">both_sides=True</span></code> gives both sides, <code class="docutils literal notranslate"><span class="pre">&quot;&lt;id&gt;.left&quot;</span></code> inside the loop and <code class="docutils literal notranslate"><span class="pre">&quot;&lt;id&gt;.right&quot;</span></code> outside it. The example is a cover of 120 × 80 with the groove of an O-ring face seal, 4.8 wide, around a seal line of 100 × 60 with a corner radius of 10 (Figure 3a). The groove is a closed band, so the cover consists of two regions, the frame and the island inside the groove, and <code class="docutils literal notranslate"><span class="pre">Shape()</span></code> keeps both (Figure 3b).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cover</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">()</span><span class="o">.</span><span class="n">RectangleC</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"outline"</span><span class="p">)</span>
+<span class="n">cover</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">),</span> <span class="nb">dir</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">60</span><span class="p">):</span>
+    <span class="n">cover</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">side</span> <span class="o">-</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
+<span class="n">cover</span><span class="o">.</span><span class="n">Finish</span><span class="p">(</span><span class="n">id_wire</span><span class="o">=</span><span class="s2">"seal"</span><span class="p">)</span>
+<span class="n">cover</span><span class="p">(</span><span class="s2">"seal"</span><span class="p">)</span><span class="o">.</span><span class="n">construction</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">cover</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="s2">"seal"</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="n">both_sides</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"groove"</span><span class="p">)</span>
+<span class="n">cover</span><span class="p">(</span><span class="s2">"groove"</span><span class="p">)</span><span class="o">.</span><span class="n">construction</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">covered</span> <span class="o">=</span> <span class="n">cover</span><span class="o">.</span><span class="n">Shape</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_a6a2cf49ffb6cd38.svg" alt="The groove (blue) around the seal line" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) The groove (blue) around the seal line</div><div style="width: 47.97%; text-align: center"><img src="fig_6b8a7f79cd6b9e3e.svg" alt="The cover with its groove" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The cover with its groove</div></div><figcaption>Figure 3: An O-ring groove as a two-sided offset of the seal line</figcaption></figure></div>
+</div>
+<p>Around a smooth closed line, the band between the two sides has an area of exactly its width times the length of the line, and each side is π times the width longer or shorter than the line:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seal</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">100</span> <span class="o">+</span> <span class="mi">60</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">10</span>
+<span class="n">band</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Face</span><span class="p">([</span><span class="n">cover</span><span class="o">.</span><span class="n">Edge</span><span class="p">(</span><span class="s2">"groove.right"</span><span class="p">)])</span> <span class="o">-</span> <span class="n">px</span><span class="o">.</span><span class="n">Face</span><span class="p">([</span><span class="n">cover</span><span class="o">.</span><span class="n">Edge</span><span class="p">(</span><span class="s2">"groove.left"</span><span class="p">)])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"groove area"</span><span class="p">,</span> <span class="n">band</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mf">4.8</span> <span class="o">*</span> <span class="n">seal</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"outer"</span><span class="p">,</span> <span class="n">cover</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="s2">"groove.right"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="n">seal</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">4.8</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"inner"</span><span class="p">,</span> <span class="n">cover</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="s2">"groove.left"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="n">seal</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">4.8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+groove area 1453.592894744621 exact 1453.5928947446203
+outer 317.91149780902686 exact 317.91149780902686
+inner 287.75220833456484 exact 287.7522083345649
+</pre></div></div>
+</div>
+<p>A chain with corners, such as a rectangle, is offset differently on the two sides. Outside, the offset goes around each corner with an arc, named after the element whose end it goes around, such as <code class="docutils literal notranslate"><span class="pre">&quot;wall.box.Line.1.corner&quot;</span></code>. Inside, the sides meet in sharp corners. The example is a box of 40 × 20 with a wall 2 outside (blue) and a lining 2 inside (amber) (Figure 4):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">box</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">()</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"box"</span><span class="p">)</span>
+<span class="n">box</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="s2">"box"</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"wall"</span><span class="p">)</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="s2">"box"</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"lining"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">elements</span><span class="p">[</span><span class="s2">"Arc"</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;wall.box.Line.1.corner&#39;, &#39;wall.box.Line.2.corner&#39;, &#39;wall.box.Line.3.corner&#39;, &#39;wall.box.Line.4.corner&#39;]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 5.95%; align-items: flex-start; justify-content: center; width: 50.45%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_81b2fd3402d7bf6d.svg" alt="A box: its wall (blue) and lining (amber)" style="width: 100%" loading="lazy" decoding="async" width="344" height="204"></div></div><figcaption>Figure 4: A box: its wall (blue) and lining (amber)</figcaption></figure></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"wall"</span><span class="p">,</span> <span class="n">box</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="s2">"wall"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">40</span> <span class="o">+</span> <span class="mi">20</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"lining"</span><span class="p">,</span> <span class="n">box</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="s2">"lining"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">36</span> <span class="o">+</span> <span class="mi">16</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+wall 132.5663706143592 exact 132.5663706143592
+lining 104.0 exact 104
+</pre></div></div>
+</div>
+</section>
+<section id="One-side-of-an-open-chain">
+<h2>One side of an open chain<a class="headerlink" href="#One-side-of-an-open-chain" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">both_sides=False</span></code> keeps one side of an open chain, without caps: the left side for d &gt; 0. Its elements are named after their sources, such as <code class="docutils literal notranslate"><span class="pre">&quot;outside.web&quot;</span></code>, without a side word. The example is a bent sheet, 2 thick, drawn from its inner surface: a flange 40 up, a bend of inner radius 4 and a web 30 to the right (Figure 5). The sheet lies to the left of the chain, on the outside of the bend. Two short lines close its ends, drawn to the offset’s end points, such as <code class="docutils literal notranslate"><span class="pre">&quot;outside.web.end&quot;</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sheet</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nb">dir</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">sheet</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"flange"</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bend"</span><span class="p">)</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">26</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"web"</span><span class="p">)</span>
+<span class="n">sheet</span><span class="o">.</span><span class="n">Offset</span><span class="p">([</span><span class="s2">"flange"</span><span class="p">,</span> <span class="s2">"bend"</span><span class="p">,</span> <span class="s2">"web"</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">both_sides</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"outside"</span><span class="p">)</span>
+<span class="n">sheet</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="s2">"outside.web.end"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"end"</span><span class="p">)</span>
+<span class="n">sheet</span><span class="o">.</span><span class="n">Move</span><span class="p">(</span><span class="s2">"flange.start"</span><span class="p">)</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="s2">"outside.flange.start"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"foot"</span><span class="p">)</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 5.72%; align-items: flex-start; justify-content: center; width: 52.47%; margin: 4px auto 8px"><div style="width: 49.27%; text-align: center"><img src="fig_8079b1120ea069e8.svg" alt="The inner surface and its offset (blue)" style="width: 100%" loading="lazy" decoding="async" width="176" height="204"><br>(a) The inner surface and its offset (blue)</div><div style="width: 45.02%; text-align: center"><img src="fig_63c063867f8bcdbb.svg" alt="The bent sheet" style="width: 100%" loading="lazy" decoding="async" width="147" height="187"><br>(b) The bent sheet</div></div><figcaption>Figure 5: A bent sheet from its inner surface</figcaption></figure></div>
+</div>
+<p>The outer bend radius is r + t = 6, and the area is t times the inner length plus t²/2 per radian of bend. A distance given as <code class="docutils literal notranslate"><span class="pre">(d,</span> <span class="pre">point)</span></code> selects the side the point is on instead. A point inside the bend gives the right side, with the radius r − t = 2:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">inner</span> <span class="o">=</span> <span class="mi">36</span> <span class="o">+</span> <span class="mi">26</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">4</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"area"</span><span class="p">,</span> <span class="n">profile</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">inner</span> <span class="o">+</span> <span class="mi">2</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"outer bend radius"</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="s2">"outside.bend"</span><span class="p">)[</span><span class="s2">"r"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+
+<span class="n">other</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="nb">dir</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">other</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"flange"</span><span class="p">)</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bend"</span><span class="p">)</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">26</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"web"</span><span class="p">)</span>
+<span class="n">other</span><span class="o">.</span><span class="n">Offset</span><span class="p">([</span><span class="s2">"flange"</span><span class="p">,</span> <span class="s2">"bend"</span><span class="p">,</span> <span class="s2">"web"</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)),</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"inside"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"inner bend radius"</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="s2">"inside.bend"</span><span class="p">)[</span><span class="s2">"r"</span><span class="p">],</span> <span class="s2">"exact"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+area 139.70796326794903 exact 139.70796326794897
+outer bend radius 6.0 exact 6
+inner bend radius 2.0 exact 2
+</pre></div></div>
+</div>
+</section>
+<section id="Ids-and-selection">
+<h2>Ids and selection<a class="headerlink" href="#Ids-and-selection" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Id</p></th>
+<th class="head"><p>What it is</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;slot0&quot;</span></code></p></td>
+<td><p>The whole offset, for <code class="docutils literal notranslate"><span class="pre">Measure</span></code>, <code class="docutils literal notranslate"><span class="pre">Remove</span></code> and <code class="docutils literal notranslate"><span class="pre">sk(&quot;slot0&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;slot0.left&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;slot0.right&quot;</span></code></p></td>
+<td><p>The two sides of a two-sided offset, with their point elements; for a loop, <code class="docutils literal notranslate"><span class="pre">left</span></code> is inside and <code class="docutils literal notranslate"><span class="pre">right</span></code> outside</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;slot0.left.center0&quot;</span></code></p></td>
+<td><p>The offset of the source element <code class="docutils literal notranslate"><span class="pre">center0</span></code> on that side</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;outside.web&quot;</span></code></p></td>
+<td><p>The offset of <code class="docutils literal notranslate"><span class="pre">web</span></code> in a one-sided offset, without a side word</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;wall.box.Line.1.corner&quot;</span></code></p></td>
+<td><p>The arc around the end of <code class="docutils literal notranslate"><span class="pre">box.Line.1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;slot0.startcap&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;slot0.endcap&quot;</span></code></p></td>
+<td><p>The round caps</p></td>
+</tr>
+</tbody>
+</table>
+<p>A selection takes the whole offset or one side, and <code class="docutils literal notranslate"><span class="pre">kind=</span></code> narrows it down. Their properties can be set like those of any element, for example <code class="docutils literal notranslate"><span class="pre">sk(&quot;slot0&quot;).col</span></code>, <code class="docutils literal notranslate"><span class="pre">.name</span></code>, <code class="docutils literal notranslate"><span class="pre">.maxh</span></code> and <code class="docutils literal notranslate"><span class="pre">.construction</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">plate</span><span class="p">(</span><span class="s2">"slot0.left"</span><span class="p">)</span><span class="o">.</span><span class="n">ids</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">plate</span><span class="p">(</span><span class="s2">"slot0"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"arc"</span><span class="p">)</span><span class="o">.</span><span class="n">ids</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;slot0.left.Point.1&#39;, &#39;slot0.left.Point.2&#39;, &#39;slot0.left.center0&#39;]
+[&#39;slot0.endcap&#39;, &#39;slot0.startcap&#39;]
+</pre></div></div>
+</div>
+</section>
+<section id="A-cam-from-the-path-of-its-roller">
+<h2>A cam from the path of its roller<a class="headerlink" href="#A-cam-from-the-path-of-its-roller" title="Link to this heading"></a></h2>
+<p>A disc cam for a roller follower is designed backwards. The motion law gives the path of the roller’s center, the pitch curve, and the cam is the pitch curve offset inward by the roller radius. The example has a base circle of 25, a roller of 8, a harmonic rise of 10 over 120°, a dwell, the return over 120° and another dwell. The pitch curve is a closed spline through 48 of its points.</p>
+<p>The offset of a spline is a derived curve: each of its points is the spline’s point moved by d along the normal, so it keeps the distance d exactly, not within a fit. Figure 6a shows the pitch curve dashed, the roller at a few positions and the cam in blue, and Figure 6b shows the cam.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">default</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">spline_tol</span>
+<span class="n">px</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">spline_tol</span> <span class="o">=</span> <span class="mf">1e-10</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rise</span><span class="p">(</span><span class="n">deg</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">deg</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">deg</span> <span class="o">/</span> <span class="mi">120</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">deg</span> <span class="o">&lt;</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">10</span>
+    <span class="k">if</span> <span class="n">deg</span> <span class="o">&lt;</span> <span class="mi">300</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">deg</span> <span class="o">-</span> <span class="mi">180</span><span class="p">)</span> <span class="o">/</span> <span class="mi">120</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="mf">0.0</span>
+
+
+<span class="n">path</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">48</span><span class="p">):</span>
+    <span class="n">deg</span> <span class="o">=</span> <span class="mi">360</span> <span class="o">*</span> <span class="n">k</span> <span class="o">/</span> <span class="mi">48</span>
+    <span class="n">rho</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">25</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">+</span> <span class="n">rise</span><span class="p">(</span><span class="n">deg</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">deg</span><span class="p">)</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">rho</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span><span class="p">)))</span>
+
+<span class="n">cam</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">QuickSketch</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">Spline</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">periodic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"pitch"</span><span class="p">,</span> <span class="n">construction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">cam</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="s2">"pitch"</span><span class="p">,</span> <span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"profile"</span><span class="p">)</span>
+<span class="n">cam</span><span class="p">(</span><span class="s2">"profile"</span><span class="p">)</span><span class="o">.</span><span class="n">construction</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">disc</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">Face</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 4.66%; align-items: flex-start; justify-content: center; width: 64.35%; margin: 4px auto 8px"><div style="width: 49.25%; text-align: center"><img src="fig_28c7e2e32f2796ae.svg" alt="Pitch curve and rollers dashed, the cam (blue)" style="width: 100%" loading="lazy" decoding="async" width="216" height="204"><br>(a) Pitch curve and rollers dashed, the cam (blue)</div><div style="width: 46.09%; text-align: center"><img src="fig_238feb5fbcec37de.svg" alt="The cam" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) The cam</div></div><figcaption>Figure 6: A disc cam from the path of its roller</figcaption></figure></div>
+</div>
+<p>The check measures, at points along the cam, how closely the cam keeps the roller radius from the pitch curve. It also compares the cam’s area with the area of the parallel curve, A − L·r + π·r², from the pitch curve’s area A and length L. Areas and <code class="docutils literal notranslate"><span class="pre">Distance</span></code> use the spline’s arc approximation, made when the spline is drawn, so this section draws with <code class="docutils literal notranslate"><span class="pre">px.config.spline_tol</span></code> at 10⁻¹⁰ (the default is 10⁻⁶ of the spline’s size). What remains in the checks is that approximation, not the offset.</p>
+<p>Where only the result counts, <code class="docutils literal notranslate"><span class="pre">Offset(d)</span></code> of the region inside the pitch curve gives the cam as a face, on the exact parallel curve. It works in place, so the region becomes the cam:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pitch</span> <span class="o">=</span> <span class="n">cam</span><span class="o">.</span><span class="n">Edge</span><span class="p">(</span><span class="s2">"pitch"</span><span class="p">)</span>
+<span class="n">gaps</span> <span class="o">=</span> <span class="n">pitch</span><span class="o">.</span><span class="n">Distance</span><span class="p">(</span><span class="n">cam</span><span class="o">.</span><span class="n">Edge</span><span class="p">(</span><span class="s2">"profile"</span><span class="p">)</span><span class="o">.</span><span class="n">Polylines</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">exact</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Face</span><span class="p">([</span><span class="n">pitch</span><span class="p">])</span><span class="o">.</span><span class="n">mass</span> <span class="o">-</span> <span class="n">cam</span><span class="o">.</span><span class="n">Measure</span><span class="p">(</span><span class="s2">"pitch"</span><span class="p">)[</span><span class="s2">"length"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">8</span><span class="o">**</span><span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"distance from the pitch curve: </span><span class="si">{</span><span class="n">gaps</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.12f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">gaps</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.12f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"area"</span><span class="p">,</span> <span class="n">disc</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"parallel curve"</span><span class="p">,</span> <span class="n">exact</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Face</span><span class="p">([</span><span class="n">pitch</span><span class="p">])</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">gaps</span> <span class="o">=</span> <span class="n">pitch</span><span class="o">.</span><span class="n">Distance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">Polylines</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Offset(d) of the face: </span><span class="si">{</span><span class="n">gaps</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.12f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">gaps</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.12f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"its area"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="s2">"parallel curve"</span><span class="p">,</span> <span class="n">exact</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+distance from the pitch curve: 7.999999985354 to 8.000000011528
+area 2867.4271873236135 parallel curve 2867.427187208249
+Offset(d) of the face: 8.000000000000 to 8.000000000000
+its area 2867.4271872082313 parallel curve 2867.427187208249
+</pre></div></div>
+</div>
+<p>A roller larger than the tightest bend of the pitch curve would leave a cusp on the cam. The offset refuses it, which serves as the designer’s undercut check:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">cam</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="s2">"pitch"</span><span class="p">,</span> <span class="o">-</span><span class="mi">36</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"big"</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">spline_tol</span> <span class="o">=</span> <span class="n">default</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Offset(&#39;pitch&#39;): the offset of pitch would have a cusp: d = 36 is not below 31.49724549514452, the radius of its tightest bend towards that side, at (20.089127157288363, -26.18066022961032)
+</pre></div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="extending.html" class="btn btn-neutral float-left" title="Extending edges" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="trimming.html" class="btn btn-neutral float-right" title="Trimming and splitting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

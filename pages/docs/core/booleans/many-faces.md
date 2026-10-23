@@ -1,0 +1,95 @@
+# Many faces at once
+
+`px.Unify`, `px.Intersect` and `px.Subtract` take a list of faces and combine them as a balanced tree, on all cores by
+default. `px.Subtract([first, *others])` cuts all the other faces out of the first one.
+
+```python
+import math
+import random
+import time
+import planex as px
+```
+
+## A perforated sheet
+
+The example is a sheet of 1000 × 500 with holes of diameter 8 on a grid of 20, so 1250 holes are subtracted in one
+call (Figure 1). The time is measured on the machine that built this page.
+
+```python
+sheet = px.QuickSketch().Rectangle(1000, 500).Face()
+holes = [px.Circle((10 + 20 * i, 10 + 20 * j), 4).Face() for i in range(50) for j in range(25)]
+
+start = time.perf_counter()
+perforated = px.Subtract([sheet, *holes])
+print(len(holes), "holes in", round(time.perf_counter() - start, 3), "s")
+print("area", perforated.mass, "exact", 1000 * 500 - len(holes) * 16 * math.pi)
+```
+
+```text
+1250 holes in 0.009 s
+area 437168.1469282339 exact 437168.1469282041
+```
+
+```python
+Row((perforated, "1250 holes of 8 on a 20 grid"), caption="A perforated sheet from one px.Subtract")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## A Reuleaux triangle
+
+A Reuleaux triangle is the intersection of three discs of radius s centered on the corners of an equilateral
+triangle of side s, and its area is (π − √3) s² / 2. The example has s = 10 (Figure 2, with the circles dashed).
+
+```python
+corners = [(0, 0), (10, 0), (5, 5 * math.sqrt(3))]
+reuleaux = px.Intersect([px.Circle(c, 10).Face() for c in corners])
+print("area", reuleaux.mass, "exact", (math.pi - math.sqrt(3)) * 100 / 2)
+```
+
+```text
+area 70.47709230104581 exact 70.4770923010458
+```
+
+```python
+circles = [px.Circle(c, 10) for c in corners]
+Row((reuleaux, "A Reuleaux triangle", {"dashed": circles, "view": ((-11, 21), (-11, 19.7))}),
+    caption="A Reuleaux triangle from one px.Intersect")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## A stress test
+
+The example unites 2000 random discs, on all cores and then on one core with `multithreaded=False` (Figure 3). The
+times are again those of the build machine.
+
+```python
+random.seed(1)
+discs = [px.Circle((random.uniform(0, 50), random.uniform(0, 50)), random.uniform(0.3, 1.2)).Face()
+         for _ in range(2000)]
+
+start = time.perf_counter()
+union = px.Unify(discs)
+print("all cores", round(time.perf_counter() - start, 3), "s")
+start = time.perf_counter()
+px.Unify(discs, multithreaded=False)
+print("one core", round(time.perf_counter() - start, 3), "s")
+```
+
+```text
+all cores 0.013 s
+one core 0.049 s
+```
+
+```python
+Row((union, "2000 discs united"), caption="2000 random discs from one px.Unify")
+```
+
+```text
+<IPython.core.display.HTML object>
+```

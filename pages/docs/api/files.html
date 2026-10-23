@@ -1,0 +1,1040 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Files and other libraries" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/api/files.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="Reading and writing files, conversions to and from other Python libraries, and wires from arrays of points. See Files for the guide." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_api_files_ca127cf1.png" />
+<meta property="og:image:alt" content="Reading and writing files, conversions to and from other Python libraries, and wires from arrays of points. See Files for the guide." />
+<meta name="description" content="Reading and writing files, conversions to and from other Python libraries, and wires from arrays of points. See Files for the guide." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Files and other libraries &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/api/files.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+      <script src="../_static/custom.js?v=14a98ede"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="OpenCASCADE and netgen" href="occ-netgen.html" />
+    <link rel="prev" title="Selections and views" href="selections.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/plotting/index.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Sketches">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/sketches.html">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/sketch/index.html">Quick sketch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Editing">Editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/extending.html">Extending edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/offsets.html">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/occ/index.html">OpenCASCADE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/occ/index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/occ/index.html#Modeling">Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/loft.html">Lofting sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/occ/guided-loft.html">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/occ/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/netgen/index.html">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/netgen/index.html#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/netgen/index.html#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/netgen/levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/pytorch.html">PyTorch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="selections.html">Selections and views</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API reference</a></li>
+      <li class="breadcrumb-item active">Files and other libraries</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/files.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="files-and-other-libraries">
+<h1>Files and other libraries<a class="headerlink" href="#files-and-other-libraries" title="Link to this heading"></a></h1>
+<p>Reading and writing files, conversions to and from other Python libraries, and wires from arrays of points. See <a class="reference internal" href="../core/files.html"><span class="doc">Files</span></a> for the guide.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromPolyline">
+<span class="sig-name descname"><span class="pre">FromPolyline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">np.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Point</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Plane" title="planex.Plane"><span class="pre">Plane</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hpref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a></span></span><a class="headerlink" href="#planex.FromPolyline" title="Link to this definition"></a></dt>
+<dd><p>A wire of lines through the points, the properties on every line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> – an (n, 2) or (n, 3) array or a sequence of (h, v) or (x, y, z) on the plane; a point equal to the one before is skipped.</p></li>
+<li><p><strong>closed</strong> – True joins the last point to the first; a last point equal to the first adds no line.</p></li>
+<li><p><strong>plane</strong> – the plane the wire lies on: a Plane, netgen Axes, a sketch, Shape, Face, Wire, Compound or planar OCC shape (its plane); default the xy plane.</p></li>
+<li><p><strong>name</strong> – the name of the lines.</p></li>
+<li><p><strong>maxh</strong> – the largest mesh size on the lines (netgen’s maxh).</p></li>
+<li><p><strong>col</strong> – the colour (r, g, b) or (r, g, b, a), each in 0..1.</p></li>
+<li><p><strong>minh</strong> – the smallest mesh size on the lines (netgen’s minh).</p></li>
+<li><p><strong>hpref</strong> – netgen’s hpref.</p></li>
+<li><p><strong>layer</strong> – netgen’s layer number.</p></li>
+<li><p><strong>partition</strong> – the mesh points along each line as increasing fractions of its length in (0, 1).</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – fewer than two different points; the lines cross, overlap or revisit a point (px.Wires of the lines cuts them into clean wires); a mesh size is not positive and finite.</p></li>
+<li><p><strong>TypeError</strong> – plane has another form.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromPolyline</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)])</span>
+<span class="n">px</span><span class="o">.</span><span class="n">FromPolyline</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)],</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"outline"</span><span class="p">,</span> <span class="n">maxh</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromDXF">
+<span class="sig-name descname"><span class="pre">FromDXF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Plane" title="planex.Plane"><span class="pre">Plane</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#planex.FromDXF" title="Link to this definition"></a></dt>
+<dd><p>Reads the lines, arcs, circles, polylines, splines and ellipses of a DXF file’s model space as clean wires.</p>
+<p>The coordinates are scaled to metres; the wires are built as by px.Wires: ends within tol (after scaling) joined,
+the edges cut against each other (crossings, T-junctions, an overlapping stretch kept once), then the chains.
+Blocks (INSERT) are read as their entities. The layer becomes the edges’ name, the colour their col; an ellipse
+becomes a spline through sampled points. px.Glue(wires) makes them one Shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the DXF file.</p></li>
+<li><p><strong>tol</strong> – ends closer than this (after scaling) are joined, a length.</p></li>
+<li><p><strong>layers</strong> – the names of the layers to read; None reads all.</p></li>
+<li><p><strong>unit</strong> – the length the file counts in (px.mm, px.inch, …); None takes the unit its header ($INSUNITS) names,
+metres with a warning if it names none.</p></li>
+<li><p><strong>plane</strong> – the plane of the wires; None is the xy plane.</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list of wires; [] for an empty drawing.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – unit is not a positive length.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromDXF</span><span class="p">(</span><span class="s2">"part.dxf"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">mm</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">Glue</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">FromDXF</span><span class="p">(</span><span class="s2">"part.dxf"</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="s2">"outline"</span><span class="p">]))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.WriteDXF">
+<span class="sig-name descname"><span class="pre">WriteDXF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#planex.WriteDXF" title="Link to this definition"></a></dt>
+<dd><p>Writes the edges as LINE, ARC and SPLINE entities of a DXF file, each edge once.</p>
+<p>An edge’s name becomes its layer (the characters a layer name cannot have, such as / and :, become _, with a
+warning), its col the true colour. The coordinates are divided by unit and $INSUNITS names it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – the Face, Shape, Wire, sketch or Compound to write.</p></li>
+<li><p><strong>path</strong> – the file to write.</p></li>
+<li><p><strong>unit</strong> – the length the file counts in (px.m, px.mm, px.inch, …).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TypeError</strong> – unit is a name, not a length.</p></li>
+<li><p><strong>ValueError</strong> – unit is not a positive finite length.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">WriteDXF</span><span class="p">(</span><span class="s2">"part.dxf"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">mm</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">WriteDXF</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"part.dxf"</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromOCC">
+<span class="sig-name descname"><span class="pre">FromOCC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a></span></span><a class="headerlink" href="#planex.FromOCC" title="Link to this definition"></a></dt>
+<dd><p>Reads a planar OCC shape, or a STEP, BREP or IGES file of one, as a Shape on its plane.</p>
+<p>Files are read by netgen, which keeps the names. The faces come with their properties, glued as by px.Glue (an
+overlap becomes a face of its own); edges on no face become wires; every edge keeps its properties.
+px.Intersect3d(plane, shape) gives a section of a shape that is not planar, px.Project(shape, plane) a projection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – an OCC shape, or the path of a STEP, BREP or IGES file.</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – the shape does not lie in one plane, or it has no edges.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromOCC</span><span class="p">(</span><span class="s2">"bracket.step"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">FromOCC</span><span class="p">(</span><span class="n">occ_face</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.WriteStep">
+<span class="sig-name descname"><span class="pre">WriteStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#planex.WriteStep" title="Link to this definition"></a></dt>
+<dd><p>Writes the OCC export (obj.ToOCCShape) as a STEP file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – the Face, Shape, Wire, sketch or Compound to write.</p></li>
+<li><p><strong>path</strong> – the file to write.</p></li>
+<li><p><strong>options</strong> – the options of obj.ToOCCShape (fit_splines, fit_arcs, remove_edges_smaller, …).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">WriteStep</span><span class="p">(</span><span class="s2">"part.step"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">WriteStep</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"part.step"</span><span class="p">,</span> <span class="n">fit_arcs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.WriteBrep">
+<span class="sig-name descname"><span class="pre">WriteBrep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#planex.WriteBrep" title="Link to this definition"></a></dt>
+<dd><p>Writes the OCC export (obj.ToOCCShape) as a BREP file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – the Face, Shape, Wire, sketch or Compound to write.</p></li>
+<li><p><strong>path</strong> – the file to write.</p></li>
+<li><p><strong>options</strong> – the options of obj.ToOCCShape (fit_splines, fit_arcs, remove_edges_smaller, …).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">WriteBrep</span><span class="p">(</span><span class="s2">"part.brep"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">WriteBrep</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"part.brep"</span><span class="p">,</span> <span class="n">fit_arcs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.WriteGeo">
+<span class="sig-name descname"><span class="pre">WriteGeo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#planex.WriteGeo" title="Link to this definition"></a></dt>
+<dd><p>Writes the edges and faces as a gmsh .geo file.</p>
+<p>Points carry the maxh of their edges and faces as the characteristic length; lines, circle arcs (split at half a
+circle) and splines as B-splines through planex’s approximation (not exact: .geo has no NURBS), every curve once;
+plane surfaces with their holes. Physical groups: a curve group per edge name, a surface group per face name, the
+unnamed edges and faces in a curve and a surface group named “unnamed” (gmsh writes only elements in a group once there
+is one, and netgen’s ReadGmsh needs every group named and the boundary segments). Periodic
+identifications become Periodic Curve.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – the Face, Shape, Wire, sketch or Compound to write.</p></li>
+<li><p><strong>path</strong> – the file to write.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">WriteGeo</span><span class="p">(</span><span class="s2">"part.geo"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">WriteGeo</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"part.geo"</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromKiCad">
+<span class="sig-name descname"><span class="pre">FromKiCad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_faces_smaller</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_small_faces_instead</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_edges_smaller</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">close_gaps_smaller</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_free_edges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_collinear_closer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></span></span><a class="headerlink" href="#planex.FromKiCad" title="Link to this definition"></a></dt>
+<dd><p>Reads a KiCad board (.kicad_pcb, KiCad 9 and later) in metres, y up: its layers as Shapes, or the board in 3d.</p>
+<p>A board of another program (Altium, Eagle, PADS, CADSTAR, Fabmaster, P-CAD, SolidWorks PCB: a file that is no
+.kicad_pcb) is converted first with KiCad 10’s kicad-cli (pcb import), found as $PLANEX_KICAD_CLI, on the PATH or
+where KiCad installs it.</p>
+<p>A copper layer is every track, arc, via, pad, filled zone and copper drawing on it, united per net with the faces
+named by the net; the drill holes through it are cut out, the edges of plated holes (vias and plated pads) named
+“pth”, of unplated ones “npth”. The outline face is named “profile”, the holes through the whole board are cut out
+of it. Every other layer is what KiCad prints there: lines, arcs and Bezier curves (as exact splines) as wide as
+drawn (dashed ones solid), filled shapes and zones as regions, the drawings of footprints too. The solder mask and
+paste layers are their openings: the pads on them grown by their solder mask or paste margin (the pad’s, else the
+footprint’s, else the board’s setup) as the file’s KiCad plots them (a round rectangle keeps its corner ratio in a
+KiCad 9 file, grows exactly in a KiCad 10 one), what is drawn there, the vias the board’s (or the via’s own) tenting
+leaves open and the tracks and copper drawings marked for an opening; with the setup’s solder mask minimum width,
+openings closer than it are joined as KiCad joins them. Text, dimensions, tables, barcodes and hatched fills are
+left out, with one warning giving their counts; zones need to be filled in KiCad (a warning says when they are
+not). Copper and drill holes are coloured gold (col), the board solder mask green, in 2d and in 3d. Files newer
+than the newest tested (KiCad 10, version 20260206) warn.</p>
+<p>In 3d every dielectric is the outline extruded between its two copper layers (solids named dielectric_1, … from
+the top), drilled where a hole joins both, so the hole walls are faces named “pth” or “npth”; the copper layers are
+faces at their heights (B.Cu at z = 0), named by net.</p>
+<p>The cleanup options are those of the OCC exports (ToOCCShape): the copper layers and the outline are cleaned with
+them (Simplify), the other layers keep what KiCad prints, the 3d board is exported with them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the board file.</p></li>
+<li><p><strong>layer</strong> – None: a dict {KiCad layer name: Shape}: the copper layers from the top (F.Cu, In1.Cu, …, B.Cu), each
+even when empty, then the board outline “Edge.Cuts”, then every other layer of the board’s layer table
+that holds something, in the table’s order. A layer name (“F.Cu”, “F.SilkS”, …): that layer’s Shape
+alone. A stackup: the board in 3d as one glued OCC shape: a list of dielectric thicknesses in millimetres
+from the top, as the manufacturer gives it (e.g. [0.2, 1.3, 0.2] for four copper layers), a stackup of
+px.stackups (a dict {number of copper layers: such a list}, e.g. px.stackups.jlc7628), or
+px.stackups.kicad (the stackup in the board file).</p></li>
+<li><p><strong>remove_faces_smaller</strong> – faces of less area than this (m^2) are united with the neighbour they share the longest
+edge with, such as the slivers a zone fill’s polygon leaves next to an exact drill circle (merged, the
+hole keeps its exact circle); None takes px.config.remove_faces_smaller.</p></li>
+<li><p><strong>merge_small_faces_instead</strong> – False throws such faces away instead; None takes
+px.config.merge_small_faces_instead.</p></li>
+<li><p><strong>remove_edges_smaller</strong> – removes lines and arcs no longer than this; None takes px.config.remove_edges_smaller.</p></li>
+<li><p><strong>close_gaps_smaller</strong> – closes gaps between ends up to this; None takes px.config.close_gaps_smaller.</p></li>
+<li><p><strong>remove_free_edges</strong> – removes the edges that touch no other edge at either end; None takes
+px.config.remove_free_edges.</p></li>
+<li><p><strong>merge_collinear_closer</strong> – merges two lines whose common vertex is this close to the line through their far ends;
+None takes px.config.merge_collinear_closer.</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a dict of Shapes; a layer name: a Shape; a stackup: a netgen.occ shape.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>layer None</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – a legacy board (before KiCad 6) or a file older than KiCad 9 (version 20241229): open and save it
+    in KiCad 9 or later; kicad-cli could not convert the board; a layer name the board’s layer table does not
+    have; a stackup without an entry for the board’s number of copper layers, with another number of
+    thicknesses than copper layers - 1, or with a thickness not positive; px.stackups.kicad and the file has
+    no stackup or one that does not fit; the board has no outline on Edge.Cuts where one is needed.</p></li>
+<li><p><strong>RuntimeError</strong> – a board of another program and no kicad-cli of KiCad 10 or later can be run.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromKiCad</span><span class="p">(</span><span class="s2">"board.kicad_pcb"</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="s2">"F.Cu"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">FromKiCad</span><span class="p">(</span><span class="s2">"board.kicad_pcb"</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">stackups</span><span class="o">.</span><span class="n">jlc7628</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.WriteKiCad">
+<span class="sig-name descname"><span class="pre">WriteKiCad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">os.PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">outline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0016</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#planex.WriteKiCad" title="Link to this definition"></a></dt>
+<dd><p>Writes the layers as a KiCad 9 board (.kicad_pcb, millimetres, y down).</p>
+<p>The board has as many copper layers as the highest one given needs, those not given empty. Everything lies in one
+plane, the xy plane or the plane of the first shape. Every face becomes one filled polygon (gr_poly): lines and
+arcs exactly, splines as lines within tol, a face with holes as one outline with every hole joined to it by a
+bridge there and back, as KiCad fractures a zone. Edges on no face become lines of line_width (gr_line, gr_arc),
+except on copper, which needs an area: they are left out with a warning. The outline’s loops become lines, arcs and
+circles on Edge.Cuts.</p>
+<p>Drill holes are the faces of pth and npth (or of layers[“pth”] and layers[“npth”]) and the holes of the layers’
+faces whose edges are all named “pth” or “npth” (as FromKiCad names them). Every hole is cut out of every copper
+layer and the outline. A round plated hole becomes a via through all copper layers, its pad as wide as the copper
+around the hole on the layer with the least (it adds no copper). A round unplated hole becomes a footprint
+“MountingHole” with one unplated pad. Other holes become cutouts of the outline.</p>
+<p>Nets: faces on one layer with one name, and faces a plated hole goes through, are one net, named after the first
+named face from the top layer down (faces with two names warn), else net1, net2, … from the top. Numbers are
+written in millimetres with 6 decimals; the uuids are made from each element’s text, so the same layers give the
+same file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the file to write.</p></li>
+<li><p><strong>layers</strong> – a dict {KiCad layer name: Shape, Face, Wire or Compound} (copper “F.Cu”, “In1.Cu”, …, “B.Cu”, the
+board outline “Edge.Cuts”, the other KiCad layers such as “F.SilkS” or “F.Mask”, and “pth”, “npth”), or a
+list of the copper layers from the top.</p></li>
+<li><p><strong>outline</strong> – the board outline, instead of “Edge.Cuts” in the dict.</p></li>
+<li><p><strong>unit</strong> – the length the geometry counts in (px.m, px.mm, …); tol, thickness and line_width count in it too.</p></li>
+<li><p><strong>pth</strong> – the plated holes, as faces or closed wires.</p></li>
+<li><p><strong>npth</strong> – the unplated holes, as faces or closed wires.</p></li>
+<li><p><strong>tol</strong> – the largest distance of the lines from a spline.</p></li>
+<li><p><strong>thickness</strong> – the board’s thickness.</p></li>
+<li><p><strong>line_width</strong> – the width of the lines of edges on no face.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – unit, tol, thickness or line_width is not a positive length; the outline or a kind of holes is
+    given twice; a name is no KiCad layer; more than 32 copper layers; the layers lie in different planes; an
+    open wire as a hole; a plated hole without copper around it on a copper layer.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">WriteKiCad</span><span class="p">(</span><span class="s2">"board.kicad_pcb"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"F.Cu"</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span> <span class="s2">"B.Cu"</span><span class="p">:</span> <span class="n">bottom</span><span class="p">},</span> <span class="n">outline</span><span class="o">=</span><span class="n">board</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">mm</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">WriteKiCad</span><span class="p">(</span><span class="s2">"board.kicad_pcb"</span><span class="p">,</span> <span class="p">[</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">],</span> <span class="n">pth</span><span class="o">=</span><span class="n">vias</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromShapely">
+<span class="sig-name descname"><span class="pre">FromShapely</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Plane" title="planex.Plane"><span class="pre">Plane</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></span><a class="headerlink" href="#planex.FromShapely" title="Link to this definition"></a></dt>
+<dd><p>Converts a shapely geometry: polygons become faces with their holes subtracted, line strings clean wires.</p>
+<p>The wires are built as by px.Wires: ends within tol joined, crossings cut. A GeometryCollection becomes a Compound
+of its parts as shapely stores them: parts sharing a side or overlapping stay so (px.Glue them for a conforming
+mesh).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geom</strong> – the shapely geometry.</p></li>
+<li><p><strong>plane</strong> – the plane of the result; None is the xy plane.</p></li>
+<li><p><strong>tol</strong> – ends closer than this are joined, a length.</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>polygons alone a Shape of the united faces, lines alone a list of wires, both a Compound of the Shape and the
+wires; a GeometryCollection a Compound.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromShapely</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">FromShapely</span><span class="p">(</span><span class="n">line_string</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">plane</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">YZ</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.ToShapely">
+<span class="sig-name descname"><span class="pre">ToShapely</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#planex.ToShapely" title="Link to this definition"></a></dt>
+<dd><p>Converts to a shapely geometry in plane coordinates, arcs and splines sampled within tol.</p>
+<p>Faces that share an edge (a glued Shape) give a GeometryCollection of their polygons, since a MultiPolygon must not
+have parts sharing an edge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – the Face, Shape, Wire, sketch (its Shape()) or Compound.</p></li>
+<li><p><strong>tol</strong> – the largest distance of a chord from its arc or spline, a length. Where a face is thinner than tol its
+polygon is sampled again finer (to tol/1000), with a warning; still invalid, it is made valid (make_valid).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a Polygon or MultiPolygon for a Face, a Shape of faces or a sketch; a LineString or MultiLineString for a Wire
+or a Shape of wires; a GeometryCollection for a Compound or a Shape of both.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">ToShapely</span><span class="p">()</span>
+<span class="n">px</span><span class="o">.</span><span class="n">ToShapely</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.ToSVG">
+<span class="sig-name descname"><span class="pre">ToSVG</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Shape" title="planex.Shape"><span class="pre">Shape</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Wire" title="planex.Wire"><span class="pre">Wire</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="geometry.html#planex.Compound" title="planex.Compound"><span class="pre">Compound</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.Sketch" title="planex.Sketch"><span class="pre">Sketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="sketches.html#planex.QuickSketch" title="planex.QuickSketch"><span class="pre">QuickSketch</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#planex.ToSVG" title="Link to this definition"></a></dt>
+<dd><p>The object as the text of an SVG picture in its plane coordinates, its faces filled.</p>
+<p>A sketch is drawn in its own look: every element in the colour of its state (green fully constrained, black free,
+pink over-constrained) with its id when hovered, construction dashed, in a frame with numbered ticks on a grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – a Face, Shape, Wire, Compound, sketch or DeformableShape.</p></li>
+<li><p><strong>size</strong> – the larger side of the picture in pixels.</p></li>
+<li><p><strong>options</strong> – for a sketch: show_constraints=True adds a sign per constraint, show_ends=True a blue start and an
+orange end piece on every line and arc, show_direction=True an arrow from start to end; other objects
+ignore them.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the SVG text; None if the object has no extent.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">face</span><span class="o">.</span><span class="n">ToSVG</span><span class="p">()</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">ToSVG</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">show_constraints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="planex.FromNACA">
+<span class="sig-name descname"><span class="pre">FromNACA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">chord</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trailing_edge</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'sharp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pivot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="geometry.html#planex.Plane" title="planex.Plane"><span class="pre">Plane</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="geometry.html#planex.Face" title="planex.Face"><span class="pre">Face</span></a></span></span><a class="headerlink" href="#planex.FromNACA" title="Link to this definition"></a></dt>
+<dd><p>A NACA 4-digit or 5-digit airfoil as a Face, the leading edge at the origin and the chord along the plane’s u.</p>
+<p>Each side is one spline through cosine spaced stations of the exact contour, both with the same tangent at the
+leading edge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>code</strong> – the airfoil, 4 digits (‘2412’) or 5 digits (‘23012’, reflex ‘23112’).</p></li>
+<li><p><strong>chord</strong> – the chord length, &gt; 0.</p></li>
+<li><p><strong>samples</strong> – the number of stations per side, an integer &gt;= 3.</p></li>
+<li><p><strong>trailing_edge</strong> – ‘sharp’ closes the contour at the trailing edge, ‘blunt’ keeps the classic formula’s gap and
+closes it with a line.</p></li>
+<li><p><strong>angle</strong> – the angle of attack in degrees, positive nose up.</p></li>
+<li><p><strong>pivot</strong> – the point the angle turns around, on the chord line as a fraction of the chord.</p></li>
+<li><p><strong>plane</strong> – the plane of the face; None is the xy plane.</p></li>
+<li><p><strong>id</strong> – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – code is not a 4- or 5-digit code planex knows, trailing_edge is neither ‘sharp’ nor ‘blunt’,
+    samples is not an integer &gt;= 3, or chord is not positive.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">px</span><span class="o">.</span><span class="n">FromNACA</span><span class="p">(</span><span class="s2">"2412"</span><span class="p">)</span>
+<span class="n">px</span><span class="o">.</span><span class="n">FromNACA</span><span class="p">(</span><span class="s2">"23012"</span><span class="p">,</span> <span class="n">chord</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">trailing_edge</span><span class="o">=</span><span class="s2">"blunt"</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="selections.html" class="btn btn-neutral float-left" title="Selections and views" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="occ-netgen.html" class="btn btn-neutral float-right" title="OpenCASCADE and netgen" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

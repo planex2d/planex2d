@@ -1,0 +1,264 @@
+# Faces, shapes and compounds
+
+A **face** is one connected region, bounded by an outer loop and its holes. A **shape** holds faces that do not
+overlap, and wires, all cut against each other. It is what Boolean operations and gluing return, and every face in
+it keeps its own name and properties. A **compound** is a simple collection of any objects. Nothing in it is cut or
+merged, and it is exported as it is.
+
+```python
+import math
+import planex as px
+```
+
+## A face: outline and holes
+
+The example is a flange gasket with an outer diameter of 150, a bore of 90 and eight bolt holes of 14 on a pitch
+circle of 120 (Figure 1a). `outer` and `inner` return its loops, and the inner loops are the bore and the eight bolt
+holes. The blank it is cut from is the outline alone (Figure 1b), and the cutting length is the length of all loops.
+
+```python
+outer, bore, pitch, hole = 150.0, 90.0, 120.0, 14.0
+sketch = px.QuickSketch().Circle(outer / 2, name="outline").Circle(bore / 2, name="bore")
+for k in range(8):
+    a = math.radians(45 * k + 22.5)
+    sketch.Circle(pitch / 2 * math.cos(a), pitch / 2 * math.sin(a), hole / 2, name="bolt hole")
+gasket = sketch.Face()
+gasket.name = "gasket"
+blank = px.Face([gasket.outer])
+```
+
+```python
+Row((gasket, "The gasket"), (blank, "The blank: the outline alone"), caption="A flange gasket and its blank")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+cutting = gasket.outer.mass + sum(loop.mass for loop in gasket.inner)
+print(len(gasket.inner), "holes")
+print("blank", blank.mass, "exact", math.pi * outer**2 / 4)
+print("scrap", blank.mass - gasket.mass, "exact", math.pi / 4 * (bore**2 + 8 * hole**2))
+print("cutting length", cutting, "exact", math.pi * (outer + bore + 8 * hole))
+```
+
+```text
+9 holes
+blank 17671.458676442588 exact 17671.458676442588
+scrap 7593.22944372653 exact 7593.22944372653
+cutting length 1105.840614063607 exact 1105.840614063607
+```
+
+## A shape: the result of Boolean operations
+
+Boolean operations always return a shape, even when the result is a single face. The example is the gasket split
+with a 4 mm kerf, so that it can be fitted around a shaft. The result has two faces, which `faces` lists. `Face()`
+returns the single face of a shape, so here it raises an error. Both halves keep the gasket's name.
+
+```python
+kerf = 4.0
+cutter = px.QuickSketch((-80, -kerf / 2)).Rectangle(160, kerf).Face()
+split = gasket - cutter
+print(type(split).__name__, len(split.faces), [f.name for f in split.faces])
+try:
+    split.Face()
+except ValueError as e:
+    print(e)
+```
+
+```text
+Shape 2 ['gasket', 'gasket']
+Face(): the shape has 2 faces and 0 wires; .faces gives the faces, .wires the wires
+```
+
+```python
+Row((split, "The gasket split with a 4 mm kerf: one shape of two faces"))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+Each half has half the area of the gasket minus the kerf. The kerf crosses the ring as a band between the bore and
+the outline:
+
+```python
+def band(r):
+    h = kerf / 2
+    return 2 * (h * math.sqrt(r**2 - h**2) + r**2 * math.asin(h / r))
+
+
+ring_area = math.pi / 4 * (outer**2 - bore**2 - 8 * hole**2)
+half = (ring_area - band(outer / 2) + band(bore / 2)) / 2
+for f in split.faces:
+    print("half", f.mass, "exact", half)
+```
+
+```text
+half 4919.090898877184 exact 4919.090898877183
+half 4919.090898877184 exact 4919.090898877183
+```
+
+## Several regions from wires
+
+`px.Face(wires)` and `sketch.Face()` require exactly one region. Nested contours from a cutting layout, such as the
+gasket and a disc cut from its bore for a smaller part, form two regions. `px.Shape(wires)` keeps both.
+
+```python
+disc = px.Circle((0, 0), bore / 2 - kerf)
+contours = [*gasket.wires, disc]
+try:
+    px.Face(contours)
+except ValueError as e:
+    print(e)
+layout = px.Shape(contours)
+```
+
+```text
+Face(wires): the edges bound 2 regions; Shape() keeps them all
+```
+
+```python
+Row((layout, "px.Shape of nested contours: the gasket and a disc from its bore"))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+print(len(layout.faces), "faces, area", layout.mass, "exact", gasket.mass + math.pi * (bore / 2 - kerf) ** 2)
+```
+
+```text
+2 faces, area 15359.2464834005 exact 15359.2464834005
+```
+
+## A compound is a collection
+
+Nothing in a compound is cut, merged or checked, so its parts may overlap, lie on different planes, or mix faces and
+wires. The example is two gaskets placed 140 apart on a sheet, as a compound (Figure 4a). Uniting the compound
+(Figure 4b) shows that the gaskets overlap by the lens of two circles.
+
+```python
+distance = 140.0
+sheet = px.Compound([gasket, gasket.Translated((distance, 0))])
+united = px.Unify(sheet)
+```
+
+```python
+Row((sheet, "The compound: two gaskets"), (united, "United"), caption="A compound is not cut: the gaskets overlap")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+r = outer / 2
+lens = 2 * r**2 * math.acos(distance / (2 * r)) - distance / 2 * math.sqrt(4 * r**2 - distance**2)
+print("overlap", 2 * gasket.mass - united.mass, "lens", lens)
+```
+
+```text
+overlap 361.4748662815182 lens 361.47486628151455
+```
+
+## Gluing: faces that share edges
+
+`px.Glue(parts)` combines faces without merging them, so faces that touch share their common edges. The example is a
+rubber-metal bushing made of an inner sleeve, the rubber and an outer sleeve. Each ring is a face of two circles with
+its own name. The two interfaces each become one circle, shared by the faces on both sides and drawn in cyan
+(Figure 5).
+
+```python
+def ring(inner, outer, name):
+    face = px.Face([px.Circle((0, 0), outer), px.Circle((0, 0), inner)])
+    face.name = name
+    return face
+
+
+parts = [ring(10, 14, "inner sleeve"), ring(14, 24, "rubber"), ring(24, 28, "outer sleeve")]
+bushing = px.Glue(parts)
+```
+
+```python
+shared = [e for e in bushing.edges if min(abs(math.hypot(e.midpoint.x, e.midpoint.y) - r) for r in (14, 24)) < 1e-9]
+Row((bushing, "A bushing: three rings glued, the interfaces shared", {"highlight": shared}))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```python
+by_size = sorted(bushing.faces, key=lambda f: f.outer.mass)
+for f, (a, b) in zip(by_size, [(10, 14), (14, 24), (24, 28)]):
+    print(f.name, "area", f.mass, "exact", math.pi * (b**2 - a**2))
+print(len(bushing.edges), "edges glued,", sum(len(p.edges) for p in parts), "in the separate parts")
+```
+
+```text
+inner sleeve area 301.5928947446201 exact 301.59289474462014
+rubber area 1193.8052083641214 exact 1193.8052083641214
+outer sleeve area 653.4512719466768 exact 653.451271946677
+4 edges glued, 6 in the separate parts
+```
+
+Where glued parts overlap, the overlap becomes a face of its own. Two discs give three faces: the rest of each disc
+and their common part (Figure 6), listed here from left to right with `Sorted(px.X)`. The common part takes the
+name and properties of the first part. A part that lies
+entirely inside another keeps its own region and its own properties, in either order, and an unnamed part inside a
+named one stays unnamed.
+
+```python
+a = px.Circle((0, 0), 10).Face()
+b = px.Circle((12, 0), 10).Face()
+a.name, b.name = "a", "b"
+pair = px.Glue([a, b])
+for f in pair.faces.Sorted(px.X):
+    print(f.name, "area", f.mass)
+print("lens exact", 2 * 100 * math.acos(12 / 20) - 6 * math.sqrt(400 - 144))
+```
+
+```text
+a area 224.70022175865685
+a area 89.45904360032243
+b area 224.70022175865685
+lens exact 89.45904360032245
+```
+
+```python
+middle = [f for f in pair.faces if abs(f.center[0] - 6) < 1e-9]
+Row((pair, "Two overlapping discs glued: three faces", {"fills": [(middle[0], "#a9d6e5")]}))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+In the export, the faces share their OpenCASCADE edges. netgen therefore meshes each face as a region of its own,
+and the interfaces become shared mesh lines:
+
+```python
+exported = bushing.ToOCCShape()
+print(len(exported.faces), "OCC faces,", len(set(e for f in exported.faces for e in f.edges)), "OCC edges")
+```
+
+```text
+3 OCC faces, 4 OCC edges
+```
+
+## Side by side
+
+| | Face | Shape | Compound |
+|---|---|---|---|
+| **Made by** | `px.Face(wires)`, `sketch.Face()` | Boolean operations, `px.Glue`, `Trim`, `px.Shape(wires)`, `sketch.Shape()` | `px.Compound(parts)` |
+| **Holds** | One region with holes | Faces that do not overlap, and wires | Any objects, also on different planes |
+| **Boolean operations** | Yes | Yes | Only `px.Unify` and `px.Glue`, which use its parts |
+| **Parts** | `outer`, `inner`, `wires`, `edges` | `faces`, `wires`, `edges`, `Face()` | Iteration, indexing, `len` |
+
+`Split` returns a list of shapes, one per piece. `Offset` changes a face in place, or returns a shape with
+`inplace=False`. See [Faces and wires](../booleans/faces-and-wires.md) for gluing wires, and
+[netgen and NGSolve](../../integrations/netgen/index.md) for meshing glued faces.

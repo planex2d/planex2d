@@ -1,0 +1,21 @@
+OpenCASCADE and netgen
+======================
+
+.. currentmodule:: planex
+
+The export to OpenCASCADE and netgen, solids from profiles, projections and sections of 3D shapes, level sets, and netgen's WorkPlane drawing calls. See :doc:`OpenCASCADE <../integrations/occ/index>` and :doc:`netgen <../integrations/netgen/index>` for the guides.
+
+.. autofunction:: OCCGeometry
+
+.. autofunction:: Pad
+
+.. autofunction:: Pocket
+
+.. autofunction:: Project
+
+.. autofunction:: Intersect3d
+
+.. autofunction:: FromLevelSet
+
+.. autoclass:: WorkPlane
+   :members:

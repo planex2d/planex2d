@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /*.md$
+Disallow: /llms.txt
+Disallow: /llms-full.txt
+
+Sitemap: https://planex2d.org/docs/sitemap.xml
+Sitemap: https://planex2d.org/docs/sitemap-images.xml

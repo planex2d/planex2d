@@ -1,0 +1,58 @@
+# Roadmap
+
+These are the top picks among the features planned, considered or already prototyped for planex2d after v0.1,
+grouped by the part of the library they extend. They reflect the current plans, which develop as the work goes on, so
+the list has no dates.
+
+## Installation
+
+- **Prebuilt pip wheels.** `pip install planex2d` installs a ready-built package, without a C++20 compiler or CMake.
+  Today pip builds planex2d from the source distribution (see [Installation](installation.md)).
+
+## Kernel
+
+- **A core without netgen and OpenCASCADE.** Own spline curves, so that planex2d installs and runs on its own, with
+  netgen and OpenCASCADE needed only where a part goes to them.
+- **Rational splines.** Exact ellipses, elliptical arcs and other conics, and DXF ellipses read exactly instead of
+  sampled.
+
+## Sketch
+
+- **Parametric curves.** Curves given by equations, x(t), y(t) or y = f(x), so that NACA profiles, involute gear
+  flanks and cam profiles are exact rather than fitted through points.
+- **C2 blends.** A connection between two elements whose curvature is continuous as well as its tangent, as for
+  smooth flow ducts. Fillets and tangent arcs keep only the tangent continuous.
+- **Parametric sketches from drawings.** A DXF file or another imported outline as a sketch with inferred
+  constraints (coincident, horizontal and vertical, tangent, equal radius), edited through its dimensions.
+
+## Constraints
+
+- **Inequality constraints.** Bounds such as a distance of at least 2 mm or a radius of at most 5 mm, which the
+  solver keeps.
+- **Constraint diagnostics.** Checks of the geometry (open ends, duplicates, self-intersections), conflicts and
+  redundancies explained by the constraints they come from, and the free motions that remain, shown with the
+  dimensions that would fix them.
+- **Sensitivities.** How each point of the boundary moves when a dimension or a parameter changes, the shape
+  derivative, for gradient-based shape optimization.
+
+## Measuring
+
+- **DE-9IM relations.** The relation matrix of two shapes, which records how their interiors, boundaries and exteriors
+  meet, and the predicates built on it: touches, contains, within, overlaps and crosses.
+
+## OpenCASCADE
+
+- **Silhouette projection.** The outline of a 3D part seen along a direction, including the contour lines of curved
+  faces such as the sides of a cylinder, as planex2d geometry. Today `px.Project` projects the edges (see
+  [Sketching on and projecting 3D geometry](../integrations/occ/projecting.md)).
+
+## Files and integrations
+
+- **More file formats.** BREP read and write without netgen or OpenCASCADE, SVG reading, Gerber and Excellon readers
+  and a Gerber writer, KiCad tracks with their width, GDSII export, PSLG export for Triangle, MeshPy and CGAL, and
+  pickling of planex2d objects.
+
+## Experimental
+
+- **Deformable shapes.** A stable version of the [deformable shapes](../experimental/deformable/index.md), with an
+  in-place `Deform(d)` for time stepping and a mesh that follows the moving boundary.

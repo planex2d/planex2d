@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="description" content="planex2d faces become netgen geometries in one call: names become materials and boundary conditions, and maxh and hpref control the mesh that netgen makes." /><meta property="og:title" content="netgen and NGSolve" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/integrations/netgen/index.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="planex2d faces become netgen geometries in one call: names become materials and boundary conditions, and maxh and hpref control the mesh that netgen makes." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_integrations_netgen_index_1b3ec6df.png" />
+<meta property="og:image:alt" content="planex2d faces and shapes become netgen geometries in one call. The geometry reaches netgen through OpenCASCADE, in the build that netgen ships as netgen-occt, so everything on the OpenCASCADE page..." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>netgen and NGSolve &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/integrations/netgen/index.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+      <script src="../../_static/custom.js?v=14a98ede"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Coming from netgen’s WorkPlane" href="workplane.html" />
+    <link rel="prev" title="Lofts with guide curves" href="../occ/guided-loft.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/plotting/index.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Sketches">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/sketches.html">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/plotting/fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/plotting/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/sketch/index.html">Quick sketch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Editing">Editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/extending.html">Extending edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/offsets.html">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/sketch/parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/sketch/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../core/defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../occ/index.html">OpenCASCADE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../occ/index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../occ/export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ/export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ/splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../occ/index.html#Modeling">Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../occ/clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ/projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ/loft.html">Lofting sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ/guided-loft.html">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../occ/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pytorch.html">PyTorch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/selections.html">Selections and views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/files.html">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">netgen and NGSolve</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/integrations/netgen/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="netgen-and-NGSolve">
+<h1>netgen and NGSolve<a class="headerlink" href="#netgen-and-NGSolve" title="Link to this heading"></a></h1>
+<div class="px-hero">
+<a href="../../integrations/netgen/meshing.html" style="width: 45.4%"><picture><source srcset="../../_static/sections/netgen/hero-flow.webp" type="image/webp"><img src="../../_static/sections/netgen/hero-flow.png" alt="The potential flow around a cylinder in a channel, solved with NGSolve on the mesh of a planex2d face" loading="eager" fetchpriority="high" decoding="async" width="1232" height="563"></picture><span>A potential flow on the mesh of a planex2d face</span></a>
+<a href="../../integrations/netgen/field-solvers.html" style="width: 23.8%"><picture><source srcset="../../_static/sections/netgen/hero-coldplate.webp" type="image/webp"><img src="../../_static/sections/netgen/hero-coldplate.png" alt="The temperature of a cold plate with four bores, a planex2d measurement solved by NGSolve" loading="lazy" decoding="async" width="450" height="392"></picture><span>A cold plate&#x27;s temperature as a measurement</span></a>
+<a href="../../integrations/netgen/levelset.html" style="width: 26.9%"><picture><source srcset="../../_static/sections/netgen/hero-lattice.webp" type="image/webp"><img src="../../_static/sections/netgen/hero-lattice.png" alt="An auxetic lattice tiled from a level set unit cell, extruded and loaded, its displacement in color" loading="lazy" decoding="async" width="979" height="751"></picture><span>An auxetic lattice from a level set, loaded</span></a>
+</div><p>planex2d faces and shapes become netgen geometries in one call. The geometry reaches netgen through OpenCASCADE, in the build that netgen ships as <code class="docutils literal notranslate"><span class="pre">netgen-occt</span></code>, so everything on the <a class="reference internal" href="../occ/index.html"><span class="doc">OpenCASCADE</span></a> pages applies here too, and every plane argument takes netgen’s <code class="docutils literal notranslate"><span class="pre">occ.Axes</span></code> besides a <code class="docutils literal notranslate"><span class="pre">px.Plane</span></code>. Face names turn into materials, edge names into boundary conditions, and vertex names into point names. <code class="docutils literal notranslate"><span class="pre">maxh</span></code> and <code class="docutils literal notranslate"><span class="pre">hpref</span></code> on faces, edges and vertices set the mesh size and
+refine towards corners. Faces glued into a shape share their edges, so the regions of the mesh fit together without gaps. Results come back onto the geometry: <code class="docutils literal notranslate"><span class="pre">px.PlotField</span></code> draws NGSolve and FEniCSx fields on the exact planex2d geometry, also in cuts through 3D parts. A measurement can pass the part to netgen for meshing and to NGSolve for solving, and <code class="docutils literal notranslate"><span class="pre">px.FromLevelSet</span></code> turns a level set function into a planex2d shape.</p>
+<p class="px-label">In this section</p><section id="Getting-started">
+<h2>Getting started<a class="headerlink" href="#Getting-started" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<div class="px-cards">
+<a class="px-card" href="workplane.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/workplane.webp" type="image/webp"><img src="../../_static/sections/netgen/workplane.png" alt="Coming from netgen&#x27;s WorkPlane" loading="lazy" decoding="async" width="444" height="392"></picture></div><b>Coming from netgen&#x27;s WorkPlane</b><span>Drawing code for netgen&#x27;s WorkPlane run unchanged on px.WorkPlane, or taken over with px.FromOCC.</span></a>
+<a class="px-card" href="naming.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/naming.webp" type="image/webp"><img src="../../_static/sections/netgen/naming.png" alt="Naming and marking" loading="lazy" decoding="async" width="556" height="392"></picture></div><b>Naming and marking</b><span>Names, mesh sizes and refinement set while drawing or afterwards, and how netgen reads them.</span></a>
+<a class="px-card" href="identifications.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/identifications.webp" type="image/webp"><img src="../../_static/sections/netgen/identifications.png" alt="Identifications" loading="lazy" decoding="async" width="642" height="392"></picture></div><b>Identifications</b><span>Periodic unit cells and rotational sectors, with the transformation found automatically.</span></a>
+</div></section>
+<section id="Meshing-and-fields">
+<h2>Meshing and fields<a class="headerlink" href="#Meshing-and-fields" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<div class="px-cards">
+<a class="px-card" href="meshing.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/meshing.webp" type="image/webp"><img src="../../_static/sections/netgen/meshing.png" alt="Meshing a face" loading="lazy" decoding="async" width="1232" height="634"></picture></div><b>Meshing a face</b><span>A named planex2d face meshed by netgen, with a potential flow, regions and corner refinement.</span></a>
+<a class="px-card" href="fields.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/fields.webp" type="image/webp"><img src="../../_static/sections/netgen/fields.png" alt="Fields and cuts" loading="lazy" decoding="async" width="1322" height="424"></picture></div><b>Fields and cuts</b><span>Temperatures, fluxes, arrows and field lines on curved meshes and in cuts through 3D parts.</span></a>
+<a class="px-card" href="webgui.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/webgui.webp" type="image/webp"><img src="../../_static/sections/netgen/webgui.png" alt="Solids and meshes in the webgui" loading="lazy" decoding="async" width="558" height="635"></picture></div><b>Solids and meshes in the webgui</b><span>OpenCASCADE solids from planex2d faces and the meshes netgen makes of them.</span></a>
+<a class="px-card" href="field-solvers.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/field-solvers.webp" type="image/webp"><img src="../../_static/sections/netgen/field-solvers.png" alt="Field solvers as measurements" loading="lazy" decoding="async" width="1042" height="580"></picture></div><b>Field solvers as measurements</b><span>Peak temperature and stress concentration as numbers on a sketch, checked against closed forms.</span></a>
+<a class="px-card" href="levelset.html"><div class="thumb"><picture><source srcset="../../_static/sections/netgen/levelset.webp" type="image/webp"><img src="../../_static/sections/netgen/levelset.png" alt="From level sets" loading="lazy" decoding="async" width="504" height="392"></picture></div><b>From level sets</b><span>The region where a level set function is positive, as a planex2d shape, shown on an auxetic lattice.</span></a>
+</div></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../occ/guided-loft.html" class="btn btn-neutral float-left" title="Lofts with guide curves" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="workplane.html" class="btn btn-neutral float-right" title="Coming from netgen’s WorkPlane" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+(kicad_pcb
+	(version 20241229)
+	(generator "planex tests")
+	(layers
+		(0 "F.Cu" signal)
+		(2 "B.Cu" signal)
+		(25 "Edge.Cuts" user)
+	)
+	(net 0 "")
+	(net 1 "GND")
+	(net 2 "SIG")
+	(gr_rect
+		(start 0 0)
+		(end 40 20)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "Edge.Cuts")
+	)
+	(segment
+		(start 5 5)
+		(end 15 5)
+		(width 1)
+		(layer "F.Cu")
+		(net 2)
+	)
+	(arc
+		(start 20 10)
+		(mid 25 5)
+		(end 30 10)
+		(width 1)
+		(layer "F.Cu")
+		(net 2)
+	)
+	(via
+		(at 35 15)
+		(size 2)
+		(drill 1)
+		(layers "F.Cu" "B.Cu")
+		(net 1)
+	)
+	(footprint "test:parts"
+		(layer "F.Cu")
+		(at 10 15 90)
+		(pad "1" smd rect
+			(at -2 0 90)
+			(size 2 1)
+			(layers "F.Cu")
+			(net 2 "SIG")
+		)
+		(pad "2" thru_hole circle
+			(at 2 0 90)
+			(size 2 2)
+			(drill 1)
+			(layers "*.Cu" "*.Mask")
+			(net 1 "GND")
+		)
+		(pad "3" smd roundrect
+			(at 0 3 90)
+			(size 3 2)
+			(layers "F.Cu")
+			(roundrect_rratio 0.25)
+		)
+		(pad "4" smd oval
+			(at 0 -3 90)
+			(size 3 1)
+			(layers "F.Cu")
+		)
+	)
+	(zone
+		(net 1)
+		(net_name "GND")
+		(layer "B.Cu")
+		(polygon
+			(pts
+				(xy 2 2) (xy 8 2) (xy 8 8) (xy 2 8)
+			)
+		)
+		(filled_polygon
+			(layer "B.Cu")
+			(pts
+				(xy 2 2) (xy 8 2) (xy 8 8) (xy 2 8) (xy 2 5) (xy 4 5) (xy 4 6) (xy 6 6) (xy 6 4) (xy 4 4) (xy 4 5) (xy 2 5)
+			)
+		)
+	)
+)

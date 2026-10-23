@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+"""The type stub of the compiled module ships with the package and is the one tools/stubgen.py writes from the
+docstrings now."""
+import importlib.util
+from pathlib import Path
+
+import planex
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_the_package_ships_the_stub():
+    package = Path(planex.__file__).parent
+    assert (package / "_planex.pyi").is_file() and (package / "py.typed").is_file()
+
+
+def test_the_stub_is_current():
+    spec = importlib.util.spec_from_file_location("stubgen", ROOT / "tools" / "stubgen.py")
+    stubgen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(stubgen)
+    committed = (ROOT / "src" / "python" / "planex" / "_planex.pyi").read_text()
+    assert stubgen.Stub() == committed, "the stub is stale: run python tools/stubgen.py"

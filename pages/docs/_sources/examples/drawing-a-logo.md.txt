@@ -1,0 +1,178 @@
+---
+jupyter:
+  description: 'The planex2d mark drawn by planex2d from its own SVG: quadratic Bézier curves as exact B-splines of
+    degree 2, a Reuleaux triangle of constant width, and 27 curved triangles that tile it without gaps.'
+---
+
+# Drawing a logo
+
+Can planex2d draw its own logo? The example is planex2d's mark, read from its SVG file: a Reuleaux triangle of width
+`s` = 74, the curve of constant width, split into the three curved faces of a tetrahedron seen from one corner and
+meshed into 27 curved triangles. Each triangle is three quadratic Bézier curves, and the outline is three arcs.
+planex2d draws every Bézier curve exactly as a B-spline of degree 2 and every arc as an arc, and the drawing is
+checked against what it should satisfy: the outline is equally wide in every direction, and the triangles cover it
+without gaps or overlaps. Lengths are in the units of the SVG.
+
+![The planex2d mark, drawn by planex2d from its own SVG](../_static/gallery/drawing-a-logo.png){.result}
+
+```python
+import math
+import re
+import matplotlib.pyplot as plt
+import planex as px
+```
+
+```python nbsphinx="hidden"
+from docs_figures import Row
+```
+
+## The path data
+
+The SVG holds 30 paths. The `d` attribute of each is a list of drawing commands:
+
+- `M x y` moves the pen to (x, y);
+- `Q cx cy x y` draws a quadratic Bézier curve to (x, y), with the control point (cx, cy);
+- `A r r 0 0 0 x y` draws an arc of radius r to (x, y);
+- `Z` closes the path.
+
+The SVG's y axis points down and planex2d's up, so a point (x, y) of the SVG becomes (x, 100 − y). `commands` splits
+the `d` of a path into its commands, and `curves` gives its Bézier curves as (start, control point, end):
+
+```python
+svg = open("../_static/brand/planex2d-mark.svg").read()
+paths = [dict(re.findall(r'([a-z-]+)="([^"]*)"', tag)) for tag in re.findall(r"<path [^>]*>", svg)]
+
+
+def point(x, y):
+    return (x, 100 - y)
+
+
+def commands(d):
+    return [(letter, [float(v) for v in args.split()]) for letter, args in re.findall(r"([MQA])([^MQAZ]*)", d)]
+
+
+def curves(d):
+    pen, out = None, []
+    for letter, values in commands(d):
+        if letter == "M":
+            pen = point(*values)
+        else:
+            out.append((pen, point(*values[:2]), point(*values[2:])))
+            pen = out[-1][2]
+    return out
+
+
+triangle_paths = [p for p in paths if p["fill"] != "none"]
+mesh_lines = next(p for p in paths if p["stroke"] == "#ffffff")
+dividers = next(p for p in paths if p["fill"] == "none" and "Q" in p["d"] and p["stroke"] != "#ffffff")
+rim = next(p for p in paths if "A" in p["d"])
+print(len(triangle_paths), "triangles, the mesh lines, the dividers and the outline")
+print("outline:", rim["d"])
+```
+
+## The outline
+
+The outline is a Reuleaux triangle: three arcs of radius 74, each about the corner opposite to it. `Arc(end, r)` draws
+an arc of radius r from the pen to the end; without `reverse`, it takes the short way between two corners (Figure 1).
+
+```python
+start, *arcs = commands(rim["d"])
+sketch = px.QuickSketch(point(*start[1]))
+for _, values in arcs:
+    sketch.Arc(point(*values[-2:]), values[0])
+outline = sketch.Face()
+s = arcs[0][1][0]
+corners = [point(*values[-2:]) for _, values in arcs]
+```
+
+```python nbsphinx="hide-input"
+Row((outline, "Three arcs of radius 74 about the opposite corners", {"dots": corners}),
+    caption="The outline, a Reuleaux triangle")
+```
+
+**Check:** a Reuleaux triangle is as wide in every direction as its arcs' radius, like a circle, and its area is
+(π − √3)/2 s². Turned in steps of 5° and measured across, the outline is 74 wide to within the 0.1 to which the SVG
+rounds its points. The same rounding makes two of its sides 74.01 long, and its area a little larger than the exact
+one:
+
+```python
+widths = []
+for angle in range(0, 360, 5):
+    (x0, _), (x1, _) = outline.Rotated((50, 50), angle).bounding_box
+    widths.append(x1 - x0)
+print("width from", min(widths), "to", max(widths))
+print("area", outline.mass, "exact", (math.pi - math.sqrt(3)) / 2 * s**2)
+```
+
+## The curved triangles
+
+A quadratic Bézier curve is the B-spline of degree 2 with the curve's three points as poles and the knots 0, 0, 0,
+1, 1, 1, so `px.BSpline` draws it exactly. Each triangle is the face bounded by its three curves, in its color from
+the SVG (Figure 2).
+
+```python
+def bezier(start, control, end):
+    return px.BSpline([start, control, end], [0, 0, 0, 1, 1, 1], degree=2)
+
+
+triangles = [px.Face([bezier(*c) for c in curves(p["d"])]) for p in triangle_paths]
+colors = [p["fill"] for p in triangle_paths]
+```
+
+```python nbsphinx="hide-input"
+Row((px.Compound(triangles), "The 27 curved triangles in the colors of the SVG",
+     {"fills": list(zip(triangles, colors))}),
+    caption="The curved triangles")
+```
+
+**Check:**
+
+- The triangles neither overlap nor leave gaps: their areas add up to the area of their union, which is one face.
+- Glued, they share their edges exactly: 27 faces, 45 edges and 19 vertices. A curved triangle of order 2 carries a
+  node in the middle of each edge, so the mesh has 19 + 45 = 64 nodes, as the brand panel says.
+- The rim of the triangles is made of Bézier curves, not arcs, and it follows the outline closely: the area between
+  the two is less than a thousandth of the mark's.
+
+```python
+union = px.Unify(triangles)
+print("sum of the areas", sum(t.mass for t in triangles), "union", union.mass, "in", len(union.faces), "face")
+glued = px.Glue(triangles)
+print(len(glued.faces), "faces,", len(glued.edges), "edges,", len(glued.vertices), "vertices,",
+      len(glued.vertices) + len(glued.edges), "nodes of order 2")
+print("between the rim and the outline", (outline - union).mass + (union - outline).mass)
+```
+
+## The mark
+
+The mark is drawn in the SVG's own colors and line widths: each triangle filled and edged in its color, the mesh
+lines white at 60 % opacity, and the dividers and the outline in ink, over the SVG's view box of 78 × 78.
+
+```python nbsphinx="hide-input"
+pt = 72 * 4 / 78
+fig = plt.figure(figsize=(4, 4))
+ax = fig.add_axes([0, 0, 1, 1])
+for triangle, color in zip(triangles, colors):
+    triangle.Plot(ax=ax, face_col=color, line_col=color, spline_col=color, legend=False)
+for c in curves(mesh_lines["d"]):
+    ax.plot(*bezier(*c).ToPolyline(0.01).T, color=mesh_lines["stroke"], alpha=float(mesh_lines["stroke-opacity"]),
+            lw=float(mesh_lines["stroke-width"]) * pt)
+for c in curves(dividers["d"]):
+    ax.plot(*bezier(*c).ToPolyline(0.01).T, color=dividers["stroke"], lw=float(dividers["stroke-width"]) * pt,
+            solid_capstyle="round")
+ax.plot(*outline.outer.ToPolyline(0.01).T, color=rim["stroke"], lw=float(rim["stroke-width"]) * pt,
+        solid_joinstyle="round")
+ax.set_xlim(11, 89)
+ax.set_ylim(11.7, 89.7)
+ax.set_aspect("equal")
+ax.axis("off")
+```
+
+See [Splines](../core/basics/splines.md) for B-splines given by their poles and knots, and
+[Booleans](../core/booleans/index.md) for unions and glued faces.
+
+```python nbsphinx="hidden"
+import sys
+sys.path.insert(0, "..")
+from gallery import save_figure
+save_figure(fig, "drawing-a-logo")
+```
