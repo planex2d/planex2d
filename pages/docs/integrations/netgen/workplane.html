@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -659,7 +659,7 @@ planex 6.752776749732570, difference 8.9e-16
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 17.17%; align-items: flex-start; justify-content: center; width: 17.47%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_28c475a2a90a3eb2.svg" alt="One cell, from px.WorkPlane" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="109" height="187"></div></div><figcaption>Figure 1: A re-entrant honeycomb cell drawn with WorkPlane calls</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 17.17%; align-items: flex-start; justify-content: center; width: 17.47%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_7ebfb28d51154265.svg" alt="One cell, from px.WorkPlane" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="109" height="187"></div></div><figcaption>Figure 1: A re-entrant honeycomb cell drawn with WorkPlane calls</figcaption></figure></div>
 </div>
 </section>
 <section id="The-sheet">
@@ -702,7 +702,7 @@ as a hole.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-netgen 4.627 s, area 534.854430306
+netgen 4.952 s, area 534.854430306
 planex 0.005 s, area 534.854430306
 </pre></div></div>
 </div>
@@ -710,7 +710,7 @@ planex 0.005 s, area 534.854430306
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 8.83%; align-items: flex-start; justify-content: center; width: 33.98%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_d45b3451b9f8fe0d.svg" alt="The sheet cut to its window" style="width: 100%" loading="lazy" decoding="async" width="212" height="187"></div></div><figcaption>Figure 2: The sheet cut to its window</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 8.83%; align-items: flex-start; justify-content: center; width: 33.98%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_ad17110accfc1ab5.svg" alt="The sheet cut to its window" style="width: 100%" loading="lazy" decoding="async" width="212" height="187"></div></div><figcaption>Figure 2: The sheet cut to its window</figcaption></figure></div>
 </div>
 <p>The cells only touch, so the sheet holds exactly 126 cells of material, and every pocket between them remains a hole:</p>
 <div class="nbinput docutils container">

@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -661,7 +661,7 @@ free degrees of freedom: 428 plain, 387 periodic
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 5.54%; align-items: flex-start; justify-content: center; width: 54.19%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_c7e76cf375255cb7.svg" alt="The periodic cell, its mesh and the identified points" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="338" height="187"></div></div><figcaption>Figure 1: A unit cell meshed with matching nodes on opposite sides</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 5.54%; align-items: flex-start; justify-content: center; width: 54.19%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_b6252e60e56cd6c6.svg" alt="The periodic cell, its mesh and the identified points" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="338" height="187"></div></div><figcaption>Figure 1: A unit cell meshed with matching nodes on opposite sides</figcaption></figure></div>
 </div>
 <p><strong>Check:</strong> every identified pair is one translation apart, either by the width or by the height of the cell.</p>
 <div class="nbinput docutils container">
@@ -718,7 +718,7 @@ rotation by 45.0 degrees, shift (0.0, 0.0)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.83%; align-items: flex-start; justify-content: center; width: 27.70%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_d0dc82cc545e1fd1.svg" alt="A 45° sector, its mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="173" height="187"></div></div><figcaption>Figure 2: A rotational sector meshed with matching nodes on both sides</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.83%; align-items: flex-start; justify-content: center; width: 27.70%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_64baf8755aa01ffa.svg" alt="A 45° sector, its mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="173" height="187"></div></div><figcaption>Figure 2: A rotational sector meshed with matching nodes on both sides</figcaption></figure></div>
 </div>
 </section>
 <section id="A-more-complicated-side">
@@ -781,7 +781,7 @@ area 6.000000000000001 the tab and the notch cancel: 6
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.10%; align-items: flex-start; justify-content: center; width: 49.17%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_58dc551656ab3dc8.svg" alt="An interlocking tile, its mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="307" height="187"></div></div><figcaption>Figure 3: A tile with a tab and a notch on each side, identified with a transformation found automatically</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.10%; align-items: flex-start; justify-content: center; width: 49.17%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_6e0d70e789e432c7.svg" alt="An interlocking tile, its mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="307" height="187"></div></div><figcaption>Figure 3: A tile with a tab and a notch on each side, identified with a transformation found automatically</figcaption></figure></div>
 </div>
 </section>
 <section id="Thin-layers:-CLOSESURFACES">
@@ -831,7 +831,7 @@ steel 102 triangles
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.70%; align-items: flex-start; justify-content: center; width: 81.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_06148e7fe84c8d3d.svg" alt="The plate with its coating, the mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="505" height="187"></div></div><figcaption>Figure 4: A thin coating meshed with one row of quadrilaterals, the left end enlarged</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.70%; align-items: flex-start; justify-content: center; width: 81.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_ec3b0edbad89b0a6.svg" alt="The plate with its coating, the mesh and the identified points" style="width: 100%" loading="lazy" decoding="async" width="505" height="187"></div></div><figcaption>Figure 4: A thin coating meshed with one row of quadrilaterals, the left end enlarged</figcaption></figure></div>
 </div>
 </section>
 <section id="Options">

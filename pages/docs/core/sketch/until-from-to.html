@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -607,7 +607,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.83%; align-items: flex-start; justify-content: center; width: 78.24%; margin: 4px auto 8px"><div style="width: 43.81%; text-align: center"><img src="fig_39802eca20773070.svg" alt="The sketch, the web dashed" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="234" height="204"><br>(a) The sketch, the web dashed</div><div style="width: 52.36%; text-align: center"><img src="fig_9371e70d7883812f.svg" alt="The gusset plate" style="width: 100%" loading="lazy" decoding="async" width="256" height="187"><br>(b) The gusset plate</div></div><figcaption>Figure 1: A gusset plate whose free edge ends on the web</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.83%; align-items: flex-start; justify-content: center; width: 78.24%; margin: 4px auto 8px"><div style="width: 43.81%; text-align: center"><img src="fig_673ea662f38f7ab6.svg" alt="The sketch, the web dashed" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="234" height="204"><br>(a) The sketch, the web dashed</div><div style="width: 52.36%; text-align: center"><img src="fig_e0b1909f121d1348.svg" alt="The gusset plate" style="width: 100%" loading="lazy" decoding="async" width="256" height="187"><br>(b) The gusset plate</div></div><figcaption>Figure 1: A gusset plate whose free edge ends on the web</figcaption></figure></div>
 </div>
 <p>The area is the triangle between the flange and the free edge, less the snipe:</p>
 <div class="nbinput docutils container">
@@ -667,7 +667,7 @@ area 1228.3735687774779 exact 1228.3735687774774
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 34.16%; text-align: center"><img src="fig_ca1c737612848cad.svg" alt="A rib from the hub to the wall" style="width: 100%" loading="lazy" decoding="async" width="257" height="204"><br>(a) A rib from the hub to the wall</div><div style="width: 62.84%; text-align: center"><img src="fig_055d8d85d34adb95.svg" alt="Rays until the first edge" style="width: 100%" loading="lazy" decoding="async" width="472" height="204"><br>(b) Rays until the first edge</div></div><figcaption>Figure 2: Lines between two targets, and until the first edge</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 34.16%; text-align: center"><img src="fig_95c41568b5f55f53.svg" alt="A rib from the hub to the wall" style="width: 100%" loading="lazy" decoding="async" width="257" height="204"><br>(a) A rib from the hub to the wall</div><div style="width: 62.84%; text-align: center"><img src="fig_7e6045187e7e3416.svg" alt="Rays until the first edge" style="width: 100%" loading="lazy" decoding="async" width="472" height="204"><br>(b) Rays until the first edge</div></div><figcaption>Figure 2: Lines between two targets, and until the first edge</figcaption></figure></div>
 </div>
 <p>The difference between the two shows on a line that crosses a circle twice. A line along x from the origin meets a construction circle of radius 1 around (3, 0) at x = 2 and at x = 4, and the pen ends at the first or the second point:</p>
 <div class="nbinput docutils container">

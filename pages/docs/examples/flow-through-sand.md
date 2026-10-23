@@ -152,3 +152,5 @@ ax.set_ylabel("permeability in mm²")
 ax.legend()
 plt.show()
 ```
+
+![figure](flow-through-sand_files/flow-through-sand_2.png)

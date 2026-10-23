@@ -128,8 +128,8 @@ for name, kind, flags in runs:
 ```
 
 ```text
-QuickSketch: 0.0010 s, area 2300.0000000000005, exact 2300.0
-Sketch, flags: 0.0576 s, area 2300.0000000000005, exact 2300.0
+QuickSketch: 0.0016 s, area 2300.0000000000005, exact 2300.0
+Sketch, flags: 0.0247 s, area 2300.0000000000005, exact 2300.0
 ```
 
 ```python
@@ -172,10 +172,10 @@ for name, way in ways.items():
 ```
 
 ```text
-QuickSketch: 0.235 s, area 314.55195151496093
+QuickSketch: 0.173 s, area 314.55195151496093
 ```
 
 ```text
-Sketch: 0.240 s, area 314.55195151496093
-px.FromPolyline: 0.167 s, area 314.55195151496093
+Sketch: 0.306 s, area 314.55195151496093
+px.FromPolyline: 0.133 s, area 314.55195151496093
 ```

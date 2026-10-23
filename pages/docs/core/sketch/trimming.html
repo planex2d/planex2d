@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -623,7 +623,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.19%; text-align: center"><img src="fig_08968d7251fc2105.svg" alt="Drawn past each other" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="400" height="204"><br>(a) Drawn past each other</div><div style="width: 31.19%; text-align: center"><img src="fig_55ba9019657ebec8.svg" alt="Trimmed" style="width: 100%" loading="lazy" decoding="async" width="400" height="204"><br>(b) Trimmed</div><div style="width: 31.62%; text-align: center"><img src="fig_21eb58727dcd26aa.svg" alt="The keyhole" style="width: 100%" loading="lazy" decoding="async" width="372" height="187"><br>(c) The keyhole</div></div><figcaption>Figure 1: A keyhole slot: drawn past each other, trimmed, and the face</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.19%; text-align: center"><img src="fig_d64e594255a3e8d3.svg" alt="Drawn past each other" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="400" height="204"><br>(a) Drawn past each other</div><div style="width: 31.19%; text-align: center"><img src="fig_cb8b2926fd9fc91b.svg" alt="Trimmed" style="width: 100%" loading="lazy" decoding="async" width="400" height="204"><br>(b) Trimmed</div><div style="width: 31.62%; text-align: center"><img src="fig_5f9516b94d59960f.svg" alt="The keyhole" style="width: 100%" loading="lazy" decoding="async" width="372" height="187"><br>(c) The keyhole</div></div><figcaption>Figure 1: A keyhole slot: drawn past each other, trimmed, and the face</figcaption></figure></div>
 </div>
 <p>The area is that of the disc, the slot and the half disc at its end, minus the part of the slot inside the disc:</p>
 <div class="nbinput docutils container">
@@ -718,7 +718,7 @@ together 30.0 the side was 30
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.64%; align-items: flex-start; justify-content: center; width: 64.69%; margin: 4px auto 8px"><div style="width: 48.99%; text-align: center"><img src="fig_50f6899658e2c9fd.svg" alt="The flange in one sketch, the cut pieces dashed" style="width: 100%" loading="lazy" decoding="async" width="216" height="204"><br>(a) The flange in one sketch, the cut pieces dashed</div><div style="width: 46.37%; text-align: center"><img src="fig_9363f03fa59e1eef.svg" alt="The flange" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The flange</div></div><figcaption>Figure 2: A keyed bore trimmed in one sketch</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.64%; align-items: flex-start; justify-content: center; width: 64.69%; margin: 4px auto 8px"><div style="width: 48.99%; text-align: center"><img src="fig_bc0ec55f0b54c8b5.svg" alt="The flange in one sketch, the cut pieces dashed" style="width: 100%" loading="lazy" decoding="async" width="216" height="204"><br>(a) The flange in one sketch, the cut pieces dashed</div><div style="width: 46.37%; text-align: center"><img src="fig_683730803899b08d.svg" alt="The flange" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The flange</div></div><figcaption>Figure 2: A keyed bore trimmed in one sketch</figcaption></figure></div>
 </div>
 <p>The area is the same as on <a class="reference internal" href="circles-and-rectangles.html"><span class="doc">Circles and rectangles</span></a>:</p>
 <div class="nbinput docutils container">

@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -697,7 +697,7 @@ Sketch(66 elements, 47 constraints, full, 0 degrees of freedom)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 8.25%; align-items: flex-start; justify-content: center; width: 36.36%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_e0613ddea6519c9c.svg" alt="The synthesis sketch, the bracket lines dashed" style="width: 100%" loading="lazy" decoding="async" width="248" height="204"></div></div><figcaption>Figure 1: The hood in three positions and the hinge that carries it</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 8.25%; align-items: flex-start; justify-content: center; width: 36.36%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_22ba99776999058f.svg" alt="The synthesis sketch, the bracket lines dashed" style="width: 100%" loading="lazy" decoding="async" width="248" height="204"></div></div><figcaption>Figure 1: The hood in three positions and the hinge that carries it</figcaption></figure></div>
 </div>
 <p><strong>Check:</strong> the textbook answer is the center of the circle through the three positions of a moving pivot:</p>
 <div class="nbinput docutils container">
@@ -850,6 +850,13 @@ transmission angle between 76.0 and 99.0 degrees
 </pre></div></div>
 </div>
 <p>The hood angle and the transmission angle over the crank’s travel, with the band of good transmission angles shaded:</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_hood-hinge_19_0.webp" type="image/webp"><img alt="../_images/examples_hood-hinge_19_0.png" src="../_images/examples_hood-hinge_19_0.png" loading="lazy" decoding="async" width="920" height="373"></picture>
+</div>
+</div>
 </section>
 <section id="The-hood-and-the-windshield">
 <h2>The hood and the windshield<a class="headerlink" href="#The-hood-and-the-windshield" title="Link to this heading"></a></h2>
@@ -885,13 +892,20 @@ smallest gap between hood and windshield 26.1 mm, at a hood angle of 48.0 degree
 </pre></div></div>
 </div>
 <p>The hood in its three positions and on the way, and the hinge close up:</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_hood-hinge_23_0.webp" type="image/webp"><img alt="../_images/examples_hood-hinge_23_0.png" src="../_images/examples_hood-hinge_23_0.png" loading="lazy" decoding="async" width="1153" height="475"></picture>
+</div>
+</div>
 <p>The hood opening and closing:</p>
 <div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_4a84a2f77691920e.webm" type="video/webm"><source src="anim_4a84a2f77691920e.mp4" type="video/mp4"></video></div>
+<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_502a3e1d1dddcc16.webm" type="video/webm"><source src="anim_502a3e1d1dddcc16.mp4" type="video/mp4"></video></div>
 </div>
 </section>
 </section>

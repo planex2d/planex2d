@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -610,7 +610,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.15%; align-items: flex-start; justify-content: center; width: 95.31%; margin: 4px auto 8px"><div style="width: 48.43%; text-align: center"><img src="fig_5b885fa48de462e1.svg" alt="The right half" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="288" height="187"><br>(a) The right half</div><div style="width: 48.43%; text-align: center"><img src="fig_82bbdf6ba0947d79.svg" alt="Mirrored and united" style="width: 100%" loading="lazy" decoding="async" width="288" height="187"><br>(b) Mirrored and united</div></div><figcaption>Figure 1: A T-slot nut from its right half</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.15%; align-items: flex-start; justify-content: center; width: 95.31%; margin: 4px auto 8px"><div style="width: 48.43%; text-align: center"><img src="fig_8f724a5465aeffa2.svg" alt="The right half" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="288" height="187"><br>(a) The right half</div><div style="width: 48.43%; text-align: center"><img src="fig_846be7e47161e2f0.svg" alt="Mirrored and united" style="width: 100%" loading="lazy" decoding="async" width="288" height="187"><br>(b) Mirrored and united</div></div><figcaption>Figure 1: A T-slot nut from its right half</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -650,7 +650,7 @@ area 132.0 exact 132
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_fc6549429a2f3a10.svg" alt="One hole, 24 copies" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) One hole, 24 copies</div><div style="width: 47.62%; text-align: center"><img src="fig_ba12ee3e974da054.svg" alt="The brake disc" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The brake disc</div></div><figcaption>Figure 2: A perforated brake disc from one hole</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_3e39c5ae5257b4bc.svg" alt="One hole, 24 copies" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) One hole, 24 copies</div><div style="width: 47.62%; text-align: center"><img src="fig_e9446e9b47aebfe6.svg" alt="The brake disc" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The brake disc</div></div><figcaption>Figure 2: A perforated brake disc from one hole</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -693,7 +693,7 @@ area ratio 0.25
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_61b5a1d93e8102ba.svg" alt="Scaled by 0.5" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 3: Scaled by 0.5</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_84467381e611232a.svg" alt="Scaled by 0.5" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 3: Scaled by 0.5</figcaption></figure></div>
 </div>
 </section>
 <section id="In-place">
@@ -720,7 +720,7 @@ area ratio 0.25
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 8.38%; align-items: flex-start; justify-content: center; width: 35.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_40e303bfae6961db.svg" alt="The nut turned by 90° and moved 20 along x, the origin dashed" style="width: 100%" loading="lazy" decoding="async" width="223" height="187"></div></div><figcaption>Figure 4: The nut turned by 90° and moved 20 along x, the origin dashed</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 8.38%; align-items: flex-start; justify-content: center; width: 35.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_369daff82bec3ca0.svg" alt="The nut turned by 90° and moved 20 along x, the origin dashed" style="width: 100%" loading="lazy" decoding="async" width="223" height="187"></div></div><figcaption>Figure 4: The nut turned by 90° and moved 20 along x, the origin dashed</figcaption></figure></div>
 </div>
 </section>
 <section id="In-3D">
@@ -750,7 +750,7 @@ mirrored: normal (0.0, 0.0, -1.0)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.54%; align-items: flex-start; justify-content: center; width: 28.47%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_d9fb785237627185.svg" alt="The nut in the xy plane and turned by 90° about the x axis" style="width: 100%" loading="lazy" decoding="async" width="178" height="187"></div></div><figcaption>Figure 5: The nut in the xy plane and turned by 90° about the x axis</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.54%; align-items: flex-start; justify-content: center; width: 28.47%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_6d10973eeaab7574.svg" alt="The nut in the xy plane and turned by 90° about the x axis" style="width: 100%" loading="lazy" decoding="async" width="178" height="187"></div></div><figcaption>Figure 5: The nut in the xy plane and turned by 90° about the x axis</figcaption></figure></div>
 </div>
 </section>
 </section>

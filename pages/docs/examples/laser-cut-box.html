@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -646,7 +646,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 29.62%; text-align: center"><img src="fig_43a9b49b03ee8cdd.svg" alt="The bottom" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(a) The bottom</div><div style="width: 37.59%; text-align: center"><img src="fig_e82eb461dec7c369.svg" alt="Front and back" style="width: 100%" loading="lazy" decoding="async" width="338" height="187"><br>(b) Front and back</div><div style="width: 26.79%; text-align: center"><img src="fig_c506c98b35a6f519.svg" alt="The sides" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(c) The sides</div></div><figcaption>Figure 1: The three kinds of parts</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 29.62%; text-align: center"><img src="fig_4f554cfbb4574050.svg" alt="The bottom" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(a) The bottom</div><div style="width: 37.59%; text-align: center"><img src="fig_147dcfdbbd15de6a.svg" alt="Front and back" style="width: 100%" loading="lazy" decoding="async" width="338" height="187"><br>(b) Front and back</div><div style="width: 26.79%; text-align: center"><img src="fig_01e79b7749276489.svg" alt="The sides" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(c) The sides</div></div><figcaption>Figure 1: The three kinds of parts</figcaption></figure></div>
 </div>
 </section>
 <section id="Do-the-joints-close?">
@@ -781,7 +781,7 @@ cut path 1919 mm, 1.6 min at 20 mm/s
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_4b1827206c4fe7f8.svg" alt="The five parts on the sheet" style="width: 100%" loading="lazy" decoding="async" width="782" height="187"></div></div><figcaption>Figure 2: The cut paths for the laser</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_88ec586184020c4b.svg" alt="The five parts on the sheet" style="width: 100%" loading="lazy" decoding="async" width="782" height="187"></div></div><figcaption>Figure 2: The cut paths for the laser</figcaption></figure></div>
 </div>
 <p>The sheet for the laser: <a class="reference external" href="box.dxf">box.dxf</a></p>
 </section>

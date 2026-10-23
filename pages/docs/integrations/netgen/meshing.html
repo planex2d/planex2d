@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -607,11 +607,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu1_img' src='webgpu_babca97b116239dc.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="eager" fetchpriority="high" decoding="async" width="1000" height="600" />
+<img id='webgpu1_img' src='webgpu_3960c0908929b00e.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="eager" fetchpriority="high" decoding="async" width="1000" height="600" />
 <div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_babca97b116239dc) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_babca97b116239dc); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_babca97b116239dc.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_3960c0908929b00e) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_3960c0908929b00e); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_3960c0908929b00e.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -656,11 +656,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu2_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu2_img' src='webgpu_6231c5cddc9a3f67.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu2_img' src='webgpu_9a160c3ebd284d85.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu2_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu2_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_6231c5cddc9a3f67) { r.__activated = false; return; } document.getElementById('webgpu2_img').style.display = 'none'; document.getElementById('webgpu2_overlay').style.display = 'none'; document.getElementById('webgpu2_canvas').style.display = 'block'; RenderEngine.create('webgpu2_canvas', window.__webgpu_blob_6231c5cddc9a3f67); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_6231c5cddc9a3f67.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu2_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_9a160c3ebd284d85) { r.__activated = false; return; } document.getElementById('webgpu2_img').style.display = 'none'; document.getElementById('webgpu2_overlay').style.display = 'none'; document.getElementById('webgpu2_canvas').style.display = 'block'; RenderEngine.create('webgpu2_canvas', window.__webgpu_blob_9a160c3ebd284d85); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_9a160c3ebd284d85.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu2_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu2_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -688,11 +688,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu3_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu3_img' src='webgpu_4545c0b592b8646d.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu3_img' src='webgpu_cacba8919ccb0d14.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu3_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu3_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_4545c0b592b8646d) { r.__activated = false; return; } document.getElementById('webgpu3_img').style.display = 'none'; document.getElementById('webgpu3_overlay').style.display = 'none'; document.getElementById('webgpu3_canvas').style.display = 'block'; RenderEngine.create('webgpu3_canvas', window.__webgpu_blob_4545c0b592b8646d); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_4545c0b592b8646d.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu3_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_cacba8919ccb0d14) { r.__activated = false; return; } document.getElementById('webgpu3_img').style.display = 'none'; document.getElementById('webgpu3_overlay').style.display = 'none'; document.getElementById('webgpu3_canvas').style.display = 'block'; RenderEngine.create('webgpu3_canvas', window.__webgpu_blob_cacba8919ccb0d14); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_cacba8919ccb0d14.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu3_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu3_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -753,11 +753,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu4_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu4_img' src='webgpu_cfa49a5eac796de3.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu4_img' src='webgpu_3c12e3aa26d32bd3.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu4_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu4_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_cfa49a5eac796de3) { r.__activated = false; return; } document.getElementById('webgpu4_img').style.display = 'none'; document.getElementById('webgpu4_overlay').style.display = 'none'; document.getElementById('webgpu4_canvas').style.display = 'block'; RenderEngine.create('webgpu4_canvas', window.__webgpu_blob_cfa49a5eac796de3); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_cfa49a5eac796de3.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu4_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_3c12e3aa26d32bd3) { r.__activated = false; return; } document.getElementById('webgpu4_img').style.display = 'none'; document.getElementById('webgpu4_overlay').style.display = 'none'; document.getElementById('webgpu4_canvas').style.display = 'block'; RenderEngine.create('webgpu4_canvas', window.__webgpu_blob_3c12e3aa26d32bd3); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_3c12e3aa26d32bd3.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu4_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu4_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -766,7 +766,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.43%; align-items: flex-start; justify-content: center; width: 46.67%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_fc691d51a1b53a07.svg" alt="Air and iron glued: the core&#x27;s outline is shared" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"></div></div><figcaption>Figure 1: Air and iron glued: the core&#x27;s outline is shared</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.43%; align-items: flex-start; justify-content: center; width: 46.67%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_16b26b91a9902925.svg" alt="Air and iron glued: the core&#x27;s outline is shared" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"></div></div><figcaption>Figure 1: Air and iron glued: the core&#x27;s outline is shared</figcaption></figure></div>
 </div>
 </section>
 <section id="Refining-towards-a-corner">
@@ -804,11 +804,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu5_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu5_img' src='webgpu_c8e1f9df38fbb7e7.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu5_img' src='webgpu_7d303a8a642bd454.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu5_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu5_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_c8e1f9df38fbb7e7) { r.__activated = false; return; } document.getElementById('webgpu5_img').style.display = 'none'; document.getElementById('webgpu5_overlay').style.display = 'none'; document.getElementById('webgpu5_canvas').style.display = 'block'; RenderEngine.create('webgpu5_canvas', window.__webgpu_blob_c8e1f9df38fbb7e7); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_c8e1f9df38fbb7e7.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu5_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_7d303a8a642bd454) { r.__activated = false; return; } document.getElementById('webgpu5_img').style.display = 'none'; document.getElementById('webgpu5_overlay').style.display = 'none'; document.getElementById('webgpu5_canvas').style.display = 'block'; RenderEngine.create('webgpu5_canvas', window.__webgpu_blob_7d303a8a642bd454); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_7d303a8a642bd454.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu5_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu5_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -817,7 +817,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.02%; align-items: flex-start; justify-content: center; width: 42.71%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_65c06c6a1ad8c018.svg" alt="The bracket, its corner named and refined" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"></div></div><figcaption>Figure 2: The bracket, its corner named and refined</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.02%; align-items: flex-start; justify-content: center; width: 42.71%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_a28c52c0679e5eb7.svg" alt="The bracket, its corner named and refined" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"></div></div><figcaption>Figure 2: The bracket, its corner named and refined</figcaption></figure></div>
 </div>
 </section>
 <section id="Export-options">

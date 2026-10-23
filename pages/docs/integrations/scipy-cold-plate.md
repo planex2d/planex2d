@@ -1,13 +1,3 @@
----
-jupyter:
-  description: 'A cold plate in 3D: a constraint sketch as the path of a cooling pipe,
-    swept with OpenCASCADE and glued into the plate, oil flow and heat solved with
-    NGSolve, and SciPy''s COBYLA moving four spline points to cool the plate at a
-    limited pressure drop.'
-  nbsphinx:
-    timeout: 2400
----
-
 # A 3D cold plate
 
 planex2d sketches lie on planes in 3D. Here, a constraint sketch on a plane is the path of a cooling pipe.
@@ -29,10 +19,6 @@ import ngsolve as ngs
 import numpy as np
 import planex as px
 from scipy.optimize import minimize
-```
-
-```python nbsphinx="hidden"
-from docs_figures import FACE, MAP, Chart, Row, Views
 ```
 
 ## The path
@@ -80,7 +66,7 @@ pipe swings out to the right in the front half of the plate and to the left in t
 sketch as drawn by planex2d, with a sign for each constraint, and the path on the plate, with the heated area dashed
 and the four design points as dots.
 
-```python nbsphinx="hide-input"
+```python
 plate = px.QuickSketch().Rectangle(WP, W).Face()
 heated = px.QuickSketch((side, 0)).Rectangle(W, W).Wire()
 Row((path, "The path sketch and its constraints", {"constraints": True}),
@@ -88,6 +74,10 @@ Row((path, "The path sketch and its constraints", {"constraints": True}),
      {"fill": False, "fills": [(plate, FACE)], "dashed": [heated], "names": False,
       "dots": initial}),
     caption="The path of the start")
+```
+
+```text
+<IPython.core.display.HTML object>
 ```
 
 ## The pipe and the plate
@@ -154,11 +144,15 @@ names = sorted({f.name for f in glued.faces})
 print(len(glued.solids), "solids, face names", names)
 ```
 
+```text
+2 solids, face names ['bore', 'bottom', 'inlet', 'outlet', 'outside']
+```
+
 Figure 2 shows the path and the profile at its start, and the cold plate seen from the same side. Figure 3 is a thin
 slice of metal and oil across the pipe at y = −20, seen from the front, with the pipe sunk 1 into the plate, the
 chamfers on either side of it, and the oil inside.
 
-```python nbsphinx="hide-input"
+```python
 plate_top = occ.Box(occ.Pnt(-WP / 2, -W / 2, -wall), occ.Pnt(WP / 2, W / 2, 0)).faces.Max(occ.Z)
 Views(("The path and the profile at its start",
        [(plate_top, "soft"), (path.ToOCCWire(), "accent"), (outer, "ink"), (inner, "ink")]),
@@ -172,6 +166,14 @@ thin = occ.Box(occ.Pnt(u - 14, -20.01, -10), occ.Pnt(u + 14, -19.99, 20))
 Views(("A slice at y = −20 through the pipe, seen from the front",
        [(metal * thin, "shade"), (metal * thin, "ink"), (coolant * thin, "accent")]),
       angles=(-90, 0, 0), key={"ink": "metal", "accent": "oil"})
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
 ```
 
 ## Rules before solving
@@ -217,6 +219,11 @@ print("tightest bend", round(r["bend"], 1), "passes", round(r["clearance"], 1), 
 print("margin", round(r["margin"], 1), "length", round(r["length"], 1))
 ```
 
+```text
+tightest bend 8.6 passes 31.4 apart
+margin 5.4 length 161.6
+```
+
 ## The mesh
 
 `Mesh` has netgen use the names. The bore gets elements of 1, so that the thin layer of oil along the wall, where the
@@ -234,6 +241,11 @@ def Mesh(glued):
 mesh = Mesh(ColdPlate(path)[0])
 print(mesh.ne, "tetrahedra in", mesh.GetMaterials())
 print("boundaries", sorted(set(mesh.GetBoundaries())))
+```
+
+```text
+34638 tetrahedra in ('metal', 'coolant')
+boundaries ['bore', 'bottom', 'inlet', 'outlet', 'outside']
 ```
 
 ## Flow and heat
@@ -271,63 +283,19 @@ bottom, its mean temperature, a p-norm of it (p = 20: close to the hottest point
 follow it) and the share of the 50 W that the oil carries out. `poiseuille` is the pressure drop of a straight pipe
 of the given length.
 
-```python nbsphinx="hidden"
-import os
-import time
-
-
-def Solve(mesh, keep=False):
-    X = ngs.VectorH1(mesh, order=2, definedon="coolant", dirichlet="bore") * ngs.H1(mesh, order=1, definedon="coolant")
-    (u, p), (v, q) = X.TnT()
-    stokes = ngs.BilinearForm(X, symmetric=True)
-    stokes += (mu * ngs.InnerProduct(ngs.grad(u), ngs.grad(v)) + 1e-6 * mu * u * v
-               - ngs.div(u) * q - ngs.div(v) * p) * ngs.dx("coolant")
-    stokes.Assemble()
-    n = ngs.specialcf.normal(3)
-    push = ngs.LinearForm(-(v * n) * ngs.ds("inlet")).Assemble()
-    up = ngs.GridFunction(X)
-    up.vec.data = stokes.mat.Inverse(X.FreeDofs(), inverse="pardiso") * push.vec
-    scale = Q / ngs.Integrate(up.components[0] * n * ngs.ds("outlet"), mesh)
-    U = up.components[0] * scale
-    k = mesh.MaterialCF({"metal": k_metal, "coolant": k_oil})
-    fes = ngs.H1(mesh, order=3)
-    T, w = fes.TnT()
-    tau = mesh.MaterialCF({"coolant": 1.0}, default=0.0) * ngs.specialcf.mesh_size / (2 * 3 * ngs.Norm(U) + 1e-9)
-    a = ngs.BilinearForm(fes)
-    a += k * ngs.grad(T) * ngs.grad(w) * ngs.dx
-    a += -rho * cp * T * (U * ngs.grad(w)) * ngs.dx("coolant")
-    a += rho * cp * (U * n) * T * w * ngs.ds("outlet")
-    a += rho * cp * tau * (U * ngs.grad(T)) * (U * ngs.grad(w)) * ngs.dx("coolant")
-    a.Assemble()
-    f = ngs.LinearForm(fes)
-    heated = ngs.IfPos(W / 2 - ngs.sqrt(ngs.x ** 2), 1.0, 0.0)
-    f += P / (W * W) * heated * w * ngs.ds("bottom")
-    f += -rho * cp * (U * n) * T_in * w * ngs.ds("inlet")
-    f.Assemble()
-    gf = ngs.GridFunction(fes)
-    gf.vec.data = a.mat.Inverse(inverse="pardiso") * f.vec
-    hottest = max(gf(mesh(*v.point)) for v in mesh.vertices
-                  if abs(v.point[2] + wall) < 1e-6 and abs(v.point[0]) <= W / 2)
-    pnorm = (ngs.Integrate(heated * gf ** 20 * ngs.ds("bottom"), mesh) / (W * W)) ** (1 / 20)
-    carried = rho * cp * ngs.Integrate((U * n) * (gf - T_in) * ngs.ds("outlet"), mesh)
-    mean = ngs.Integrate(heated * gf * ngs.ds("bottom"), mesh) / (W * W)
-    out = {"dp": scale, "pnorm": pnorm, "max": hottest, "mean": mean, "balance": carried / P, "tets": mesh.ne}
-    progress = os.environ.get("PLANEX_DOCS_PROGRESS")
-    if progress:
-        Solve.count = getattr(Solve, "count", 0) + 1
-        with open(progress, "a") as log:
-            log.write(f"{time.strftime('%H:%M:%S')} solve {Solve.count} p-norm {pnorm:.2f} dp {scale:.3f}\n")
-    if keep:
-        out.update({"mesh": mesh, "U": U, "p": up.components[1] * scale, "T": gf})
-    return out
-```
-
 ```python
 start = Solve(mesh)
 print("hottest", round(start["max"], 1), "°C, p-norm", round(start["pnorm"], 1), "°C")
 print("mean", round(start["mean"], 1), "°C, pressure drop", round(start["dp"], 3), "kPa")
 print("Poiseuille for a straight pipe as long", round(poiseuille(r["length"]), 3), "kPa")
 print("the oil carries out", round(100 * start["balance"], 1), "% of the heat")
+```
+
+```text
+hottest 109.1 °C, p-norm 103.1 °C
+mean 101.3 °C, pressure drop 0.471 kPa
+Poiseuille for a straight pipe as long 0.471 kPa
+the oil carries out 100.0 % of the heat
 ```
 
 **Checks:**
@@ -443,13 +411,21 @@ print("best: hottest", round(best["max"], 2), "°C")
 print("best: pressure drop", round(best["dp"], 3), "kPa, points", np.round(best["x"], 1).tolist())
 ```
 
+```text
+Return from COBYLA because the trust region radius reaches its lower bound. 60 layouts, 52 solved
+start: p-norm 103.06 °C, hottest 109.06 °C
+best: solve 47 p-norm 80.6 °C
+best: hottest 85.63 °C
+best: pressure drop 0.738 kPa, points [118.8, 21.4, 121.8, 63.3, 53.9, 62.9, 49.5, 107.7]
+```
+
 ## The result
 
 Figure 4 counts every real solve; layouts that broke a rule cost no solve and are not included. Seen from above,
 Figure 5 shows the start, the path of the best layout after every five solves, and the best one. The pipe bends
 out to both sides, so that its passes reach more of the heated area.
 
-```python nbsphinx="hide-input"
+```python
 over = [e for e in solved if e["dp"] > dp_max * 1.001]
 line = np.minimum.accumulate([e["pnorm"] if e["dp"] <= dp_max * 1.001 else math.inf for e in solved]).tolist()
 Chart("Real 3D solves", "plate bottom, p-norm 20 of the temperature [°C]",
@@ -474,11 +450,19 @@ Views((f"The best layout after every 5 solves, and the best: solve {best['solve'
            "soft": "heated area"})
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
 Figure 6 shows the underside of the plate from below, for the start and the best layout on one color scale,
 and for the best layout again on a scale of its own, which shows where it is still warmest. The lines are the pipe's
 outline and the feet of the chamfers.
 
-```python nbsphinx="hide-input"
+```python
 shown = {}
 for name, e in (("start", trail[0]), ("best", best)):
     p = Path(pairs(e["x"]))
@@ -520,11 +504,15 @@ panels.append((plate2d, "Best, on its own scale",
 Row(*panels, caption="The temperature of the plate's underside")
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
 Figure 7 shows the pressure in the mid-plane of the pipe for the start and the best layout on one color
 scale. The cut is a planex2d face where the plane meets the coolant (`px.Intersect3d`). The best layout spends more
 pressure on a longer pipe. Figure 8 shows the two cold plates in 3D.
 
-```python nbsphinx="hide-input"
+```python
 def pressure(result):
     def field(face, plot=True, **_):
         (u0, v0), (u1, v1) = face.bounding_box
@@ -548,6 +536,14 @@ Views(*((f"{name} in 3D", [(solid, "shade"), (solid, "ink")]) for name, solid in
       caption="The two cold plates")
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
 The best layout as a solid, to turn and zoom:
 
 ```python
@@ -557,6 +553,10 @@ glued, metal, coolant = ColdPlate(Path(pairs(best["x"])))
 metal.faces.col = (0.867, 0.902, 0.941)
 coolant.faces.col = (0.353, 0.663, 0.812)
 Draw(glued, euler_angles=[-60, 0, 30])
+```
+
+```text
+<IPython.core.display.HTML object>
 ```
 
 See the [SciPy page](scipy.md) for the same pattern in 2D, with planex2d measurements as the objective.

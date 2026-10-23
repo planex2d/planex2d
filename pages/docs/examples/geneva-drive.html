@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -653,7 +653,7 @@ center distance 42.42640687119285 wheel radius 30.265491900843116 pin in a slot 
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_d5b15a63cf5f3389.svg" alt="The wheel" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 1: The Geneva wheel with four slots</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_f5bb25118f78d913.svg" alt="The wheel" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 1: The Geneva wheel with four slots</figcaption></figure></div>
 </div>
 </section>
 <section id="The-driver">
@@ -687,7 +687,7 @@ The driver has a bore of 12 too, and its arm is 8 wide (Figure 2).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.29%; align-items: flex-start; justify-content: center; width: 47.71%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_8a2631c164d780e5.svg" alt="The wheel, the driver&#x27;s arm, locking disc and pin" style="width: 100%" loading="lazy" decoding="async" width="298" height="187"></div></div><figcaption>Figure 2: The Geneva drive in the position of the drawing</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.29%; align-items: flex-start; justify-content: center; width: 47.71%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_5ee3e5f97c938a81.svg" alt="The wheel, the driver&#x27;s arm, locking disc and pin" style="width: 100%" loading="lazy" decoding="async" width="298" height="187"></div></div><figcaption>Figure 2: The Geneva drive in the position of the drawing</figcaption></figure></div>
 </div>
 </section>
 <section id="Motion">
@@ -697,7 +697,7 @@ The driver has a bore of 12 too, and its arm is 8 wide (Figure 2).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_d758ef8b690f8282.svg" alt="wheel angle [°] over driver angle [°]: wheel -180 -0, -150 -0, -120 -0, -90 -0, -60 -0, -30 -2.63, 0 -45, 30 -87.4, 60 -90, 90 -90, 120 -90, 150 -90" style="width: 100%" loading="lazy" decoding="async" width="328" height="168"></div><figcaption>Figure 3: A quarter turn of the wheel per turn of the driver</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_6da35d01d10bff54.svg" alt="wheel angle [°] over driver angle [°]: wheel -180 -0, -150 -0, -120 -0, -90 -0, -60 -0, -30 -2.63, 0 -45, 30 -87.4, 60 -90, 90 -90, 120 -90, 150 -90" style="width: 100%" loading="lazy" decoding="async" width="328" height="168"></div><figcaption>Figure 3: A quarter turn of the wheel per turn of the driver</figcaption></figure></div>
 </div>
 <p><strong>Checks</strong> over a full turn of the driver, in steps of half a degree:</p>
 <ul class="simple">
@@ -744,7 +744,7 @@ largest overlap 0.0 closest approach 0.1 clearance 0.1
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_8ea0753d81ec24b8.webm" type="video/webm"><source src="anim_8ea0753d81ec24b8.mp4" type="video/mp4"></video></div>
+<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_b87e5a5d2ba7b5ef.webm" type="video/webm"><source src="anim_b87e5a5d2ba7b5ef.mp4" type="video/mp4"></video></div>
 </div>
 </section>
 </section>

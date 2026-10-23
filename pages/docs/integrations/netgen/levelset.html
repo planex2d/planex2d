@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -610,11 +610,11 @@
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu1_img' src='webgpu_761ddc8c1c16c7d7.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="eager" fetchpriority="high" decoding="async" width="1000" height="600" />
+<img id='webgpu1_img' src='webgpu_936759fd031a8e3e.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="eager" fetchpriority="high" decoding="async" width="1000" height="600" />
 <div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_761ddc8c1c16c7d7) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_761ddc8c1c16c7d7); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_761ddc8c1c16c7d7.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_936759fd031a8e3e) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_936759fd031a8e3e); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_936759fd031a8e3e.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -647,7 +647,7 @@ area 0.39697922243380124 fitted 0.3971013735559931 4 faces
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_3a56fbca59f7c40c.svg" alt="Sampled: 881 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) Sampled: 881 edges</div><div style="width: 47.62%; text-align: center"><img src="fig_0badc0a7a20a5a6d.svg" alt="Fitted: 37 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Fitted: 37 edges</div></div><figcaption>Figure 1: One cell of the lattice, from the level set</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_3b0f3f3a37461889.svg" alt="Sampled: 881 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) Sampled: 881 edges</div><div style="width: 47.62%; text-align: center"><img src="fig_ac671c3b090dcc73.svg" alt="Fitted: 37 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Fitted: 37 edges</div></div><figcaption>Figure 1: One cell of the lattice, from the level set</figcaption></figure></div>
 </div>
 </section>
 <section id="The-lattice">
@@ -793,11 +793,11 @@ bottom 3.5999999999999996 exact 3.6
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu3_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu3_img' src='webgpu_ecb673e8ea521601.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu3_img' src='webgpu_efdc9f3f100ea76b.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu3_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu3_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_ecb673e8ea521601) { r.__activated = false; return; } document.getElementById('webgpu3_img').style.display = 'none'; document.getElementById('webgpu3_overlay').style.display = 'none'; document.getElementById('webgpu3_canvas').style.display = 'block'; RenderEngine.create('webgpu3_canvas', window.__webgpu_blob_ecb673e8ea521601); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_ecb673e8ea521601.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu3_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_efdc9f3f100ea76b) { r.__activated = false; return; } document.getElementById('webgpu3_img').style.display = 'none'; document.getElementById('webgpu3_overlay').style.display = 'none'; document.getElementById('webgpu3_canvas').style.display = 'block'; RenderEngine.create('webgpu3_canvas', window.__webgpu_blob_efdc9f3f100ea76b); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_efdc9f3f100ea76b.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu3_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu3_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -835,11 +835,11 @@ bottom 3.5999999999999996 exact 3.6
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu4_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu4_img' src='webgpu_76940b196936df44.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu4_img' src='webgpu_5096a3502ab3712d.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu4_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu4_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_76940b196936df44) { r.__activated = false; return; } document.getElementById('webgpu4_img').style.display = 'none'; document.getElementById('webgpu4_overlay').style.display = 'none'; document.getElementById('webgpu4_canvas').style.display = 'block'; RenderEngine.create('webgpu4_canvas', window.__webgpu_blob_76940b196936df44); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_76940b196936df44.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu4_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_5096a3502ab3712d) { r.__activated = false; return; } document.getElementById('webgpu4_img').style.display = 'none'; document.getElementById('webgpu4_overlay').style.display = 'none'; document.getElementById('webgpu4_canvas').style.display = 'block'; RenderEngine.create('webgpu4_canvas', window.__webgpu_blob_5096a3502ab3712d); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_5096a3502ab3712d.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu4_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu4_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>

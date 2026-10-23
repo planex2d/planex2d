@@ -1,14 +1,15 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Tests every push to any branch and every pull request: compiles planex2d from the checkout as the installation page
-# describes, with NGSolve and the optional packages, and runs the whole test suite. The type stub is tested as it is
-# committed (tests/test_stubs.py fails when it is out of date: python tools/stubgen.py writes it). Nothing is
-# published here; releases go through publish.yml. A newer push to the same branch cancels the run still going.
+# Tests every pull request, once per push to it: compiles planex2d as the installation page describes, with NGSolve and
+# the optional packages, and runs the whole test suite on the pull request merged into its target. Only pull requests:
+# main is protected, so every change reaches it through one, and a push to main would only repeat the test. The type
+# stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python tools/stubgen.py writes
+# it). Nothing is published here; releases go through publish.yml. A newer push to the same pull request cancels the
+# run still going.
 name: ci
 
 on:
-  push:
   pull_request:
 
 permissions:

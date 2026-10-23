@@ -111,8 +111,7 @@ full 50.0
 
 ```text
 stderr:
-/tmp/ipykernel_834917/2222836129.py:2: PlanexWarning: diagonal ("bottom.start", "top.start", px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
-  sk.Update()
+PlanexWarning: diagonal ("bottom.start", "top.start", px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
 ```
 
 ## Strict mode

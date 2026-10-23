@@ -269,7 +269,7 @@ print(solves, "positions in", round(time.perf_counter() - start, 1), "s")
 ```
 
 ```text
-6615 positions in 2.6 s
+6615 positions in 2.7 s
 ```
 
 ```python

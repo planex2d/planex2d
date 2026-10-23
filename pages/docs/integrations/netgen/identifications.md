@@ -151,7 +151,11 @@ print(len(left), "edges on each side, shift", tuple(round(x, 12) for x in found.
 ```
 
 ```text
-6 edges on each side, shift (3.0, 0.0)
+6
+```
+
+```text
+ edges on each side, shift (3.0, 0.0)
 ```
 
 ```python

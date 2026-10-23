@@ -89,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -628,11 +629,11 @@
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 planex2d   0.0024 s, area 612.803230, 640 edges
-OCC        9.5292 s, area 612.803230, 640 edges
-shapely    1.0983 s, area 612.803194, relative to planex2d -6e-08
-pyclipper  1.6787 s, area 612.803194, relative to planex2d -6e-08
-gdstk      1.4541 s, area 612.803194, relative to planex2d -6e-08
-manifold3d 1.2514 s, area 612.803194, relative to planex2d -6e-08
+OCC        9.5818 s, area 612.803230, 640 edges
+shapely    1.0984 s, area 612.803194, relative to planex2d -6e-08
+pyclipper  1.6875 s, area 612.803194, relative to planex2d -6e-08
+gdstk      1.4643 s, area 612.803194, relative to planex2d -6e-08
+manifold3d 1.2785 s, area 612.803194, relative to planex2d -6e-08
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -645,7 +646,7 @@ manifold3d 1.2514 s, area 612.803194, relative to planex2d -6e-08
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_925835ed9899cc2a.svg" alt="planex 2.4 ms, shapely (GEOS)* 1.1 s, fastest of pyclipper, gdstk, manifold3d* 1.3 s, OpenCASCADE 9.5 s" style="width: 100%" loading="lazy" decoding="async" width="267" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 500 discs</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_dcf947315e22b981.svg" alt="planex 2.4 ms, shapely (GEOS)* 1.1 s, fastest of pyclipper, gdstk, manifold3d* 1.3 s, OpenCASCADE 9.6 s" style="width: 100%" loading="lazy" decoding="async" width="267" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 500 discs</figcaption></figure></div>
 </div>
 </section>
 

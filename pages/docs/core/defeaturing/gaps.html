@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -611,7 +611,7 @@ False [(0, False), (3, True)]
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.35%; align-items: flex-start; justify-content: center; width: 69.00%; margin: 4px auto 8px"><div style="width: 43.48%; text-align: center"><img src="fig_20fb683bb7809512.svg" alt="The wire" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) The wire</div><div style="width: 52.17%; text-align: center"><img src="fig_b3866c2e25242ac6.svg" alt="Magnified at (1, 0)" style="width: 100%" loading="lazy" decoding="async" width="225" height="187"><br>(b) Magnified at (1, 0)</div></div><figcaption>Figure 1: A square whose ends miss by 10⁻⁴</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.35%; align-items: flex-start; justify-content: center; width: 69.00%; margin: 4px auto 8px"><div style="width: 43.48%; text-align: center"><img src="fig_330b258466a9670a.svg" alt="The wire" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) The wire</div><div style="width: 52.17%; text-align: center"><img src="fig_ba56531310a51a41.svg" alt="Magnified at (1, 0)" style="width: 100%" loading="lazy" decoding="async" width="225" height="187"><br>(b) Magnified at (1, 0)</div></div><figcaption>Figure 1: A square whose ends miss by 10⁻⁴</figcaption></figure></div>
 </div>
 <p>Closed with a tolerance of 10⁻³, the two ends meet in one vertex, marked in the same magnified view, and the wire bounds a face (Figure 2). The ends meet halfway, at (1, 5·10⁻⁵), so the area is 1 − 5·10⁻⁵.</p>
 <div class="nbinput docutils container">
@@ -636,7 +636,7 @@ True 0.99995
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.35%; align-items: flex-start; justify-content: center; width: 69.00%; margin: 4px auto 8px"><div style="width: 43.48%; text-align: center"><img src="fig_e2e3641a55b1d1d7.svg" alt="The face" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) The face</div><div style="width: 52.17%; text-align: center"><img src="fig_87ff7708f0d25cce.svg" alt="Magnified at (1, 0)" style="width: 100%" loading="lazy" decoding="async" width="225" height="187"><br>(b) Magnified at (1, 0)</div></div><figcaption>Figure 2: Closed with a tolerance of 10⁻³</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.35%; align-items: flex-start; justify-content: center; width: 69.00%; margin: 4px auto 8px"><div style="width: 43.48%; text-align: center"><img src="fig_cd176deaa72330e5.svg" alt="The face" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) The face</div><div style="width: 52.17%; text-align: center"><img src="fig_673dcc9b97b405c5.svg" alt="Magnified at (1, 0)" style="width: 100%" loading="lazy" decoding="async" width="225" height="187"><br>(b) Magnified at (1, 0)</div></div><figcaption>Figure 2: Closed with a tolerance of 10⁻³</figcaption></figure></div>
 </div>
 </section>
 <section id="On-export-and-when-reading">

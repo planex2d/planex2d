@@ -9,10 +9,11 @@ planex2d is a 2D geometry kernel for Python, written in C++. You draw outlines f
 ## Installation
 
 ``` bash
-pip install planex2d
+pip install netgen-mesher netgen-occt-devel scikit-build-core
+pip install --no-build-isolation planex2d
 ```
 
-The package is called `planex2d` on PyPI and `planex` in Python (`import`` ``planex`` ``as`` ``px`). Version 0.1 has no prebuilt wheels yet, so pip builds it from source. See [Installation](core/installation.md) for the two extra steps this needs and for the optional packages.
+Version 0.1 has no prebuilt wheels yet, so pip builds planex2d from source against netgen’s OpenCASCADE: the first line installs netgen, the OpenCASCADE headers and the build backend, and the second builds without build isolation so that the build uses them. The build needs a C++20 compiler and CMake. The package is called `planex2d` on PyPI and `planex` in Python (`import`` ``planex`` ``as`` ``px`). See [Installation](core/installation.md) for the optional packages.
 
 ## A first sketch
 
@@ -117,7 +118,7 @@ antenna.Update({"meanders.count": 4, "depth": 5, "pitch": 2, "feed offset": 2})
 
 ## Optimization
 
-planex2d works with numerical optimizers. In the 3D cold plate example, SciPy’s COBYLA optimizer moves four points of a constrained pipe sketch. Each candidate layout is meshed by netgen and solved in NGSolve for the oil flow and the plate temperature in 3D. The optimizer lowers the hottest temperature while keeping the pressure drop within a limit.
+planex2d works with numerical optimizers. In the [3D cold plate example](integrations/scipy-cold-plate.md), SciPy’s COBYLA optimizer moves four points of a constrained pipe sketch. Each candidate layout is meshed by netgen and solved in NGSolve for the oil flow and the plate temperature in 3D. The optimizer lowers the hottest temperature while keeping the pressure drop within a limit.
 
 ``` python
 from scipy.optimize import minimize

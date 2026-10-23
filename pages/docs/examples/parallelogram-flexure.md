@@ -193,6 +193,8 @@ ax.legend()
 plt.show()
 ```
 
+![figure](parallelogram-flexure_files/parallelogram-flexure_2.png)
+
 ## The stage moving
 
 The force is swept from −10 N to 10 N, and for every step, the displacement of the left and the right end of the
@@ -238,3 +240,5 @@ zoom.legend()
 fig.tight_layout()
 plt.show()
 ```
+
+![figure](parallelogram-flexure_files/parallelogram-flexure_3.png)

@@ -100,7 +100,7 @@ maxh 0.5 order 3
   9 12.3394631 12.33866449 relative difference 6.5e-05
   10 13.06947494 13.07076493 relative difference 9.9e-05
   11 14.3217462 14.32165493 relative difference 6.4e-06
-  12 15.89767388 15.89578405 relative difference 1.2e-04
+  12 15.89767294 15.8957854 relative difference 1.2e-04
 ```
 
 ```text
@@ -115,8 +115,8 @@ maxh 0.25 order 4
   8 11.54168794 11.54173174 relative difference 3.8e-06
   9 12.33700558 12.33700558 relative difference 2.1e-10
   10 13.05620709 13.05635292 relative difference 1.1e-05
-  11 14.31471724 14.31486052 relative difference 1.0e-05
-  12 15.88167905 15.8755959 relative difference 3.8e-04
+  11 14.31471725 14.31486052 relative difference 1.0e-05
+  12 15.9186829 15.87556683 relative difference 2.7e-03
 ```
 
 ## Same tone, different shape
@@ -144,3 +144,5 @@ for row, name in zip(axes, faces):
         ax.set_title(f"{name}, λ{n + 1} = {values[n]:.6f}", fontsize=9)
 plt.show()
 ```
+
+![figure](isospectral-drums_files/isospectral-drums_2.png)

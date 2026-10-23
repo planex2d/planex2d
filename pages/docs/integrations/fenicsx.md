@@ -96,6 +96,8 @@ px.PlotField(phi, plate, ax=ax, contours=10)
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_1.png)
+
 ## A trimmed resistor
 
 The example is a printed resistor film of 2 × 1.2 between its two terminations, `plus` and `minus` (Figure 1a). A
@@ -168,6 +170,8 @@ right.set_title("Around the cut")
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_2.png)
+
 ## The resistance
 
 `potential` puts 1 on `plus` and 0 on `minus`, its defaults. With the film's sheet conductance as the unit, the
@@ -223,6 +227,8 @@ right.set_title("The current density |∇φ| with field lines")
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_3.png)
+
 **Check:** the current through each termination, the flux of −∇φ across it, is again the conductance G. Taken from
 the gradient on the boundary, it is less accurate than G, which comes from the whole film, so the two agree up to the
 discretization error and come closer with every order:
@@ -237,9 +243,6 @@ for order in (1, 2, 3):
 ```text
 order 1 in 0.3217459776683073 out 0.3217626552836635 G 0.3218196350683199
 order 2 in 0.3214504064611654 out 0.3214499535735674 G 0.32144943389343655
-```
-
-```text
 order 3 in 0.32144249517576384 out 0.32144248805886083 G 0.3214425195471844
 ```
 

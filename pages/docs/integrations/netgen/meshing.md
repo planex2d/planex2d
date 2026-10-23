@@ -183,8 +183,5 @@ for fit in (False, dict(tol=1e-4, max_edge_length=0.01)):
 
 ```text
 68 edges, 1160 elements
-```
-
-```text
 6 edges, 836 elements
 ```

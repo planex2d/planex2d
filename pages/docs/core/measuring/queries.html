@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -621,7 +621,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 30.07%; text-align: center"><img src="fig_8592e7289218bd5f.svg" alt="The bounding box" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="443" height="187"><br>(a) The bounding box</div><div style="width: 30.07%; text-align: center"><img src="fig_75fa12628402aba3.svg" alt="The tangent lines" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(b) The tangent lines</div><div style="width: 33.86%; text-align: center"><img src="fig_21584cd5038d709e.svg" alt="The center line&#x27;s crossings" style="width: 100%" loading="lazy" decoding="async" width="499" height="187"><br>(c) The center line&#x27;s crossings</div></div><figcaption>Figure 1: Queries on the link: its box, edges by name, and crossings</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 30.07%; text-align: center"><img src="fig_91d4e6cbe3bedfc6.svg" alt="The bounding box" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="443" height="187"><br>(a) The bounding box</div><div style="width: 30.07%; text-align: center"><img src="fig_223fff727a92ceae.svg" alt="The tangent lines" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(b) The tangent lines</div><div style="width: 33.86%; text-align: center"><img src="fig_1744e6ab337a4e9e.svg" alt="The center line&#x27;s crossings" style="width: 100%" loading="lazy" decoding="async" width="499" height="187"><br>(c) The center line&#x27;s crossings</div></div><figcaption>Figure 1: Queries on the link: its box, edges by name, and crossings</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -675,7 +675,7 @@ holes [2.5132741228718367, 3.7699111843077517] exact [2.5132741228718345, 3.7699
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_258d6f45cf857ce3.svg" alt="The outline" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(a) The outline</div><div style="width: 48.50%; text-align: center"><img src="fig_612b27264606e2df.svg" alt="The holes" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(b) The holes</div></div><figcaption>Figure 2: outer and inner: the loops of a face</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_fb89862c894130f3.svg" alt="The outline" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(a) The outline</div><div style="width: 48.50%; text-align: center"><img src="fig_d89c0d4ed4b73f07.svg" alt="The holes" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(b) The holes</div></div><figcaption>Figure 2: outer and inner: the loops of a face</figcaption></figure></div>
 </div>
 </section>
 <section id="Open-ends">

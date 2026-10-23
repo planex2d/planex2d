@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -620,7 +620,7 @@ tilted normal (0.7071067811865476, 0.0, 0.7071067811865476) (30, 20) at (45.8578
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.11%; align-items: flex-start; justify-content: center; width: 42.21%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_4bac10bf19e61246.svg" alt="The rectangle 30 × 20 on XY, YZ, ZX and a tilted plane, h in blue and v in amber" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="263" height="187"></div></div><figcaption>Figure 1: The rectangle 30 × 20 on XY, YZ, ZX and a tilted plane, h in blue and v in amber</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.11%; align-items: flex-start; justify-content: center; width: 42.21%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_deb43fcc1326269b.svg" alt="The rectangle 30 × 20 on XY, YZ, ZX and a tilted plane, h in blue and v in amber" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="263" height="187"></div></div><figcaption>Figure 1: The rectangle 30 × 20 on XY, YZ, ZX and a tilted plane, h in blue and v in amber</figcaption></figure></div>
 </div>
 </section>
 <section id="On-a-face-of-a-solid">
@@ -663,7 +663,7 @@ h (0.9578262852211514, 0.0, -0.28734788556634544) v (-0.0, 1.0, 0.0) normal (0.2
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.41%; align-items: flex-start; justify-content: center; width: 40.49%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_956bc45efadb636a.svg" alt="The block, its slope with the sketch&#x27;s origin, h (blue) and v (amber)" style="width: 100%" loading="lazy" decoding="async" width="253" height="187"></div></div><figcaption>Figure 2: The block, its slope with the sketch&#x27;s origin, h (blue) and v (amber)</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.41%; align-items: flex-start; justify-content: center; width: 40.49%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_6d05a186a8bdcbad.svg" alt="The block, its slope with the sketch&#x27;s origin, h (blue) and v (amber)" style="width: 100%" loading="lazy" decoding="async" width="253" height="187"></div></div><figcaption>Figure 2: The block, its slope with the sketch&#x27;s origin, h (blue) and v (amber)</figcaption></figure></div>
 </div>
 </section>
 <section id="Drawing-against-the-solid">
@@ -710,7 +710,7 @@ slope.Edge.3 104.40306508910551 long, middle at (50.0, -60.0, 35.00000000000001)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 5.97%; align-items: flex-start; justify-content: center; width: 50.28%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_254eea66e4e18149.svg" alt="The slope&#x27;s edges projected: slope.Edge.0 to slope.Edge.3" style="width: 100%" loading="lazy" decoding="async" width="343" height="204"></div></div><figcaption>Figure 3: The slope&#x27;s edges projected: slope.Edge.0 to slope.Edge.3</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 5.97%; align-items: flex-start; justify-content: center; width: 50.28%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_b2c8f33d383c542c.svg" alt="The slope&#x27;s edges projected: slope.Edge.0 to slope.Edge.3" style="width: 100%" loading="lazy" decoding="async" width="343" height="204"></div></div><figcaption>Figure 3: The slope&#x27;s edges projected: slope.Edge.0 to slope.Edge.3</figcaption></figure></div>
 </div>
 <p>The points of every projected element place what comes next. <code class="docutils literal notranslate"><span class="pre">Move(point,</span> <span class="pre">dir=)</span></code> starts at a point of an element, and <code class="docutils literal notranslate"><span class="pre">Move(l)</span></code> moves the pen along. Two holes of diameter 10 lie 20 below the top edge and 15 in from the sides, and a slot 10 wide lies around a center line 30 long, 30 up the slope from the middle of the lower edge (Figure 4). The drawing is a function, so that it can be placed onto another face later:</p>
 <div class="nbinput docutils container">
@@ -747,7 +747,7 @@ Sketch.6.Circle.2 center in 3D (19.15652570442303, -45.0, 44.2530422886731)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.14%; align-items: flex-start; justify-content: center; width: 41.99%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_ad7a89ac51210527.svg" alt="The sketch on the slope, with the projected edges and the center line dashed" style="width: 100%" loading="lazy" decoding="async" width="286" height="204"></div></div><figcaption>Figure 4: The sketch on the slope, with the projected edges and the center line dashed</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.14%; align-items: flex-start; justify-content: center; width: 41.99%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_fe1433dc61ab6795.svg" alt="The sketch on the slope, with the projected edges and the center line dashed" style="width: 100%" loading="lazy" decoding="async" width="286" height="204"></div></div><figcaption>Figure 4: The sketch on the slope, with the projected edges and the center line dashed</figcaption></figure></div>
 </div>
 </section>
 <section id="Back-into-the-solid">
@@ -789,7 +789,7 @@ Sketch.6.Circle.2 center in 3D (19.15652570442303, -45.0, 44.2530422886731)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.50%; align-items: flex-start; justify-content: center; width: 66.73%; margin: 4px auto 8px"><div style="width: 47.75%; text-align: center"><img src="fig_e283ec034592c108.svg" alt="The sketch on the slope" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(a) The sketch on the slope</div><div style="width: 47.75%; text-align: center"><img src="fig_9717e9de9122811e.svg" alt="Cut through the block" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(b) Cut through the block</div></div><figcaption>Figure 5: The pattern drawn on the slope and cut through the block</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.50%; align-items: flex-start; justify-content: center; width: 66.73%; margin: 4px auto 8px"><div style="width: 47.75%; text-align: center"><img src="fig_fec8658c5ae02429.svg" alt="The sketch on the slope" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(a) The sketch on the slope</div><div style="width: 47.75%; text-align: center"><img src="fig_93b8236c2a525263.svg" alt="Cut through the block" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(b) Cut through the block</div></div><figcaption>Figure 5: The pattern drawn on the slope and cut through the block</figcaption></figure></div>
 </div>
 </section>
 <section id="The-same-drawing-on-another-face">
@@ -836,7 +836,7 @@ normal (-1.0, -0.0, -0.0)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.65%; align-items: flex-start; justify-content: center; width: 39.21%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_5c5df1ba797d030e.svg" alt="The pattern on the slope and, as pockets, on the back" style="width: 100%" loading="lazy" decoding="async" width="245" height="187"></div></div><figcaption>Figure 6: The pattern on the slope and, as pockets, on the back</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.65%; align-items: flex-start; justify-content: center; width: 39.21%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_bb0199b29cbc9e06.svg" alt="The pattern on the slope and, as pockets, on the back" style="width: 100%" loading="lazy" decoding="async" width="245" height="187"></div></div><figcaption>Figure 6: The pattern on the slope and, as pockets, on the back</figcaption></figure></div>
 </div>
 </section>
 </section>

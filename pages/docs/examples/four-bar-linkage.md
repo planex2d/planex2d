@@ -143,3 +143,5 @@ ax.set_xlabel("crank angle")
 ax.set_ylabel("torque out / torque in")
 plt.show()
 ```
+
+![figure](four-bar-linkage_files/four-bar-linkage_2.png)

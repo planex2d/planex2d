@@ -27,12 +27,15 @@ simulation.
 ## Installation
 
 ```bash
-pip install planex2d
+pip install netgen-mesher netgen-occt-devel scikit-build-core
+pip install --no-build-isolation planex2d
 ```
 
-The package is called `planex2d` on PyPI and `planex` in Python (`import planex as px`). Version 0.1 has no prebuilt
-wheels yet, so pip builds it from source; see [Installation](https://planex2d.org/docs/core/installation.html) for the two
-extra steps this needs and for the optional packages.
+Version 0.1 has no prebuilt wheels yet, so pip builds planex2d from source against netgen's OpenCASCADE: the first line
+installs netgen, the OpenCASCADE headers and the build backend, and the second builds without build isolation so that
+the build uses them. The build needs a C++20 compiler and CMake. The package is called `planex2d` on PyPI and `planex`
+in Python (`import planex as px`). See [Installation](https://planex2d.org/docs/core/installation.html) for the
+optional packages.
 
 ## A first sketch
 

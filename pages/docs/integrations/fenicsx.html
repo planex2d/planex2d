@@ -36,7 +36,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -675,7 +675,7 @@ energy 0.43679512714427626 current across the left edge 0.43679553137335453
 </pre></div></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">px.PlotField</span></code> draws the potential on the plate, here with 10 contour lines:</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
@@ -683,6 +683,13 @@ energy 0.43679512714427626 current across the left edge 0.43679553137335453
 <span class="n">px</span><span class="o">.</span><span class="n">PlotField</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">plate</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">contours</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/integrations_fenicsx_10_0.webp" type="image/webp"><img alt="../_images/integrations_fenicsx_10_0.png" src="../_images/integrations_fenicsx_10_0.png" loading="eager" fetchpriority="high" decoding="async" width="558" height="320"></picture>
 </div>
 </div>
 </section>
@@ -719,7 +726,7 @@ energy 0.43679512714427626 current across the left edge 0.43679553137335453
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.76%; text-align: center"><img src="fig_f0f68f64dec673a8.svg" alt="The film, its terminations highlighted" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="291" height="187"><br>(a) The film, its terminations highlighted</div><div style="width: 30.49%; text-align: center"><img src="fig_80fc34ef75236900.svg" alt="The band the laser burns" style="width: 100%" loading="lazy" decoding="async" width="280" height="187"><br>(b) The band the laser burns</div><div style="width: 31.76%; text-align: center"><img src="fig_e5e9fad389a9454f.svg" alt="The trimmed resistor" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"><br>(c) The trimmed resistor</div></div><figcaption>Figure 1: A thick-film resistor trimmed with an L-cut</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.76%; text-align: center"><img src="fig_e7af8e8230ec05b0.svg" alt="The film, its terminations highlighted" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"><br>(a) The film, its terminations highlighted</div><div style="width: 30.49%; text-align: center"><img src="fig_d644feef42ffa3d9.svg" alt="The band the laser burns" style="width: 100%" loading="lazy" decoding="async" width="280" height="187"><br>(b) The band the laser burns</div><div style="width: 31.76%; text-align: center"><img src="fig_e78a650c0a23f141.svg" alt="The trimmed resistor" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"><br>(c) The trimmed resistor</div></div><figcaption>Figure 1: A thick-film resistor trimmed with an L-cut</figcaption></figure></div>
 </div>
 </section>
 <section id="The-mesh">
@@ -748,7 +755,7 @@ mesh area 2.3506582557289164 face 2.3506575222039228
 </pre></div></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">px.PlotMesh(mesh,</span> <span class="pre">part)</span></code> draws a dolfinx mesh over the planex2d edges, here for the whole film and around the tip of the cut:</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
@@ -762,6 +769,13 @@ mesh area 2.3506582557289164 face 2.3506575222039228
 <span class="n">right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Around the cut"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/integrations_fenicsx_17_0.webp" type="image/webp"><img alt="../_images/integrations_fenicsx_17_0.png" src="../_images/integrations_fenicsx_17_0.png" loading="lazy" decoding="async" width="1059" height="388"></picture>
 </div>
 </div>
 </section>
@@ -811,7 +825,7 @@ trimmed, h 0.02 orders 1 to 3 [3.10802462, 3.11091569, 3.11097634]
 <section id="Drawing-the-result">
 <h2>Drawing the result<a class="headerlink" href="#Drawing-the-result" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">px.PlotField(phi,</span> <span class="pre">part)</span></code> takes the dolfinx <code class="docutils literal notranslate"><span class="pre">Function</span></code> and evaluates it at every pixel of the face, here with contour lines of the potential (left). The current density −∇φ is a UFL expression. Interpolated into a vector <code class="docutils literal notranslate"><span class="pre">Function</span></code>, it is drawn as its magnitude with field lines (right), which show the current crowding around the tip of the cut.</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
@@ -827,6 +841,13 @@ trimmed, h 0.02 orders 1 to 3 [3.10802462, 3.11091569, 3.11097634]
 <span class="n">right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"The current density |∇φ| with field lines"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/integrations_fenicsx_23_0.webp" type="image/webp"><img alt="../_images/integrations_fenicsx_23_0.png" src="../_images/integrations_fenicsx_23_0.png" loading="lazy" decoding="async" width="1059" height="388"></picture>
 </div>
 </div>
 <p><strong>Check:</strong> the current through each termination, the flux of −∇φ across it, is again the conductance G. Taken from the gradient on the boundary, it is less accurate than G, which comes from the whole film, so the two agree up to the discretization error and come closer with every order:</p>

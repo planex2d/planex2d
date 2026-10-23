@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -704,8 +704,7 @@ full 50.0
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/tmp/ipykernel_834917/2222836129.py:2: PlanexWarning: diagonal (&#34;bottom.start&#34;, &#34;top.start&#34;, px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
-  sk.Update()
+PlanexWarning: diagonal (&#34;bottom.start&#34;, &#34;top.start&#34;, px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
 </pre></div></div>
 </div>
 </section>
@@ -800,7 +799,7 @@ overview</span></a> has eleven unknowns and eleven equations, and every equation
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 46%; margin: 4px auto 8px; text-align: center"><img src="fig_1643689bda6316b3.svg" alt="The sk.jacobian of the plate, with positive entries in blue and negative ones in red" style="width: 100%" loading="lazy" decoding="async" width="396" height="353"></div><figcaption>Figure 3: The sk.jacobian of the plate, with positive entries in blue and negative ones in red</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 46%; margin: 4px auto 8px; text-align: center"><img src="fig_9f0a80d39c9a4ed9.svg" alt="The sk.jacobian of the plate, with positive entries in blue and negative ones in red" style="width: 100%" loading="lazy" decoding="async" width="396" height="353"></div><figcaption>Figure 3: The sk.jacobian of the plate, with positive entries in blue and negative ones in red</figcaption></figure></div>
 </div>
 <section id="What-a-dimension-moves">
 <h3>What a dimension moves<a class="headerlink" href="#What-a-dimension-moves" title="Link to this heading"></a></h3>
@@ -842,7 +841,7 @@ fillet.center.y: Jacobian 1.000000000000, finite difference 0.999999999944
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.47%; align-items: flex-start; justify-content: center; width: 46.36%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_77deb6c1766eed27.svg" alt="How the plate&#x27;s points move with r, drawn ten times larger" style="width: 100%" loading="lazy" decoding="async" width="289" height="187"></div></div><figcaption>Figure 4: How the plate&#x27;s points move with r, drawn ten times larger</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.47%; align-items: flex-start; justify-content: center; width: 46.36%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_9fff76b5cc7f8ba3.svg" alt="How the plate&#x27;s points move with r, drawn ten times larger" style="width: 100%" loading="lazy" decoding="async" width="289" height="187"></div></div><figcaption>Figure 4: How the plate&#x27;s points move with r, drawn ten times larger</figcaption></figure></div>
 </div>
 </section>
 <section id="Free-motions">
@@ -875,7 +874,7 @@ fillet.center.y: Jacobian 1.000000000000, finite difference 0.999999999944
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.01%; align-items: flex-start; justify-content: center; width: 99.67%; margin: 4px auto 8px"><div style="width: 48.49%; text-align: center"><img src="fig_748eeff670ceee1b.svg" alt="Free motion: the width" style="width: 100%" loading="lazy" decoding="async" width="302" height="187"><br>(a) Free motion: the width</div><div style="width: 48.49%; text-align: center"><img src="fig_d435b6092b6a55da.svg" alt="Free motion: the height" style="width: 100%" loading="lazy" decoding="async" width="302" height="187"><br>(b) Free motion: the height</div></div><figcaption>Figure 5: The two free motions of the rectangle drawn with flags only</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.01%; align-items: flex-start; justify-content: center; width: 99.67%; margin: 4px auto 8px"><div style="width: 48.49%; text-align: center"><img src="fig_36ad7eb0fc3211c4.svg" alt="Free motion: the width" style="width: 100%" loading="lazy" decoding="async" width="302" height="187"><br>(a) Free motion: the width</div><div style="width: 48.49%; text-align: center"><img src="fig_b8cf4bcfdfa14e3d.svg" alt="Free motion: the height" style="width: 100%" loading="lazy" decoding="async" width="302" height="187"><br>(b) Free motion: the height</div></div><figcaption>Figure 5: The two free motions of the rectangle drawn with flags only</figcaption></figure></div>
 </div>
 <p>A redundant constraint adds a row but no rank. With the <code class="docutils literal notranslate"><span class="pre">Parallel</span></code> that repeats the right angles, the plate’s matrix has twelve rows but a rank of eleven, and <code class="docutils literal notranslate"><span class="pre">sk.redundant</span></code> names the rows that depend on each other.</p>
 <div class="nbinput docutils container">

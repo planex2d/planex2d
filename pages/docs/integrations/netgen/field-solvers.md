@@ -30,7 +30,7 @@ print("J", J, "series", series, "relative difference", J / series - 1)
 ```
 
 ```text
-J 73178.18297599268 series 73178.13668087665 relative difference 6.326358954478195e-07
+J 73178.18297599265 series 73178.13668087665 relative difference 6.326358950037303e-07
 ```
 
 The measurements below follow the same four steps:
@@ -113,9 +113,6 @@ for a, b in ((20, 12), (30, 20)):
 
 ```text
 a 20 b 12 peak 35.015 °C
-```
-
-```text
 a 30 b 20 peak 30.552 °C
 ```
 
@@ -311,9 +308,6 @@ disc: FEniCSx 28.998822689121436 °C, exact 29.0 °C
 
 ```text
 a 20 b 12 NGSolve 35.0152 °C, FEniCSx 35.0171 °C
-```
-
-```text
 a 30 b 20 NGSolve 30.5525 °C, FEniCSx 30.5541 °C
 ```
 

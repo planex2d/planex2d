@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -707,7 +707,7 @@ gives a 12-slot design, which runs under load: the rotor turns, the three phase 
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_310adf3d8e3009cb.svg" alt="Stator, coils, rotor, magnets and air" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 1: The regions of the motor</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.00%; align-items: flex-start; justify-content: center; width: 30.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_24808344c24ed56c.svg" alt="Stator, coils, rotor, magnets and air" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"></div></div><figcaption>Figure 1: The regions of the motor</figcaption></figure></div>
 </div>
 </section>
 <section id="Open-circuit-field">
@@ -745,11 +745,11 @@ gives a 12-slot design, which runs under load: the rotor turns, the three phase 
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu1_img' src='webgpu_6b047ec464bae650.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu1_img' src='webgpu_573aa0965b55bcc9.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_6b047ec464bae650) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_6b047ec464bae650); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_6b047ec464bae650.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_573aa0965b55bcc9) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_573aa0965b55bcc9); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_573aa0965b55bcc9.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>
@@ -848,7 +848,7 @@ air gap 0.701 T, magnetic circuit 0.736 T
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_0d3b0ea28af20f8f.svg" alt="12 slots, magnets 90% of the pole, 3.0 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) 12 slots, magnets 90% of the pole, 3.0 thick</div><div style="width: 31.25%; text-align: center"><img src="fig_8ba62ba2a1312c0c.svg" alt="24 slots, magnets 80% of the pole, 2.5 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) 24 slots, magnets 80% of the pole, 2.5 thick</div><div style="width: 31.25%; text-align: center"><img src="fig_b93212455b56939a.svg" alt="36 slots, magnets 70% of the pole, 2.0 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) 36 slots, magnets 70% of the pole, 2.0 thick</div></div><figcaption>Figure 2: The lamination as a function of three parameters</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_e35b864b4f43747a.svg" alt="12 slots, magnets 90% of the pole, 3.0 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) 12 slots, magnets 90% of the pole, 3.0 thick</div><div style="width: 31.25%; text-align: center"><img src="fig_7159131ea6d61337.svg" alt="24 slots, magnets 80% of the pole, 2.5 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) 24 slots, magnets 80% of the pole, 2.5 thick</div><div style="width: 31.25%; text-align: center"><img src="fig_83a3869b3a7c16ef.svg" alt="36 slots, magnets 70% of the pole, 2.0 thick" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) 36 slots, magnets 70% of the pole, 2.0 thick</div></div><figcaption>Figure 2: The lamination as a function of three parameters</figcaption></figure></div>
 </div>
 </section>
 <section id="Under-load">
@@ -931,7 +931,7 @@ i_q only mean torque 69.639 N·m/m
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_697bed9813b1ec57.svg" alt="torque [N·m/m] over rotor angle [°]: i_q only 0 71.5, 3.75 104, 7.5 67.4, 11.2 35.1, 15 71.5, 18.8 104, 22.5 67.4, 26.2 35.1, 30 71.5, 33.8 104, 37.5 67.4, 41.2 35.1" style="width: 100%" loading="lazy" decoding="async" width="326" height="168"></div><figcaption>Figure 3: The torque over half an electrical period</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_abd768781a18baba.svg" alt="torque [N·m/m] over rotor angle [°]: i_q only 0 71.5, 3.75 104, 7.5 67.4, 11.2 35.1, 15 71.5, 18.8 104, 22.5 67.4, 26.2 35.1, 30 71.5, 33.8 104, 37.5 67.4, 41.2 35.1" style="width: 100%" loading="lazy" decoding="async" width="326" height="168"></div><figcaption>Figure 3: The torque over half an electrical period</figcaption></figure></div>
 </div>
 <p>Without current, the magnets only pull towards the teeth. This cogging torque repeats every 15°, 360° divided by 24, the least common multiple of 12 slots and 8 magnets. It swings around zero, and so does the torque with the current on the d-axis. With the current on the q-axis, the motor delivers a steady mean torque, with the cogging torque on top of it. The field below is the motor under load at the starting position.</p>
 <div class="nbinput docutils container">
@@ -948,11 +948,11 @@ i_q only mean torque 69.639 N·m/m
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu2_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu2_img' src='webgpu_ed99684ad796b7b4.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu2_img' src='webgpu_489815bbfc9f8a90.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu2_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu2_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_ed99684ad796b7b4) { r.__activated = false; return; } document.getElementById('webgpu2_img').style.display = 'none'; document.getElementById('webgpu2_overlay').style.display = 'none'; document.getElementById('webgpu2_canvas').style.display = 'block'; RenderEngine.create('webgpu2_canvas', window.__webgpu_blob_ed99684ad796b7b4); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_ed99684ad796b7b4.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu2_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_489815bbfc9f8a90) { r.__activated = false; return; } document.getElementById('webgpu2_img').style.display = 'none'; document.getElementById('webgpu2_overlay').style.display = 'none'; document.getElementById('webgpu2_canvas').style.display = 'block'; RenderEngine.create('webgpu2_canvas', window.__webgpu_blob_489815bbfc9f8a90); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_489815bbfc9f8a90.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu2_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu2_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>

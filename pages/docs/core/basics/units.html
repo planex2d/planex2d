@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -605,7 +605,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.22%; align-items: flex-start; justify-content: center; width: 93.20%; margin: 4px auto 8px"><div style="width: 48.39%; text-align: center"><img src="fig_6b50aea9a5c69d92.svg" alt="Plain numbers: 80 × 50, area 3921.5" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="281" height="187"><br>(a) Plain numbers: 80 × 50, area 3921.5</div><div style="width: 48.39%; text-align: center"><img src="fig_97754c9d16c5f861.svg" alt="With px.mm: 0.08 × 0.05, area 3.9215e-03" style="width: 100%" loading="lazy" decoding="async" width="281" height="187"><br>(b) With px.mm: 0.08 × 0.05, area 3.9215e-03</div></div><figcaption>Figure 1: The same plate in plain numbers and in meters</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.22%; align-items: flex-start; justify-content: center; width: 93.20%; margin: 4px auto 8px"><div style="width: 48.39%; text-align: center"><img src="fig_47e20e275fd6629f.svg" alt="Plain numbers: 80 × 50, area 3921.5" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="281" height="187"><br>(a) Plain numbers: 80 × 50, area 3921.5</div><div style="width: 48.39%; text-align: center"><img src="fig_1eef2feda49d79b7.svg" alt="With px.mm: 0.08 × 0.05, area 3.9215e-03" style="width: 100%" loading="lazy" decoding="async" width="281" height="187"><br>(b) With px.mm: 0.08 × 0.05, area 3.9215e-03</div></div><figcaption>Figure 1: The same plate in plain numbers and in meters</figcaption></figure></div>
 </div>
 <p>Both are the same plate, and only the numbers differ. The first area is in mm² and the second in m². Divided by <code class="docutils literal notranslate"><span class="pre">px.mm**2</span></code>, the second area is in mm² again:</p>
 <div class="nbinput docutils container">

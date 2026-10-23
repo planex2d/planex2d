@@ -32,8 +32,8 @@ for name, (t, area) in others.items():
 ```
 
 ```text
-planex2d   0.0010 s, 4 edges
-OCC        1.7253 s, 4 edges
+planex2d   0.0009 s, 4 edges
+OCC        1.7782 s, 4 edges
 shapely    0.0057 s, area 400.000000
 pyclipper  0.0006 s, area 400.000000
 gdstk      0.0006 s, area 400.000000

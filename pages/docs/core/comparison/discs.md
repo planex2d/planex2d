@@ -39,11 +39,11 @@ for name, (t, area) in others.items():
 
 ```text
 planex2d   0.0024 s, area 612.803230, 640 edges
-OCC        9.5292 s, area 612.803230, 640 edges
-shapely    1.0983 s, area 612.803194, relative to planex2d -6e-08
-pyclipper  1.6787 s, area 612.803194, relative to planex2d -6e-08
-gdstk      1.4541 s, area 612.803194, relative to planex2d -6e-08
-manifold3d 1.2514 s, area 612.803194, relative to planex2d -6e-08
+OCC        9.5818 s, area 612.803230, 640 edges
+shapely    1.0984 s, area 612.803194, relative to planex2d -6e-08
+pyclipper  1.6875 s, area 612.803194, relative to planex2d -6e-08
+gdstk      1.4643 s, area 612.803194, relative to planex2d -6e-08
+manifold3d 1.2785 s, area 612.803194, relative to planex2d -6e-08
 ```
 
 ```python

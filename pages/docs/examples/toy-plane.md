@@ -367,6 +367,8 @@ for ax, title in zip(axes, ("side", "top", "front")):
 plt.show()
 ```
 
+![figure](toy-plane_files/toy-plane_2.png)
+
 ## Numbers
 
 The span runs from winglet tip to winglet tip, and the wing area is the trapezoid seen from above:

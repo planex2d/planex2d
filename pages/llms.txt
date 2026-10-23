@@ -118,7 +118,9 @@
 - [gmsh and FEniCSx](https://planex2d.org/docs/integrations/fenicsx.md): planex2d faces reach FEniCSx through gmsh.
 - [shapely](https://planex2d.org/docs/integrations/shapely.md): shapely provides predicates, distances and many GIS tools.
 - [SciPy](https://planex2d.org/docs/integrations/scipy.md): A planex2d measurement stored on a constraint sketch is a function of the sketch’s dimensions: Update sets them, and measures reads the result.
+- [A 3D cold plate](https://planex2d.org/docs/integrations/scipy-cold-plate.md): planex2d sketches lie on planes in 3D.
 - [PyTorch](https://planex2d.org/docs/integrations/pytorch.md): On the SciPy page, COBYLA lays out the cooling channels of a cold plate by calling a finite-element solve for every layout it tries.
+- [A 3D duct](https://planex2d.org/docs/integrations/pytorch-duct.md): planex2d sketches lie on planes in 3D.
 - [KiCad](https://planex2d.org/docs/integrations/kicad.md): The layers of a board are planex2d faces, which can be written as a KiCad board and read back.
 - [NumPy](https://planex2d.org/docs/integrations/numpy.md): Points go into planex2d as arrays, shapes come out as arrays, and every query answers a whole array of points at once, in C++ without the Python interpreter in the loop.
 

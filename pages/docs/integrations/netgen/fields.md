@@ -462,11 +462,14 @@ for label, draw in plots.items():
 *[interactive plotly figure: The oblique cut, interactive; see the html page]*
 
 ```text
-plate: temperature, 12 contours 0.08 s
-plate: flux, field lines 0.18 s
+plate: temperature, 12 contours 0.21 s
 ```
 
 ```text
-3D cut: temperature, 10 contours 0.28 s
-3D cut: the cut mesh 0.07 s
+plate: flux, field lines 0.53 s
+```
+
+```text
+3D cut: temperature, 10 contours 0.68 s
+3D cut: the cut mesh 0.17 s
 ```
