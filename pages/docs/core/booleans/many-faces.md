@@ -26,7 +26,7 @@ print("area", perforated.mass, "exact", 1000 * 500 - len(holes) * 16 * math.pi)
 ```
 
 ```text
-1250 holes in 0.009 s
+1250 holes in 0.006 s
 area 437168.1469282339 exact 437168.1469282041
 ```
 
@@ -83,7 +83,7 @@ print("one core", round(time.perf_counter() - start, 3), "s")
 
 ```text
 all cores 0.013 s
-one core 0.049 s
+one core 0.035 s
 ```
 
 ```python

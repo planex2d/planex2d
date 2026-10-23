@@ -188,6 +188,8 @@ ax.set_aspect("equal")
 plt.show()
 ```
 
+![figure](lens-ray-tracing_files/lens-ray-tracing_2.png)
+
 ## Aberrations
 
 The ray fan plots where each ray of a bundle lands in the image plane against where it passed the stop. The S-shape
@@ -205,6 +207,8 @@ for ax in (left, right):
     ax.grid(alpha=0.3)
 plt.show()
 ```
+
+![figure](lens-ray-tracing_files/lens-ray-tracing_3.png)
 
 ## Which way round
 

@@ -36,12 +36,11 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="PyTorch" href="pytorch.html" />
+    <link rel="next" title="A 3D cold plate" href="scipy-cold-plate.html" />
     <link rel="prev" title="shapely" href="shapely.html" /> 
 </head>
 
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -751,7 +752,7 @@ channels [[50.1, 39.0], [119.1, 32.0], [48.6, 65.0], [119.5, 75.6]]
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_afb79870728ac93c.svg" alt="peak temperature [°C] over Layouts evaluated: each layout tried 1 43.4, 9 39.4, 17 35.5, 25 34.9, 33 34.9, 41 34.6, 49 34.6, 57 34.6, 65 34.6, 73 34.6, 81 34.6, 89 34.6, 97 34.6" style="width: 100%" loading="lazy" decoding="async" width="320" height="168"></div><figcaption>Figure 2: The peak of every layout COBYLA tried</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_e4a1b4ba5fc6d0d1.svg" alt="peak temperature [°C] over Layouts evaluated: each layout tried 1 43.4, 9 39.4, 17 35.5, 25 34.9, 33 34.9, 41 34.6, 49 34.6, 57 34.6, 65 34.6, 73 34.6, 81 34.6, 89 34.6, 97 34.6" style="width: 100%" loading="lazy" decoding="async" width="320" height="168"></div><figcaption>Figure 2: The peak of every layout COBYLA tried</figcaption></figure></div>
 </div>
 </section>
 <section id="Fitting-a-sketch-to-measured-points">
@@ -814,7 +815,7 @@ rms misfit 0.005562710399559839 after 7 evaluations
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_6bc914aa268889f4.svg" alt="The nominal flange" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) The nominal flange</div><div style="width: 47.62%; text-align: center"><img src="fig_4f1c9ce4d75612df.svg" alt="Fitted: pcd 41.299, d 8.397, phi 7.50°" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Fitted: pcd 41.299, d 8.397, phi 7.50°</div></div><figcaption>Figure 3: One bolt hole before and after the fit, with the measured points</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_40b282cf1a814812.svg" alt="The nominal flange" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) The nominal flange</div><div style="width: 47.62%; text-align: center"><img src="fig_47f98d9331b0758f.svg" alt="Fitted: pcd 41.299, d 8.397, phi 7.50°" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Fitted: pcd 41.299, d 8.397, phi 7.50°</div></div><figcaption>Figure 3: One bolt hole before and after the fit, with the measured points</figcaption></figure></div>
 </div>
 </section>
 <section id="At-a-glance">
@@ -841,8 +842,20 @@ rms misfit 0.005562710399559839 after 7 evaluations
 </section>
 <section id="In-3D">
 <h2>In 3D<a class="headerlink" href="#In-3D" title="Link to this heading"></a></h2>
-<p>The same works in 3D, where every solve is a 3D flow and heat problem: <a class="reference external" href="scipy-cold-plate.md">a cold plate</a> whose cooling pipe follows a constraint sketch and is swept with OpenCASCADE, while COBYLA moves four points of its path.</p>
+<p>The same works in 3D, where every solve is a 3D flow and heat problem: <a class="reference internal" href="scipy-cold-plate.html"><span class="doc">a cold plate</span></a> whose cooling pipe follows a constraint sketch and is swept with OpenCASCADE, while COBYLA moves four points of its path.</p>
 <div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#The-path">The path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#The-pipe-and-the-plate">The pipe and the plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#Rules-before-solving">Rules before solving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#Flow-and-heat">Flow and heat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#The-optimization">The optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy-cold-plate.html#The-result">The result</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </section>
 </section>
@@ -852,7 +865,7 @@ rms misfit 0.005562710399559839 after 7 evaluations
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="shapely.html" class="btn btn-neutral float-left" title="shapely" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="pytorch.html" class="btn btn-neutral float-right" title="PyTorch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="scipy-cold-plate.html" class="btn btn-neutral float-right" title="A 3D cold plate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

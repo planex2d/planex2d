@@ -89,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -631,12 +632,12 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-planex2d   0.0059 s, area 191.735856, 3023 edges
-OCC        11.2101 s, area 191.735856, 3023 edges
-shapely    0.7236 s, area 191.735837, relative to planex2d -1e-07
-pyclipper  0.5965 s, area 191.735837, relative to planex2d -1e-07
-gdstk      0.4969 s, area 191.735837, relative to planex2d -1e-07
-manifold3d 0.4980 s, area 191.735837, relative to planex2d -1e-07
+planex2d   0.0062 s, area 191.735856, 3023 edges
+OCC        11.1362 s, area 191.735856, 3023 edges
+shapely    0.7077 s, area 191.735837, relative to planex2d -1e-07
+pyclipper  0.5864 s, area 191.735837, relative to planex2d -1e-07
+gdstk      0.5129 s, area 191.735837, relative to planex2d -1e-07
+manifold3d 0.4997 s, area 191.735837, relative to planex2d -1e-07
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -649,7 +650,7 @@ manifold3d 0.4980 s, area 191.735837, relative to planex2d -1e-07
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_7cbe846cb5d11f2e.svg" alt="planex 5.9 ms, shapely (GEOS)* 723.6 ms, fastest of pyclipper, gdstk, manifold3d* 496.9 ms, OpenCASCADE 11.2 s" style="width: 100%" loading="lazy" decoding="async" width="269" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 500 traces</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_ca5ec42e8dc60aea.svg" alt="planex 6.2 ms, shapely (GEOS)* 707.7 ms, fastest of pyclipper, gdstk, manifold3d* 499.7 ms, OpenCASCADE 11.1 s" style="width: 100%" loading="lazy" decoding="async" width="268" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 500 traces</figcaption></figure></div>
 </div>
 </section>
 

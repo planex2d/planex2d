@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -633,7 +633,7 @@ crank-rocker True
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.87%; align-items: flex-start; justify-content: center; width: 38.12%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_bb7c690a9b541ec1.svg" alt="Crank, coupler, rocker and the arm at 60°" style="width: 100%" loading="lazy" decoding="async" width="260" height="204"></div></div><figcaption>Figure 1: One position of the linkage</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.87%; align-items: flex-start; justify-content: center; width: 38.12%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_0444d6546d29403c.svg" alt="Crank, coupler, rocker and the arm at 60°" style="width: 100%" loading="lazy" decoding="async" width="260" height="204"></div></div><figcaption>Figure 1: One position of the linkage</figcaption></figure></div>
 </div>
 </section>
 <section id="Check">
@@ -680,7 +680,7 @@ largest difference of the rocker angle 2.842170943040401e-14 degrees
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_9c6f62a6be5a1007.webm" type="video/webm"><source src="anim_9c6f62a6be5a1007.mp4" type="video/mp4"></video></div>
+<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_586cc28e434e8ef4.webm" type="video/webm"><source src="anim_586cc28e434e8ef4.mp4" type="video/mp4"></video></div>
 </div>
 </section>
 <section id="Torque-out-over-torque-in">
@@ -698,6 +698,13 @@ largest difference of the rocker angle 2.842170943040401e-14 degrees
 </div>
 </div>
 <p>The torque ratio over a turn of the crank:</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_four-bar-linkage_15_0.webp" type="image/webp"><img alt="../_images/examples_four-bar-linkage_15_0.png" src="../_images/examples_four-bar-linkage_15_0.png" loading="lazy" decoding="async" width="699" height="338"></picture>
+</div>
+</div>
 </section>
 </section>
 

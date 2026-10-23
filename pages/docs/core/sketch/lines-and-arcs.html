@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -608,7 +608,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.65%; align-items: flex-start; justify-content: center; width: 45.10%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_04a603cdf2fd7139.svg" alt="A chamfered plate" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="281" height="187"></div></div><figcaption>Figure 1: A chamfered plate</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.65%; align-items: flex-start; justify-content: center; width: 45.10%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_46b108cfb1bfb3f5.svg" alt="A chamfered plate" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="281" height="187"></div></div><figcaption>Figure 1: A chamfered plate</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -647,7 +647,7 @@ plate 987.5 exact 987.5
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 8.80%; align-items: flex-start; justify-content: center; width: 34.08%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_73495641affd6efe.svg" alt="A hex nut" style="width: 100%" loading="lazy" decoding="async" width="213" height="187"></div></div><figcaption>Figure 2: A hex nut</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 8.80%; align-items: flex-start; justify-content: center; width: 34.08%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_f4e4ed1d224488d9.svg" alt="A hex nut" style="width: 100%" loading="lazy" decoding="async" width="213" height="187"></div></div><figcaption>Figure 2: A hex nut</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -681,7 +681,7 @@ nut 164.9574860633507 exact 164.95748606335064
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.30%; align-items: flex-start; justify-content: center; width: 90.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_775f292f7b743ba3.svg" alt="A slot" style="width: 100%" loading="lazy" decoding="async" width="567" height="187"></div></div><figcaption>Figure 3: A slot</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.30%; align-items: flex-start; justify-content: center; width: 90.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_2206b7ecc5841f06.svg" alt="A slot" style="width: 100%" loading="lazy" decoding="async" width="567" height="187"></div></div><figcaption>Figure 3: A slot</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -715,7 +715,7 @@ slot 378.53981633974485 exact 378.53981633974485
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 12.87%; align-items: flex-start; justify-content: center; width: 23.30%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_5f5e8d31de715997.svg" alt="An arched window" style="width: 100%" loading="lazy" decoding="async" width="145" height="187"></div></div><figcaption>Figure 4: An arched window</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 12.87%; align-items: flex-start; justify-content: center; width: 23.30%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_3b99d4012e21deb9.svg" alt="An arched window" style="width: 100%" loading="lazy" decoding="async" width="145" height="187"></div></div><figcaption>Figure 4: An arched window</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:

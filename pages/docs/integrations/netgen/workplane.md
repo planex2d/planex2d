@@ -111,7 +111,7 @@ print(f"planex {planex_time:.3f} s, area {planex_geo.mass:.9f}")
 ```
 
 ```text
-netgen 4.627 s, area 534.854430306
+netgen 4.952 s, area 534.854430306
 planex 0.005 s, area 534.854430306
 ```
 

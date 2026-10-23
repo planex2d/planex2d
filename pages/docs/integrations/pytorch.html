@@ -36,13 +36,12 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="KiCad" href="kicad.html" />
-    <link rel="prev" title="SciPy" href="scipy.html" /> 
+    <link rel="next" title="A 3D duct" href="pytorch-duct.html" />
+    <link rel="prev" title="A 3D cold plate" href="scipy-cold-plate.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -927,7 +928,7 @@ COBYLA’s, and already a winner of the first round passes COBYLA’s result, be
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_03b5c7c9ef71f868.svg" alt="coolest layout so far [°C] over Real finite-element solves: the surrogate route 4 49.1, 19 38, 34 38, 49 33.8, 64 32.8, 79 31.9, 94 31.9, 109 31.8, 124 31.8, 139 31.8, 154 31.8, 169 31.8, 184 31.8" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="320" height="168"></div><figcaption>Figure 1: The peak temperature against the real solves spent</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_5a12d21ae648ee9d.svg" alt="coolest layout so far [°C] over Real finite-element solves: the surrogate route 4 49.1, 19 38, 34 38, 49 33.8, 64 32.8, 79 31.9, 94 31.9, 109 31.8, 124 31.8, 139 31.8, 154 31.8, 169 31.8, 184 31.8" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="320" height="168"></div><figcaption>Figure 1: The peak temperature against the real solves spent</figcaption></figure></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -944,8 +945,19 @@ find the basin, and the solver’s to finish.</p>
 </section>
 <section id="In-3D">
 <h2>In 3D<a class="headerlink" href="#In-3D" title="Link to this heading"></a></h2>
-<p>The same works in 3D, where every solve is a 3D flow and heat problem: <a class="reference external" href="pytorch-duct.md">a cooling duct</a> lofted through three constraint sketches, updated by a thin wrapper, and optimized by the surrogate.</p>
+<p>The same works in 3D, where every solve is a 3D flow and heat problem: <a class="reference internal" href="pytorch-duct.html"><span class="doc">a cooling duct</span></a> lofted through three constraint sketches, updated by a thin wrapper, and optimized by the surrogate.</p>
 <div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#The-sections">The sections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#A-guided-loft">A guided loft</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#Flow-and-heat">Flow and heat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#One-question-for-COBYLA">One question for COBYLA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#A-map-from-PyTorch">A map from PyTorch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-duct.html#The-flow-in-the-chosen-duct">The flow in the chosen duct</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </section>
 </section>
@@ -954,8 +966,8 @@ find the basin, and the solver’s to finish.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="scipy.html" class="btn btn-neutral float-left" title="SciPy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="kicad.html" class="btn btn-neutral float-right" title="KiCad" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="scipy-cold-plate.html" class="btn btn-neutral float-left" title="A 3D cold plate" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pytorch-duct.html" class="btn btn-neutral float-right" title="A 3D duct" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

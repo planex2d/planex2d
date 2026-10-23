@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -626,7 +626,7 @@ full 0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.49%; align-items: flex-start; justify-content: center; width: 66.89%; margin: 4px auto 8px"><div style="width: 47.76%; text-align: center"><img src="fig_eb8c29b167d05b1b.svg" alt="Marks at equal steps of height" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="199" height="187"><br>(a) Marks at equal steps of height</div><div style="width: 47.76%; text-align: center"><img src="fig_04550ef93e4d47c6.svg" alt="The solved marks: 10 % each" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(b) The solved marks: 10 % each</div></div><figcaption>Figure 1: A tank section with marks at equal steps and at equal volumes</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.49%; align-items: flex-start; justify-content: center; width: 66.89%; margin: 4px auto 8px"><div style="width: 47.76%; text-align: center"><img src="fig_246cb768e015b824.svg" alt="Marks at equal steps of height" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="199" height="187"><br>(a) Marks at equal steps of height</div><div style="width: 47.76%; text-align: center"><img src="fig_fd0491ba44213218.svg" alt="The solved marks: 10 % each" style="width: 100%" loading="lazy" decoding="async" width="199" height="187"><br>(b) The solved marks: 10 % each</div></div><figcaption>Figure 1: A tank section with marks at equal steps and at equal volumes</figcaption></figure></div>
 </div>
 </section>
 <section id="Checks">
@@ -690,13 +690,13 @@ flat in the middle, where a liter adds the least height.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 6.74%; align-items: flex-start; justify-content: center; width: 44.50%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_2d066fbe61e93065.svg" alt="The tank and its dipstick, 10 % between two marks" style="width: 100%" loading="lazy" decoding="async" width="278" height="187"></div></div><figcaption>Figure 2: The tank and its dipstick, 10 % between two marks</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 6.74%; align-items: flex-start; justify-content: center; width: 44.50%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_c44b946daa57e42f.svg" alt="The tank and its dipstick, 10 % between two marks" style="width: 100%" loading="lazy" decoding="async" width="278" height="187"></div></div><figcaption>Figure 2: The tank and its dipstick, 10 % between two marks</figcaption></figure></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_8d83eba12649d4a9.svg" alt="Fill height [mm] over Volume [L]: The solved marks 1.57e+03 313, 3.14e+03 508, 4.71e+03 680, 6.28e+03 842, 7.85e+03 1e+03, 9.42e+03 1.16e+03, 1.1e+04 1.32e+03, 1.26e+04 1.49e+03, 1.41e+04 1.69e+03" style="width: 100%" loading="lazy" decoding="async" width="340" height="168"></div><figcaption>Figure 3: The fill height over the volume, tank 2 m by 5 m</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_840b1fecafa12532.svg" alt="Fill height [mm] over Volume [L]: The solved marks 1.57e+03 313, 3.14e+03 508, 4.71e+03 680, 6.28e+03 842, 7.85e+03 1e+03, 9.42e+03 1.16e+03, 1.1e+04 1.32e+03, 1.26e+04 1.49e+03, 1.41e+04 1.69e+03" style="width: 100%" loading="lazy" decoding="async" width="340" height="168"></div><figcaption>Figure 3: The fill height over the volume, tank 2 m by 5 m</figcaption></figure></div>
 </div>
 </section>
 <section id="One-number-changes-the-tank">
@@ -732,7 +732,7 @@ largest |h - 1.25 h_before|: 6.821210263296962e-13
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.88%; align-items: flex-start; justify-content: center; width: 77.29%; margin: 4px auto 8px"><div style="width: 48.06%; text-align: center"><img src="fig_42f7b512d5a37782.svg" alt="r = 1000" style="width: 100%" loading="lazy" decoding="async" width="232" height="187"><br>(a) r = 1000</div><div style="width: 48.06%; text-align: center"><img src="fig_5cbe8dfef6a11da2.svg" alt="Update({&quot;r&quot;: 1250})" style="width: 100%" loading="lazy" decoding="async" width="232" height="187"><br>(b) Update({&quot;r&quot;: 1250})</div></div><figcaption>Figure 4: The same rules on a larger tank</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.88%; align-items: flex-start; justify-content: center; width: 77.29%; margin: 4px auto 8px"><div style="width: 48.06%; text-align: center"><img src="fig_20ebda370f78a7f2.svg" alt="r = 1000" style="width: 100%" loading="lazy" decoding="async" width="232" height="187"><br>(a) r = 1000</div><div style="width: 48.06%; text-align: center"><img src="fig_f4bf56ef1b852d80.svg" alt="Update({&quot;r&quot;: 1250})" style="width: 100%" loading="lazy" decoding="async" width="232" height="187"><br>(b) Update({&quot;r&quot;: 1250})</div></div><figcaption>Figure 4: The same rules on a larger tank</figcaption></figure></div>
 </div>
 <p>The same works for any formula an engineer looks up rather than derives: write it once as a rule, place one element per value it must take, and the sketch solves them together. More rules between dimensions and the geometry: <a class="reference internal" href="expressions.html"><span class="doc">expressions</span></a>.</p>
 </section>

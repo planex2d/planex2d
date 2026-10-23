@@ -36,7 +36,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -652,7 +652,7 @@ tol 1e-06 points on the outline 17209 area error -6.707198735966813e-05
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_f1c5fae25f68e2ab.svg" alt="ToShapely(tol=1.5): 50 segments" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) ToShapely(tol=1.5): 50 segments</div><div style="width: 47.62%; text-align: center"><img src="fig_7ff3befa4813c3ee.svg" alt="The planex2d face: 8 arcs" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The planex2d face: 8 arcs</div></div><figcaption>Figure 1: A flange gasket as a coarse polygon and as the exact face</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_bac9be8dad2ffc6c.svg" alt="ToShapely(tol=1.5): 50 segments" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) ToShapely(tol=1.5): 50 segments</div><div style="width: 47.62%; text-align: center"><img src="fig_6704011e39b0985b.svg" alt="The planex2d face: 8 arcs" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) The planex2d face: 8 arcs</div></div><figcaption>Figure 1: A flange gasket as a coarse polygon and as the exact face</figcaption></figure></div>
 </div>
 </section>
 <section id="Predicates-and-distances">
@@ -693,7 +693,7 @@ False True 10.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_1786b0de25bdd9b2.svg" alt="From shapely: 176 edges" style="width: 100%" loading="lazy" decoding="async" width="517" height="187"><br>(a) From shapely: 176 edges</div><div style="width: 48.50%; text-align: center"><img src="fig_5fd4ddb7166ba2eb.svg" alt="Fitted: 10 edges" style="width: 100%" loading="lazy" decoding="async" width="517" height="187"><br>(b) Fitted: 10 edges</div></div><figcaption>Figure 2: Five discs united in shapely, back in planex2d and fitted to arcs</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_47478c84c0f88d6c.svg" alt="From shapely: 176 edges" style="width: 100%" loading="lazy" decoding="async" width="517" height="187"><br>(a) From shapely: 176 edges</div><div style="width: 48.50%; text-align: center"><img src="fig_4a5cd2ec72c281ef.svg" alt="Fitted: 10 edges" style="width: 100%" loading="lazy" decoding="async" width="517" height="187"><br>(b) Fitted: 10 edges</div></div><figcaption>Figure 2: Five discs united in shapely, back in planex2d and fitted to arcs</figcaption></figure></div>
 </div>
 </section>
 <section id="Line-strings">
@@ -711,7 +711,7 @@ False True 10.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.05%; align-items: flex-start; justify-content: center; width: 74.12%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_3cf03decbecac54c.svg" alt="A line string as a wire" style="width: 100%" loading="lazy" decoding="async" width="462" height="187"></div></div><figcaption>Figure 3: A line string as a wire</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.05%; align-items: flex-start; justify-content: center; width: 74.12%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_2b3b5191dcebd894.svg" alt="A line string as a wire" style="width: 100%" loading="lazy" decoding="async" width="462" height="187"></div></div><figcaption>Figure 3: A line string as a wire</figcaption></figure></div>
 </div>
 </section>
 </section>

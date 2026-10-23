@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -634,7 +634,7 @@ area 36756.63395917995 exact 36756.63404700058
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.24%; align-items: flex-start; justify-content: center; width: 70.79%; margin: 4px auto 8px"><div style="width: 53.89%; text-align: center"><img src="fig_1cab44c4c6f47792.svg" alt="The housing" style="width: 100%" loading="lazy" decoding="async" width="238" height="187"><br>(a) The housing</div><div style="width: 41.87%; text-align: center"><img src="fig_b408e5ef833ff736.svg" alt="The rotor" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) The rotor</div></div><figcaption>Figure 1: The epitrochoid and what fits inside it in every position</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.24%; align-items: flex-start; justify-content: center; width: 70.79%; margin: 4px auto 8px"><div style="width: 53.89%; text-align: center"><img src="fig_965e3cf3f47a08a1.svg" alt="The housing" style="width: 100%" loading="lazy" decoding="async" width="238" height="187"><br>(a) The housing</div><div style="width: 41.87%; text-align: center"><img src="fig_4fe0c9109eeb2fb0.svg" alt="The rotor" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) The rotor</div></div><figcaption>Figure 1: The epitrochoid and what fits inside it in every position</figcaption></figure></div>
 </div>
 <p><strong>Check:</strong> the rotor’s apexes run along the housing, so the more views there are, the closer they come to R from the rotor’s center. With 180 views, they fall short of it by a fraction of a micrometer:</p>
 <div class="nbinput docutils container">
@@ -691,7 +691,7 @@ rotor area 23065.27 reaches out to 104.99983877612173 R 105.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_bc2d55c21052ea1e.svg" alt="chamber area [mm²] over shaft angle [°]: one chamber 0 2.52e+03, 90 472, 180 2.52e+03, 270 6.61e+03, 360 8.66e+03, 450 6.61e+03, 540 2.52e+03, 630 472, 720 2.52e+03, 810 6.61e+03, 900 8.66e+03, 990 6.61e+03" style="width: 100%" loading="lazy" decoding="async" width="332" height="168"></div><figcaption>Figure 2: The area of one chamber over its cycle of three shaft turns</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_71dc49dc44c4d607.svg" alt="chamber area [mm²] over shaft angle [°]: one chamber 0 2.52e+03, 90 472, 180 2.52e+03, 270 6.61e+03, 360 8.66e+03, 450 6.61e+03, 540 2.52e+03, 630 472, 720 2.52e+03, 810 6.61e+03, 900 8.66e+03, 990 6.61e+03" style="width: 100%" loading="lazy" decoding="async" width="332" height="168"></div><figcaption>Figure 2: The area of one chamber over its cycle of three shaft turns</figcaption></figure></div>
 </div>
 <p><strong>Check:</strong> the chamber area changes by 3√3 R e. Times the width of 80, that is the displacement per chamber. The compression ratio leaves out the recess that real rotors have in each flank.</p>
 <div class="nbinput docutils container">
@@ -726,7 +726,7 @@ compression ratio 18.3
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_5ce665c482cbe822.webm" type="video/webm"><source src="anim_5ce665c482cbe822.mp4" type="video/mp4"></video></div>
+<video controls loop muted playsinline preload="auto" style="max-width: 100%"><source src="anim_4b9e3c4f34e205c7.webm" type="video/webm"><source src="anim_4b9e3c4f34e205c7.mp4" type="video/mp4"></video></div>
 </div>
 </section>
 </section>

@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -727,7 +727,7 @@ shaded 0.0 %
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_16e2e80f7e577267.svg" alt="Equinox, 10:00: 0 % shaded" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) Equinox, 10:00: 0 % shaded</div><div style="width: 47.62%; text-align: center"><img src="fig_81893904f3bba148.svg" alt="Winter solstice, 10:00: 42 % shaded" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Winter solstice, 10:00: 42 % shaded</div></div><figcaption>Figure 1: The panel seen from the sun, the obstacles grey and the shaded part orange</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 63.00%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_81682a8cc6629f61.svg" alt="Equinox, 10:00: 0 % shaded" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) Equinox, 10:00: 0 % shaded</div><div style="width: 47.62%; text-align: center"><img src="fig_1f8dcf28c5711514.svg" alt="Winter solstice, 10:00: 42 % shaded" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Winter solstice, 10:00: 42 % shaded</div></div><figcaption>Figure 1: The panel seen from the sun, the obstacles grey and the shaded part orange</figcaption></figure></div>
 </div>
 </section>
 <section id="Over-the-day">
@@ -771,13 +771,13 @@ summer solstice 1.6 % of the day&#39;s direct light lost to shade
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_ecaa6f7b2ed3e849.svg" alt="shaded share over solar time [h]: " style="width: 100%" loading="lazy" decoding="async" width="323" height="169"></div><figcaption>Figure 2: The shaded share of the panel</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_364bd47fb90a4753.svg" alt="shaded share over solar time [h]: " style="width: 100%" loading="lazy" decoding="async" width="323" height="169"></div><figcaption>Figure 2: The shaded share of the panel</figcaption></figure></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_6740af5b66c0503e.svg" alt="direct light over solar time [h]: " style="width: 100%" loading="lazy" decoding="async" width="323" height="168"></div><figcaption>Figure 3: The direct light on the panel: cosine times the unshaded share</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_6b05fd9908bb6b89.svg" alt="direct light over solar time [h]: " style="width: 100%" loading="lazy" decoding="async" width="323" height="168"></div><figcaption>Figure 3: The direct light on the panel: cosine times the unshaded share</figcaption></figure></div>
 </div>
 </section>
 </section>

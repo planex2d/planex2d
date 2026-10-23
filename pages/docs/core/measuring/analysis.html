@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -640,7 +640,7 @@ thinnest wall 15.99999999999817 exact 16
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.04%; align-items: flex-start; justify-content: center; width: 74.34%; margin: 4px auto 8px"><div style="width: 42.42%; text-align: center"><img src="fig_7e311bd51264e06a.svg" alt="The sketch and its ids" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="215" height="204"><br>(a) The sketch and its ids</div><div style="width: 53.55%; text-align: center"><img src="fig_c922a79b094c764f.svg" alt="The wall thickness map" style="width: 100%" loading="lazy" decoding="async" width="248" height="187"><br>(b) The wall thickness map</div></div><figcaption>Figure 1: A flange in a constraint sketch and its wall thickness</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.04%; align-items: flex-start; justify-content: center; width: 74.34%; margin: 4px auto 8px"><div style="width: 42.42%; text-align: center"><img src="fig_450b3471a6ad8df0.svg" alt="The sketch and its ids" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="215" height="204"><br>(a) The sketch and its ids</div><div style="width: 53.55%; text-align: center"><img src="fig_780335f3a333ca19.svg" alt="The wall thickness map" style="width: 100%" loading="lazy" decoding="async" width="248" height="187"><br>(b) The wall thickness map</div></div><figcaption>Figure 1: A flange in a constraint sketch and its wall thickness</figcaption></figure></div>
 </div>
 </section>
 <section id="Picking-what-to-measure">
@@ -676,7 +676,7 @@ thinnest wall 15.99999999999817 exact 16
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_cfeaa8d87fb7ed95.svg" alt="edges(name=&quot;bolt&quot;)" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) edges(name=&quot;bolt&quot;)</div><div style="width: 31.25%; text-align: center"><img src="fig_b012380b67b13fc3.svg" alt="Circles centered at x &gt; 0 and y &gt; 0" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Circles centered at x &gt; 0 and y &gt; 0</div><div style="width: 31.25%; text-align: center"><img src="fig_cdda4d29e39990fd.svg" alt="Near the bolt, then its face&#x27;s outline" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) Near the bolt, then its face&#x27;s outline</div></div><figcaption>Figure 2: Edges selected by name, by position and by what they bound</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_e90c1e0b42a22235.svg" alt="edges(name=&quot;bolt&quot;)" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) edges(name=&quot;bolt&quot;)</div><div style="width: 31.25%; text-align: center"><img src="fig_9ae228aeb7966be1.svg" alt="Circles centered at x &gt; 0 and y &gt; 0" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Circles centered at x &gt; 0 and y &gt; 0</div><div style="width: 31.25%; text-align: center"><img src="fig_b7752f96aeb0de86.svg" alt="Near the bolt, then its face&#x27;s outline" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) Near the bolt, then its face&#x27;s outline</div></div><figcaption>Figure 2: Edges selected by name, by position and by what they bound</figcaption></figure></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">Min</span></code>, <code class="docutils literal notranslate"><span class="pre">Max</span></code> and <code class="docutils literal notranslate"><span class="pre">Sorted</span></code> order by a measure (<code class="docutils literal notranslate"><span class="pre">&quot;length&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;area&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;radius&quot;</span></code>) or along an axis or a direction (<code class="docutils literal notranslate"><span class="pre">px.X</span></code>, <code class="docutils literal notranslate"><span class="pre">px.H</span></code>, <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">1)</span></code>). As in the sketch, an edge’s id followed by <code class="docutils literal notranslate"><span class="pre">.start</span></code>, <code class="docutils literal notranslate"><span class="pre">.end</span></code>, <code class="docutils literal notranslate"><span class="pre">.mid</span></code> or <code class="docutils literal notranslate"><span class="pre">.center</span></code> names a point. A full circle has no ends, only its <code class="docutils literal notranslate"><span class="pre">.center</span></code>.</p>
 <div class="nbinput docutils container">
@@ -764,13 +764,13 @@ largest difference to the closed form 2.353672812205332e-12
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_92f5bcc4f37237ea.svg" alt="Thinnest wall over Bolts on the pitch circle: 4 16, 5 16, 6 16, 7 16, 8 16, 9 16, 10 16, 11 14.5, 12 12.7, 13 11.1, 14 9.8, 15 8.63, 16 7.61, 17 6.7, 18 5.89, 19 5.17, 20 4.51, 21 3.92, 22 3.39, 23 2.89, 24 2.44" style="width: 100%" loading="lazy" decoding="async" width="320" height="155"></div><figcaption>Figure 3: The thinnest wall for 4 to 24 bolts</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_a4794f6164633cf1.svg" alt="Thinnest wall over Bolts on the pitch circle: 4 16, 5 16, 6 16, 7 16, 8 16, 9 16, 10 16, 11 14.5, 12 12.7, 13 11.1, 14 9.8, 15 8.63, 16 7.61, 17 6.7, 18 5.89, 19 5.17, 20 4.51, 21 3.92, 22 3.39, 23 2.89, 24 2.44" style="width: 100%" loading="lazy" decoding="async" width="320" height="155"></div><figcaption>Figure 3: The thinnest wall for 4 to 24 bolts</figcaption></figure></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.54%; align-items: flex-start; justify-content: center; width: 39.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_2b441098e95b7094.svg" alt="17 bolts: the ligaments are the thinnest walls now" style="width: 100%" loading="lazy" decoding="async" width="248" height="187"></div></div><figcaption>Figure 4: The flange with 17 bolts</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.54%; align-items: flex-start; justify-content: center; width: 39.81%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_ea903ca3c452e04e.svg" alt="17 bolts: the ligaments are the thinnest walls now" style="width: 100%" loading="lazy" decoding="async" width="248" height="187"></div></div><figcaption>Figure 4: The flange with 17 bolts</figcaption></figure></div>
 </div>
 <p>The same works for the pitch circle. Moved out to a radius of 49, the holes come too close to the rim, since e/d = (60 − r) / 8:</p>
 <div class="nbinput docutils container">
@@ -850,7 +850,7 @@ pcd 49 e/d 1.375 exact 1.375 too close to the rim
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 33.85%; text-align: center"><img src="fig_648333a640bda3be.svg" alt="A notch: no end mill fits" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(a) A notch: no end mill fits</div><div style="width: 33.85%; text-align: center"><img src="fig_85b93b3322c48c4a.svg" alt="A fillet of radius 5: at most 10" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(b) A fillet of radius 5: at most 10</div><div style="width: 26.30%; text-align: center"><img src="fig_08f98b98580f97ea.svg" alt="The bolt holes: at most 8" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) The bolt holes: at most 8</div></div><figcaption>Figure 5: The largest end mill that cuts each part</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 33.85%; text-align: center"><img src="fig_a2fb1e200ecdb0ec.svg" alt="A notch: no end mill fits" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(a) A notch: no end mill fits</div><div style="width: 33.85%; text-align: center"><img src="fig_226b936fb808ad56.svg" alt="A fillet of radius 5: at most 10" style="width: 100%" loading="lazy" decoding="async" width="241" height="187"><br>(b) A fillet of radius 5: at most 10</div><div style="width: 26.30%; text-align: center"><img src="fig_850975f6e7c239b6.svg" alt="The bolt holes: at most 8" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) The bolt holes: at most 8</div></div><figcaption>Figure 5: The largest end mill that cuts each part</figcaption></figure></div>
 </div>
 </section>
 <section id="Thermal:-the-hottest-spot-of-a-cold-plate">
@@ -978,7 +978,7 @@ hydraulic diameter 6.000000000000003 exact 6
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 62.99%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_f526b0fa69ec0aaa.svg" alt="A tube: J = π/2 (R⁴ − r⁴)" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) A tube: J = π/2 (R⁴ − r⁴)</div><div style="width: 47.61%; text-align: center"><img src="fig_ab3bbea043602632.svg" alt="Slit: 1/190 of the tube&#x27;s J" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Slit: 1/190 of the tube&#x27;s J</div></div><figcaption>Figure 7: A tube and a slit tube in torsion</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.76%; align-items: flex-start; justify-content: center; width: 62.99%; margin: 4px auto 8px"><div style="width: 47.62%; text-align: center"><img src="fig_dbdd9295fd040046.svg" alt="A tube: J = π/2 (R⁴ − r⁴)" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) A tube: J = π/2 (R⁴ − r⁴)</div><div style="width: 47.61%; text-align: center"><img src="fig_4cac0704b3699c17.svg" alt="Slit: 1/190 of the tube&#x27;s J" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) Slit: 1/190 of the tube&#x27;s J</div></div><figcaption>Figure 7: A tube and a slit tube in torsion</figcaption></figure></div>
 </div>
 </section>
 <section id="How-far-apart-two-curves-are">
@@ -1013,7 +1013,7 @@ cam to its 164 segments 0.013402827710692363
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.56%; align-items: flex-start; justify-content: center; width: 65.85%; margin: 4px auto 8px"><div style="width: 45.56%; text-align: center"><img src="fig_78f30fca63448716.svg" alt="A circle and the 64-gon" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) A circle and the 64-gon</div><div style="width: 49.88%; text-align: center"><img src="fig_d10e97ee6a3f2f5a.svg" alt="A cam and its 164 segments" style="width: 100%" loading="lazy" decoding="async" width="205" height="187"><br>(b) A cam and its 164 segments</div></div><figcaption>Figure 8: Hausdorff distances: a circle and a polygon, a cam and its polyline</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.56%; align-items: flex-start; justify-content: center; width: 65.85%; margin: 4px auto 8px"><div style="width: 45.56%; text-align: center"><img src="fig_d322371142230c8c.svg" alt="A circle and the 64-gon" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(a) A circle and the 64-gon</div><div style="width: 49.88%; text-align: center"><img src="fig_a3d46c5ba7d988c3.svg" alt="A cam and its 164 segments" style="width: 100%" loading="lazy" decoding="async" width="205" height="187"><br>(b) A cam and its 164 segments</div></div><figcaption>Figure 8: Hausdorff distances: a circle and a polygon, a cam and its polyline</figcaption></figure></div>
 </div>
 </section>
 <section id="At-a-glance">

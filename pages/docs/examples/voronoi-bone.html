@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -655,7 +655,7 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-6001 struts united and cut to the square in 0.09 s
+6001 struts united and cut to the square in 0.093 s
 1 face, 1986 holes from 2000 cells, 10541 edges
 relative density 0.461
 </pre></div></div>
@@ -732,13 +732,20 @@ relative density 0.461
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -2.5e-11
-strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.1e-10
-strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction 7.9e-11
-strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 7.1e-11
+strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -5.5e-11
+strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.7e-11
+strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction -2.4e-11
+strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 9.1e-11
 </pre></div></div>
 </div>
 <p>The stiffness against the density, on logarithmic axes, with the two laws:</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_voronoi-bone_13_0.webp" type="image/webp"><img alt="../_images/examples_voronoi-bone_13_0.png" src="../_images/examples_voronoi-bone_13_0.png" loading="lazy" decoding="async" width="547" height="371"></picture>
+</div>
+</div>
 <p>The scaffold with struts of 0.2, pressed: its displacement, with the deformation magnified 10 times:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -754,11 +761,11 @@ strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 7.1e-11
 </div>
 <div class="output_area rendered_html docutils container">
 <div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
-<img id='webgpu1_img' src='webgpu_c249f0b6a2a6c39e.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<img id='webgpu1_img' src='webgpu_f04acc23c3105ce0.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
 <div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
  onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
  onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
- onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_c249f0b6a2a6c39e) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_c249f0b6a2a6c39e); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_c249f0b6a2a6c39e.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_f04acc23c3105ce0) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_f04acc23c3105ce0); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_f04acc23c3105ce0.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
 <canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
 <div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
 </div></div>

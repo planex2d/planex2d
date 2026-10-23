@@ -33,7 +33,6 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -87,7 +86,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -401,7 +399,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +414,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -619,7 +619,7 @@ lens area 266.342
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 35.45%; align-items: flex-start; justify-content: center; width: 8.46%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_022c298bf3f99550.svg" alt="The lens" style="width: 100%" loading="lazy" decoding="async" width="53" height="187"></div></div><figcaption>Figure 1: A biconvex lens as the intersection of two discs and a rectangle</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 35.45%; align-items: flex-start; justify-content: center; width: 8.46%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_659dceac0f16b96a.svg" alt="The lens" style="width: 100%" loading="lazy" decoding="async" width="53" height="187"></div></div><figcaption>Figure 1: A biconvex lens as the intersection of two discs and a rectangle</figcaption></figure></div>
 </div>
 <p>The thick-lens formula gives the focal length and the principal planes:</p>
 <div class="nbinput docutils container">
@@ -777,10 +777,24 @@ chief ray lands at -9.5791 paraxial image height -9.5887
 </pre></div></div>
 </div>
 <p>The rays through the lens: the on-axis bundle in blue with its marginal rays dark, the off-axis bundle in green and the chief ray in red.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_lens-ray-tracing_19_0.webp" type="image/webp"><img alt="../_images/examples_lens-ray-tracing_19_0.png" src="../_images/examples_lens-ray-tracing_19_0.png" loading="lazy" decoding="async" width="1144" height="390"></picture>
+</div>
+</div>
 </section>
 <section id="Aberrations">
 <h2>Aberrations<a class="headerlink" href="#Aberrations" title="Link to this heading"></a></h2>
 <p>The ray fan plots where each ray of a bundle lands in the image plane against where it passed the stop. The S-shape of the on-axis fan is spherical aberration, and the curve of the off-axis fan is coma.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<picture><source srcset="../_images/examples_lens-ray-tracing_21_0.webp" type="image/webp"><img alt="../_images/examples_lens-ray-tracing_21_0.png" src="../_images/examples_lens-ray-tracing_21_0.png" loading="lazy" decoding="async" width="1013" height="392"></picture>
+</div>
+</div>
 </section>
 <section id="Which-way-round">
 <h2>Which way round<a class="headerlink" href="#Which-way-round" title="Link to this heading"></a></h2>

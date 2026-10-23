@@ -70,7 +70,7 @@ print("1440 cuts in", round(time.perf_counter() - start, 2), "s,", len(gear24.ed
 ```
 
 ```text
-1440 cuts in 0.16 s, 12480 edges
+1440 cuts in 0.17 s, 12480 edges
 ```
 
 ```python
@@ -163,6 +163,8 @@ for ax, gear, exact, z in zip(axes, (gear24, gear10), (exact24, exact10), (24, 1
     ax.set_title(f"{z} teeth, involute in red")
 plt.show()
 ```
+
+![figure](gear-cutting_files/gear-cutting_2.png)
 
 ## In motion
 

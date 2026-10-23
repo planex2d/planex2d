@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -616,7 +616,7 @@ closed splines and points.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_7a7b74601f01b3fe.svg" alt="NACA 0012 from one spline, the hinge line at 75 % chord dashed" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="902" height="204"></div></div><figcaption>Figure 1: NACA 0012 from one spline, the hinge line at 75 % chord dashed</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_005e70d310bded74.svg" alt="NACA 0012 from one spline, the hinge line at 75 % chord dashed" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="902" height="204"></div></div><figcaption>Figure 1: NACA 0012 from one spline, the hinge line at 75 % chord dashed</figcaption></figure></div>
 </div>
 <p>The area is checked against the integral of the thickness formula, and the hinge line against the thickness:</p>
 <div class="nbinput docutils container">
@@ -657,7 +657,7 @@ hinge 6.240877677195613 thickness 6.240878086031979
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 10.12%; align-items: flex-start; justify-content: center; width: 29.65%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_f75688821706afb6.svg" alt="A cam: one periodic spline through 36 points, and the bore" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"></div></div><figcaption>Figure 2: A cam: one periodic spline through 36 points, and the bore</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 10.12%; align-items: flex-start; justify-content: center; width: 29.65%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_c51a84f869bbcb85.svg" alt="A cam: one periodic spline through 36 points, and the bore" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"></div></div><figcaption>Figure 2: A cam: one periodic spline through 36 points, and the bore</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:

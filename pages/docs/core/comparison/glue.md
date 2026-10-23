@@ -50,11 +50,11 @@ for name, (t, area) in others.items():
 
 ```text
 planex2d   0.0009 s, 201 faces, matrix 673.805329
-OCC        0.0152 s, 201 faces, area 900.000000
-shapely    0.8803 s, matrix 673.805351, relative to planex2d +3e-08
-pyclipper  0.5844 s, matrix 673.805351, relative to planex2d +3e-08
-gdstk      0.6872 s, matrix 673.805351, relative to planex2d +3e-08
-manifold3d 0.6687 s, matrix 673.805351, relative to planex2d +3e-08
+OCC        0.0156 s, 201 faces, area 900.000000
+shapely    0.8414 s, matrix 673.805351, relative to planex2d +3e-08
+pyclipper  0.5683 s, matrix 673.805351, relative to planex2d +3e-08
+gdstk      0.6588 s, matrix 673.805351, relative to planex2d +3e-08
+manifold3d 0.6726 s, matrix 673.805351, relative to planex2d +3e-08
 ```
 
 ```python

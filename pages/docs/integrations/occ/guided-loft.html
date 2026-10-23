@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -577,8 +577,8 @@
              
   <section id="Lofts-with-guide-curves">
 <h1>Lofts with guide curves<a class="headerlink" href="#Lofts-with-guide-curves" title="Link to this heading"></a></h1>
-<p>A loft through a few sections is smooth, but between the sections it goes wherever its splines take it. When the sections change quickly, its walls overshoot, and a passage can pinch shut where it should stay open. Guide curves steer a loft. In planex2d, the guides go through the named corners of the sections, they are cut every few millimeters, and every cut becomes a section of its own, so <code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> has no room left between the sections. The construction is the same as for the <a class="reference external" href="../pytorch-duct.md">3D
-duct</a>, here on a simpler part.</p>
+<p>A loft through a few sections is smooth, but between the sections it goes wherever its splines take it. When the sections change quickly, its walls overshoot, and a passage can pinch shut where it should stay open. Guide curves steer a loft. In planex2d, the guides go through the named corners of the sections, they are cut every few millimeters, and every cut becomes a section of its own, so <code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> has no room left between the sections. The construction is the same as for the <a class="reference internal" href="../pytorch-duct.html"><span class="doc">3D
+duct</span></a>, here on a simpler part.</p>
 <p>A blower nozzle takes air from a hose fitting, a rounded square of 40 × 40, and blows it out of a flat slot of 120 × 8 at 100 along the axis. It flattens early, to a neck of 60 × 10 at 30, and then fans out to the slot.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -633,7 +633,7 @@ duct</a>, here on a simpler part.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.33%; text-align: center"><img src="fig_8266af445e4edb7c.svg" alt="inlet, 40 × 40, z 0" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="528" height="187"><br>(a) inlet, 40 × 40, z 0</div><div style="width: 31.33%; text-align: center"><img src="fig_f348177b5a0c858a.svg" alt="neck, 60 × 10, z 30" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(b) neck, 60 × 10, z 30</div><div style="width: 31.33%; text-align: center"><img src="fig_8a0692302859c091.svg" alt="slot, 120 × 8, z 100" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(c) slot, 120 × 8, z 100</div></div><figcaption>Figure 1: The three sketched sections and their named corners</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.33%; text-align: center"><img src="fig_eef435aad88ab937.svg" alt="inlet, 40 × 40, z 0" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="528" height="187"><br>(a) inlet, 40 × 40, z 0</div><div style="width: 31.33%; text-align: center"><img src="fig_134f9ba1b6537eda.svg" alt="neck, 60 × 10, z 30" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(b) neck, 60 × 10, z 30</div><div style="width: 31.33%; text-align: center"><img src="fig_a46d90a1a6738409.svg" alt="slot, 120 × 8, z 100" style="width: 100%" loading="lazy" decoding="async" width="528" height="187"><br>(c) slot, 120 × 8, z 100</div></div><figcaption>Figure 1: The three sketched sections and their named corners</figcaption></figure></div>
 </div>
 </section>
 <section id="The-plain-loft">
@@ -756,7 +756,7 @@ plain loft: smallest height 0.40861213982749645 slot 8.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_72a95882b126e400.svg" alt="The seven sections and the guides" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(a) The seven sections and the guides</div><div style="width: 48.50%; text-align: center"><img src="fig_0c60b48eaa749471.svg" alt="all sections of the loft" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(b) all sections of the loft</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 1.4px solid #6fb0cf; vertical-align: middle; margin-right: 0.35em"></span>cut from the guides</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 2: The sections and the guide curves</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_ef9daef30d2e1cce.svg" alt="The seven sections and the guides" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(a) The seven sections and the guides</div><div style="width: 48.50%; text-align: center"><img src="fig_7ea3bf35ec1e7011.svg" alt="all sections of the loft" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(b) all sections of the loft</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 1.4px solid #6fb0cf; vertical-align: middle; margin-right: 0.35em"></span>cut from the guides</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 2: The sections and the guide curves</figcaption></figure></div>
 </div>
 </section>
 <section id="Plain-and-guided">
@@ -766,7 +766,7 @@ plain loft: smallest height 0.40861213982749645 slot 8.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_0d6787384fce3d25.svg" alt="The plain loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(c) The plain loft, its edges</div><div style="width: 48.50%; text-align: center"><img src="fig_9581ed4a35d2d065.svg" alt="The guided loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(d) The guided loft, its edges</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div></div>
+<div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 48.50%; text-align: center"><img src="fig_0b7d3e39027778e1.svg" alt="The plain loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(c) The plain loft, its edges</div><div style="width: 48.50%; text-align: center"><img src="fig_b974abd0c80c77dd.svg" alt="The guided loft, its edges" style="width: 100%" loading="lazy" decoding="async" width="354" height="187"><br>(d) The guided loft, its edges</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -783,7 +783,7 @@ plain loft: smallest height 0.40861213982749645 slot 8.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_26bf837912497f02.svg" alt="height of the passage over z: sketched 0 40, 30 10, 100 8; guided loft 0 40, 8 34.5, 16 23.4, 24 15.8, 32 8.89, 40 7.59, 48 8.58, 56 9.56, 64 9.64, 72 9.11, 80 8.38, 88 8.06, 96 8" style="width: 100%" loading="lazy" decoding="async" width="320" height="168"></div><figcaption>Figure 3: The height of the nozzle&#x27;s passage along its axis</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_99c4719302f0a0dd.svg" alt="height of the passage over z: sketched 0 40, 30 10, 100 8; guided loft 0 40, 8 34.5, 16 23.4, 24 15.8, 32 8.89, 40 7.59, 48 8.58, 56 9.56, 64 9.64, 72 9.11, 80 8.38, 88 8.06, 96 8" style="width: 100%" loading="lazy" decoding="async" width="320" height="168"></div><figcaption>Figure 3: The height of the nozzle&#x27;s passage along its axis</figcaption></figure></div>
 </div>
 </section>
 <section id="Checks">

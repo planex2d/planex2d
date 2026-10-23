@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -620,7 +620,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.55%; align-items: flex-start; justify-content: center; width: 66.01%; margin: 4px auto 8px"><div style="width: 50.46%; text-align: center"><img src="fig_1e25a98ab054483b.svg" alt="The ring and the joint lines" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="208" height="187"><br>(a) The ring and the joint lines</div><div style="width: 45.00%; text-align: center"><img src="fig_9e6708b36da4eb7d.svg" alt="Six segments" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) Six segments</div></div><figcaption>Figure 1: A ring split along three lines</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.55%; align-items: flex-start; justify-content: center; width: 66.01%; margin: 4px auto 8px"><div style="width: 50.46%; text-align: center"><img src="fig_69bc03b5278ad204.svg" alt="The ring and the joint lines" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="208" height="187"><br>(a) The ring and the joint lines</div><div style="width: 45.00%; text-align: center"><img src="fig_63e0af8eff72607d.svg" alt="Six segments" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) Six segments</div></div><figcaption>Figure 1: A ring split along three lines</figcaption></figure></div>
 </div>
 <p>Every segment has the area π (40² − 25²) / 6, and the segments keep the ring’s name, while the new edges are named <code class="docutils literal notranslate"><span class="pre">joint</span></code>:</p>
 <div class="nbinput docutils container">
@@ -664,7 +664,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.58%; align-items: flex-start; justify-content: center; width: 83.74%; margin: 4px auto 8px"><div style="width: 40.69%; text-align: center"><img src="fig_c2a7877af1e68d2e.svg" alt="The blank and the arc" style="width: 100%" loading="lazy" decoding="async" width="213" height="187"><br>(a) The blank and the arc</div><div style="width: 55.73%; text-align: center"><img src="fig_1e7751531d48335a.svg" alt="The cover" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"><br>(b) The cover</div></div><figcaption>Figure 2: A blank trimmed along an arc, keep_left=True</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.58%; align-items: flex-start; justify-content: center; width: 83.74%; margin: 4px auto 8px"><div style="width: 40.69%; text-align: center"><img src="fig_c08b7da88f05ff26.svg" alt="The blank and the arc" style="width: 100%" loading="lazy" decoding="async" width="213" height="187"><br>(a) The blank and the arc</div><div style="width: 55.73%; text-align: center"><img src="fig_4d3c1232149ccd6f.svg" alt="The cover" style="width: 100%" loading="lazy" decoding="async" width="291" height="187"><br>(b) The cover</div></div><figcaption>Figure 2: A blank trimmed along an arc, keep_left=True</figcaption></figure></div>
 </div>
 <p>The cover is a rectangle of 40 × 60 and the part of the disc of radius 50 between y = 0 and y = 60, and the cover and the offcut add up to the blank:</p>
 <div class="nbinput docutils container">
@@ -717,7 +717,7 @@ punched 5007.690842153464 exact 5007.690842153464
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.39%; align-items: flex-start; justify-content: center; width: 88.42%; margin: 4px auto 8px"><div style="width: 48.30%; text-align: center"><img src="fig_e7fe50544cffb235.svg" alt="The cover and the punch" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(a) The cover and the punch</div><div style="width: 48.30%; text-align: center"><img src="fig_26d8e0950a30025e.svg" alt="Punched" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) Punched</div></div><figcaption>Figure 3: A closed cutter: Trim with remove_closest_to the center</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.39%; align-items: flex-start; justify-content: center; width: 88.42%; margin: 4px auto 8px"><div style="width: 48.30%; text-align: center"><img src="fig_24883b3d6a900d76.svg" alt="The cover and the punch" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(a) The cover and the punch</div><div style="width: 48.30%; text-align: center"><img src="fig_8f4f8036f2e2e79b.svg" alt="Punched" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) Punched</div></div><figcaption>Figure 3: A closed cutter: Trim with remove_closest_to the center</figcaption></figure></div>
 </div>
 </section>
 <section id="Wires">
@@ -749,7 +749,7 @@ punched 5007.690842153464 exact 5007.690842153464
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.28%; align-items: flex-start; justify-content: center; width: 91.58%; margin: 4px auto 8px"><div style="width: 59.18%; text-align: center"><img src="fig_c398e5311b44233d.svg" alt="A pipe route and two walls" style="width: 100%" loading="lazy" decoding="async" width="338" height="187"><br>(a) A pipe route and two walls</div><div style="width: 37.55%; text-align: center"><img src="fig_639ce6bcbc91bdec.svg" alt="The run between the walls" style="width: 100%" loading="lazy" decoding="async" width="215" height="187"><br>(b) The run between the walls</div></div><figcaption>Figure 4: A wire split by two walls, keep_largest=True</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.28%; align-items: flex-start; justify-content: center; width: 91.58%; margin: 4px auto 8px"><div style="width: 59.18%; text-align: center"><img src="fig_1ada415ddaff9ee9.svg" alt="A pipe route and two walls" style="width: 100%" loading="lazy" decoding="async" width="338" height="187"><br>(a) A pipe route and two walls</div><div style="width: 37.55%; text-align: center"><img src="fig_d81079c099f829f9.svg" alt="The run between the walls" style="width: 100%" loading="lazy" decoding="async" width="215" height="187"><br>(b) The run between the walls</div></div><figcaption>Figure 4: A wire split by two walls, keep_largest=True</figcaption></figure></div>
 </div>
 </section>
 <section id="Cutters-from-3D">

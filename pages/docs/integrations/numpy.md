@@ -130,7 +130,7 @@ print(len(points), "points: Distance", round(time.perf_counter() - start, 2), "s
 
 ```text
 1000000 points: Contains 0.02 s
-1000000 points: Distance 0.07 s
+1000000 points: Distance 0.08 s
 ```
 
 ```python

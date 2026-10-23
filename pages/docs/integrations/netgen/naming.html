@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -617,7 +617,7 @@ and the color <code class="docutils literal notranslate"><span class="pre">col</
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_f18d50b04bc84227.svg" alt="The channel, with the edges named wall in cyan" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="684" height="187"></div></div><figcaption>Figure 1: A flow channel named while it is drawn</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_c4609a40343eccd2.svg" alt="The channel, with the edges named wall in cyan" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="684" height="187"></div></div><figcaption>Figure 1: A flow channel named while it is drawn</figcaption></figure></div>
 </div>
 </section>
 <section id="Names-set-afterwards">
@@ -650,7 +650,7 @@ and the color <code class="docutils literal notranslate"><span class="pre">col</
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_36826a3731698118.svg" alt="The outlet renamed and the corner named" style="width: 100%" loading="lazy" decoding="async" width="684" height="187"></div></div><figcaption>Figure 2: Names and sizes set on selected edges and vertices</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_c6dd4e75211682a3.svg" alt="The outlet renamed and the corner named" style="width: 100%" loading="lazy" decoding="async" width="684" height="187"></div></div><figcaption>Figure 2: Names and sizes set on selected edges and vertices</figcaption></figure></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">face.edges.name</span> <span class="pre">=</span> <span class="pre">&quot;...&quot;</span></code> names every edge of a face at once, and the same works for <code class="docutils literal notranslate"><span class="pre">maxh</span></code> and <code class="docutils literal notranslate"><span class="pre">col</span></code>. See <a class="reference internal" href="../../core/basics/properties.html"><span class="doc">Names and colors</span></a> for the properties in general and how they behave in Boolean operations.</p>
 </section>
@@ -683,7 +683,7 @@ points     [&#39;corner&#39;, &#39;default&#39;]
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 7.03%; align-items: flex-start; justify-content: center; width: 42.67%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_809d4ca67e6ab833.svg" alt="The mesh, refined around the cylinder" style="width: 100%" loading="lazy" decoding="async" width="266" height="187"></div></div><figcaption>Figure 3: The netgen mesh of the named channel, near the cylinder</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 7.03%; align-items: flex-start; justify-content: center; width: 42.67%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_0ef16e52e9f472bd.svg" alt="The mesh, refined around the cylinder" style="width: 100%" loading="lazy" decoding="async" width="266" height="187"></div></div><figcaption>Figure 3: The netgen mesh of the named channel, near the cylinder</figcaption></figure></div>
 </div>
 </section>
 <section id="In-the-OpenCASCADE-export">

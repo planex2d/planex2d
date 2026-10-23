@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -611,7 +611,7 @@ the peak temperature of a cold plate and the stress concentration at a hole, che
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-J 73178.18297599268 series 73178.13668087665 relative difference 6.326358954478195e-07
+J 73178.18297599265 series 73178.13668087665 relative difference 6.326358950037303e-07
 </pre></div></div>
 </div>
 <p>The measurements below follow the same four steps:</p>
@@ -806,7 +806,7 @@ largest difference 2.4 %
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_d71c9fa7eb1c4e74.svg" alt="Net stress concentration factor over d/W: planex2d + NGSolve 0.1 2.73, 0.2 2.52, 0.3 2.36, 0.4 2.25, 0.5 2.18" style="width: 100%" loading="lazy" decoding="async" width="323" height="180"></div><figcaption>Figure 3: The peak stress against Heywood&#x27;s formula</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_fae00ad0d9287de9.svg" alt="Net stress concentration factor over d/W: planex2d + NGSolve 0.1 2.73, 0.2 2.52, 0.3 2.36, 0.4 2.25, 0.5 2.18" style="width: 100%" loading="lazy" decoding="async" width="323" height="180"></div><figcaption>Figure 3: The peak stress against Heywood&#x27;s formula</figcaption></figure></div>
 </div>
 <p>The <a class="reference internal" href="../../examples/airplane-windows.html"><span class="doc">airplane windows example</span></a> goes on from here to oval and square windows under the two-way load of a pressurized fuselage.</p>
 </section>

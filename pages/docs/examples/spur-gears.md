@@ -118,7 +118,7 @@ mesh.Curve(3)
 ```
 
 ```text
-<ngsolve.comp.Mesh at 0x7fadbd205550>
+<ngsolve.comp.Mesh at 0x7f55eef914f0>
 ```
 
 NGSolve solves for plane stress in steel, with a Young's modulus `E` of 210 000 N/mm² and a Poisson's ratio `nu` of

@@ -89,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -637,11 +638,11 @@
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 planex2d   0.0009 s, 201 faces, matrix 673.805329
-OCC        0.0152 s, 201 faces, area 900.000000
-shapely    0.8803 s, matrix 673.805351, relative to planex2d +3e-08
-pyclipper  0.5844 s, matrix 673.805351, relative to planex2d +3e-08
-gdstk      0.6872 s, matrix 673.805351, relative to planex2d +3e-08
-manifold3d 0.6687 s, matrix 673.805351, relative to planex2d +3e-08
+OCC        0.0156 s, 201 faces, area 900.000000
+shapely    0.8414 s, matrix 673.805351, relative to planex2d +3e-08
+pyclipper  0.5683 s, matrix 673.805351, relative to planex2d +3e-08
+gdstk      0.6588 s, matrix 673.805351, relative to planex2d +3e-08
+manifold3d 0.6726 s, matrix 673.805351, relative to planex2d +3e-08
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -654,7 +655,7 @@ manifold3d 0.6687 s, matrix 673.805351, relative to planex2d +3e-08
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_f236eb055445eb3f.svg" alt="planex 0.9 ms, shapely (GEOS)* 880.3 ms, fastest of pyclipper, gdstk, manifold3d* 584.4 ms, OpenCASCADE 15.2 ms" style="width: 100%" loading="lazy" decoding="async" width="283" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Gluing 200 fibers into a matrix</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_7c1ffea68adabe8a.svg" alt="planex 0.9 ms, shapely (GEOS)* 841.4 ms, fastest of pyclipper, gdstk, manifold3d* 568.3 ms, OpenCASCADE 15.6 ms" style="width: 100%" loading="lazy" decoding="async" width="282" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Gluing 200 fibers into a matrix</figcaption></figure></div>
 </div>
 </section>
 

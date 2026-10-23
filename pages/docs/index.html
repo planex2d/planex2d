@@ -35,7 +35,6 @@
       <script src="_static/documentation_options.js?v=5929fcd5"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="_static/custom.js?v=14a98ede"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -401,7 +400,8 @@
 <li class="toctree-l2"><a class="reference internal" href="integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -415,7 +415,8 @@
 <li class="toctree-l2"><a class="reference internal" href="integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -582,12 +583,14 @@ simulation.</p>
 <div style="width: 44.21%"><img src="_static/landing/hero.svg" alt="The bearing housing in 3D, its profile and base plate sketched with planex2d and extruded with OpenCASCADE, with the sketch on its front face" style="width: 100%" loading="lazy" decoding="async" width="233" height="187"></div>
 </div><section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>planex2d
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>netgen-mesher<span class="w"> </span>netgen-occt-devel<span class="w"> </span>scikit-build-core
+pip<span class="w"> </span>install<span class="w"> </span>--no-build-isolation<span class="w"> </span>planex2d
 </pre></div>
 </div>
-<p>The package is called <code class="docutils literal notranslate"><span class="pre">planex2d</span></code> on PyPI and <code class="docutils literal notranslate"><span class="pre">planex</span></code> in Python (<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">planex</span> <span class="pre">as</span> <span class="pre">px</span></code>). Version 0.1 has no
-prebuilt wheels yet, so pip builds it from source. See <a class="reference internal" href="core/installation.html"><span class="doc">Installation</span></a> for the two extra
-steps this needs and for the optional packages.</p>
+<p>Version 0.1 has no prebuilt wheels yet, so pip builds planex2d from source against netgen’s OpenCASCADE: the first
+line installs netgen, the OpenCASCADE headers and the build backend, and the second builds without build isolation so
+that the build uses them. The build needs a C++20 compiler and CMake. The package is called <code class="docutils literal notranslate"><span class="pre">planex2d</span></code> on PyPI and
+<code class="docutils literal notranslate"><span class="pre">planex</span></code> in Python (<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">planex</span> <span class="pre">as</span> <span class="pre">px</span></code>). See <a class="reference internal" href="core/installation.html"><span class="doc">Installation</span></a> for the optional packages.</p>
 </section>
 <section id="a-first-sketch">
 <h2>A first sketch<a class="headerlink" href="#a-first-sketch" title="Link to this heading"></a></h2>
@@ -705,7 +708,7 @@ one for design (b). The copper is the center line offset by half the trace width
 </section>
 <section id="optimization">
 <h2>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h2>
-<p>planex2d works with numerical optimizers. In the <span class="xref std std-doc">3D cold plate example</span>,
+<p>planex2d works with numerical optimizers. In the <a class="reference internal" href="integrations/scipy-cold-plate.html"><span class="doc">3D cold plate example</span></a>,
 SciPy’s COBYLA optimizer moves four points of a constrained pipe sketch. Each candidate layout is meshed by netgen
 and solved in NGSolve for the oil flow and the plate temperature in 3D. The optimizer lowers the hottest temperature
 while keeping the pressure drop within a limit.</p>
@@ -717,7 +720,7 @@ while keeping the pressure drop within a limit.</p>
 <p>Here <code class="docutils literal notranslate"><span class="pre">pnorm</span></code> builds and solves one layout and returns a smooth measure of the hottest temperature, and <code class="docutils literal notranslate"><span class="pre">limits</span></code>
 keep the pipe’s bends, clearances and pressure drop within bounds. The figures compare the straight pipe the
 optimizer starts from, the best layout it found, and that layout in 3D.</p>
-<div style="display: flex; gap: 2%; align-items: flex-end; margin-bottom: 24px">
+<div style="display: flex; gap: 2%; align-items: flex-start; margin-bottom: 24px">
 <div style="width: 24.89%; text-align: center"><a href="integrations/scipy-cold-plate.html"><picture><source srcset="_static/landing/optimization-start.webp" type="image/webp"><img src="_static/landing/optimization-start.png" alt="The temperature at the bottom of a cold plate cooled by a straight pipe" style="width: 100%" loading="lazy" decoding="async" width="535" height="515"></picture></a><br>(a) Initial straight pipe</div>
 <div style="width: 24.89%; text-align: center"><a href="integrations/scipy-cold-plate.html"><picture><source srcset="_static/landing/optimization-best.webp" type="image/webp"><img src="_static/landing/optimization-best.png" alt="The temperature at the bottom of the cold plate after SciPy's COBYLA optimized the pipe's path" style="width: 100%" loading="lazy" decoding="async" width="535" height="515"></picture></a><br>(b) Optimized pipe layout</div>
 <div style="width: 46.22%; text-align: center"><a href="integrations/scipy-cold-plate.html"><img src="_static/landing/optimization-best-3d.svg" alt="The optimized cold plate in 3D: the plate and the pipe along the optimized path" style="width: 100%" loading="lazy" decoding="async" width="360" height="187"></a><br>(c) Optimized layout in 3D</div>

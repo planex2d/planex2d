@@ -2,22 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://planex2d.org/docs/core/basics/edges.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_1aedd27cc1105013.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_13b2085b12050d71.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_65865753865e771a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_7483d5ad8abd9183.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_7d358a91ac4c8797.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_139829c80a4d4db7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_badc6bb5f0d73b25.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_53fefc6fe77e6d97.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_3a97185190d521f9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_6d3457acdf6090e7.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/faces-shapes-compounds.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_02054a99732d616e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_b6e04baf094ed564.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_81dcaa1ca22d68c6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_cabab845a986b34d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_a7f3880b9f60e046.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_9235376aa9a4d103.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_a53f1ee87ab904df.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_6d666f4758127be3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_af7ace70ccd92994.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_4db5de38d55c9315.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_53af890de99f528f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_e01ce9c30b1efa32.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_fb4af7ac9408cdac.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_68a620992341cf48.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_8e7bf703f22732c7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_b19eb52d1c0c94b1.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/index.html</loc>
@@ -38,80 +38,80 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/motions.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_5b885fa48de462e1.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_82bbdf6ba0947d79.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_fc6549429a2f3a10.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_ba12ee3e974da054.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_61b5a1d93e8102ba.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_40e303bfae6961db.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_d9fb785237627185.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_8f724a5465aeffa2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_846be7e47161e2f0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_3e39c5ae5257b4bc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_e9446e9b47aebfe6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_84467381e611232a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_369daff82bec3ca0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_6d10973eeaab7574.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/objects.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_31fb7586dcc468c9.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_21a722ff9815f2a2.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_492c93c41751ea08.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_aed535b111cdbb8b.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_8f8e47d051e5ce3a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_7de4f5cb10120449.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_affcc66d6a0259a6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_6d66dc129394f81e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_1ba947a2b9e26ecb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c5b608d8cd0c4980.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_5ab93ee6820fa8fa.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_48963aa40ba51d89.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c9e97a2c83b9b383.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_dac9b632e9fef3e0.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/pad-pocket.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_0e7fbec0422c7c3f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_136437399ea166af.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/basics/webgpu_dec70b8f1967cf8a.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/basics/webgpu_536e7cd79bbe2042.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/plane.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_306abac45a672478.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_ec4a00b61e61a2ab.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_101ebcf0e0c25224.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_cd9f28b9a5dbf8e0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_046c437237fc90eb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_57323238e7c5e54b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_523438e7182fa1dc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_7fbd68881fe81ea0.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/properties.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_15f79f8ef450d963.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_0f70e01ef6952156.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_e65fb803c97ccbae.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_2b42b22abd75b946.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_032c68ac4e2321a9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_361917f69e2766e9.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/splines.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_0f4d27f47b4464d1.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_0ed67cbb5981cea0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_ad42dd2ae40b71a3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_34bdf00cef7f316f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_f7f3b189d26cff59.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_4902f7f7d3600193.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_2d2eff56ca7b01a4.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_96298aa663a323bd.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_d50c832146d288d0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_3f877bc4974d3606.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_70db98a45e7229ae.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c463fdb9a357400f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_1f201ec4c36757cd.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_03388ffb0b318b89.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_b5e1b8fa5db637fd.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_f08abbbe9c4f93b1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c0bc6d6573286e61.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_19a0f30220b5ec71.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_fcc394a699a22506.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_4000a8ea72587f85.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_515c55fc5add9694.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_4bfd5ad87ccd0cf8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c4b671882bc016b7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_52375fe20d744a87.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_2ee1987d6aa3577c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_38e1bcce5e2d2469.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/tolerances.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_438a651615f7cfc5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_5b8176df52f37c42.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_78c48e60f3f28a77.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_a0f93b3a9254b800.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_eb79b1197c42453a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_4d45e75bdfa8f1f8.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/units.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_6b50aea9a5c69d92.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_97754c9d16c5f861.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_47e20e275fd6629f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_1eef2feda49d79b7.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/basics/wires-and-faces.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_34d620cfe7392ba7.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_b5b953b5cd31b54a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_08a1fc43878e1701.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_f18a782adf935709.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_c8d3e73f835c88b3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_edfdb3a7147861e6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_fc8bbb3bb28ee68a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/basics/fig_8168137d9bd7e9bc.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/booleans/faces-and-wires.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_41d769077e3e64b9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_c70775838f371283.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/booleans/index.html</loc>
@@ -128,71 +128,71 @@
   <url>
     <loc>https://planex2d.org/docs/core/booleans/many-faces.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_e914074c497271ce.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_96ee47b453638780.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_7453a69b7e60689e.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_c2516699dbee70ff.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/booleans/split-trim.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_1e25a98ab054483b.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_9e6708b36da4eb7d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_c2a7877af1e68d2e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_1e7751531d48335a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_e7fe50544cffb235.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_26d8e0950a30025e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_c398e5311b44233d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_639ce6bcbc91bdec.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_69bc03b5278ad204.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_63e0af8eff72607d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_c08b7da88f05ff26.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_4d3c1232149ccd6f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_24883b3d6a900d76.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_8f4f8036f2e2e79b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_1ada415ddaff9ee9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_d81079c099f829f9.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/booleans/traces.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_f35b2b08634008e8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_6f810738f050525d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_ccb2a8a0adb146ff.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_a79cf392565f984e.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/booleans/two-faces.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_980918b280d905c5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_2268c24daeeb6c11.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_2c94b33c9144946d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_9bd6f857153cfaa9.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_0d647d237b54810c.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_46c200ec42932ca6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_0a52ae956c2a2a8a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_fa9046d1e83dc054.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_74d823da70577593.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_39487e8d1ef8aebc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_72803571c67ba897.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_05c03b20cc76b349.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_4b2815564324d598.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_11398cb327b9d22a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_f7adcd7ed642e734.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_abc9249fc896a3c2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_0802d726d8c195fe.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/booleans/fig_cfe49a0cd71f9ee8.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/comparison/accuracy.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_2822cf4252c28dad.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_d272da0971417270.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_e27c8c385497b257.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_216ccf8620028323.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_c55e9f1970a69458.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_d3e082423c7d267a.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/comparison/discs.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_1b77b8f30443285a.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_1526d8582389b7a6.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_925835ed9899cc2a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_dcf947315e22b981.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/comparison/glue.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_ba59979a45138cb2.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_f6df11406ca0722b.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_f236eb055445eb3f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_7c1ffea68adabe8a.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/comparison/merge.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_37b2d0fffd7b07c5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_6e2bd5b347e34518.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_c133858f537a89bc.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_0f6a5b71a197069d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_af6cef9030dd26a9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_c6adf018b264b152.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_e75dd3ba3f9adc80.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_2bd92cfe95931fe7.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/comparison/traces.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_bc66da37c4701298.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_0ce12662354f7760.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_7cbe846cb5d11f2e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/comparison/fig_ca5ec42e8dc60aea.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/converting.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_2c3005e003a8a8a2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_d331df114647a5b7.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_7be0f186ccb81062.svg</image:loc></image:image>
   </url>
   <url>
@@ -200,10 +200,10 @@
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_94c91b192c7faba4.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_4256ea1c2fa523a7.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_1ff3d453f31e0b8e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_1643689bda6316b3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_77deb6c1766eed27.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_748eeff670ceee1b.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_d435b6092b6a55da.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_9f0a80d39c9a4ed9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_9fff76b5cc7f8ba3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_36ad7eb0fc3211c4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_b8cf4bcfdfa14e3d.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/drawing.html</loc>
@@ -216,22 +216,22 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/expressions.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_618b7481ab1acf6e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_cf9a1fbc259b77d1.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_a63310da534891db.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_fe0c2106b16c8ca0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_5b26a32c1da8f2b0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_ab1d1d75f0f2e0a0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_a86600c5f10af290.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_d4f4520581a3c948.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_2f167aaa6daa38ad.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_cf0aa67a063aac9a.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_016eda77f95937ad.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_5c152de3c454e8a2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_66300bfcf452380d.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/formulas.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_eb8c29b167d05b1b.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_04550ef93e4d47c6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_2d066fbe61e93065.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_8d83eba12649d4a9.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_42f7b512d5a37782.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_5cbe8dfef6a11da2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_246cb768e015b824.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_fd0491ba44213218.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_c44b946daa57e42f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_840b1fecafa12532.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_20ebda370f78a7f2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_f4bf56ef1b852d80.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/index.html</loc>
@@ -257,20 +257,20 @@
   <url>
     <loc>https://planex2d.org/docs/core/constraints/mechanisms.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_c3a5d7bc68e5cd8e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_b343fe86378734fb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_e8d6dd0f714e581f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/offsets-profiles.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_717760b600e80f00.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_303581579be57bd6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_93359ec7a0585b43.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_8513c45516b5bbc5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_1a18c057acaac9c4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_3e604ad42eb4346e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_e0880372826c871f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_c9fc158b676c1968.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_cb7b74b76cd72e12.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_17b89ee6974ac69f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/constraints/splines.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_7c56030958636654.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_e1cdd3b1d680b00f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_df061b75dc2874d7.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_c674c0db1d78093b.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_2656e5ff36a9d6ab.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_e787bfcd7b0633df.svg</image:loc></image:image>
@@ -296,7 +296,7 @@
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_0d11699ab1344ab9.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_09108cddf00bb66a.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_f252e1aa25597fed.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_d91a241ea02d81b6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_affb5cc95858ce55.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_4741f33b23a3fce4.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_0bb8450776c0d58e.svg</image:loc></image:image>
   </url>
@@ -304,24 +304,24 @@
     <loc>https://planex2d.org/docs/core/constraints/update.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_023bafecccc30c0d.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_9d43ef9f4726d999.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_8d9e28da6ea8d446.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/constraints/fig_0ebb20c015de534f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/arcs.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_65a00f2c6419cb3e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_ca166c11c3e37e2f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_f69fce5b902028b1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_0c1550f4af7d61ef.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/collinear.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_4425bb5f48609e79.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_2ca3cbdab737db68.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_d8af4c1e027c8745.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_e7738d561c8921bb.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/gaps.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_20fb683bb7809512.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_b3866c2e25242ac6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_e2e3641a55b1d1d7.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_87ff7708f0d25cce.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_330b258466a9670a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_ba56531310a51a41.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_cd176deaa72330e5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_673dcc9b97b405c5.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/index.html</loc>
@@ -335,45 +335,45 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/small-edges.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_eccc3004feb37772.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_e27fb35541923993.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_c2948ee542c37a49.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_47f46ba5d29c7040.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_0fbce2c5010e57d7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_72cf8895b6e4509e.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/defeaturing/splines.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_08731979ab5b70af.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_c60a1f3c276673c1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_ea3ae14baebd2f6a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/defeaturing/fig_c9af501072bfd5da.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/files.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/fig_7964f0aa445af38a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/fig_952ed2a9e63208df.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/fig_32505044e24404c5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/fig_f13916f1e80a4222.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/fig_e2f9ec8f502a8852.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/fig_852bbacf04673bb2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/fig_4bfae4a336a759db.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/fig_644ba429d3c23881.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/analysis.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_7e311bd51264e06a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_c922a79b094c764f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_cfeaa8d87fb7ed95.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_b012380b67b13fc3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_cdda4d29e39990fd.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_92f5bcc4f37237ea.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_2b441098e95b7094.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_648333a640bda3be.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_85b93b3322c48c4a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_08f98b98580f97ea.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_450b3471a6ad8df0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_780335f3a333ca19.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_e90c1e0b42a22235.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_9ae228aeb7966be1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_b7752f96aeb0de86.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_a4794f6164633cf1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_ea903ca3c452e04e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_a2fb1e200ecdb0ec.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_226b936fb808ad56.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_850975f6e7c239b6.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_af900fd96ffe2326.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_83a34e41ea241fdf.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_f526b0fa69ec0aaa.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_ab3bbea043602632.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_78f30fca63448716.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_d10e97ee6a3f2f5a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_dbdd9295fd040046.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_4cac0704b3699c17.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_d322371142230c8c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_a3d46c5ba7d988c3.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/distances.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_379f3b2e512d7fd7.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_e9f6d8552d232116.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_47539e25834df0a9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_ae164756f3af709f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/index.html</loc>
@@ -390,26 +390,26 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/inside.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_ab8fbfccd04003f2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_16b8f54e533e6969.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/queries.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_8592e7289218bd5f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_75fa12628402aba3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_21584cd5038d709e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_258d6f45cf857ce3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_612b27264606e2df.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_91d4e6cbe3bedfc6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_223fff727a92ceae.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_1744e6ab337a4e9e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_fb89862c894130f3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_d89c0d4ed4b73f07.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/sections.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_c7c52b459ac40dc3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_16e888bdbbe7e640.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_154c347ddab6c324.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_f23baa85eb80ddb9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_6bd50cc57782415b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_9703acd0f2bbc7c2.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/measuring/sketch-dimensions.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_98790e38d0eaff14.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_cecc6bba5116027c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_58d29b206f9156ba.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/measuring/fig_b618c7fb19cba277.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/plotting/fields.html</loc>
@@ -472,39 +472,39 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/arc-references.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_8f0a0878ece91c10.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9e84524e2a87d911.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_4ab9179878affa46.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_97c1b3d779a47a06.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_48d1cd281ecf25eb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_8ac062e813b61d0f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2e07f457486e798b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_c205f4d31ea894c1.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/choosing.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f62c637c35ec11f8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_7fd1c112ed218d1c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9e8a9d1f741b31b8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_8c98c37f154caba1.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/circles-and-rectangles.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_4b6a28b5b0fb55a0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_7160f4e51d534a35.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_829e2c70fc4e0218.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5eb8dd94e9f43300.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_44610785ced85368.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f4eb80c3a117a666.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_23f9cb512e6c4bdb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_a73173f5753e1d06.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/construction.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_55553d217be934ba.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_1b9abdb92095c712.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_074e1bf2b970bba5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f52a04a93309b0d5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_622deab1fa4a0647.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_1184702d58bba149.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_181de48788c5bcab.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_802399216dc21c0c.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/extending.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_bdad0dc5cc750d22.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_021bb32676ee3d8a.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/fillets-chamfers.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_09fb20a36662e407.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_653ee5f98d831bfc.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_caf5ecc59b17ceec.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_18c1c10ef57586ae.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e55db3c50108a0b7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_1e208cc81ed8a2a5.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/index.html</loc>
@@ -533,106 +533,106 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/lines-and-arcs.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_04a603cdf2fd7139.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_73495641affd6efe.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_775f292f7b743ba3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5f5e8d31de715997.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_46b108cfb1bfb3f5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f4e4ed1d224488d9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2206b7ecc5841f06.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_3b99d4012e21deb9.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/names.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_db0c196586f8f66f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9686fcdfc922f848.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f6306b78f0fa966f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9337407328167996.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/offsets.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_dabb983a132d2d0d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e14df87a85938fb2.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_3e8839db90071093.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e7095ad82e57982e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_a6a2cf49ffb6cd38.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_6b8a7f79cd6b9e3e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_81b2fd3402d7bf6d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_8079b1120ea069e8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_63c063867f8bcdbb.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_28c7e2e32f2796ae.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_238feb5fbcec37de.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_6754609d082e9146.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f544ac9a679d0041.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_81c651160035acf8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_cbabdc3bca95edd8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_ccc56413d7eb9022.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b787d95efa0ec282.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_cdc143db80f877bb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2ab07b15d8ca2ef4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_7193168f3a2e8a7e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_30637ff18e49f5a3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2166017e8cf96848.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/parallel-perpendicular-angle.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2d28d71b949e19af.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_42ecfa8860952c45.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_fbc519196c1914f3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_85a0ed2bd718604b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_6cbffdfce77f100b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_327f41410bd7811c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5ebd8eb0919da47b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_77c0fd2b2a27ae93.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/parametric.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_0740a833d1f0ca25.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_df11f1eebf8e6a29.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b60d2f233811bd31.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_60fd6bff9a7b3552.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_3c2e702eab3021d8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_df8eab70c00fb1ca.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/placement.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_4bac10bf19e61246.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_956bc45efadb636a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_deb43fcc1326269b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_6d05a186a8bdcbad.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/sketch/webgpu_563f2f70774d2019.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_254eea66e4e18149.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_ad7a89ac51210527.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b2c8f33d383c542c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_fe1433dc61ab6795.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/sketch/webgpu_f872e276e643300e.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e283ec034592c108.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9717e9de9122811e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_fec8658c5ae02429.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_93b8236c2a525263.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/sketch/webgpu_8616a840a57c99b4.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5c5df1ba797d030e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_bb0199b29cbc9e06.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/quicksketch.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_372fe3820f287810.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2df673ae10ca42cd.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5e8560fd273eee5a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_91ecefbd4ceb57c3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_d8677ad0b50a6e90.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_d724b15f4d8b51d4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2301fb0170b9c7e7.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/several-loops.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_ccd4feccc3f03ebc.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_c4e710062ed570c4.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_aee633421aacd43d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_04ec4ce29a5f9051.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_2b715344ea0a63b8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_84e9ba97ec04d0f8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_13fbd9bda0b48074.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_0ced4c07e0a7617b.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/slots-polygons.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_ae2837a6646b06df.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_864a79aa892643ca.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/splines.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_7a7b74601f01b3fe.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_f75688821706afb6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_005e70d310bded74.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_c51a84f869bbcb85.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/symmetry.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_1c1d11f6b937df49.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_012f0e2d08f7ce1f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_d80a0b4d13e91145.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_38d621d30b9f658f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/tangent.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_37402b09b538eda6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_d9e67ec706ccb348.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5881ee86e96e71c4.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_697b6021dedffeb3.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b59d5ef6b631aa70.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b16d88a21bb12a16.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_6dab3f1133b3f3ce.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e736a6f7095aacdb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_683efd35c8a9c0ab.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_b023eb0ce2ec1ece.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/trimming.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_08968d7251fc2105.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_55ba9019657ebec8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_21eb58727dcd26aa.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_50f6899658e2c9fd.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9363f03fa59e1eef.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_d64e594255a3e8d3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_cb8b2926fd9fc91b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_5f9516b94d59960f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_bc0ec55f0b54c8b5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_683730803899b08d.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/core/sketch/until-from-to.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_39802eca20773070.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_9371e70d7883812f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_ca1c737612848cad.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_055d8d85d34adb95.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_673ea662f38f7ab6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_e0b1909f121d1348.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_95c41568b5f55f53.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/core/sketch/fig_7e6045187e7e3416.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/airplane-windows.html</loc>
@@ -643,18 +643,18 @@
   <url>
     <loc>https://planex2d.org/docs/examples/belt-drives.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/belt-drives.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_69cf2034e4d45951.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6b7f019b495bff64.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_60256f26d9821072.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_2ad1b4da84f8f16f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_7129c47691031159.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_f414a5598216623b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_a2304246857a5bbd.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_ee0c61da102659ce.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_59686aaa1a5fcc70.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_504de47287a5e707.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_533dfbed650d8e9b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_79f56d204d79261c.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/boat-stability.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/boat-stability.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_df6453f7589fdbec.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_3ea2016b532ceb88.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_15ad0bf0f4bc3062.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_170337d3bf4661d1.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/coastline-paradox.html</loc>
@@ -670,7 +670,7 @@
   <url>
     <loc>https://planex2d.org/docs/examples/drawing-a-logo.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/drawing-a-logo.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1bae70151b7e730e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_0171848233c8d138.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_e71ccd5aa8380651.png</image:loc></image:image>
   </url>
   <url>
@@ -685,59 +685,64 @@
     <loc>https://planex2d.org/docs/examples/flow-through-sand.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/flow-through-sand.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_cea683fb650e811d.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_ab9bbdd478ebba4d.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_39d566606cacba15.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_flow-through-sand_11_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/four-bar-linkage.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/four-bar-linkage.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_bb7c690a9b541ec1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_0444d6546d29403c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_four-bar-linkage_15_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/gear-cutting.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/gear-cutting.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e694085f0f5ff7f0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e4bb42efba5d30d0.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_326cf15420c18f5b.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_gear-cutting_14_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/geneva-drive.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/geneva-drive.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_d5b15a63cf5f3389.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_8a2631c164d780e5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_d758ef8b690f8282.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_f5bb25118f78d913.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_5ee3e5f97c938a81.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6da35d01d10bff54.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/heat-sink.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/heat-sink.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_8114a53b8da960e3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_4f6a280bf9c36414.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/hilbert-heater.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/hilbert-heater.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_bbe8991f96a4ada3.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_41b0dbb92d0321c0.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_28ec0e976adddde3.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_ab0896410d8b6b39.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_3b4580758b1afdb6.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/hood-hinge.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/hood-hinge.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e0613ddea6519c9c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_22ba99776999058f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_hood-hinge_19_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_hood-hinge_23_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/idler-plate.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/idler-plate.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_8a3ebe7155c639be.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_a870011cf498b8e1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_47373d0efe14e6af.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_01c6fbb5df8c7c3c.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_c96da66e4e6978fb.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_d54d646997e3181e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_2649802b44ab361a.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_dd94e8b1f5de51c4.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_c2060f3933cb8490.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_f982c992063a0a8e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_b2379d5bbbc5f7de.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_2726fb6c194e8ad4.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_5eae0d93e2aa9857.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1cb517987acc015d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_64c9c61ae6d8a475.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_806788c4dd20cb29.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_727b5447a53c7849.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_214f35f523a1bdb5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_78d691d2e588675a.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_8d3e420019bbd531.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_8ac3331e85a70d10.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_c4f7831640cfb6c1.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/index.html</loc>
@@ -787,39 +792,42 @@
   <url>
     <loc>https://planex2d.org/docs/examples/isospectral-drums.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/isospectral-drums.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_d7567a06885fd2a2.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_5ad1dcdfd2546ae7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1e48ac01a55206a1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_24d5b7b3ccc7d2fb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_isospectral-drums_13_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/jansen-linkage.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/jansen-linkage.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_95f1126634d1fed6.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_99968e018ca38bc5.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_009f4271f8f345d6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_c8a121bdfc2743f6.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/laser-cut-box.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/laser-cut-box.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_43a9b49b03ee8cdd.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e82eb461dec7c369.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_c506c98b35a6f519.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_4f554cfbb4574050.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_147dcfdbbd15de6a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_01e79b7749276489.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_28379d5309a18e3f.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_4b1827206c4fe7f8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_88ec586184020c4b.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/lens-ray-tracing.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/lens-ray-tracing.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_022c298bf3f99550.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_659dceac0f16b96a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_lens-ray-tracing_19_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_lens-ray-tracing_21_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/motor.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/motor-field.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_310adf3d8e3009cb.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_6b047ec464bae650.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_0d3b0ea28af20f8f.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_8ba62ba2a1312c0c.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_b93212455b56939a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_697bed9813b1ec57.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_ed99684ad796b7b4.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_24808344c24ed56c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_573aa0965b55bcc9.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e35b864b4f43747a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_7159131ea6d61337.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_83a3869b3a7c16ef.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_abd768781a18baba.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_489815bbfc9f8a90.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/moving-sofa.html</loc>
@@ -830,17 +838,19 @@
   <url>
     <loc>https://planex2d.org/docs/examples/parallelogram-flexure.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/flexure.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_7a1c9a418d9be698.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_546df8f44014a7c0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_parallelogram-flexure_19_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_parallelogram-flexure_23_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/patch-antenna.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/patch-antenna.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_bd234b864c661ef8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_c6ebf39e27346df9.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/path-planning.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/path-planning.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_217642572ca7bb2a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_0a72a551396bbd13.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/penrose-tiling.html</loc>
@@ -868,18 +878,18 @@
   <url>
     <loc>https://planex2d.org/docs/examples/rear-wing.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/rear-wing.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_b60dec0a68d6bca4.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_fbcbcf096682d734.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_d360990cc8c00419.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_25eb27565d544a13.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_8172c3e7b1d940a8.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_46457542fbc0bcd6.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_7be1b685cd704618.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_63ba3782b77d0f94.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/rocket.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/rocket.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_7d7645a0f5a763c1.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_888a8d6cf384efad.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_f426f084569649fc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_5bae716d6cf4daf8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_2a8555b16bf67ea3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_ebc37de2efcd2bcb.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_18fec466fa63476c.png</image:loc></image:image>
   </url>
   <url>
@@ -898,34 +908,34 @@
     <loc>https://planex2d.org/docs/examples/solar-shading.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/solar-shading.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_cbd96b286c632985.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_16e2e80f7e577267.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_81893904f3bba148.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_ecaa6f7b2ed3e849.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6740af5b66c0503e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_81682a8cc6629f61.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1f8dcf28c5711514.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_364bd47fb90a4753.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6b05fd9908bb6b89.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/spur-gears.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/spur-gears-load.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_57ef6af76fe0a1c6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_ec85638f598d2fd5.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_79e2a85eb6d1bbad.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/square-hole.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/square-hole.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_8237e42d368f898b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_14d28ea2dbdf7164.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_3abd7ec409e3d497.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_66c3d8629fc0227c.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/stencil-lettering.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/stencil-lettering.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_50984c94385a1138.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6165ec1f8f2d544c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_5d5a809fc6cd01e2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_72189bad07c900f1.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/straight-line-linkages.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/straight-line-linkages.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1ffb9fd285d13a9c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_7de75bc65a810b4e.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/suspension-kinematics.html</loc>
@@ -935,39 +945,41 @@
   <url>
     <loc>https://planex2d.org/docs/examples/toy-plane.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/toy-plane.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_f943e381dbfc1794.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_4c9295f608df1813.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6032edfead10bbfe.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_589f874d4c31162a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_a31b253db46b5254.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_89a705b01eb601cc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1a393b3bd01e1f7d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1cfe9ca0666fc7b6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_2ff5cb8574dd9087.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_3d48b1824ed4c80f.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_dd88cd87a5b025bc.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_21e9e8bbe56a0821.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_toy-plane_27_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/vivaldi-antenna.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/vivaldi-board.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/_images/examples_vivaldi-antenna_6_0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_314f2fae964f556d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_9b1db3b10d04990c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_6695043e310f2cac.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_e5c4d49d35dcdb7a.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_f93a1e167ceff81b.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/voronoi-bone.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/voronoi-bone.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/examples/fig_24632e376100bb79.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_c249f0b6a2a6c39e.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/examples_voronoi-bone_13_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/webgpu_f04acc23c3105ce0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/examples/wankel-engine.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/wankel-engine.gif</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_1cab44c4c6f47792.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_b408e5ef833ff736.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/examples/fig_bc2d55c21052ea1e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_965e3cf3f47a08a1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_4fe0c9109eeb2fb0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/examples/fig_71dc49dc44c4d607.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/experimental/deformable/displacements.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/fig_dcbfc735da0ee39e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/fig_b9e048e6600b9ed4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/fig_10cdc53f15023191.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/fig_0e053963f89f42c2.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/_images/topology_change.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/_images/experimental_deformable_displacements_10_0.svg</image:loc></image:image>
   </url>
@@ -978,7 +990,7 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/experimental/deformable/ngsolve.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/webgpu_b073f11e74a815ca.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/experimental/deformable/webgpu_4da03838fb38da3f.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/_images/hole.gif</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/_images/balls.gif</image:loc></image:image>
   </url>
@@ -1012,9 +1024,12 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/fenicsx.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_f0f68f64dec673a8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_80fc34ef75236900.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e5e9fad389a9454f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/integrations_fenicsx_10_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e7af8e8230ec05b0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_d644feef42ffa3d9.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e78a650c0a23f141.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/integrations_fenicsx_17_0.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/integrations_fenicsx_23_0.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/kicad.html</loc>
@@ -1030,7 +1045,7 @@
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_d00fdbee102cfdf9.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_cbb26a68c698bbc7.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_09abedbada22114b.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_d71c9fa7eb1c4e74.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_fae00ad0d9287de9.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_4f1d88e4f6cc5c50.png</image:loc></image:image>
   </url>
   <url>
@@ -1049,10 +1064,10 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/identifications.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_c7e76cf375255cb7.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_d0dc82cc545e1fd1.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_58dc551656ab3dc8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_06148e7fe84c8d3d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_b6252e60e56cd6c6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_64baf8755aa01ffa.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_6e0d70e789e432c7.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_ec3b0edbad89b0a6.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/index.html</loc>
@@ -1070,72 +1085,72 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/levelset.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_761ddc8c1c16c7d7.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_3a56fbca59f7c40c.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_0badc0a7a20a5a6d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_936759fd031a8e3e.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_3b0f3f3a37461889.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_ac671c3b090dcc73.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_97205e774fc319b7.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_d0b06a94d523909a.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_e4e1398660059cc4.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_ecb673e8ea521601.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_76940b196936df44.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_efdc9f3f100ea76b.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_5096a3502ab3712d.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/meshing.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_babca97b116239dc.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_6231c5cddc9a3f67.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_4545c0b592b8646d.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_cfa49a5eac796de3.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_fc691d51a1b53a07.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_c8e1f9df38fbb7e7.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_65c06c6a1ad8c018.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_3960c0908929b00e.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_9a160c3ebd284d85.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_cacba8919ccb0d14.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_3c12e3aa26d32bd3.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_16b26b91a9902925.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_7d303a8a642bd454.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_a28c52c0679e5eb7.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/naming.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_f18d50b04bc84227.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_36826a3731698118.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_809d4ca67e6ab833.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_c4609a40343eccd2.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_c6dd4e75211682a3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_0ef16e52e9f472bd.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/netgen/workplane.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_28c475a2a90a3eb2.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_d45b3451b9f8fe0d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_7ebfb28d51154265.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/fig_ad17110accfc1ab5.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/netgen/webgpu_552bdcc8035ea3ca.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/numpy.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_41278d0782b010e5.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_7e9185b458eaaee0.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_3c1940f9384e1b7c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_582ecba28d9a0a3b.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/fig_c3dc4fb72a14d97c.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/clamp.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_925301c7624a19f8.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_fa42e5f37589771a.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_3f6be56dc11fab32.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_bebfa89f3f2237c0.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_e67a8c9a6b397e43.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_caaa6dacf9a26c41.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_808ba4c8951a4440.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_eb023818599864fb.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_efa4977d66f5f3fe.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/export-options.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_982024ad2577532a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_021389d602b984f8.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_53be22cf737269d4.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_bae8af1d3851bc8a.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/export.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/_images/rocket.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_1d1afd24b9eaa040.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_51b598048f812e4b.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/guided-loft.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_8266af445e4edb7c.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_f348177b5a0c858a.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_8a0692302859c091.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_72a95882b126e400.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_0c60b48eaa749471.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_0d6787384fce3d25.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_9581ed4a35d2d065.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_26bf837912497f02.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_eef435aad88ab937.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_134f9ba1b6537eda.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_a46d90a1a6738409.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_ef9daef30d2e1cce.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_7ea3bf35ec1e7011.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_0b7d3e39027778e1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_b974abd0c80c77dd.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_99c4719302f0a0dd.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/index.html</loc>
@@ -1153,44 +1168,78 @@
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/loft.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_09d85ecaf842f7eb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_cb3bf143279520ed.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_8363659fbb5e9db0.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_cd887d7d90abe733.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/_images/integrations_occ_loft_15_0.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_48219fb6963b942d.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/projecting.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_caaa6dacf9a26c41.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/occ/webgpu_894aab93c3391558.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_5daca9d620ecf57d.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_a366d47c9533ab2e.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_dcfc6cadc053d54f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_fd2d9b3121eefecb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_8913258a39a03c9f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_01c567ee5a4471de.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/occ/splines-as-arcs.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_35948468ad99bde0.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_6f3f78188f5de73b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_506d0cc4ee6cf574.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/occ/fig_ab283f36fcefeb5a.svg</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://planex2d.org/docs/integrations/pytorch-duct.html</loc>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_0eab4987dc65d774.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e3848ce791940084.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_23d3d4f31ae5ada3.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_a7d2d1acc716dda6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_6058852dd7d8441c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_16c58ce0218a240e.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e6510c9c91a1c70f.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_8c261a96ecd94d17.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_4d50e89080c945d6.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_7ade153b79445dcc.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_5b27389eecac2678.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/webgpu_36567a97433b221c.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/pytorch.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_03b5c7c9ef71f868.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_5a12d21ae648ee9d.svg</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/fig_704edd3707177400.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/fig_af73219ff3622f16.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://planex2d.org/docs/integrations/scipy-cold-plate.html</loc>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_dc4e9087ce65c08d.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_dee0501d803bfdad.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_7164f8c8dc658564.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_3748be63ef872363.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_00af2e820bfb5422.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_f9ce5c9430668510.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_5f63b282beecefee.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_5611a97ee6ea7734.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_eeb94df6ed48fa58.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_37da895ad6efa8c1.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_c3bea44ebac3010a.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_74bbb73cd44d3b86.png</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_eca9f1998eae39eb.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_cd3c1bca524c9e73.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/webgpu_f947b5c8aa64683d.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/scipy.html</loc>
     <image:image><image:loc>https://planex2d.org/docs/integrations/fig_570089ac939a83d7.png</image:loc></image:image>
     <image:image><image:loc>https://planex2d.org/docs/integrations/fig_a06753bda187bf8e.png</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_afb79870728ac93c.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_6bc914aa268889f4.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_4f1c9ce4d75612df.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_e4a1b4ba5fc6d0d1.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_40b282cf1a814812.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_47f98d9331b0758f.svg</image:loc></image:image>
   </url>
   <url>
     <loc>https://planex2d.org/docs/integrations/shapely.html</loc>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_f1c5fae25f68e2ab.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_7ff3befa4813c3ee.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_1786b0de25bdd9b2.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_5fd4ddb7166ba2eb.svg</image:loc></image:image>
-    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_3cf03decbecac54c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_bac9be8dad2ffc6c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_6704011e39b0985b.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_47478c84c0f88d6c.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_4a5cd2ec72c281ef.svg</image:loc></image:image>
+    <image:image><image:loc>https://planex2d.org/docs/integrations/fig_2b3b5191dcebd894.svg</image:loc></image:image>
   </url>
 </urlset>

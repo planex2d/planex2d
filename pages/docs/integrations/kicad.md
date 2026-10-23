@@ -51,8 +51,7 @@ for name, layer in board.items():
 
 ```text
 stderr:
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
 ```
 
 ```text
@@ -255,8 +254,7 @@ Draw(solid, settings={"Objects": {"Edges": False}})
 
 ```text
 stderr:
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
 ```
 
 ```text

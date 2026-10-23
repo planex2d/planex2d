@@ -118,7 +118,9 @@
 - [gmsh and FEniCSx](https://planex2d.org/docs/integrations/fenicsx.md): planex2d faces reach FEniCSx through gmsh.
 - [shapely](https://planex2d.org/docs/integrations/shapely.md): shapely provides predicates, distances and many GIS tools.
 - [SciPy](https://planex2d.org/docs/integrations/scipy.md): A planex2d measurement stored on a constraint sketch is a function of the sketch’s dimensions: Update sets them, and measures reads the result.
+- [A 3D cold plate](https://planex2d.org/docs/integrations/scipy-cold-plate.md): planex2d sketches lie on planes in 3D.
 - [PyTorch](https://planex2d.org/docs/integrations/pytorch.md): On the SciPy page, COBYLA lays out the cooling channels of a cold plate by calling a finite-element solve for every layout it tries.
+- [A 3D duct](https://planex2d.org/docs/integrations/pytorch-duct.md): planex2d sketches lie on planes in 3D.
 - [KiCad](https://planex2d.org/docs/integrations/kicad.md): The layers of a board are planex2d faces, which can be written as a KiCad board and read back.
 - [NumPy](https://planex2d.org/docs/integrations/numpy.md): Points go into planex2d as arrays, shapes come out as arrays, and every query answers a whole array of points at once, in C++ without the Python interpreter in the loop.
 
@@ -4000,8 +4002,8 @@ for name, kind, flags in runs:
 ```
 
 ```text
-QuickSketch: 0.0010 s, area 2300.0000000000005, exact 2300.0
-Sketch, flags: 0.0576 s, area 2300.0000000000005, exact 2300.0
+QuickSketch: 0.0016 s, area 2300.0000000000005, exact 2300.0
+Sketch, flags: 0.0247 s, area 2300.0000000000005, exact 2300.0
 ```
 
 ```python
@@ -4044,12 +4046,12 @@ for name, way in ways.items():
 ```
 
 ```text
-QuickSketch: 0.235 s, area 314.55195151496093
+QuickSketch: 0.173 s, area 314.55195151496093
 ```
 
 ```text
-Sketch: 0.240 s, area 314.55195151496093
-px.FromPolyline: 0.167 s, area 314.55195151496093
+Sketch: 0.306 s, area 314.55195151496093
+px.FromPolyline: 0.133 s, area 314.55195151496093
 ```
 
 ---
@@ -7122,8 +7124,7 @@ full 50.0
 
 ```text
 stderr:
-/tmp/ipykernel_834917/2222836129.py:2: PlanexWarning: diagonal ("bottom.start", "top.start", px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
-  sk.Update()
+PlanexWarning: diagonal ("bottom.start", "top.start", px.Distance, 50) is redundant (consistent) with Perpendicular.1, Perpendicular.2, w, h
 ```
 
 ## Strict mode
@@ -8972,7 +8973,7 @@ print("area", perforated.mass, "exact", 1000 * 500 - len(holes) * 16 * math.pi)
 ```
 
 ```text
-1250 holes in 0.009 s
+1250 holes in 0.006 s
 area 437168.1469282339 exact 437168.1469282041
 ```
 
@@ -9029,7 +9030,7 @@ print("one core", round(time.perf_counter() - start, 3), "s")
 
 ```text
 all cores 0.013 s
-one core 0.049 s
+one core 0.035 s
 ```
 
 ```python
@@ -11139,11 +11140,11 @@ for name, (t, area) in others.items():
 
 ```text
 planex2d   0.0024 s, area 612.803230, 640 edges
-OCC        9.5292 s, area 612.803230, 640 edges
-shapely    1.0983 s, area 612.803194, relative to planex2d -6e-08
-pyclipper  1.6787 s, area 612.803194, relative to planex2d -6e-08
-gdstk      1.4541 s, area 612.803194, relative to planex2d -6e-08
-manifold3d 1.2514 s, area 612.803194, relative to planex2d -6e-08
+OCC        9.5818 s, area 612.803230, 640 edges
+shapely    1.0984 s, area 612.803194, relative to planex2d -6e-08
+pyclipper  1.6875 s, area 612.803194, relative to planex2d -6e-08
+gdstk      1.4643 s, area 612.803194, relative to planex2d -6e-08
+manifold3d 1.2785 s, area 612.803194, relative to planex2d -6e-08
 ```
 
 ```python
@@ -11210,15 +11211,15 @@ for name, (t, area) in others.items():
 ```
 
 ```text
-planex2d   0.0059 s, area 191.735856, 3023 edges
+planex2d   0.0062 s, area 191.735856, 3023 edges
 ```
 
 ```text
-OCC        11.2101 s, area 191.735856, 3023 edges
-shapely    0.7236 s, area 191.735837, relative to planex2d -1e-07
-pyclipper  0.5965 s, area 191.735837, relative to planex2d -1e-07
-gdstk      0.4969 s, area 191.735837, relative to planex2d -1e-07
-manifold3d 0.4980 s, area 191.735837, relative to planex2d -1e-07
+OCC        11.1362 s, area 191.735856, 3023 edges
+shapely    0.7077 s, area 191.735837, relative to planex2d -1e-07
+pyclipper  0.5864 s, area 191.735837, relative to planex2d -1e-07
+gdstk      0.5129 s, area 191.735837, relative to planex2d -1e-07
+manifold3d 0.4997 s, area 191.735837, relative to planex2d -1e-07
 ```
 
 ```python
@@ -11275,8 +11276,8 @@ for name, (t, area) in others.items():
 ```
 
 ```text
-planex2d   0.0010 s, 4 edges
-OCC        1.7253 s, 4 edges
+planex2d   0.0009 s, 4 edges
+OCC        1.7782 s, 4 edges
 shapely    0.0057 s, area 400.000000
 pyclipper  0.0006 s, area 400.000000
 gdstk      0.0006 s, area 400.000000
@@ -11409,11 +11410,11 @@ for name, (t, area) in others.items():
 
 ```text
 planex2d   0.0009 s, 201 faces, matrix 673.805329
-OCC        0.0152 s, 201 faces, area 900.000000
-shapely    0.8803 s, matrix 673.805351, relative to planex2d +3e-08
-pyclipper  0.5844 s, matrix 673.805351, relative to planex2d +3e-08
-gdstk      0.6872 s, matrix 673.805351, relative to planex2d +3e-08
-manifold3d 0.6687 s, matrix 673.805351, relative to planex2d +3e-08
+OCC        0.0156 s, 201 faces, area 900.000000
+shapely    0.8414 s, matrix 673.805351, relative to planex2d +3e-08
+pyclipper  0.5683 s, matrix 673.805351, relative to planex2d +3e-08
+gdstk      0.6588 s, matrix 673.805351, relative to planex2d +3e-08
+manifold3d 0.6726 s, matrix 673.805351, relative to planex2d +3e-08
 ```
 
 ```python
@@ -12125,6 +12126,8 @@ for ax, title in zip(axes, ("front", "top")):
 plt.show()
 ```
 
+![figure](loft_files/loft_1.png)
+
 Both halves, with the second one mirrored about the plane of symmetry:
 
 ```python
@@ -12605,7 +12608,7 @@ print(f"planex {planex_time:.3f} s, area {planex_geo.mass:.9f}")
 ```
 
 ```text
-netgen 4.627 s, area 534.854430306
+netgen 4.952 s, area 534.854430306
 planex 0.005 s, area 534.854430306
 ```
 
@@ -12955,7 +12958,11 @@ print(len(left), "edges on each side, shift", tuple(round(x, 12) for x in found.
 ```
 
 ```text
-6 edges on each side, shift (3.0, 0.0)
+6
+```
+
+```text
+ edges on each side, shift (3.0, 0.0)
 ```
 
 ```python
@@ -13231,9 +13238,6 @@ for fit in (False, dict(tol=1e-4, max_edge_length=0.01)):
 
 ```text
 68 edges, 1160 elements
-```
-
-```text
 6 edges, 836 elements
 ```
 
@@ -13705,13 +13709,16 @@ for label, draw in plots.items():
 *[interactive plotly figure: The oblique cut, interactive; see the html page]*
 
 ```text
-plate: temperature, 12 contours 0.08 s
-plate: flux, field lines 0.18 s
+plate: temperature, 12 contours 0.21 s
 ```
 
 ```text
-3D cut: temperature, 10 contours 0.28 s
-3D cut: the cut mesh 0.07 s
+plate: flux, field lines 0.53 s
+```
+
+```text
+3D cut: temperature, 10 contours 0.68 s
+3D cut: the cut mesh 0.17 s
 ```
 
 ---
@@ -13800,7 +13807,7 @@ print("J", J, "series", series, "relative difference", J / series - 1)
 ```
 
 ```text
-J 73178.18297599268 series 73178.13668087665 relative difference 6.326358954478195e-07
+J 73178.18297599265 series 73178.13668087665 relative difference 6.326358950037303e-07
 ```
 
 The measurements below follow the same four steps:
@@ -13883,9 +13890,6 @@ for a, b in ((20, 12), (30, 20)):
 
 ```text
 a 20 b 12 peak 35.015 °C
-```
-
-```text
 a 30 b 20 peak 30.552 °C
 ```
 
@@ -14081,9 +14085,6 @@ disc: FEniCSx 28.998822689121436 °C, exact 29.0 °C
 
 ```text
 a 20 b 12 NGSolve 35.0152 °C, FEniCSx 35.0171 °C
-```
-
-```text
 a 30 b 20 NGSolve 30.5525 °C, FEniCSx 30.5541 °C
 ```
 
@@ -14441,6 +14442,8 @@ px.PlotField(phi, plate, ax=ax, contours=10)
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_1.png)
+
 ## A trimmed resistor
 
 The example is a printed resistor film of 2 × 1.2 between its two terminations, `plus` and `minus` (Figure 1a). A
@@ -14513,6 +14516,8 @@ right.set_title("Around the cut")
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_2.png)
+
 ## The resistance
 
 `potential` puts 1 on `plus` and 0 on `minus`, its defaults. With the film's sheet conductance as the unit, the
@@ -14568,6 +14573,8 @@ right.set_title("The current density |∇φ| with field lines")
 plt.show()
 ```
 
+![figure](fenicsx_files/fenicsx_3.png)
+
 **Check:** the current through each termination, the flux of −∇φ across it, is again the conductance G. Taken from
 the gradient on the boundary, it is less accurate than G, which comes from the whole film, so the two agree up to the
 discretization error and come closer with every order:
@@ -14582,9 +14589,6 @@ for order in (1, 2, 3):
 ```text
 order 1 in 0.3217459776683073 out 0.3217626552836635 G 0.3218196350683199
 order 2 in 0.3214504064611654 out 0.3214499535735674 G 0.32144943389343655
-```
-
-```text
 order 3 in 0.32144249517576384 out 0.32144248805886083 G 0.3214425195471844
 ```
 
@@ -14625,9 +14629,6 @@ print("area", washer.mass, "back from shapely", back.mass)
 
 ```text
 False True 10.0
-```
-
-```text
 area 2513.2741228718346 back from shapely 2513.2740390956237
 ```
 
@@ -15019,6 +15020,573 @@ The same works in 3D, where every solve is a 3D flow and heat problem: [a cold p
 cooling pipe follows a constraint sketch and is swept with OpenCASCADE, while COBYLA moves four points of its path.
 
 - [A 3D cold plate](scipy-cold-plate.md)
+
+---
+
+Source: https://planex2d.org/docs/integrations/scipy-cold-plate.md
+
+# A 3D cold plate
+
+planex2d sketches lie on planes in 3D. Here, a constraint sketch on a plane is the path of a cooling pipe.
+OpenCASCADE sweeps the pipe's cross-section along it and joins the pipe to a plate, netgen meshes the result, and
+NGSolve solves the oil flow in the pipe and the temperature in the plate and the oil. COBYLA from SciPy moves four
+points of the path, which are eight dimensions of the sketch, to make the plate cooler at a limited pressure drop.
+
+The example is an aluminum cold plate, `WP` = 160 wide, 120 deep and `wall` = 2 thick, that carries 50 W of
+electronics spread evenly over its middle `W` = 120 × 120, while the strips of `side` = 20 on the left and right are
+not heated. A pipe of outer radius `Ro` = 5 and inner radius `Ri` = 3, sunk 1 into the plate's top, carries oil at
+0.2 L/min that comes in at 20 °C. It enters in the middle of the front
+edge and leaves in the middle of the back edge, and in between, it runs wherever the design puts it. Lengths are in
+mm, pressure in kPa and heat in W.
+
+```python
+import math
+import netgen.occ as occ
+import ngsolve as ngs
+import numpy as np
+import planex as px
+from scipy.optimize import minimize
+```
+
+## The path
+
+The path is a constraint sketch on the plane of the pipe's axis, `zc` = 4 above the plate's top, with its origin at the
+plate's front left corner. A fixed construction line of 10 leads in along y to the middle of the front edge, another
+leads out from the middle of the back edge, and the spline `meander` runs from the end of one to the start of the
+other through four points, constrained tangent to both lines. The four points are `meander.p1` to `meander.p4`,
+counted with the start as `p0`, and each has two dimensions: `p1_h` is the distance of the first point from the
+sketch's vertical axis `px.V`, the plate's left edge, and `p1_v` its distance from `px.H`, the front edge. With the
+eight dimensions nothing can move. They are the design, and `Path` builds the sketch for given values.
+
+```python
+W = 120.0
+side = 20.0
+wall = 2.0
+WP = W + 2 * side
+Ro = 5.0
+Ri = 3.0
+zc = Ro - wall / 2
+corner = px.Plane(origin=(-WP / 2, -W / 2, zc))
+
+
+def Path(points):
+    path = px.Sketch(corner, id="path")
+    path.Move((WP / 2, -10)).Line(0, 10, id="in", construction=True)
+    path.Move("in.end", px.Coincident).Spline([*points, (WP / 2, W)], id="meander")
+    path.Line(0, 10, id="out", construction=True)
+    path.Constrain("in", "meander", px.Tangent)
+    path.Constrain("meander", "out", px.Tangent)
+    for p in ("in.start", "in.end", "out.start", "out.end"):
+        path.Constrain(p, px.Fix)
+    for k, (h, v) in enumerate(points, start=1):
+        path.Constrain(f"meander.p{k}", px.V, px.Distance, h, id=f"p{k}_h")
+        path.Constrain(f"meander.p{k}", px.H, px.Distance, v, id=f"p{k}_v")
+    return path
+
+
+initial = [(WP / 2 + 25 * math.sin(2 * math.pi * v / W), v) for v in (24.0, 48.0, 72.0, 96.0)]
+path = Path(initial)
+```
+
+The path that the optimization starts from is an S: the four points lie on x = 80 + 25 sin(2π y / 120), so that the
+pipe swings out to the right in the front half of the plate and to the left in the back half. Figure 1 shows the
+sketch as drawn by planex2d, with a sign for each constraint, and the path on the plate, with the heated area dashed
+and the four design points as dots.
+
+```python
+plate = px.QuickSketch().Rectangle(WP, W).Face()
+heated = px.QuickSketch((side, 0)).Rectangle(W, W).Wire()
+Row((path, "The path sketch and its constraints", {"constraints": True}),
+    (path, "On the plate: the heated area dashed, the four points",
+     {"fill": False, "fills": [(plate, FACE)], "dashed": [heated], "names": False,
+      "dots": initial}),
+    caption="The path of the start")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## The pipe and the plate
+
+The pipe's cross-section lies on the plane across the start of the path: a disc of radius `Ro` for the pipe and one of
+radius `Ri` for the oil in it, each drawn as two half circles. OpenCASCADE sweeps both along the path with `occ.Pipe`:
+the outer disc gives the pipe as a solid rod, the inner disc the oil. The rod is fused to the plate. Where it dips into
+the plate's top, it leaves a sharp re-entrant edge on either side, the edges in the plane z = 0 inside the plate, and a
+chamfer of 2 fills them. An edge between two faces comes up once for each of them, so each is kept once. Gluing the
+oil into the body (`occ.Glue`) splits the rod into the pipe wall and the oil: one shape of two solids, `metal` and
+`coolant`, that share the bore, so that their meshes match there.
+
+The names for the solver are assigned after the glue, first to the metal's faces and then to the coolant's. The bore
+is a face of both, and the last name wins. The coolant's faces are the `bore`, its two ends the `inlet` and the
+`outlet`; the plate's underside is the `bottom`, and everything else of the metal is `outside`.
+
+```python
+profile_plane = px.Plane(origin=(0, -W / 2, zc), normal=(0, 1, 0), axis=(1, 0, 0))
+
+
+def disc(r):
+    return px.QuickSketch(profile_plane).Move((r, 0), dir=(0, 1)).Arc(r, 180).Arc(r, 180).Face().ToOCCShape()
+
+
+outer = disc(Ro)
+inner = disc(Ri)
+
+
+def on_top(edge):
+    t0, t1 = edge.parameter_interval
+    points = [edge.Value(t0 + (t1 - t0) * k / 8) for k in range(9)]
+    inside = all(abs(p.x) < WP / 2 - 1e-3 and abs(p.y) < W / 2 - 1e-3 for p in points[1:-1])
+    return inside and all(abs(p.z) < 1e-4 for p in points)
+
+
+def ColdPlate(path, chamfer=2.0):
+    spine = path.ToOCCWire()
+    rod, oil = occ.Pipe(spine, outer), occ.Pipe(spine, inner)
+    plate = occ.Box(occ.Pnt(-WP / 2, -W / 2, -wall), occ.Pnt(WP / 2, W / 2, 0))
+    body = plate + rod
+    seam, seen = [], set()
+    for e in body.edges:
+        t0, t1 = e.parameter_interval
+        m = e.Value((t0 + t1) / 2)
+        key = (round(e.mass, 4), round(m.x, 4), round(m.y, 4))
+        if on_top(e) and key not in seen:
+            seen.add(key)
+            seam.append(e)
+    body = body.MakeChamfer(seam, chamfer)
+    glued = occ.Glue([body, oil])
+    metal, coolant = sorted(glued.solids, key=lambda s: s.mass, reverse=True)
+    metal.name = "metal"
+    coolant.name = "coolant"
+    metal.faces.name = "outside"
+    coolant.faces.name = "bore"
+    coolant.faces.Min(occ.Y).name = "inlet"
+    coolant.faces.Max(occ.Y).name = "outlet"
+    metal.faces.Min(occ.Z).name = "bottom"
+    return glued, metal, coolant
+
+
+glued, metal, coolant = ColdPlate(path)
+names = sorted({f.name for f in glued.faces})
+print(len(glued.solids), "solids, face names", names)
+```
+
+```text
+2 solids, face names ['bore', 'bottom', 'inlet', 'outlet', 'outside']
+```
+
+Figure 2 shows the path and the profile at its start, and the cold plate seen from the same side. Figure 3 is a thin
+slice of metal and oil across the pipe at y = −20, seen from the front, with the pipe sunk 1 into the plate, the
+chamfers on either side of it, and the oil inside.
+
+```python
+plate_top = occ.Box(occ.Pnt(-WP / 2, -W / 2, -wall), occ.Pnt(WP / 2, W / 2, 0)).faces.Max(occ.Z)
+Views(("The path and the profile at its start",
+       [(plate_top, "soft"), (path.ToOCCWire(), "accent"), (outer, "ink"), (inner, "ink")]),
+      ("plate and pipe in one, chamfered, the oil glued in", [(glued, "shade"), (glued, "ink")]),
+      caption="The path and the cold plate")
+across = px.Plane(origin=(0, -20, 0), normal=(0, -1, 0), axis=(1, 0, 0))
+spot = max(px.Intersect3d(across, coolant).faces, key=lambda f: f.bounding_box[1][0])
+(u0, _), (u1, _) = spot.bounding_box
+u = (u0 + u1) / 2
+thin = occ.Box(occ.Pnt(u - 14, -20.01, -10), occ.Pnt(u + 14, -19.99, 20))
+Views(("A slice at y = −20 through the pipe, seen from the front",
+       [(metal * thin, "shade"), (metal * thin, "ink"), (coolant * thin, "accent")]),
+      angles=(-90, 0, 0), key={"ink": "metal", "accent": "oil"})
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## Rules before solving
+
+The design moves the points freely, and not every path makes a valid pipe. `Rules` checks the path alone, with its
+centerline sampled from the sketch's OpenCASCADE wire, in a few milliseconds. It measures:
+
+- the tightest bend, which must be at least 1.2 Ro: a pipe bent tighter than Ro folds into itself, and the chamfers
+  reach Ro from its axis;
+- the closest approach of two passes, at least 2 Ro + 2 between their axes, so that 2 is left between the pipes;
+- the margin to the plate's edges: the pipe stays 1 inside, except near the ends, where it leaves the plate;
+- the length of the path.
+
+```python
+def centerline(path, n=1500):
+    points = []
+    for e in path.ToOCCWire().edges:
+        t0, t1 = e.parameter_interval
+        points += [(q.x, q.y) for q in (e.Value(t0 + (t1 - t0) * k / n) for k in range(n + 1))]
+    return np.array(points)
+
+
+def Rules(path):
+    p = centerline(path)
+    d1 = np.gradient(p, axis=0)
+    d2 = np.gradient(d1, axis=0)
+    cross = np.abs(d1[:, 0] * d2[:, 1] - d1[:, 1] * d2[:, 0])
+    speed = np.linalg.norm(d1, axis=1)
+    bend = (speed ** 3 / np.maximum(cross, 1e-300))[3:-3].min()
+    s = np.r_[0, np.cumsum(np.hypot(*np.diff(p, axis=0).T))]
+    q, sq = p[::5], s[::5]
+    dist = np.hypot(q[:, None, 0] - q[None, :, 0], q[:, None, 1] - q[None, :, 1])
+    far = np.abs(sq[:, None] - sq[None, :]) > 4 * (Ro + 1) * math.pi / 2
+    clearance = dist[far].min() if far.any() else 1e9
+    away = (s > 15) & (s < s[-1] - 15)
+    margin = min((WP / 2 - Ro - 1) - np.abs(p[:, 0]).max(),
+                 (W / 2 - Ro - 1) - np.abs(p[away, 1]).max())
+    return {"bend": bend, "clearance": clearance, "margin": margin, "length": s[-1]}
+
+
+r = Rules(path)
+print("tightest bend", round(r["bend"], 1), "passes", round(r["clearance"], 1), "apart")
+print("margin", round(r["margin"], 1), "length", round(r["length"], 1))
+```
+
+```text
+tightest bend 8.6 passes 31.4 apart
+margin 5.4 length 161.6
+```
+
+## The mesh
+
+`Mesh` has netgen use the names. The bore gets elements of 1, so that the thin layer of oil along the wall, where the
+heat goes in, is resolved, and everything else gets elements of 5 at most. The elements are curved to order 3, so that
+the bore stays round.
+
+```python
+def Mesh(glued):
+    glued.faces["bore"].maxh = 1.0
+    mesh = ngs.Mesh(occ.OCCGeometry(glued).GenerateMesh(maxh=5.0, minh=0.3))
+    mesh.Curve(3)
+    return mesh
+
+
+mesh = Mesh(ColdPlate(path)[0])
+print(mesh.ne, "tetrahedra in", mesh.GetMaterials())
+print("boundaries", sorted(set(mesh.GetBoundaries())))
+```
+
+```text
+34638 tetrahedra in ('metal', 'coolant')
+boundaries ['bore', 'bottom', 'inlet', 'outlet', 'outside']
+```
+
+## Flow and heat
+
+The oil is an ISO VG 32 oil:
+
+- a kinematic viscosity of 32 mm²/s, so a dynamic viscosity `mu` of 32 times the density;
+- a density `rho` of 870 kg/m³;
+- a heat capacity `cp` of 2000 J/(kg K);
+- a conductivity `k_oil` of 0.13 W/(m K).
+
+Plate and pipe are aluminum, `k_metal` = 200 W/(m K). The flow `Q` is 0.2 L/min, the heat `P` 50 W and the oil comes
+in at `T_in` = 20 °C. In the units of the page:
+
+```python
+rho = 870e-9
+mu = rho * 32.0
+cp = 2000.0
+k_oil = 0.13e-3
+k_metal = 0.2
+Q = 0.2e6 / 60
+P = 50.0
+T_in = 20.0
+
+
+def poiseuille(length):
+    return 8 * mu * length * Q / (math.pi * Ri ** 4)
+```
+
+`Solve` takes the mesh and has NGSolve solve the flow and then the temperature. How it does that does not matter for
+the geometry, so it sits in a hidden cell. In the coolant: Stokes flow, scaled to 0.2 L/min, at a Reynolds number of
+about 22. In metal and coolant together: the temperature, carried along by the flow, with the 50 W going into the
+heated part of the bottom and the oil coming in at 20 °C. It returns the pressure drop, the hottest point of the heated
+bottom, its mean temperature, a p-norm of it (p = 20: close to the hottest point, but smooth, so that an optimizer can
+follow it) and the share of the 50 W that the oil carries out. `poiseuille` is the pressure drop of a straight pipe
+of the given length.
+
+```python
+start = Solve(mesh)
+print("hottest", round(start["max"], 1), "°C, p-norm", round(start["pnorm"], 1), "°C")
+print("mean", round(start["mean"], 1), "°C, pressure drop", round(start["dp"], 3), "kPa")
+print("Poiseuille for a straight pipe as long", round(poiseuille(r["length"]), 3), "kPa")
+print("the oil carries out", round(100 * start["balance"], 1), "% of the heat")
+```
+
+```text
+hottest 109.1 °C, p-norm 103.1 °C
+mean 101.3 °C, pressure drop 0.471 kPa
+Poiseuille for a straight pipe as long 0.471 kPa
+the oil carries out 100.0 % of the heat
+```
+
+**Checks:**
+
+- the oil carries out the heat that goes in, to within a fraction of a percent;
+- the pressure drop equals that of a straight pipe as long as the path: in a flow this slow, the bends cost next to
+  nothing. This makes the limit on the pressure drop a limit on the length of the pipe.
+
+## The optimization
+
+COBYLA starts from the S of Figure 1, which already spreads the pipe over the heated area. A straight pipe down the
+middle would be a poor start, because all the heat would have to reach one pass.
+
+The objective is the p-norm of the bottom's temperature. The constraints, each scaled to about 1, are:
+
+- the three rules on bend, clearance and margin;
+- a pressure drop of at most `dp_max` = 0.95 kPa, almost three times that of the straight pipe: room for a pipe almost
+  three times as long.
+
+`evaluate` builds a layout, checks the rules and solves only if they pass, and it ends the run after `budget` = 80
+solves. A layout that breaks a rule, or cannot be
+built or solved, gets a high temperature and the pressure drop of a straight pipe as long as its path, so that COBYLA
+still sees which way is out. `evaluate` remembers every layout, as COBYLA asks for the objective and each constraint at
+the same point.
+
+COBYLA works on the eight dimensions scaled to 0 to 1 over the box from 10 to 10 short of the plate's edges, so that
+one step size suits all of them. It starts from the S with steps of a tenth of the box. Layouts that break
+a rule cost no solve and do not count toward the 80 solves, and COBYLA may stop earlier on its own, when its steps get
+small. It may end a hair over a constraint, so the best layout is the coolest one within 0.1 % of the pressure
+limit.
+
+```python
+lo = np.array([10.0, 10.0] * 4)
+hi = np.array([WP - 10, W - 10] * 4)
+budget = 80
+trail = []
+known = {}
+
+
+class Enough(Exception):
+    pass
+
+
+def pairs(x):
+    return [(x[2 * k], x[2 * k + 1]) for k in range(4)]
+
+
+def evaluate(x):
+    key = tuple(np.round(x, 6))
+    if key in known:
+        return known[key]
+    e = {"x": np.array(x), "pnorm": 150.0, "solved": False,
+         "bend": 0.0, "clearance": 0.0, "margin": -10.0, "length": 1e3}
+    try:
+        path = Path(pairs(x))
+        e.update(Rules(path))
+    except Exception:
+        path = None
+    e["dp"] = poiseuille(e["length"])
+    if e["bend"] >= 1.2 * Ro and e["clearance"] >= 2 * Ro + 2 and e["margin"] >= 0:
+        if sum(t["solved"] for t in trail) == budget:
+            raise Enough
+        try:
+            e.update(Solve(Mesh(ColdPlate(path)[0])), solved=True)
+            e["solve"] = sum(t["solved"] for t in trail) + 1
+        except Exception:
+            pass
+    trail.append(e)
+    known[key] = e
+    return e
+
+
+def layout(u):
+    return lo + np.clip(u, 0, 1) * (hi - lo)
+
+
+def temperature(u):
+    return evaluate(layout(u))["pnorm"]
+
+
+def bend_rule(u):
+    return evaluate(layout(u))["bend"] / (1.2 * Ro) - 1
+
+
+def clearance_rule(u):
+    return evaluate(layout(u))["clearance"] / (2 * Ro + 2) - 1
+
+
+def margin_rule(u):
+    return evaluate(layout(u))["margin"] / 5
+
+
+def pressure_rule(u):
+    return 1 - evaluate(layout(u))["dp"] / dp_max
+
+
+x0 = np.array(initial).ravel()
+dp_max = 0.95
+try:
+    stop = minimize(temperature, (x0 - lo) / (hi - lo), method="COBYLA", bounds=[(0, 1)] * 8,
+                    constraints=[{"type": "ineq", "fun": c}
+                                 for c in (bend_rule, clearance_rule, margin_rule, pressure_rule)],
+                    options={"rhobeg": 0.1, "maxiter": 1000, "tol": 1e-3}).message
+except Enough:
+    stop = "Stopped after the budget of solves."
+solved = [e for e in trail if e["solved"]]
+within = [e for e in solved if e["dp"] <= dp_max * 1.001]
+best = min(within, key=lambda e: e["pnorm"])
+print(stop, len(trail), "layouts,", len(solved), "solved")
+print("start: p-norm", round(trail[0]["pnorm"], 2), "°C, hottest", round(trail[0]["max"], 2), "°C")
+print("best: solve", best["solve"], "p-norm", round(best["pnorm"], 2), "°C")
+print("best: hottest", round(best["max"], 2), "°C")
+print("best: pressure drop", round(best["dp"], 3), "kPa, points", np.round(best["x"], 1).tolist())
+```
+
+```text
+Return from COBYLA because the trust region radius reaches its lower bound. 60 layouts, 52 solved
+start: p-norm 103.06 °C, hottest 109.06 °C
+best: solve 47 p-norm 80.6 °C
+best: hottest 85.63 °C
+best: pressure drop 0.738 kPa, points [118.8, 21.4, 121.8, 63.3, 53.9, 62.9, 49.5, 107.7]
+```
+
+## The result
+
+Figure 4 counts every real solve; layouts that broke a rule cost no solve and are not included. Seen from above,
+Figure 5 shows the start, the path of the best layout after every five solves, and the best one. The pipe bends
+out to both sides, so that its passes reach more of the heated area.
+
+```python
+over = [e for e in solved if e["dp"] > dp_max * 1.001]
+line = np.minimum.accumulate([e["pnorm"] if e["dp"] <= dp_max * 1.001 else math.inf for e in solved]).tolist()
+Chart("Real 3D solves", "plate bottom, p-norm 20 of the temperature [°C]",
+      dots={"within the pressure limit": ([e["solve"] for e in within], [e["pnorm"] for e in within])},
+      others={"over the pressure limit": ([e["solve"] for e in over], [e["pnorm"] for e in over])},
+      accent={"best so far": (list(range(1, len(line) + 1)), line)},
+      title="The temperature of every solved layout")
+
+history, low = [], None
+for e in solved:
+    if e["dp"] <= dp_max * 1.001 and (low is None or e["pnorm"] < low["pnorm"]):
+        low = e
+    if e["solve"] % 5 == 0:
+        history.append(low)
+heated_top = occ.Box(occ.Pnt(-W / 2, -W / 2, -wall), occ.Pnt(W / 2, W / 2, 0)).faces.Max(occ.Z)
+shapes = [(plate_top, "ink"), (heated_top, "soft"), (Path(initial).ToOCCWire(), "guide")]
+shapes += [(Path(pairs(e["x"])).ToOCCWire(), "light") for e in history]
+shapes += [(Path(pairs(best["x"])).ToOCCWire(), "accent")]
+Views((f"The best layout after every 5 solves, and the best: solve {best['solve']}", shapes),
+      angles=(0, 0, 0),
+      key={"guide": "start: the S", "light": "best after 5, 10, ... solves", "accent": "best",
+           "soft": "heated area"})
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+Figure 6 shows the underside of the plate from below, for the start and the best layout on one color scale,
+and for the best layout again on a scale of its own, which shows where it is still warmest. The lines are the pipe's
+outline and the feet of the chamfers.
+
+```python
+shown = {}
+for name, e in (("start", trail[0]), ("best", best)):
+    p = Path(pairs(e["x"]))
+    shown[name] = (p, Solve(Mesh(ColdPlate(p)[0]), keep=True))
+
+
+def outline(path):
+    q = centerline(path, 600)
+    d = np.gradient(q, axis=0)
+    normal = np.c_[-d[:, 1], d[:, 0]] / np.linalg.norm(d, axis=1)[:, None]
+    foot = math.sqrt(Ro ** 2 - zc ** 2) + 2.0
+    lines = []
+    for off in (Ro, -Ro, foot, -foot):
+        o = q + off * normal
+        o = o[(np.abs(o[:, 0]) <= WP / 2) & (np.abs(o[:, 1]) <= W / 2)]
+        if len(o) > 1:
+            lines.append(px.FromPolyline([tuple(r) for r in o]))
+    return lines
+
+
+def bottom(result):
+    def field(face, plot=True, **_):
+        (u0, v0), (u1, v1) = face.bounding_box
+        gu, gv = np.meshgrid(np.linspace(u0, u1, 241), np.linspace(v0, v1, 241))
+        uv = np.c_[gu.ravel(), gv.ravel()]
+        values = result["T"](result["mesh"](uv[:, 0], uv[:, 1], np.full(len(uv), -wall + 1e-3))).ravel()
+        return {"points": [tuple(r) for r in uv], "values": values, "label": "°C"}
+    return field
+
+
+plate2d = px.QuickSketch().RectangleC(WP, W).Face()
+clim = (min(s["mean"] for _, s in shown.values()) - 8, max(s["max"] for _, s in shown.values()))
+panels = [(plate2d, f"{name}: hottest {s['max']:.1f} °C",
+           {"field": bottom(s), "cmap": MAP.reversed(), "clim": clim, "paths": outline(p), "fill": False})
+          for name, (p, s) in shown.items()]
+p, s = shown["best"]
+panels.append((plate2d, "Best, on its own scale",
+               {"field": bottom(s), "cmap": MAP.reversed(), "paths": outline(p), "fill": False}))
+Row(*panels, caption="The temperature of the plate's underside")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+Figure 7 shows the pressure in the mid-plane of the pipe for the start and the best layout on one color
+scale. The cut is a planex2d face where the plane meets the coolant (`px.Intersect3d`). The best layout spends more
+pressure on a longer pipe. Figure 8 shows the two cold plates in 3D.
+
+```python
+def pressure(result):
+    def field(face, plot=True, **_):
+        (u0, v0), (u1, v1) = face.bounding_box
+        gu, gv = np.meshgrid(np.linspace(u0, u1, 400), np.linspace(v0, v1, 400))
+        uv = np.c_[gu.ravel(), gv.ravel()]
+        uv = uv[face.Distance(uv, signed=True) < -0.02]
+        values = result["p"](result["mesh"](uv[:, 0], uv[:, 1], np.full(len(uv), zc))).ravel()
+        return {"points": [tuple(r) for r in uv], "values": values, "label": "kPa"}
+    return field
+
+
+cuts = {name: px.Intersect3d(px.XY.Offset(zc), ColdPlate(p)[2]) for name, (p, s) in shown.items()}
+p_all = [s["p"](s["mesh"](0.0, y, zc)) for _, s in shown.values() for y in (-W / 2 + 0.5, W / 2 - 0.5)]
+rim = plate2d.outer
+Row(*((cuts[name], f"{name}: pressure",
+       {"field": pressure(s), "cmap": MAP.reversed(), "clim": (min(p_all), max(p_all)), "paths": [rim],
+        "view": ((-WP / 2 - 2, WP / 2 + 2), (-W / 2 - 2, W / 2 + 2))})
+      for name, (p, s) in shown.items()), caption="The pressure in the mid-plane of the pipe")
+solids = {name: ColdPlate(p)[0] for name, (p, s) in shown.items()}
+Views(*((f"{name} in 3D", [(solid, "shade"), (solid, "ink")]) for name, solid in solids.items()),
+      caption="The two cold plates")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+The best layout as a solid, to turn and zoom:
+
+```python
+from ngsolve_webgpu.jupyter import Draw
+
+glued, metal, coolant = ColdPlate(Path(pairs(best["x"])))
+metal.faces.col = (0.867, 0.902, 0.941)
+coolant.faces.col = (0.353, 0.663, 0.812)
+Draw(glued, euler_angles=[-60, 0, 30])
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+See the [SciPy page](scipy.md) for the same pattern in 2D, with planex2d measurements as the objective.
 
 ---
 
@@ -15415,6 +15983,481 @@ through three constraint sketches, updated by a thin wrapper, and optimized by t
 
 ---
 
+Source: https://planex2d.org/docs/integrations/pytorch-duct.md
+
+# A 3D duct
+
+planex2d sketches lie on planes in 3D. Here, constraint sketches on planes along an axis are the sections of a
+cooling duct, lofted along guide curves through their named corners. netgen meshes the duct and NGSolve solves the
+flow in it, and a small PyTorch network learns from a few solved ducts how the design behaves, so that questions
+about it can be answered without the solver.
+
+The example is a duct that takes coolant from a hose to the flat inlet slot of a cold plate, `L` = 120 long. Its two
+ends are fixed by the parts it joins, and the section in between is the design. The goal is as little pressure drop as
+possible, while the coolant takes up at least as much heat from the warm walls as in a straight transition.
+
+```python
+import math
+import netgen.occ as occ
+import numpy as np
+import planex as px
+import torch
+from scipy.optimize import minimize
+from scipy.stats import qmc
+
+torch.set_num_threads(1)
+```
+
+## The sections
+
+Each section is a rounded rectangle in a constraint sketch on its own plane, made of four lines and four arcs that
+are tangent all around, centered on the axis, with the dimensions `w`, `h` and `r`. Three of them are sketched: the
+inlet, 16 × 16 with corners of 5, the outlet, the 40 × 6 slot with corners of 2, and the middle section, which is the
+design and starts halfway. The loft adds four more sections, interpolated between these, as the next section shows.
+
+```python
+L = 120.0
+
+
+def section(w, h, r, z, id="section"):
+    sk = px.Sketch(px.XY.Offset(z), id=id)
+    sk.Move((-w / 2 + r, -h / 2)).Line(w - 2 * r, 0, px.Horizontal, id="bottom")
+    sk.Arc(r, 90, px.Tangent, id="a1")
+    sk.Line(0, h - 2 * r, px.Vertical, px.Tangent, id="right")
+    sk.Arc(r, 90, px.Tangent, id="a2")
+    sk.Line(-(w - 2 * r), 0, px.Horizontal, px.Tangent, id="top")
+    sk.Arc(r, 90, px.Tangent, id="a3")
+    sk.Line(0, -(h - 2 * r), px.Vertical, px.Tangent, id="left")
+    sk.Arc(r, 90, px.Tangent, id="a4")
+    sk.Constrain("a4.end", "bottom.start", px.Coincident)
+    sk.Constrain("a4", "bottom", px.Tangent)
+    sk.Constrain("a1", px.Radius, r, id="r")
+    for arc in ("a2", "a3", "a4"):
+        sk.Constrain("a1", arc, px.Equal)
+    sk.Constrain("left", "right", px.Distance, w, id="w")
+    sk.Constrain("bottom", "top", px.Distance, h, id="h")
+    sk.Constrain("bottom.mid", px.V, px.Coincident)
+    sk.Constrain("left.mid", px.H, px.Coincident)
+    return sk
+
+
+inlet = section(16, 16, 5, 0, "inlet")
+mid = section(28, 11, 3.5, L / 2, "mid")
+outlet = section(40, 6, 2, L, "outlet")
+```
+
+Figure 1 shows the three sketched sections at one scale, at z 0, 60 and 120. The dots are the eight named corners
+of each section, through which the guides of the loft pass.
+
+```python
+def flat(s, caption, half):
+    corners = [s(f"{edge}.{end}").center[:2] for edge in ("bottom", "right", "top", "left")
+               for end in ("start", "end")]
+    center = [px.FromPolyline([(-half + 1, 0), (half - 1, 0)]),
+              px.FromPolyline([(0, -9), (0, 9)])]
+    return (s.Face(), caption, {"view": ((-half, half), (-9.5, 9.5)), "dashed": center,
+                                "dots": corners, "dot": GUIDE})
+
+
+Row(flat(inlet, "Inlet, 16 × 16", 10.5), flat(mid, "Middle, 28 × 11", 16.5),
+    flat(outlet, "Outlet, 40 × 6", 22.5), caption="The three sketched sections")
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## A guided loft
+
+A smooth loft through sections this different overshoots, and between a narrow middle section and the wide outlet,
+its walls swing past each other. Guide curves steer the loft, as on the page
+[Lofts with guide curves](occ/guided-loft.md):
+
+1. Two interpolated sections in each gap, at a third and two thirds of the way, with width, height and corner radius
+   interpolated linearly between their neighbors, make seven sections in all.
+2. Every section names its eight corners, `bottom.start`, `bottom.end`, `right.start` and so on, and gives them in 3D.
+   A spline through each corner from the inlet to the outlet, leaving the inlet and reaching the outlet along the
+   axis, is a guide.
+3. Every 2.5 along the axis, the eight guides are cut and give a new section: the lines through the outermost corners
+   and the arcs tangent to them. These sections cost almost nothing and hold the loft to the guides.
+
+`occ.ThruSections` lofts through all of them.
+
+`Duct` is the thin wrapper. `Update` takes ids such as `"mid.w"` and `"mid.z"`, and `Solid` builds the loft and names
+its faces for the solver. The loft makes one face per edge of the sections, in their order, so faces 1, 3, 5 and 7 are
+the corner strips. They get small elements, so that the curved elements follow the corners.
+
+```python
+CORNERS = [f"{edge}.{end}" for edge in ("bottom", "right", "top", "left") for end in ("start", "end")]
+
+
+def size(sk):
+    x, y, _ = sk("right.start").center
+    bottom = sk("bottom.start").center[1]
+    return 2 * x, -2 * bottom, y - bottom
+
+
+def meet(guide, z):
+    a, b = guide.parameter_interval
+    for _ in range(50):
+        m = (a + b) / 2
+        a, b = (m, b) if guide.Value(m).z < z else (a, m)
+    return guide.Value(a)
+
+
+def from_corners(points, z):
+    x, y = np.array([(p.x, p.y) for p in points]).T
+    left, right = x[6:].mean(), x[2:4].mean()
+    bottom, top = y[:2].mean(), y[4:6].mean()
+    r = np.mean([right - x[1], y[2] - bottom, top - y[3], right - x[4],
+                 x[5] - left, top - y[6], y[7] - bottom, x[0] - left])
+    return section(right - left, top - bottom, r, z)
+
+
+class Duct:
+    def __init__(self, *sketches, step=2.5):
+        self.sketches = {s.id: s for s in sketches}
+        self.z = {s.id: s.ToXYZ((0, 0))[2] for s in sketches}
+        self.step = step
+
+    def Update(self, values):
+        dims = {}
+        for key, value in values.items():
+            name, dim = key.split(".")
+            if dim == "z":
+                self.z[name] = value
+            else:
+                dims.setdefault(name, {})[dim] = value
+        for name, d in dims.items():
+            self.sketches[name].Update(d)
+        return self
+
+    def Sections(self):
+        placed = sorted(((self.z[n], s) for n, s in self.sketches.items()), key=lambda p: p[0])
+        out = [placed[0]]
+        for (za, a), (zb, b) in zip(placed, placed[1:]):
+            for t in (1 / 3, 2 / 3):
+                z = za + t * (zb - za)
+                w, h, r = (p + t * (q - p) for p, q in zip(size(a), size(b)))
+                out.append((z, section(w, h, r, z, "interpolated")))
+            out.append((zb, b))
+        return out
+
+    def Guides(self, sections=None):
+        sections = sections or self.Sections()
+        axial = {0: occ.Vec(0, 0, 1), len(sections) - 1: occ.Vec(0, 0, 1)}
+        guides = []
+        for corner in CORNERS:
+            points = [occ.Pnt(*s(corner).center[:2], z) for z, s in sections]
+            guides.append(occ.SplineInterpolation(points, tangents=axial))
+        return guides
+
+    def Wires(self):
+        placed = self.Sections()
+        guides = self.Guides(placed)
+        sections = dict(placed)
+        for z in np.arange(self.step, L, self.step):
+            if min(abs(z - known) for known in sections) > 1e-6:
+                sections[z] = from_corners([meet(g, z) for g in guides], z)
+        return [s.ToOCCWire().Move((0, 0, z - s.ToXYZ((0, 0))[2]))
+                for z, s in sorted(sections.items(), key=lambda p: p[0])]
+
+    def Solid(self):
+        solid = occ.ThruSections(self.Wires(), solid=True)
+        solid.faces.name = "wall"
+        solid.faces.Min(occ.Z).name = "inlet"
+        solid.faces.Max(occ.Z).name = "outlet"
+        for face in solid.faces[1:8:2]:
+            face.maxh = 1.0
+        return solid
+
+
+duct = Duct(inlet, mid, outlet)
+straight = duct.Solid()
+print(len(duct.Wires()), "sections in the loft, volume", round(straight.mass, 1))
+```
+
+```text
+49 sections in the loft, volume 33070.5
+```
+
+The figures show the seven sections and the guides through their corners (Figure 2), all sections of the loft,
+including those cut from the guides (Figure 3), and the loft through them (Figure 4). Only the middle sketch is the
+design; the interpolated sections, the guides and the cut sections follow from the three sketches.
+
+```python
+VIEW = (20, 50, 0)
+KEY = {"ink": "sketched", "accent": "interpolated", "light": "cut from the guides", "guide": "guides"}
+
+
+def curves(duct, cut=True, guides=True):
+    placed = duct.Sections()
+    known = [z for z, _ in placed]
+    out = []
+    if cut:
+        out += [(w_, "light") for w_ in duct.Wires()
+                if min(abs(w_.bounding_box[0].z - k) for k in known) > 1e-6]
+    out += [(s.ToOCCWire().Move((0, 0, z - s.ToXYZ((0, 0))[2])), "accent" if s.id == "interpolated" else "ink")
+            for z, s in placed]
+    if guides:
+        out += [(g, "guide") for g in duct.Guides(placed)]
+    return out
+
+
+Views(("The seven sections the guides pass through", curves(duct, cut=False)), angles=VIEW,
+      key={k: KEY[k] for k in ("ink", "accent", "guide")})
+Views(("All sections of the loft", curves(duct)), angles=VIEW, key=KEY)
+Views(("The loft", [(straight, "shade")] + curves(duct)), angles=VIEW, key=KEY)
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+## Flow and heat
+
+`SolveStokes` takes the 3D solid and returns the pressure drop at the coolant's flow rate and the heat that the
+coolant takes up from the warm walls, both in units where only the ratios to the straight transition matter. netgen
+meshes the solid, and NGSolve solves Stokes flow and then the temperature in that flow. How it does that does not
+matter here, so it sits in a hidden cell. A layout that cannot be meshed raises an error.
+
+```python
+base = SolveStokes(straight)
+print("straight: pressure drop", round(base["dp"], 3), "heat", round(base["heat"], 3))
+```
+
+```text
+straight: pressure drop 14.691 heat 110.366
+```
+
+## One question for COBYLA
+
+The design is the middle section, described by four numbers: its width `w` and height `h`, its corner radius as a
+fraction `f` of the largest possible, and its position `z`. `middle(x)` turns them into the middle sketch's dimensions,
+and `solve(x)` updates the duct, solves it and counts the real solve. It remembers what it solved, because COBYLA asks
+for the objective and the constraint at the same layout. A layout that does not mesh is infeasible.
+
+COBYLA answers one question: the least pressure drop that keeps the heat of the straight transition. It works on the
+four numbers scaled to the box, from 0 to 1, so that one step size suits all of them, and it starts from the straight
+transition.
+
+```python
+lo = np.array([12.0, 7.0, 0.2, 30.0])
+hi = np.array([44.0, 18.0, 0.7, 90.0])
+need = base["heat"]
+solves = []
+known = {}
+
+
+def middle(x):
+    w, h, f, z = x
+    return {"mid.w": w, "mid.h": h, "mid.r": f * min(w, h) / 2, "mid.z": z}
+
+
+def solve(x):
+    key = tuple(np.round(x, 9))
+    if key not in known:
+        try:
+            m = SolveStokes(duct.Update(middle(x)).Solid())
+            known[key] = (m["dp"], m["heat"])
+        except Exception:
+            known[key] = (math.nan, math.nan)
+        solves.append((np.array(x), *known[key]))
+    return known[key]
+
+
+def layout(u):
+    return lo + np.clip(u, 0, 1) * (hi - lo)
+
+
+def objective(u):
+    return np.nan_to_num(solve(layout(u))[0], nan=10 * base["dp"])
+
+
+def keeps_heat(u):
+    return np.nan_to_num(solve(layout(u))[1] - need, nan=-need)
+
+
+u_straight = (np.array([28.0, 11.0, 3.5 / 5.5, L / 2]) - lo) / (hi - lo)
+stop = minimize(objective, u_straight, method="COBYLA", bounds=[(0, 1)] * 4,
+                constraints=[{"type": "ineq", "fun": keeps_heat}],
+                options={"rhobeg": 0.2, "maxiter": 60, "tol": 1e-3}).message
+x_cobyla, dp_cobyla, heat_cobyla = min((s for s in solves if s[2] >= need), key=lambda s: s[1])
+print(stop)
+print("COBYLA:", round(100 * dp_cobyla / base["dp"], 1), "% of the straight pressure drop,", len(solves), "solves")
+```
+
+```text
+Return from COBYLA because the trust region radius reaches its lower bound.
+COBYLA: 55.6 % of the straight pressure drop, 38 solves
+```
+
+## A map from PyTorch
+
+Another heat requirement would need another COBYLA run. A small network, trained once on a few solved ducts, answers
+all of them. It uses 32 layouts from a Sobol sequence over the box, each solved once, and learns the logarithm of the
+pressure drop and the heat from the four numbers. Asking it costs almost nothing, so it is asked for 65 536 layouts at
+once. For every heat requirement from 85 % to 120 % of the straight transition, it keeps the layout with the least
+predicted pressure drop, and three of them are solved for real.
+
+```python
+solves = []
+known = {}
+for x in qmc.scale(qmc.Sobol(4, seed=5).random(32), lo, hi):
+    solve(x)
+good = [s for s in solves if not math.isnan(s[1])]
+X = np.array([s[0] for s in good])
+Y = np.array([(math.log(s[1]), s[2]) for s in good])
+mean = Y.mean(0)
+spread = Y.std(0)
+
+torch.manual_seed(0)
+net = torch.nn.Sequential(torch.nn.Linear(4, 32), torch.nn.SiLU(),
+                          torch.nn.Linear(32, 32), torch.nn.SiLU(),
+                          torch.nn.Linear(32, 2)).double()
+step = torch.optim.Adam(net.parameters(), lr=1e-2, weight_decay=1e-4)
+inputs = torch.tensor((X - lo) / (hi - lo))
+targets = torch.tensor((Y - mean) / spread)
+for _ in range(2000):
+    step.zero_grad()
+    ((net(inputs) - targets) ** 2).mean().backward()
+    step.step()
+
+
+def predict(x):
+    with torch.no_grad():
+        y = net(torch.tensor((x - lo) / (hi - lo))).numpy() * spread + mean
+    return np.exp(y[:, 0]), y[:, 1]
+
+
+pool = qmc.scale(qmc.Sobol(4, seed=7).random(2**16), lo, hi)
+dp, heat = predict(pool)
+front = {}
+for q in np.round(np.arange(0.85, 1.205, 0.01), 2):
+    if (heat >= q * need).any():
+        front[q] = np.argmin(np.where(heat >= q * need, dp, np.inf))
+checks = {}
+for q in (0.9, 1.0, 1.1):
+    x = pool[front[q]]
+    checks[q] = (x, dp[front[q]], *solve(x))
+    _, predicted, real_dp, real_heat = checks[q]
+    print("heat at least", round(100 * q), "%: pressure drop", round(100 * predicted / base["dp"], 1), "% predicted,",
+          round(100 * real_dp / base["dp"], 1), "% solved, heat", round(100 * real_heat / need, 1), "%, middle at z",
+          round(x[3], 1))
+```
+
+```text
+heat at least 90 %: pressure drop 42.3 % predicted, 42.9 % solved, heat 87.9 %, middle at z 81.5
+```
+
+```text
+heat at least 100 %: pressure drop 53.7 % predicted, 54.0 % solved, heat 102.8 %, middle at z 51.4
+```
+
+```text
+heat at least 110 %: pressure drop 72.4 % predicted, 72.2 % solved, heat 110.1 %, middle at z 32.6
+```
+
+```python
+Chart("Heat taken up / straight", "pressure drop / straight",
+      others={"the 32 solved samples": ([s[2] / need for s in good],
+                                        [s[1] / base["dp"] for s in good])},
+      curves={"the network: least pressure drop for each heat requirement":
+              (list(front), [dp[k] / base["dp"] for k in front.values()])},
+      dots={"three of its layouts, solved": ([c[3] / need for c in checks.values()],
+                                             [c[2] / base["dp"] for c in checks.values()])},
+      refs={"COBYLA for 100 % heat": (heat_cobyla / need, dp_cobyla / base["dp"])},
+      marks={"the straight transition": (1.0, 1.0)},
+      title="Every solved duct and the network's map")
+
+
+def loft(x):
+    duct.Update(middle(x))
+    return [(duct.Solid(), "shade")] + curves(duct, cut=False, guides=False)
+
+
+Views(*((f"at least {q:.0%} heat: {c[2] / base['dp']:.0%} of the pressure drop", loft(c[0]))
+        for q, c in checks.items()), angles=VIEW, key={k: KEY[k] for k in ("ink", "accent")})
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+The blue line in Figure 5 is the network's answer for every heat requirement at once, learned from the 32 gray samples.
+The three blue dots are layouts it chose, solved for real, and they land on the line. COBYLA's answer to its one
+question, the diamond, lies close to the line: after 38 solves, it is at about 56 % of the straight transition's
+pressure drop, and the network's layout for the same heat needs about 54 %. COBYLA's 38 solves answer only that one
+question, while the network answers every heat requirement from its 32 samples and checks each of its three layouts with
+one more solve. The three layouts are shown as lofts (Figure 6a–c). The width stays at the edge of the box, because a wider duct always loses less pressure, and the
+more heat the coolant has to take up, the closer to the inlet the duct widens.
+
+## The flow in the chosen duct
+
+Figure 7 shows the speed of the coolant in the layout for at least 100 % heat, in a cut along the axis through
+the middle of the duct, drawn on the planex2d face where the plane meets the solid (`px.Intersect3d`).
+
+```python
+w, h, f, z = checks[1.0][0]
+solid = duct.Update(middle(checks[1.0][0])).Solid()
+flow = SolveStokes(solid)
+cut = px.Intersect3d(px.Plane(normal=(0, 1, 0), axis=(0, 0, 1)), solid)
+
+
+def speed(m):
+    def field(face, plot=True, **_):
+        (u0, v0), (u1, v1) = face.bounding_box
+        gu, gv = np.meshgrid(np.linspace(u0, u1, 301), np.linspace(v0, v1, 101))
+        uv = np.c_[gu.ravel(), gv.ravel()]
+        uv = uv[face.Distance(uv, signed=True) < -0.02]
+        values = m["speed"](m["mesh"](uv[:, 1], np.zeros(len(uv)), uv[:, 0])).ravel()
+        return {"points": [tuple(p) for p in uv], "values": values, "label": "speed"}
+    return field
+
+
+Row((cut, f"The layout for at least 100 % heat, middle section at z {z:.0f}",
+     {"field": speed(flow), "cmap": MAP.reversed()}))
+print("middle section: w", round(w, 1), "h", round(h, 1), "r", round(f * min(w, h) / 2, 1), "z", round(z, 1))
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+middle section: w 44.0 h 17.2 r 3.5 z 51.4
+```
+
+The duct opens soon after the inlet. The coolant slows down in the wide middle, where a slow flow costs little
+pressure, and speeds up again only where the duct flattens into the slot. The same duct is shown as a solid that can
+be turned and zoomed:
+
+```python
+from ngsolve_webgpu.jupyter import Draw
+
+solid = duct.Update(middle(checks[1.0][0])).Solid()
+solid.faces.col = (0.867, 0.902, 0.941)
+Draw(solid, euler_angles=[20, 50, 0])
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+---
+
 Source: https://planex2d.org/docs/integrations/kicad.md
 
 # KiCad
@@ -15470,8 +16513,7 @@ for name, layer in board.items():
 
 ```text
 stderr:
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
 ```
 
 ```text
@@ -15674,8 +16716,7 @@ Draw(solid, settings={"Objects": {"Edges": False}})
 
 ```text
 stderr:
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
 ```
 
 ```text
@@ -15853,7 +16894,7 @@ print(len(points), "points: Distance", round(time.perf_counter() - start, 2), "s
 
 ```text
 1000000 points: Contains 0.02 s
-1000000 points: Distance 0.07 s
+1000000 points: Distance 0.08 s
 ```
 
 ```python
@@ -16409,6 +17450,8 @@ for ax, title in zip(axes, ("side", "top", "front")):
     ax.axis("off")
 plt.show()
 ```
+
+![figure](toy-plane_files/toy-plane_2.png)
 
 ## Numbers
 
@@ -17270,7 +18313,7 @@ print(solves, "positions in", round(time.perf_counter() - start, 1), "s")
 ```
 
 ```text
-6615 positions in 2.6 s
+6615 positions in 2.7 s
 ```
 
 ```python
@@ -17593,7 +18636,7 @@ mesh.Curve(3)
 ```
 
 ```text
-<ngsolve.comp.Mesh at 0x7fadbd205550>
+<ngsolve.comp.Mesh at 0x7f55eef914f0>
 ```
 
 NGSolve solves for plane stress in steel, with a Young's modulus `E` of 210 000 N/mm² and a Poisson's ratio `nu` of
@@ -18404,6 +19447,8 @@ ax.set_ylabel("torque out / torque in")
 plt.show()
 ```
 
+![figure](four-bar-linkage_files/four-bar-linkage_2.png)
+
 ---
 
 Source: https://planex2d.org/docs/examples/hood-hinge.md
@@ -18675,6 +19720,8 @@ ax[1].set_ylabel("transmission angle [°]")
 plt.show()
 ```
 
+![figure](hood-hinge_files/hood-hinge_2.png)
+
 ## The hood and the windshield
 
 The hood panel is a spline through its outer surface, offset with `Offset` to a 20 mm thick band, and the bracket is
@@ -18735,6 +19782,8 @@ axs[0].set_title("The hood in its three positions, and on the way")
 axs[1].set_title("The hinge")
 plt.show()
 ```
+
+![figure](hood-hinge_files/hood-hinge_3.png)
 
 The hood opening and closing:
 
@@ -19958,7 +21007,7 @@ maxh 0.5 order 3
   9 12.3394631 12.33866449 relative difference 6.5e-05
   10 13.06947494 13.07076493 relative difference 9.9e-05
   11 14.3217462 14.32165493 relative difference 6.4e-06
-  12 15.89767388 15.89578405 relative difference 1.2e-04
+  12 15.89767294 15.8957854 relative difference 1.2e-04
 ```
 
 ```text
@@ -19973,8 +21022,8 @@ maxh 0.25 order 4
   8 11.54168794 11.54173174 relative difference 3.8e-06
   9 12.33700558 12.33700558 relative difference 2.1e-10
   10 13.05620709 13.05635292 relative difference 1.1e-05
-  11 14.31471724 14.31486052 relative difference 1.0e-05
-  12 15.88167905 15.8755959 relative difference 3.8e-04
+  11 14.31471725 14.31486052 relative difference 1.0e-05
+  12 15.9186829 15.87556683 relative difference 2.7e-03
 ```
 
 ## Same tone, different shape
@@ -20002,6 +21051,8 @@ for row, name in zip(axes, faces):
         ax.set_title(f"{name}, λ{n + 1} = {values[n]:.6f}", fontsize=9)
 plt.show()
 ```
+
+![figure](isospectral-drums_files/isospectral-drums_2.png)
 
 ---
 
@@ -20320,6 +21371,8 @@ ax.set_ylabel("permeability in mm²")
 ax.legend()
 plt.show()
 ```
+
+![figure](flow-through-sand_files/flow-through-sand_2.png)
 
 ---
 
@@ -21433,6 +22486,8 @@ ax.legend()
 plt.show()
 ```
 
+![figure](parallelogram-flexure_files/parallelogram-flexure_2.png)
+
 ## The stage moving
 
 The force is swept from −10 N to 10 N, and for every step, the displacement of the left and the right end of the
@@ -21478,6 +22533,8 @@ zoom.legend()
 fig.tight_layout()
 plt.show()
 ```
+
+![figure](parallelogram-flexure_files/parallelogram-flexure_3.png)
 
 ---
 
@@ -21834,7 +22891,7 @@ print("relative density", round(bone.mass / size**2, 3))
 ```
 
 ```text
-6001 struts united and cut to the square in 0.09 s
+6001 struts united and cut to the square in 0.093 s
 1 face, 1986 holes from 2000 cells, 10541 edges
 relative density 0.461
 ```
@@ -21906,19 +22963,19 @@ stiffness = np.array([r[1] / E for r in results.values()])
 ```
 
 ```text
-strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -2.5e-11
+strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -5.5e-11
 ```
 
 ```text
-strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.1e-10
+strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.7e-11
 ```
 
 ```text
-strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction 7.9e-11
+strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction -2.4e-11
 ```
 
 ```text
-strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 7.1e-11
+strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 9.1e-11
 ```
 
 The stiffness against the density, on logarithmic axes, with the two laws:
@@ -21933,6 +22990,8 @@ ax.set_ylabel("E* / E")
 ax.legend()
 plt.show()
 ```
+
+![figure](voronoi-bone_files/voronoi-bone_2.png)
 
 The scaffold with struts of 0.2, pressed: its displacement, with the deformation magnified 10 times:
 
@@ -22139,6 +23198,8 @@ ax.set_aspect("equal")
 plt.show()
 ```
 
+![figure](lens-ray-tracing_files/lens-ray-tracing_2.png)
+
 ## Aberrations
 
 The ray fan plots where each ray of a bundle lands in the image plane against where it passed the stop. The S-shape
@@ -22156,6 +23217,8 @@ for ax in (left, right):
     ax.grid(alpha=0.3)
 plt.show()
 ```
+
+![figure](lens-ray-tracing_files/lens-ray-tracing_3.png)
 
 ## Which way round
 
@@ -22485,7 +23548,7 @@ print("1440 cuts in", round(time.perf_counter() - start, 2), "s,", len(gear24.ed
 ```
 
 ```text
-1440 cuts in 0.16 s, 12480 edges
+1440 cuts in 0.17 s, 12480 edges
 ```
 
 ```python
@@ -22578,6 +23641,8 @@ for ax, gear, exact, z in zip(axes, (gear24, gear10), (exact24, exact10), (24, 1
     ax.set_title(f"{z} teeth, involute in red")
 plt.show()
 ```
+
+![figure](gear-cutting_files/gear-cutting_2.png)
 
 ## In motion
 

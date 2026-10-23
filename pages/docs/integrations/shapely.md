@@ -25,9 +25,6 @@ print("area", washer.mass, "back from shapely", back.mass)
 
 ```text
 False True 10.0
-```
-
-```text
 area 2513.2741228718346 back from shapely 2513.2740390956237
 ```
 

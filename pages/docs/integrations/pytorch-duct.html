@@ -1,0 +1,1024 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="description" content="Constraint sketches in 3D: the sections of a cooling duct, lofted along guide curves through their named corners, flow and heat solved with NGSolve, and a PyTorch network trained on 32 solved ducts that maps the least pressure drop for every heat requirement." /><meta property="og:title" content="A 3D duct" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://planex2d.org/docs/integrations/pytorch-duct.html" />
+<meta property="og:site_name" content="planex2d" />
+<meta property="og:description" content="Constraint sketches in 3D: the sections of a cooling duct, lofted along guide curves through their named corners, flow and heat solved with NGSolve, and a PyTorch network trained on 32 solved ducts that maps the least pressure drop for every heat requirement." />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://planex2d.org/docs/_images/social_previews/summary_integrations_pytorch-duct_33330c91.png" />
+<meta property="og:image:alt" content="planex2d sketches lie on planes in 3D. Here, constraint sketches on planes along an axis are the sections of a cooling duct, lofted along guide curves through their named corners. netgen meshes the..." />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preload" href="../_static/css/fonts/lato-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../_static/css/fonts/lato-bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../_static/css/fonts/Roboto-Slab-Bold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" href="../_static/brand/planex2d-mark.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../_static/brand/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A 3D duct &mdash; planex2d</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=d0689994" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="canonical" href="https://planex2d.org/docs/integrations/pytorch-duct.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/custom.js?v=14a98ede"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="KiCad" href="kicad.html" />
+    <link rel="prev" title="PyTorch" href="pytorch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            planex2d
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/installation.html#Optional-packages">Optional packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/conventions.html">API conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Chaining-and-copies">Chaining and copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Reading-the-arguments">Reading the arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Points">Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Planes">Planes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Angles-and-units">Angles and units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Queries">Queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/conventions.html#Errors-and-warnings">Errors and warnings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/testing.html">How planex2d is tested</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Tests-written-by-hand">Tests written by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Agentic-testing">Agentic testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/testing.html#Fuzz-tests">Fuzz tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/building.html">Building and contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/ai.html">How AI is used in this project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/ai.html#Testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/notices.html">License and notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Eigen-3.4.0">Eigen 3.4.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/notices.html#Licenses-of-the-Eigen-files-planex2d-compiles">Licenses of the Eigen files planex2d compiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#pybind11">pybind11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Taskflow-4.1.0">Taskflow 4.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Libraries-planex2d-uses-but-does-not-include">Libraries planex2d uses but does not include</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Packages-planex2d-imports-when-they-are-installed">Packages planex2d imports when they are installed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/notices.html#Data-files-under-other-licenses">Data files under other licenses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Kernel">Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Sketch">Sketch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Measuring">Measuring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#OpenCASCADE">OpenCASCADE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Files-and-integrations">Files and integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/roadmap.html#Experimental">Experimental</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/basics/index.html">Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#Objects">Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/objects.html">Objects in planex2d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/edges.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/wires-and-faces.html">Wires and faces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/faces-shapes-compounds.html">Faces, shapes and compounds</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#In-space">In space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/plane.html">The plane in 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/motions.html">Moving, rotating, mirroring, scaling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#Data">Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/properties.html">Names and colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/units.html">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/tolerances.html">Tolerances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/basics/index.html#3D">3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/basics/pad-pocket.html">Pad and Pocket</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/plotting/index.html">Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#General">General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/matplotlib.html">matplotlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/plotly.html">plotly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/svg.html">SVG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/marks.html">Marking edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/in-3d.html">In 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Sketches">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/sketches.html">Sketch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Measurements-and-fields">Measurements and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/measurements.html">Measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/plotting/fields.html">Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/plotting/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/sketch/index.html">Quick sketch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Drawing">Drawing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/quicksketch.html">Sketch or QuickSketch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/lines-and-arcs.html">Lines and arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/circles-and-rectangles.html">Circles and rectangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/slots-polygons.html">Slots, keyholes and polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/several-loops.html">Several loops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#References">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/until-from-to.html">To, from and until</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/parallel-perpendicular-angle.html">Parallel, perpendicular, angle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/tangent.html">Tangents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/arc-references.html">Arcs from references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/choosing.html">Choosing between solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/construction.html">Construction elements and points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/names.html">Automatic ids</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Editing">Editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/fillets-chamfers.html">Fillets and chamfers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/extending.html">Extending edges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/offsets.html">Offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/trimming.html">Trimming and splitting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/symmetry.html">Symmetry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Placement">Placement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/placement.html">Placing a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Design">Design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/sketch/parametric.html">Parametric design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/sketch/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/constraints/index.html">Constraint sketches</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Constraining">Constraining</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/drawing.html">Drawing with constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/converting.html">Converting sketches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/kinds.html">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/diagnosis.html">Fully, under- and over-constrained</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Changing-the-design">Changing the design</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/update.html">Changing dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/expressions.html">Expressions: design rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/formulas.html">Formulas: a dipstick for a tank</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#More-geometry">More geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/symmetry.html">Symmetry and patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/splines.html">Splines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/trim.html">Trim, split and project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/offsets-profiles.html">Offsets and profiles revisited</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/constraints/index.html#Beyond-drawings">Beyond drawings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/constraints/mechanisms.html">Mechanisms: the sketch as a solver</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/booleans/index.html">Booleans</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/two-faces.html">Two faces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Three-operations">Three operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Union">Union</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Difference-and-intersection">Difference and intersection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/two-faces.html#Names-are-kept">Names are kept</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/many-faces.html">Many faces at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-perforated-sheet">A perforated sheet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-Reuleaux-triangle">A Reuleaux triangle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/many-faces.html#A-stress-test">A stress test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/faces-and-wires.html">Faces and wires</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#A-truss-from-its-member-center-lines">A truss from its member center lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#Glued,-the-members-stay-separate">Glued, the members stay separate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/faces-and-wires.html#Overlapping-stretches-are-kept-once">Overlapping stretches are kept once</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/split-trim.html">Splitting and trimming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#A-segmented-ring">A segmented ring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Trimming-a-blank">Trimming a blank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Closed-cutters-punch-holes">Closed cutters punch holes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Wires">Wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#Cutters-from-3D">Cutters from 3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/split-trim.html#The-rules">The rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/traces.html">Traces and pads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/traces.html#Check">Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/booleans/traces.html#Pads-and-drills">Pads and drills</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/booleans/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/measuring/index.html">Measuring</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Measurements">Measurements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/sections.html">Areas, centroids and second moments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/queries.html">Boxes, crossings and open ends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/distances.html">Distances and clearances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/inside.html">Inside or outside</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/sketch-dimensions.html">Dimensions in a sketch</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Analysis">Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/measuring/analysis.html">Part analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/measuring/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/files.html">Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#DXF">DXF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#A-gasket-drawing">A gasket drawing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Polylines-with-arcs">Polylines with arcs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Units">Units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/files.html#Gaps">Gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#STEP-and-BREP">STEP and BREP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#SVG">SVG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#shapely">shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#KiCad">KiCad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/files.html#gmsh">gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/defeaturing/index.html">Defeaturing and simplification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/gaps.html">Small gaps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/gaps.html#A-square-that-does-not-close">A square that does not close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/gaps.html#On-export-and-when-reading">On export and when reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/small-edges.html">Small edges</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/small-edges.html#A-step-of-10⁻⁵">A step of 10⁻⁵</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/small-edges.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/collinear.html">Collinear lines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/collinear.html#A-bottom-in-four-pieces">A bottom in four pieces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/arcs.html">Fitting arcs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#A-measured-bore">A measured bore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#Tolerance">Tolerance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/arcs.html#On-export">On export</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/splines.html">Fitting splines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/splines.html#An-ellipse-from-128-segments">An ellipse from 128 segments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/defeaturing/splines.html#Arcs-first">Arcs first</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core/defeaturing/index.html#The-steps,-in-order">The steps, in order</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../core/comparison/index.html">Comparison with other libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/discs.html">Union of many discs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/traces.html">Union of traces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/merge.html">Merging split edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/accuracy.html">Nearly coincident edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/comparison/glue.html">Gluing many faces</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="occ/index.html">OpenCASCADE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="occ/index.html#Export">Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="occ/export.html">To OCC shapes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ/export-options.html">Export options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ/splines-as-arcs.html">Splines as arcs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="occ/index.html#Modeling">Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="occ/clamp.html">A C-clamp, step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ/projecting.html">Sketching on and projecting 3D geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ/loft.html">Lofting sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ/guided-loft.html">Lofts with guide curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="occ/index.html#Everything-at-a-glance">Everything at a glance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="netgen/index.html">netgen and NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="netgen/index.html#Getting-started">Getting started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="netgen/workplane.html">Coming from netgen's WorkPlane</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/naming.html">Naming and marking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/identifications.html">Identifications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="netgen/index.html#Meshing-and-fields">Meshing and fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="netgen/meshing.html">Meshing a face</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/fields.html">Fields and cuts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/webgui.html">Solids and meshes in the webgui</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/field-solvers.html">Field solvers as measurements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="netgen/levelset.html">From level sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fenicsx.html">gmsh and FEniCSx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#A-trimmed-resistor">A trimmed resistor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#The-mesh">The mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#The-resistance">The resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#Drawing-the-result">Drawing the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fenicsx.html#More">More</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="shapely.html">shapely</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="shapely.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shapely.html#To-shapely">To shapely</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shapely.html#Predicates-and-distances">Predicates and distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shapely.html#From-shapely-and-back-to-arcs">From shapely and back to arcs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shapely.html#Line-strings">Line strings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scipy.html">SciPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#A-dimension-from-a-requirement">A dimension from a requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#At-a-glance">At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="pytorch.html">PyTorch</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#The-plate-and-its-two-measurements">The plate and its two measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#The-baseline:-COBYLA-from-the-regular-grid">The baseline: COBYLA from the regular grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#40-layouts-that-fill-the-space">40 layouts that fill the space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#The-surrogate">The surrogate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#Polish-the-winner">Polish the winner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#More">More</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">A 3D duct</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kicad.html">KiCad</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#A-real-board">A real board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#Both-copper-layers">Both copper layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#What-the-board-looks-like">What the board looks like</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#Copper-per-net">Copper per net</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#A-clearance-check">A clearance check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#The-board-in-3D">The board in 3D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#Writing-a-board">Writing a board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kicad.html#Boards-from-other-programs">Boards from other programs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="numpy.html">NumPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="numpy.html#A-minimal-example">A minimal example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numpy.html#Arrays-in">Arrays in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numpy.html#Arrays-out">Arrays out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numpy.html#A-million-points-at-once">A million points at once</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numpy.html#More">More</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text"><a class="reference internal" href="../examples/index.html">Examples</a></span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Machines-and-vehicles">Machines and vehicles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/toy-plane.html">Toy plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rocket.html">Model rocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rear-wing.html">Rear wing with DRS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/suspension-kinematics.html">Suspension kinematics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/excavator-arm.html">Excavator arm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/spur-gears.html">Spur gears under load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/planetary-gearbox.html">Planetary gearbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/wankel-engine.html">Wankel engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/idler-plate.html">Idler plate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Mechanisms">Mechanisms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/four-bar-linkage.html">Four-bar linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/hood-hinge.html">Hood hinge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/jansen-linkage.html">Jansen linkage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/straight-line-linkages.html">Straight-line linkages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/geneva-drive.html">Geneva drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/cycloidal-drive.html">Cycloidal drive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/belt-drives.html">Belt drives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/square-hole.html">Drilling a square hole</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Physics">Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/isospectral-drums.html">Isospectral drums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/boat-stability.html">Boat stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/flow-through-sand.html">Flow through sand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/solar-shading.html">Solar shading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Fields-and-simulation">Fields and simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/motor.html">Surface magnet motor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/heat-sink.html">Heat sink</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/hilbert-heater.html">Hilbert heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/parallelogram-flexure.html">Parallelogram flexure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/vivaldi-antenna.html">Vivaldi antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/patch-antenna.html">Patch antenna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/voronoi-bone.html">Voronoi bone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/lens-ray-tracing.html">Lens ray tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/airplane-windows.html">Airplane windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Manufacturing">Manufacturing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/gear-cutting.html">Gear cutting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/pocket-milling.html">Pocket milling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/slicer.html">A slicer for 3D printing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/laser-cut-box.html">Laser-cut box</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/stencil-lettering.html">Stencil lettering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html#Geometry-and-design">Geometry and design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/penrose-tiling.html">Penrose tiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/rose-window.html">Rose window</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/path-planning.html">Path planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/moving-sofa.html">The moving sofa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/prince-ruperts-cube.html">Prince Rupert's cube</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/coastline-paradox.html">The coastline paradox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/drawing-a-logo.html">Drawing a logo</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Experimental</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../experimental/deformable/index.html">Deformable shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../experimental/deformable/displacements.html">Displacements and topology changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#Moving-the-hole-up">Moving the hole up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#What-happens-at-a-topology-change">What happens at a topology change</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/displacements.html#Results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../experimental/deformable/ngsolve.html">Displacements from NGSolve</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/ngsolve.html#A-harmonic-extension">A harmonic extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../experimental/deformable/ngsolve.html#In-motion">In motion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/geometry.html">Geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/geometry.html#edges-and-wires">Edges and wires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/geometry.html#faces-shapes-and-compounds">Faces, shapes and compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/geometry.html#planes">Planes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/sketches.html">Sketches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/sketches.html#constraints-and-dimensions">Constraints and dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/sketches.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/operations.html">Boolean operations and transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/selections.html">Selections and views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/files.html">Files and other libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/occ-netgen.html">OpenCASCADE and netgen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/measurements.html">Measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/settings.html">Units, settings and warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/experimental.html">Experimental</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">planex2d</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="pytorch.html">PyTorch</a></li>
+      <li class="breadcrumb-item active">A 3D duct</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/integrations/pytorch-duct.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="A-3D-duct">
+<h1>A 3D duct<a class="headerlink" href="#A-3D-duct" title="Link to this heading"></a></h1>
+<p>planex2d sketches lie on planes in 3D. Here, constraint sketches on planes along an axis are the sections of a cooling duct, lofted along guide curves through their named corners. netgen meshes the duct and NGSolve solves the flow in it, and a small PyTorch network learns from a few solved ducts how the design behaves, so that questions about it can be answered without the solver.</p>
+<p>The example is a duct that takes coolant from a hose to the flat inlet slot of a cold plate, <code class="docutils literal notranslate"><span class="pre">L</span></code> = 120 long. Its two ends are fixed by the parts it joins, and the section in between is the design. The goal is as little pressure drop as possible, while the coolant takes up at least as much heat from the warm walls as in a straight transition.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">netgen.occ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">occ</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">planex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">minimize</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">qmc</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="The-sections">
+<h2>The sections<a class="headerlink" href="#The-sections" title="Link to this heading"></a></h2>
+<p>Each section is a rounded rectangle in a constraint sketch on its own plane, made of four lines and four arcs that are tangent all around, centered on the axis, with the dimensions <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code> and <code class="docutils literal notranslate"><span class="pre">r</span></code>. Three of them are sketched: the inlet, 16 × 16 with corners of 5, the outlet, the 40 × 6 slot with corners of 2, and the middle section, which is the design and starts halfway. The loft adds four more sections, interpolated between these, as the next section shows.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">L</span> <span class="o">=</span> <span class="mf">120.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">section</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"section"</span><span class="p">):</span>
+    <span class="n">sk</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Sketch</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">XY</span><span class="o">.</span><span class="n">Offset</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="o">-</span><span class="n">w</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">r</span><span class="p">,</span> <span class="o">-</span><span class="n">h</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a1"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">h</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Vertical</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"right"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a2"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"top"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a3"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span><span class="p">),</span> <span class="n">px</span><span class="o">.</span><span class="n">Vertical</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"left"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Arc</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"a4"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a4.end"</span><span class="p">,</span> <span class="s2">"bottom.start"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a4"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Tangent</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a1"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Radius</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">arc</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"a2"</span><span class="p">,</span> <span class="s2">"a3"</span><span class="p">,</span> <span class="s2">"a4"</span><span class="p">):</span>
+        <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"a1"</span><span class="p">,</span> <span class="n">arc</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Equal</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"w"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Distance</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"h"</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"bottom.mid"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="n">sk</span><span class="o">.</span><span class="n">Constrain</span><span class="p">(</span><span class="s2">"left.mid"</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="n">px</span><span class="o">.</span><span class="n">Coincident</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sk</span>
+
+
+<span class="n">inlet</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"inlet"</span><span class="p">)</span>
+<span class="n">mid</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"mid"</span><span class="p">)</span>
+<span class="n">outlet</span> <span class="o">=</span> <span class="n">section</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="s2">"outlet"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Figure 1 shows the three sketched sections at one scale, at z 0, 60 and 120. The dots are the eight named corners of each section, through which the guides of the loft pass.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 19.94%; text-align: center"><img src="fig_0eab4987dc65d774.svg" alt="Inlet, 16 × 16" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="207" height="187"><br>(a) Inlet, 16 × 16</div><div style="width: 31.33%; text-align: center"><img src="fig_e3848ce791940084.svg" alt="Middle, 28 × 11" style="width: 100%" loading="lazy" decoding="async" width="325" height="187"><br>(b) Middle, 28 × 11</div><div style="width: 42.73%; text-align: center"><img src="fig_23d3d4f31ae5ada3.svg" alt="Outlet, 40 × 6" style="width: 100%" loading="lazy" decoding="async" width="443" height="187"><br>(c) Outlet, 40 × 6</div></div><figcaption>Figure 1: The three sketched sections</figcaption></figure></div>
+</div>
+</section>
+<section id="A-guided-loft">
+<h2>A guided loft<a class="headerlink" href="#A-guided-loft" title="Link to this heading"></a></h2>
+<p>A smooth loft through sections this different overshoots, and between a narrow middle section and the wide outlet, its walls swing past each other. Guide curves steer the loft, as on the page <a class="reference internal" href="occ/guided-loft.html"><span class="doc">Lofts with guide curves</span></a>:</p>
+<ol class="arabic simple">
+<li><p>Two interpolated sections in each gap, at a third and two thirds of the way, with width, height and corner radius interpolated linearly between their neighbors, make seven sections in all.</p></li>
+<li><p>Every section names its eight corners, <code class="docutils literal notranslate"><span class="pre">bottom.start</span></code>, <code class="docutils literal notranslate"><span class="pre">bottom.end</span></code>, <code class="docutils literal notranslate"><span class="pre">right.start</span></code> and so on, and gives them in 3D. A spline through each corner from the inlet to the outlet, leaving the inlet and reaching the outlet along the axis, is a guide.</p></li>
+<li><p>Every 2.5 along the axis, the eight guides are cut and give a new section: the lines through the outermost corners and the arcs tangent to them. These sections cost almost nothing and hold the loft to the guides.</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">occ.ThruSections</span></code> lofts through all of them.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Duct</span></code> is the thin wrapper. <code class="docutils literal notranslate"><span class="pre">Update</span></code> takes ids such as <code class="docutils literal notranslate"><span class="pre">&quot;mid.w&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;mid.z&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">Solid</span></code> builds the loft and names its faces for the solver. The loft makes one face per edge of the sections, in their order, so faces 1, 3, 5 and 7 are the corner strips. They get small elements, so that the curved elements follow the corners.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">CORNERS</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">edge</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">,</span> <span class="s2">"left"</span><span class="p">)</span> <span class="k">for</span> <span class="n">end</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="s2">"end"</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">sk</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sk</span><span class="p">(</span><span class="s2">"right.start"</span><span class="p">)</span><span class="o">.</span><span class="n">center</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="n">sk</span><span class="p">(</span><span class="s2">"bottom.start"</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">bottom</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">meet</span><span class="p">(</span><span class="n">guide</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">guide</span><span class="o">.</span><span class="n">parameter_interval</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">guide</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">z</span> <span class="o">&lt;</span> <span class="n">z</span> <span class="k">else</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">guide</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">from_corners</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">y</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">right</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">right</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+                 <span class="n">x</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">-</span> <span class="n">left</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">left</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">section</span><span class="p">(</span><span class="n">right</span> <span class="o">-</span> <span class="n">left</span><span class="p">,</span> <span class="n">top</span> <span class="o">-</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Duct</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">sketches</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">2.5</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sketches</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sketches</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">ToXYZ</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sketches</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">step</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">Update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="s2">"z"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dims</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{})[</span><span class="n">dim</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dims</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sketches</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">Update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">Sections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">placed</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sketches</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">placed</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">za</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="p">(</span><span class="n">zb</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">placed</span><span class="p">,</span> <span class="n">placed</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">3</span><span class="p">):</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="n">za</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">zb</span> <span class="o">-</span> <span class="n">za</span><span class="p">)</span>
+                <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">size</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">z</span><span class="p">,</span> <span class="n">section</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="s2">"interpolated"</span><span class="p">)))</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">zb</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">Guides</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sections</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">sections</span> <span class="o">=</span> <span class="n">sections</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sections</span><span class="p">()</span>
+        <span class="n">axial</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="n">occ</span><span class="o">.</span><span class="n">Vec</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span> <span class="n">occ</span><span class="o">.</span><span class="n">Vec</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span>
+        <span class="n">guides</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">corner</span> <span class="ow">in</span> <span class="n">CORNERS</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">occ</span><span class="o">.</span><span class="n">Pnt</span><span class="p">(</span><span class="o">*</span><span class="n">s</span><span class="p">(</span><span class="n">corner</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">]</span>
+            <span class="n">guides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">SplineInterpolation</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">tangents</span><span class="o">=</span><span class="n">axial</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">guides</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">Wires</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">placed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Sections</span><span class="p">()</span>
+        <span class="n">guides</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Guides</span><span class="p">(</span><span class="n">placed</span><span class="p">)</span>
+        <span class="n">sections</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">placed</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">known</span><span class="p">)</span> <span class="k">for</span> <span class="n">known</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+                <span class="n">sections</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">from_corners</span><span class="p">([</span><span class="n">meet</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">guides</span><span class="p">],</span> <span class="n">z</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">ToOCCWire</span><span class="p">()</span><span class="o">.</span><span class="n">Move</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">z</span> <span class="o">-</span> <span class="n">s</span><span class="o">.</span><span class="n">ToXYZ</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">z</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">Solid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">solid</span> <span class="o">=</span> <span class="n">occ</span><span class="o">.</span><span class="n">ThruSections</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wires</span><span class="p">(),</span> <span class="n">solid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">solid</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"wall"</span>
+        <span class="n">solid</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">Min</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"inlet"</span>
+        <span class="n">solid</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">occ</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"outlet"</span>
+        <span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">solid</span><span class="o">.</span><span class="n">faces</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">8</span><span class="p">:</span><span class="mi">2</span><span class="p">]:</span>
+            <span class="n">face</span><span class="o">.</span><span class="n">maxh</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="n">solid</span>
+
+
+<span class="n">duct</span> <span class="o">=</span> <span class="n">Duct</span><span class="p">(</span><span class="n">inlet</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span> <span class="n">outlet</span><span class="p">)</span>
+<span class="n">straight</span> <span class="o">=</span> <span class="n">duct</span><span class="o">.</span><span class="n">Solid</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">duct</span><span class="o">.</span><span class="n">Wires</span><span class="p">()),</span> <span class="s2">"sections in the loft, volume"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">straight</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+49 sections in the loft, volume 33070.5
+</pre></div></div>
+</div>
+<p>The figures show the seven sections and the guides through their corners (Figure 2), all sections of the loft, including those cut from the guides (Figure 3), and the loft through them (Figure 4). Only the middle sketch is the design; the interpolated sections, the guides and the cut sections follow from the three sketches.</p>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 4.42%; align-items: flex-start; justify-content: center; width: 67.85%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_a7d2d1acc716dda6.svg" alt="The seven sections the guides pass through" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"></div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 2: The seven sections the guides pass through</figcaption></figure></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 4.42%; align-items: flex-start; justify-content: center; width: 67.85%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_6058852dd7d8441c.svg" alt="All sections of the loft" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"></div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 1.4px solid #6fb0cf; vertical-align: middle; margin-right: 0.35em"></span>cut from the guides</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 3: All sections of the loft</figcaption></figure></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 4.42%; align-items: flex-start; justify-content: center; width: 67.85%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_16c58ce0218a240e.svg" alt="The loft" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"></div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 1.4px solid #6fb0cf; vertical-align: middle; margin-right: 0.35em"></span>cut from the guides</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.1px solid #d98c2b; vertical-align: middle; margin-right: 0.35em"></span>guides</span></div><figcaption>Figure 4: The loft</figcaption></figure></div>
+</div>
+</section>
+<section id="Flow-and-heat">
+<h2>Flow and heat<a class="headerlink" href="#Flow-and-heat" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SolveStokes</span></code> takes the 3D solid and returns the pressure drop at the coolant’s flow rate and the heat that the coolant takes up from the warm walls, both in units where only the ratios to the straight transition matter. netgen meshes the solid, and NGSolve solves Stokes flow and then the temperature in that flow. How it does that does not matter here, so it sits in a hidden cell. A layout that cannot be meshed raises an error.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">base</span> <span class="o">=</span> <span class="n">SolveStokes</span><span class="p">(</span><span class="n">straight</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"straight: pressure drop"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span> <span class="s2">"heat"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="s2">"heat"</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+straight: pressure drop 14.691 heat 110.366
+</pre></div></div>
+</div>
+</section>
+<section id="One-question-for-COBYLA">
+<h2>One question for COBYLA<a class="headerlink" href="#One-question-for-COBYLA" title="Link to this heading"></a></h2>
+<p>The design is the middle section, described by four numbers: its width <code class="docutils literal notranslate"><span class="pre">w</span></code> and height <code class="docutils literal notranslate"><span class="pre">h</span></code>, its corner radius as a fraction <code class="docutils literal notranslate"><span class="pre">f</span></code> of the largest possible, and its position <code class="docutils literal notranslate"><span class="pre">z</span></code>. <code class="docutils literal notranslate"><span class="pre">middle(x)</span></code> turns them into the middle sketch’s dimensions, and <code class="docutils literal notranslate"><span class="pre">solve(x)</span></code> updates the duct, solves it and counts the real solve. It remembers what it solved, because COBYLA asks for the objective and the constraint at the same layout. A layout that does not mesh is infeasible.</p>
+<p>COBYLA answers one question: the least pressure drop that keeps the heat of the straight transition. It works on the four numbers scaled to the box, from 0 to 1, so that one step size suits all of them, and it starts from the straight transition.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">7.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">])</span>
+<span class="n">hi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">44.0</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">])</span>
+<span class="n">need</span> <span class="o">=</span> <span class="n">base</span><span class="p">[</span><span class="s2">"heat"</span><span class="p">]</span>
+<span class="n">solves</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">known</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">middle</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"mid.w"</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="s2">"mid.h"</span><span class="p">:</span> <span class="n">h</span><span class="p">,</span> <span class="s2">"mid.r"</span><span class="p">:</span> <span class="n">f</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"mid.z"</span><span class="p">:</span> <span class="n">z</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">SolveStokes</span><span class="p">(</span><span class="n">duct</span><span class="o">.</span><span class="n">Update</span><span class="p">(</span><span class="n">middle</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">Solid</span><span class="p">())</span>
+            <span class="n">known</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s2">"heat"</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">known</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">solves</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="o">*</span><span class="n">known</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">known</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">layout</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">lo</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">solve</span><span class="p">(</span><span class="n">layout</span><span class="p">(</span><span class="n">u</span><span class="p">))[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nan</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">base</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">keeps_heat</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">solve</span><span class="p">(</span><span class="n">layout</span><span class="p">(</span><span class="n">u</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">need</span><span class="p">,</span> <span class="n">nan</span><span class="o">=-</span><span class="n">need</span><span class="p">)</span>
+
+
+<span class="n">u_straight</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">28.0</span><span class="p">,</span> <span class="mf">11.0</span><span class="p">,</span> <span class="mf">3.5</span> <span class="o">/</span> <span class="mf">5.5</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span>
+<span class="n">stop</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">u_straight</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"COBYLA"</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="n">constraints</span><span class="o">=</span><span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"ineq"</span><span class="p">,</span> <span class="s2">"fun"</span><span class="p">:</span> <span class="n">keeps_heat</span><span class="p">}],</span>
+                <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">"rhobeg"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"maxiter"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">"tol"</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">})</span><span class="o">.</span><span class="n">message</span>
+<span class="n">x_cobyla</span><span class="p">,</span> <span class="n">dp_cobyla</span><span class="p">,</span> <span class="n">heat_cobyla</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">solves</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">need</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"COBYLA:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">dp_cobyla</span> <span class="o">/</span> <span class="n">base</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"</span><span class="si">% o</span><span class="s2">f the straight pressure drop,"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">solves</span><span class="p">),</span> <span class="s2">"solves"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Return from COBYLA because the trust region radius reaches its lower bound.
+COBYLA: 55.6 % of the straight pressure drop, 38 solves
+</pre></div></div>
+</div>
+</section>
+<section id="A-map-from-PyTorch">
+<h2>A map from PyTorch<a class="headerlink" href="#A-map-from-PyTorch" title="Link to this heading"></a></h2>
+<p>Another heat requirement would need another COBYLA run. A small network, trained once on a few solved ducts, answers all of them. It uses 32 layouts from a Sobol sequence over the box, each solved once, and learns the logarithm of the pressure drop and the heat from the four numbers. Asking it costs almost nothing, so it is asked for 65 536 layouts at once. For every heat requirement from 85 % to 120 % of the straight transition, it keeps the layout with the least predicted pressure drop, and
+three of them are solved for real.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solves</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">known</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qmc</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">qmc</span><span class="o">.</span><span class="n">Sobol</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">32</span><span class="p">),</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">):</span>
+    <span class="n">solve</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">good</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">solves</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">good</span><span class="p">])</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">good</span><span class="p">])</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">spread</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">SiLU</span><span class="p">(),</span>
+                          <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">SiLU</span><span class="p">(),</span>
+                          <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">double</span><span class="p">()</span>
+<span class="n">step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">))</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">Y</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">spread</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">):</span>
+    <span class="n">step</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+    <span class="p">((</span><span class="n">net</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-</span> <span class="n">targets</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">step</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">net</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)))</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="o">*</span> <span class="n">spread</span> <span class="o">+</span> <span class="n">mean</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">y</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+
+<span class="n">pool</span> <span class="o">=</span> <span class="n">qmc</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">qmc</span><span class="o">.</span><span class="n">Sobol</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">16</span><span class="p">),</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">)</span>
+<span class="n">dp</span><span class="p">,</span> <span class="n">heat</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+<span class="n">front</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.85</span><span class="p">,</span> <span class="mf">1.205</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">heat</span> <span class="o">&gt;=</span> <span class="n">q</span> <span class="o">*</span> <span class="n">need</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">front</span><span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">heat</span> <span class="o">&gt;=</span> <span class="n">q</span> <span class="o">*</span> <span class="n">need</span><span class="p">,</span> <span class="n">dp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">))</span>
+<span class="n">checks</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">pool</span><span class="p">[</span><span class="n">front</span><span class="p">[</span><span class="n">q</span><span class="p">]]</span>
+    <span class="n">checks</span><span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dp</span><span class="p">[</span><span class="n">front</span><span class="p">[</span><span class="n">q</span><span class="p">]],</span> <span class="o">*</span><span class="n">solve</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">real_dp</span><span class="p">,</span> <span class="n">real_heat</span> <span class="o">=</span> <span class="n">checks</span><span class="p">[</span><span class="n">q</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"heat at least"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">q</span><span class="p">),</span> <span class="s2">"%: pressure drop"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">predicted</span> <span class="o">/</span> <span class="n">base</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"% predicted,"</span><span class="p">,</span>
+          <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">real_dp</span> <span class="o">/</span> <span class="n">base</span><span class="p">[</span><span class="s2">"dp"</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"</span><span class="si">% s</span><span class="s2">olved, heat"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">real_heat</span> <span class="o">/</span> <span class="n">need</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"%, middle at z"</span><span class="p">,</span>
+          <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+heat at least 90 %: pressure drop 42.3 % predicted, 42.9 % solved, heat 87.9 %, middle at z 81.5
+heat at least 100 %: pressure drop 53.7 % predicted, 54.0 % solved, heat 102.8 %, middle at z 51.4
+heat at least 110 %: pressure drop 72.4 % predicted, 72.2 % solved, heat 110.1 %, middle at z 32.6
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_e6510c9c91a1c70f.svg" alt="pressure drop / straight over Heat taken up / straight: three of its layouts, solved 0.879 0.429, 1.03 0.54, 1.1 0.722; the network: least pressure drop for each heat requirement 0.85 0.4, 0.88 0.405, 0.91 0.434, 0.94 0.468, 0.97 0.5, 1 0.537, 1.03 0.578, 1.06 0.634, 1.09 0.695, 1.12 0.77, 1.15 0.858, 1.18 0.937" style="width: 100%" loading="lazy" decoding="async" width="328" height="168"></div><figcaption>Figure 5: Every solved duct and the network&#x27;s map</figcaption></figure></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 3.00%; align-items: flex-start; justify-content: center; width: 100.00%; margin: 4px auto 8px"><div style="width: 31.33%; text-align: center"><img src="fig_8c261a96ecd94d17.svg" alt="at least 90% heat: 43% of the pressure drop" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"><br>(a) at least 90% heat: 43% of the pressure drop</div><div style="width: 31.33%; text-align: center"><img src="fig_4d50e89080c945d6.svg" alt="at least 100% heat: 54% of the pressure drop" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"><br>(b) at least 100% heat: 54% of the pressure drop</div><div style="width: 31.33%; text-align: center"><img src="fig_7ade153b79445dcc.svg" alt="at least 110% heat: 72% of the pressure drop" style="width: 100%" loading="lazy" decoding="async" width="423" height="187"><br>(c) at least 110% heat: 72% of the pressure drop</div></div><div style="text-align: center; font-size: 0.9em; margin: 2px auto 10px"><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.5px solid #22303c; vertical-align: middle; margin-right: 0.35em"></span>sketched</span><span style="white-space: nowrap; margin: 0 0.7em"><span style="display: inline-block; width: 1.6em; border-top: 2.2px solid #0f7ea8; vertical-align: middle; margin-right: 0.35em"></span>interpolated</span></div><figcaption>Figure 6</figcaption></figure></div>
+</div>
+<p>The blue line in Figure 5 is the network’s answer for every heat requirement at once, learned from the 32 gray samples. The three blue dots are layouts it chose, solved for real, and they land on the line. COBYLA’s answer to its one question, the diamond, lies close to the line: after 38 solves, it is at about 56 % of the straight transition’s pressure drop, and the network’s layout for the same heat needs about 54 %. COBYLA’s 38 solves answer only that one question, while the network answers
+every heat requirement from its 32 samples and checks each of its three layouts with one more solve. The three layouts are shown as lofts (Figure 6a–c). The width stays at the edge of the box, because a wider duct always loses less pressure, and the more heat the coolant has to take up, the closer to the inlet the duct widens.</p>
+</section>
+<section id="The-flow-in-the-chosen-duct">
+<h2>The flow in the chosen duct<a class="headerlink" href="#The-flow-in-the-chosen-duct" title="Link to this heading"></a></h2>
+<p>Figure 7 shows the speed of the coolant in the layout for at least 100 % heat, in a cut along the axis through the middle of the duct, drawn on the planex2d face where the plane meets the solid (<code class="docutils literal notranslate"><span class="pre">px.Intersect3d</span></code>).</p>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<figure class="px-figure"><div style="display: flex; gap: 5.46%; align-items: flex-start; justify-content: center; width: 54.95%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><picture><source srcset="fig_5b27389eecac2678.webp" type="image/webp"><img src="fig_5b27389eecac2678.png" alt="The layout for at least 100 % heat, middle section at z 51" style="width: 100%" loading="lazy" decoding="async" width="943" height="515"></picture></div></div><figcaption>Figure 7: The layout for at least 100 % heat, middle section at z 51</figcaption></figure></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+middle section: w 44.0 h 17.2 r 3.5 z 51.4
+</pre></div></div>
+</div>
+<p>The duct opens soon after the inlet. The coolant slows down in the wide middle, where a slow flow costs little pressure, and speeds up again only where the duct flattens into the slot. The same duct is shown as a solid that can be turned and zoomed:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ngsolve_webgpu.jupyter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Draw</span>
+
+<span class="n">solid</span> <span class="o">=</span> <span class="n">duct</span><span class="o">.</span><span class="n">Update</span><span class="p">(</span><span class="n">middle</span><span class="p">(</span><span class="n">checks</span><span class="p">[</span><span class="mf">1.0</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span><span class="o">.</span><span class="n">Solid</span><span class="p">()</span>
+<span class="n">solid</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">col</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.867</span><span class="p">,</span> <span class="mf">0.902</span><span class="p">,</span> <span class="mf">0.941</span><span class="p">)</span>
+<span class="n">Draw</span><span class="p">(</span><span class="n">solid</span><span class="p">,</span> <span class="n">euler_angles</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<div id='webgpu1_root' style="position: relative; width: min(1000px, 100%); max-width: 100%; overflow: hidden;">
+<img id='webgpu1_img' src='webgpu_36567a97433b221c.png' alt='3D view' style='width: 100%; height: auto; aspect-ratio: 1000 / 600; display: block;' loading="lazy" decoding="async" width="1000" height="600" />
+<div id='webgpu1_overlay' style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0); cursor: pointer; transition: background 0.2s;'
+ onmouseover="this.style.background='rgba(0,0,0,0.18)'; this.querySelector('span').style.opacity='1'"
+ onmouseout="this.style.background='rgba(0,0,0,0)'; this.querySelector('span').style.opacity='0'"
+ onclick="(function() { var r = document.getElementById('webgpu1_root'); if (r.__activated) return; r.__activated = true; function activate() { if (!window.__webgpu_blob_36567a97433b221c) { r.__activated = false; return; } document.getElementById('webgpu1_img').style.display = 'none'; document.getElementById('webgpu1_overlay').style.display = 'none'; document.getElementById('webgpu1_canvas').style.display = 'block'; RenderEngine.create('webgpu1_canvas', window.__webgpu_blob_36567a97433b221c); } function loadBlob() { var s = document.createElement('script'); s.src = 'webgpu_36567a97433b221c.js'; s.onload = activate; s.onerror = function() { r.__activated = false; }; document.head.appendChild(s); } if (typeof RenderEngine === 'undefined') { var s = document.createElement('script'); s.src = '../_static/webgpu/engine.js'; s.onload = loadBlob; document.head.appendChild(s); } else { loadBlob(); } })()"><span style='color: white; font-size: 1.3em; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; opacity: 0; transition: opacity 0.2s;'>&#9654; Click to interact</span></div>
+<canvas id='webgpu1_canvas' style='background-color: #ffffff; width: 100%; height: auto; aspect-ratio: 1000 / 600; touch-action: none; display: none;'></canvas>
+<div id='webgpu1_lilgui' style='position: absolute; top: 0; right: 0; z-index: 10;'></div>
+</div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pytorch.html" class="btn btn-neutral float-left" title="PyTorch" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="kicad.html" class="btn btn-neutral float-right" title="KiCad" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+<p class="px-footer">&#169; 2026 <a href="https://blog.hirnschall.net/about/" rel="noopener" target="_blank">Sebastian Hirnschall</a>
+ &middot; <a href="https://blog.hirnschall.net/imprint/" rel="noopener" target="_blank">Imprint</a>
+ &middot; <a href="https://blog.hirnschall.net/privacy/" rel="noopener" target="_blank">Privacy</a>
+ &middot; <a href="https://github.com/planex2d/planex2d" rel="noopener" target="_blank">GitHub</a>
+ &middot; <a href="https://pypi.org/project/planex2d/" rel="noopener" target="_blank">PyPI</a></p>
+
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/" rel="noopener nofollow" target="_blank">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme" rel="noopener nofollow" target="_blank">theme</a>
+    provided by <a href="https://readthedocs.org" rel="noopener nofollow" target="_blank">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -36,7 +36,6 @@
       <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../../_static/custom.js?v=14a98ede"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -613,7 +613,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.96%; align-items: flex-start; justify-content: center; width: 75.71%; margin: 4px auto 8px"><div style="width: 56.41%; text-align: center"><img src="fig_dabb983a132d2d0d.svg" alt="A meander heater track" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="267" height="187"><br>(a) A meander heater track</div><div style="width: 39.62%; text-align: center"><img src="fig_e14df87a85938fb2.svg" alt="A ring" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) A ring</div></div><figcaption>Figure 1: Wire offsets: a heater track and a ring</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.96%; align-items: flex-start; justify-content: center; width: 75.71%; margin: 4px auto 8px"><div style="width: 56.41%; text-align: center"><img src="fig_6754609d082e9146.svg" alt="A meander heater track" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="267" height="187"><br>(a) A meander heater track</div><div style="width: 39.62%; text-align: center"><img src="fig_f544ac9a679d0041.svg" alt="A ring" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) A ring</div></div><figcaption>Figure 1: Wire offsets: a heater track and a ring</figcaption></figure></div>
 </div>
 <p>Where the path is smooth and the band does not overlap itself, its area is exactly 2d times the length of the path, plus the two round end caps:</p>
 <div class="nbinput docutils container">
@@ -658,7 +658,7 @@ ring area 376.99111843077503 exact 376.99111843077515
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_3e8839db90071093.svg" alt="Slot edges (blue), center lines and washers dashed" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) Slot edges (blue), center lines and washers dashed</div><div style="width: 47.97%; text-align: center"><img src="fig_e7095ad82e57982e.svg" alt="The motor plate" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The motor plate</div></div><figcaption>Figure 2: A motor plate with two adjustment slots</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_81c651160035acf8.svg" alt="Slot edges (blue), center lines and washers dashed" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) Slot edges (blue), center lines and washers dashed</div><div style="width: 47.97%; text-align: center"><img src="fig_cbabdc3bca95edd8.svg" alt="The motor plate" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The motor plate</div></div><figcaption>Figure 2: A motor plate with two adjustment slots</figcaption></figure></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">Measure</span></code> takes the id of a whole offset. The plate’s area and the length of the washer outlines follow from the slot and washer sizes:</p>
 <div class="nbinput docutils container">
@@ -704,7 +704,7 @@ washers 180.53096491487338 exact 180.53096491487338
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_a6a2cf49ffb6cd38.svg" alt="The groove (blue) around the seal line" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) The groove (blue) around the seal line</div><div style="width: 47.97%; text-align: center"><img src="fig_6b8a7f79cd6b9e3e.svg" alt="The cover with its groove" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The cover with its groove</div></div><figcaption>Figure 3: An O-ring groove as a two-sided offset of the seal line</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.37%; align-items: flex-start; justify-content: center; width: 89.04%; margin: 4px auto 8px"><div style="width: 48.66%; text-align: center"><img src="fig_ccc56413d7eb9022.svg" alt="The groove (blue) around the seal line" style="width: 100%" loading="lazy" decoding="async" width="295" height="204"><br>(a) The groove (blue) around the seal line</div><div style="width: 47.97%; text-align: center"><img src="fig_b787d95efa0ec282.svg" alt="The cover with its groove" style="width: 100%" loading="lazy" decoding="async" width="267" height="187"><br>(b) The cover with its groove</div></div><figcaption>Figure 3: An O-ring groove as a two-sided offset of the seal line</figcaption></figure></div>
 </div>
 <p>Around a smooth closed line, the band between the two sides has an area of exactly its width times the length of the line, and each side is π times the width longer or shorter than the line:</p>
 <div class="nbinput docutils container">
@@ -752,7 +752,7 @@ inner 287.75220833456484 exact 287.7522083345649
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 5.95%; align-items: flex-start; justify-content: center; width: 50.45%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_81b2fd3402d7bf6d.svg" alt="A box: its wall (blue) and lining (amber)" style="width: 100%" loading="lazy" decoding="async" width="344" height="204"></div></div><figcaption>Figure 4: A box: its wall (blue) and lining (amber)</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 5.95%; align-items: flex-start; justify-content: center; width: 50.45%; margin: 4px auto 8px"><div style="width: 100.00%; text-align: center"><img src="fig_cdc143db80f877bb.svg" alt="A box: its wall (blue) and lining (amber)" style="width: 100%" loading="lazy" decoding="async" width="344" height="204"></div></div><figcaption>Figure 4: A box: its wall (blue) and lining (amber)</figcaption></figure></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -793,7 +793,7 @@ lining 104.0 exact 104
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 5.72%; align-items: flex-start; justify-content: center; width: 52.47%; margin: 4px auto 8px"><div style="width: 49.27%; text-align: center"><img src="fig_8079b1120ea069e8.svg" alt="The inner surface and its offset (blue)" style="width: 100%" loading="lazy" decoding="async" width="176" height="204"><br>(a) The inner surface and its offset (blue)</div><div style="width: 45.02%; text-align: center"><img src="fig_63c063867f8bcdbb.svg" alt="The bent sheet" style="width: 100%" loading="lazy" decoding="async" width="147" height="187"><br>(b) The bent sheet</div></div><figcaption>Figure 5: A bent sheet from its inner surface</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 5.72%; align-items: flex-start; justify-content: center; width: 52.47%; margin: 4px auto 8px"><div style="width: 49.27%; text-align: center"><img src="fig_2ab07b15d8ca2ef4.svg" alt="The inner surface and its offset (blue)" style="width: 100%" loading="lazy" decoding="async" width="176" height="204"><br>(a) The inner surface and its offset (blue)</div><div style="width: 45.02%; text-align: center"><img src="fig_7193168f3a2e8a7e.svg" alt="The bent sheet" style="width: 100%" loading="lazy" decoding="async" width="147" height="187"><br>(b) The bent sheet</div></div><figcaption>Figure 5: A bent sheet from its inner surface</figcaption></figure></div>
 </div>
 <p>The outer bend radius is r + t = 6, and the area is t times the inner length plus t²/2 per radian of bend. A distance given as <code class="docutils literal notranslate"><span class="pre">(d,</span> <span class="pre">point)</span></code> selects the side the point is on instead. A point inside the bend gives the right side, with the radius r − t = 2:</p>
 <div class="nbinput docutils container">
@@ -910,7 +910,7 @@ inner bend radius 2.0 exact 2
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 4.66%; align-items: flex-start; justify-content: center; width: 64.35%; margin: 4px auto 8px"><div style="width: 49.25%; text-align: center"><img src="fig_28c7e2e32f2796ae.svg" alt="Pitch curve and rollers dashed, the cam (blue)" style="width: 100%" loading="lazy" decoding="async" width="216" height="204"><br>(a) Pitch curve and rollers dashed, the cam (blue)</div><div style="width: 46.09%; text-align: center"><img src="fig_238feb5fbcec37de.svg" alt="The cam" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) The cam</div></div><figcaption>Figure 6: A disc cam from the path of its roller</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 4.66%; align-items: flex-start; justify-content: center; width: 64.35%; margin: 4px auto 8px"><div style="width: 49.25%; text-align: center"><img src="fig_30637ff18e49f5a3.svg" alt="Pitch curve and rollers dashed, the cam (blue)" style="width: 100%" loading="lazy" decoding="async" width="216" height="204"><br>(a) Pitch curve and rollers dashed, the cam (blue)</div><div style="width: 46.09%; text-align: center"><img src="fig_2166017e8cf96848.svg" alt="The cam" style="width: 100%" loading="lazy" decoding="async" width="185" height="187"><br>(b) The cam</div></div><figcaption>Figure 6: A disc cam from the path of its roller</figcaption></figure></div>
 </div>
 <p>The check measures, at points along the cam, how closely the cam keeps the roller radius from the pitch curve. It also compares the cam’s area with the area of the parallel curve, A − L·r + π·r², from the pitch curve’s area A and length L. Areas and <code class="docutils literal notranslate"><span class="pre">Distance</span></code> use the spline’s arc approximation, made when the spline is drawn, so this section draws with <code class="docutils literal notranslate"><span class="pre">px.config.spline_tol</span></code> at 10⁻¹⁰ (the default is 10⁻⁶ of the spline’s size). What remains in the checks is that approximation, not the offset.</p>
 <p>Where only the result counts, <code class="docutils literal notranslate"><span class="pre">Offset(d)</span></code> of the region inside the pitch curve gives the cam as a face, on the exact parallel curve. It works in place, so the region becomes the cam:</p>

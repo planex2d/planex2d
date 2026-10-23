@@ -74,7 +74,7 @@ print("relative density", round(bone.mass / size**2, 3))
 ```
 
 ```text
-6001 struts united and cut to the square in 0.09 s
+6001 struts united and cut to the square in 0.093 s
 1 face, 1986 holes from 2000 cells, 10541 edges
 relative density 0.461
 ```
@@ -146,19 +146,19 @@ stiffness = np.array([r[1] / E for r in results.values()])
 ```
 
 ```text
-strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -2.5e-11
+strut 0.1 rho 0.161 E*/E 0.0116 C 2.79 top + bottom reaction -5.5e-11
 ```
 
 ```text
-strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.1e-10
+strut 0.15 rho 0.236 E*/E 0.0284 C 2.18 top + bottom reaction -1.7e-11
 ```
 
 ```text
-strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction 7.9e-11
+strut 0.2 rho 0.307 E*/E 0.0519 C 1.8 top + bottom reaction -2.4e-11
 ```
 
 ```text
-strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 7.1e-11
+strut 0.3 rho 0.438 E*/E 0.1142 C 1.36 top + bottom reaction 9.1e-11
 ```
 
 The stiffness against the density, on logarithmic axes, with the two laws:
@@ -173,6 +173,8 @@ ax.set_ylabel("E* / E")
 ax.legend()
 plt.show()
 ```
+
+![figure](voronoi-bone_files/voronoi-bone_2.png)
 
 The scaffold with struts of 0.2, pressed: its displacement, with the deformation magnified 10 times:
 

@@ -118,6 +118,8 @@ for ax, title in zip(axes, ("front", "top")):
 plt.show()
 ```
 
+![figure](loft_files/loft_1.png)
+
 Both halves, with the second one mirrored about the plane of symmetry:
 
 ```python

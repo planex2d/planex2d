@@ -36,13 +36,12 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
       <script src="../_static/custom.js?v=14a98ede"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="NumPy" href="numpy.html" />
-    <link rel="prev" title="PyTorch" href="pytorch.html" /> 
+    <link rel="prev" title="A 3D duct" href="pytorch-duct.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -90,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../core/building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../core/building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -404,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -418,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -633,8 +633,7 @@ back as a board. Everything is in meters with y pointing up, as in the rest of p
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 223 texts left out (not supported yet)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -833,8 +832,7 @@ B.Cu 557 pairs, closest /pic_sockets/VCC_PIC and VCC 0.2496 mm
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/workspace/planex/documentation/fenicsx/lib/python3.12/site-packages/planex/_ids.py:70: PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
-  r = f(*args, **kwargs)
+PlanexWarning: FromKiCad: 19 texts left out (not supported yet)
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -898,7 +896,7 @@ Edge.Cuts 15589.587138 mm² -&gt; 15589.587138 mm², 1 faces
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pytorch.html" class="btn btn-neutral float-left" title="PyTorch" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pytorch-duct.html" class="btn btn-neutral float-left" title="A 3D duct" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="numpy.html" class="btn btn-neutral float-right" title="NumPy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

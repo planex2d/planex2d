@@ -23,11 +23,13 @@ Installation
 
 .. code-block:: bash
 
-   pip install planex2d
+   pip install netgen-mesher netgen-occt-devel scikit-build-core
+   pip install --no-build-isolation planex2d
 
-The package is called ``planex2d`` on PyPI and ``planex`` in Python (``import planex as px``). Version 0.1 has no
-prebuilt wheels yet, so pip builds it from source. See :doc:`Installation <core/installation>` for the two extra
-steps this needs and for the optional packages.
+Version 0.1 has no prebuilt wheels yet, so pip builds planex2d from source against netgen's OpenCASCADE: the first
+line installs netgen, the OpenCASCADE headers and the build backend, and the second builds without build isolation so
+that the build uses them. The build needs a C++20 compiler and CMake. The package is called ``planex2d`` on PyPI and
+``planex`` in Python (``import planex as px``). See :doc:`Installation <core/installation>` for the optional packages.
 
 A first sketch
 --------------
@@ -185,7 +187,7 @@ optimizer starts from, the best layout it found, and that layout in 3D.
 
 .. raw:: html
 
-   <div style="display: flex; gap: 2%; align-items: flex-end; margin-bottom: 24px">
+   <div style="display: flex; gap: 2%; align-items: flex-start; margin-bottom: 24px">
    <div style="width: 24.89%; text-align: center"><a href="integrations/scipy-cold-plate.html"><img src="_static/landing/optimization-start.png" alt="The temperature at the bottom of a cold plate cooled by a straight pipe" style="width: 100%"></a><br>(a) Initial straight pipe</div>
    <div style="width: 24.89%; text-align: center"><a href="integrations/scipy-cold-plate.html"><img src="_static/landing/optimization-best.png" alt="The temperature at the bottom of the cold plate after SciPy's COBYLA optimized the pipe's path" style="width: 100%"></a><br>(b) Optimized pipe layout</div>
    <div style="width: 46.22%; text-align: center"><a href="integrations/scipy-cold-plate.html"><img src="_static/landing/optimization-best-3d.svg" alt="The optimized cold plate in 3D: the plate and the pipe along the optimized path" style="width: 100%"></a><br>(c) Optimized layout in 3D</div>

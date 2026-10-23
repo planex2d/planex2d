@@ -265,6 +265,8 @@ ax[1].set_ylabel("transmission angle [°]")
 plt.show()
 ```
 
+![figure](hood-hinge_files/hood-hinge_2.png)
+
 ## The hood and the windshield
 
 The hood panel is a spline through its outer surface, offset with `Offset` to a 20 mm thick band, and the bracket is
@@ -325,6 +327,8 @@ axs[0].set_title("The hood in its three positions, and on the way")
 axs[1].set_title("The hinge")
 plt.show()
 ```
+
+![figure](hood-hinge_files/hood-hinge_3.png)
 
 The hood opening and closing:
 

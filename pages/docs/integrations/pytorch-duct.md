@@ -1,13 +1,3 @@
----
-jupyter:
-  description: 'Constraint sketches in 3D: the sections of a cooling duct, lofted
-    along guide curves through their named corners, flow and heat solved with NGSolve,
-    and a PyTorch network trained on 32 solved ducts that maps the least pressure
-    drop for every heat requirement.'
-  nbsphinx:
-    timeout: 3600
----
-
 # A 3D duct
 
 planex2d sketches lie on planes in 3D. Here, constraint sketches on planes along an axis are the sections of a
@@ -29,10 +19,6 @@ from scipy.optimize import minimize
 from scipy.stats import qmc
 
 torch.set_num_threads(1)
-```
-
-```python nbsphinx="hidden"
-from docs_figures import GUIDE, MAP, Chart, Row, Views
 ```
 
 ## The sections
@@ -76,7 +62,7 @@ outlet = section(40, 6, 2, L, "outlet")
 Figure 1 shows the three sketched sections at one scale, at z 0, 60 and 120. The dots are the eight named corners
 of each section, through which the guides of the loft pass.
 
-```python nbsphinx="hide-input"
+```python
 def flat(s, caption, half):
     corners = [s(f"{edge}.{end}").center[:2] for edge in ("bottom", "right", "top", "left")
                for end in ("start", "end")]
@@ -88,6 +74,10 @@ def flat(s, caption, half):
 
 Row(flat(inlet, "Inlet, 16 × 16", 10.5), flat(mid, "Middle, 28 × 11", 16.5),
     flat(outlet, "Outlet, 40 × 6", 22.5), caption="The three sketched sections")
+```
+
+```text
+<IPython.core.display.HTML object>
 ```
 
 ## A guided loft
@@ -200,11 +190,15 @@ straight = duct.Solid()
 print(len(duct.Wires()), "sections in the loft, volume", round(straight.mass, 1))
 ```
 
+```text
+49 sections in the loft, volume 33070.5
+```
+
 The figures show the seven sections and the guides through their corners (Figure 2), all sections of the loft,
 including those cut from the guides (Figure 3), and the loft through them (Figure 4). Only the middle sketch is the
 design; the interpolated sections, the guides and the cut sections follow from the three sketches.
 
-```python nbsphinx="hide-input"
+```python
 VIEW = (20, 50, 0)
 KEY = {"ink": "sketched", "accent": "interpolated", "light": "cut from the guides", "guide": "guides"}
 
@@ -229,6 +223,18 @@ Views(("All sections of the loft", curves(duct)), angles=VIEW, key=KEY)
 Views(("The loft", [(straight, "shade")] + curves(duct)), angles=VIEW, key=KEY)
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
 ## Flow and heat
 
 `SolveStokes` takes the 3D solid and returns the pressure drop at the coolant's flow rate and the heat that the
@@ -236,57 +242,13 @@ coolant takes up from the warm walls, both in units where only the ratios to the
 meshes the solid, and NGSolve solves Stokes flow and then the temperature in that flow. How it does that does not
 matter here, so it sits in a hidden cell. A layout that cannot be meshed raises an error.
 
-```python nbsphinx="hidden"
-import contextlib
-import os
-import ngsolve as ngs
-
-
-@contextlib.contextmanager
-def quiet():
-    saved, null = [os.dup(1), os.dup(2)], os.open(os.devnull, os.O_WRONLY)
-    for fd in (1, 2):
-        os.dup2(null, fd)
-    try:
-        yield
-    finally:
-        for fd, copy in zip((1, 2), saved):
-            os.dup2(copy, fd)
-            os.close(copy)
-        os.close(null)
-
-
-def SolveStokes(solid, flow=200.0, kappa=0.05, maxh=5.0, order=2):
-    with quiet():
-        ngmesh = occ.OCCGeometry(solid).GenerateMesh(maxh=maxh, minh=0.5, curvaturesafety=0.5)
-    mesh = ngs.Mesh(ngmesh)
-    mesh.Curve(3)
-    X = ngs.VectorH1(mesh, order=order, dirichlet="wall") * ngs.H1(mesh, order=order - 1)
-    (u, p), (v, q) = X.TnT()
-    stokes = ngs.BilinearForm(ngs.InnerProduct(ngs.grad(u), ngs.grad(v)) * ngs.dx
-                              - (ngs.div(u) * q + ngs.div(v) * p) * ngs.dx).Assemble()
-    n = ngs.specialcf.normal(3)
-    push = ngs.LinearForm(-(v * n) * ngs.ds("inlet")).Assemble()
-    up = ngs.GridFunction(X)
-    up.vec.data = stokes.mat.Inverse(X.FreeDofs(), inverse="umfpack") * push.vec
-    through = ngs.Integrate(up.components[0] * n * ngs.ds("outlet"), mesh)
-    U = up.components[0] * (flow / through)
-
-    fes = ngs.H1(mesh, order=order, dirichlet="wall|inlet")
-    T, w = fes.TnT()
-    tau = ngs.specialcf.mesh_size / (2 * order * ngs.Norm(U) + 1e-12)
-    a = ngs.BilinearForm(kappa * ngs.grad(T) * ngs.grad(w) * ngs.dx
-                         + (U * ngs.grad(T)) * (w + tau * (U * ngs.grad(w))) * ngs.dx).Assemble()
-    temperature = ngs.GridFunction(fes)
-    temperature.Set(1, definedon=mesh.Boundaries("wall"))
-    temperature.vec.data -= a.mat.Inverse(fes.FreeDofs()) * (a.mat * temperature.vec)
-    heat = ngs.Integrate(temperature * (U * n) * ngs.ds("outlet"), mesh)
-    return {"dp": flow / through, "heat": heat, "mesh": mesh, "speed": ngs.Norm(U)}
-```
-
 ```python
 base = SolveStokes(straight)
 print("straight: pressure drop", round(base["dp"], 3), "heat", round(base["heat"], 3))
+```
+
+```text
+straight: pressure drop 14.691 heat 110.366
 ```
 
 ## One question for COBYLA
@@ -338,11 +300,17 @@ def keeps_heat(u):
 
 
 u_straight = (np.array([28.0, 11.0, 3.5 / 5.5, L / 2]) - lo) / (hi - lo)
-minimize(objective, u_straight, method="COBYLA", bounds=[(0, 1)] * 4,
-         constraints=[{"type": "ineq", "fun": keeps_heat}],
-         options={"rhobeg": 0.2, "maxiter": 60, "tol": 1e-3})
+stop = minimize(objective, u_straight, method="COBYLA", bounds=[(0, 1)] * 4,
+                constraints=[{"type": "ineq", "fun": keeps_heat}],
+                options={"rhobeg": 0.2, "maxiter": 60, "tol": 1e-3}).message
 x_cobyla, dp_cobyla, heat_cobyla = min((s for s in solves if s[2] >= need), key=lambda s: s[1])
+print(stop)
 print("COBYLA:", round(100 * dp_cobyla / base["dp"], 1), "% of the straight pressure drop,", len(solves), "solves")
+```
+
+```text
+Return from COBYLA because the trust region radius reaches its lower bound.
+COBYLA: 55.6 % of the straight pressure drop, 38 solves
 ```
 
 ## A map from PyTorch
@@ -399,7 +367,19 @@ for q in (0.9, 1.0, 1.1):
           round(x[3], 1))
 ```
 
-```python nbsphinx="hide-input"
+```text
+heat at least 90 %: pressure drop 42.3 % predicted, 42.9 % solved, heat 87.9 %, middle at z 81.5
+```
+
+```text
+heat at least 100 %: pressure drop 53.7 % predicted, 54.0 % solved, heat 102.8 %, middle at z 51.4
+```
+
+```text
+heat at least 110 %: pressure drop 72.4 % predicted, 72.2 % solved, heat 110.1 %, middle at z 32.6
+```
+
+```python
 Chart("Heat taken up / straight", "pressure drop / straight",
       others={"the 32 solved samples": ([s[2] / need for s in good],
                                         [s[1] / base["dp"] for s in good])},
@@ -421,11 +401,20 @@ Views(*((f"at least {q:.0%} heat: {c[2] / base['dp']:.0%} of the pressure drop",
         for q, c in checks.items()), angles=VIEW, key={k: KEY[k] for k in ("ink", "accent")})
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+<IPython.core.display.HTML object>
+```
+
 The blue line in Figure 5 is the network's answer for every heat requirement at once, learned from the 32 gray samples.
 The three blue dots are layouts it chose, solved for real, and they land on the line. COBYLA's answer to its one
-question, the diamond, lies well above the line: COBYLA stops on its own after 26 solves at about 79 % of the straight
-transition's pressure drop, while the network's layout for the same heat needs about 55 %. The three layouts are shown
-as lofts (Figure 6a–c). The width stays at the edge of the box, because a wider duct always loses less pressure, and the
+question, the diamond, lies close to the line: after 38 solves, it is at about 56 % of the straight transition's
+pressure drop, and the network's layout for the same heat needs about 54 %. COBYLA's 38 solves answer only that one
+question, while the network answers every heat requirement from its 32 samples and checks each of its three layouts with
+one more solve. The three layouts are shown as lofts (Figure 6a–c). The width stays at the edge of the box, because a wider duct always loses less pressure, and the
 more heat the coolant has to take up, the closer to the inlet the duct widens.
 
 ## The flow in the chosen duct
@@ -433,7 +422,7 @@ more heat the coolant has to take up, the closer to the inlet the duct widens.
 Figure 7 shows the speed of the coolant in the layout for at least 100 % heat, in a cut along the axis through
 the middle of the duct, drawn on the planex2d face where the plane meets the solid (`px.Intersect3d`).
 
-```python nbsphinx="hide-input"
+```python
 w, h, f, z = checks[1.0][0]
 solid = duct.Update(middle(checks[1.0][0])).Solid()
 flow = SolveStokes(solid)
@@ -456,6 +445,14 @@ Row((cut, f"The layout for at least 100 % heat, middle section at z {z:.0f}",
 print("middle section: w", round(w, 1), "h", round(h, 1), "r", round(f * min(w, h) / 2, 1), "z", round(z, 1))
 ```
 
+```text
+<IPython.core.display.HTML object>
+```
+
+```text
+middle section: w 44.0 h 17.2 r 3.5 z 51.4
+```
+
 The duct opens soon after the inlet. The coolant slows down in the wide middle, where a slow flow costs little
 pressure, and speeds up again only where the duct flattens into the slot. The same duct is shown as a solid that can
 be turned and zoomed:
@@ -466,4 +463,8 @@ from ngsolve_webgpu.jupyter import Draw
 solid = duct.Update(middle(checks[1.0][0])).Solid()
 solid.faces.col = (0.867, 0.902, 0.941)
 Draw(solid, euler_angles=[20, 50, 0])
+```
+
+```text
+<IPython.core.display.HTML object>
 ```

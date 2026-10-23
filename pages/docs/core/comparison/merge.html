@@ -89,7 +89,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Build">Build</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Tests">Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../building.html#Documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../building.html#Contributing">Contributing</a></li>
 </ul>
 </li>
@@ -403,7 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Optimizing-a-cold-plate">Optimizing a cold plate</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#Fitting-a-sketch-to-measured-points">Fitting a sketch to measured points</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#At-a-glance">At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/scipy.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/scipy-cold-plate.html">A 3D cold plate</a></li>
 </ul>
 </li>
 </ul>
@@ -417,7 +417,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Search-the-model,-solve-the-winners">Search the model, solve the winners</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#Polish-the-winner">Polish the winner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#More">More</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul class="simple">
+<li class="toctree-l2"><a class="reference internal" href="../../integrations/pytorch.html#In-3D">In 3D</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../integrations/pytorch-duct.html">A 3D duct</a></li>
 </ul>
 </li>
 </ul>
@@ -620,8 +621,8 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-planex2d   0.0010 s, 4 edges
-OCC        1.7253 s, 4 edges
+planex2d   0.0009 s, 4 edges
+OCC        1.7782 s, 4 edges
 shapely    0.0057 s, area 400.000000
 pyclipper  0.0006 s, area 400.000000
 gdstk      0.0006 s, area 400.000000
@@ -632,13 +633,13 @@ manifold3d 0.0004 s, area 400.000000
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_37b2d0fffd7b07c5.svg" alt="400 unit squares" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) 400 unit squares</div><div style="width: 31.25%; text-align: center"><img src="fig_6e2bd5b347e34518.svg" alt="planex2d: 4 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) planex2d: 4 edges</div><div style="width: 31.25%; text-align: center"><img src="fig_c133858f537a89bc.svg" alt="OpenCASCADE: 4 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) OpenCASCADE: 4 edges</div></div><figcaption>Figure 1: The union of a grid of unit squares</figcaption></figure></div>
+<figure class="px-figure"><div style="display: flex; gap: 3.12%; align-items: flex-start; justify-content: center; width: 96.00%; margin: 4px auto 8px"><div style="width: 31.25%; text-align: center"><img src="fig_af6cef9030dd26a9.svg" alt="400 unit squares" style="width: 100%" loading="eager" fetchpriority="high" decoding="async" width="187" height="187"><br>(a) 400 unit squares</div><div style="width: 31.25%; text-align: center"><img src="fig_c6adf018b264b152.svg" alt="planex2d: 4 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(b) planex2d: 4 edges</div><div style="width: 31.25%; text-align: center"><img src="fig_e75dd3ba3f9adc80.svg" alt="OpenCASCADE: 4 edges" style="width: 100%" loading="lazy" decoding="async" width="187" height="187"><br>(c) OpenCASCADE: 4 edges</div></div><figcaption>Figure 1: The union of a grid of unit squares</figcaption></figure></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_0f6a5b71a197069d.svg" alt="planex 1.0 ms, shapely (GEOS)* 5.7 ms, fastest of pyclipper, gdstk, manifold3d* 0.4 ms, OpenCASCADE 1.7 s" style="width: 100%" loading="lazy" decoding="async" width="273" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 400 unit squares</figcaption></figure></div>
+<figure class="px-figure"><div style="width: 80%; margin: 4px auto 8px; text-align: center"><img src="fig_2bd92cfe95931fe7.svg" alt="planex 0.9 ms, shapely (GEOS)* 5.7 ms, fastest of pyclipper, gdstk, manifold3d* 0.4 ms, OpenCASCADE 1.8 s" style="width: 100%" loading="lazy" decoding="async" width="272" height="161"><div style="text-align: left; color: #9aa5b1; font-size: 0.85em">* polygon based: only straight lines, curves are approximated by them</div></div><figcaption>Figure 2: Uniting 400 unit squares</figcaption></figure></div>
 </div>
 </section>
 
