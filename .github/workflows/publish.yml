@@ -1,0 +1,121 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Builds planex2d's sdist, with the type stub written from the module compiled from this checkout (tools/stubgen.py,
+# so that the stub cannot be forgotten), checks it (the license files are in, the Netgen submodule is not), installs it
+# on a clean runner as the installation page describes and runs a smoke test: on every published GitHub release, and
+# when run by hand. It publishes only when run by hand (Actions > publish > Run workflow) with the target "testpypi" or "pypi"; the
+# target "pypi" publishes to TestPyPI first and then, after approval in the "pypi" environment, to PyPI.
+#
+# Publishing uses PyPI's trusted publishing, without an API token. Once, before the first release:
+# - on https://pypi.org and https://test.pypi.org: add a trusted publisher for this repository with the workflow file
+#   publish.yml and the environment "pypi" (PyPI) or "testpypi" (TestPyPI);
+# - in this repository's settings: create the environments "testpypi" and "pypi", the latter with a required reviewer.
+name: publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish the tested sdist to"
+        type: choice
+        options: [none, testpypi, pypi]
+        default: none
+
+permissions:
+  contents: read
+
+jobs:
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Write the type stub from the built module
+        run: |
+          python -m pip install netgen-mesher netgen-occt-devel scikit-build-core
+          python -m pip install --no-build-isolation .
+          python tools/stubgen.py
+          git diff --quiet -- src/python/planex/_planex.pyi \
+            || echo "::warning::the committed type stub was out of date; the sdist gets the one written now"
+      - run: python -m pip install build
+      - run: python -m build --sdist
+      - name: Check the sdist
+        run: |
+          ls -l dist
+          tar tzf dist/*.tar.gz > files.txt
+          for f in pyproject.toml CMakeLists.txt LICENSE THIRD_PARTY_NOTICES.md README.md \
+                   external_dependencies/eigen/COPYING.MPL2 external_dependencies/eigen/COPYING.APACHE \
+                   external_dependencies/eigen/COPYING.BSD external_dependencies/taskflow/LICENSE; do
+            grep -q "^[^/]*/$f$" files.txt || { echo "missing in the sdist: $f"; exit 1; }
+          done
+          if grep -q "external_dependencies/netgen/" files.txt; then echo "the Netgen submodule is in the sdist"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  test:
+    needs: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install from the sdist, as the installation page describes
+        run: |
+          python -m pip install netgen-mesher netgen-occt-devel scikit-build-core
+          python -m pip install --no-build-isolation dist/*.tar.gz
+      - name: Smoke test
+        run: |
+          python -c "
+          import planex as px
+          face = px.QuickSketch().Rectangle(2, 1).Face()
+          assert abs(face.mass - 2) < 1e-12, face.mass
+          print('planex2d imported, a 2 x 1 rectangle has the area', face.mass)
+          "
+      - name: The type stub ships and is current
+        run: |
+          mkdir unpacked && tar xzf dist/*.tar.gz -C unpacked --strip-components=1
+          python -m pip install pytest
+          python -m pytest unpacked/tests/test_stubs.py -q
+
+  testpypi:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.target != 'none'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: testpypi
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

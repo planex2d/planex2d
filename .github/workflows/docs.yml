@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Publishes the folder pages/ (the site root, which sends visitors on to the built documentation in pages/docs/) to
+# GitHub Pages on every push to main or master that changes it, and when run by hand. The documentation is built
+# elsewhere and copied into pages/docs/; this workflow only publishes the folder as it is.
+#
+# Once, before the first run: in this repository's settings, Pages > Build and deployment > Source: "GitHub Actions",
+# and the custom domain planex2d.org (with its DNS records). A CNAME file is not needed for a workflow deployment.
+name: docs
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["pages/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+      - id: deployment
+        uses: actions/deploy-pages@v4
