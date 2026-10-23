@@ -104,11 +104,19 @@ def _ngsolve_boundary(mesh):
     ngmesh = mesh.ngmesh
     elements = ngmesh.Elements2D().NumPy()
     nodes = elements["nodes"].astype(np.int64) - 1
-    # the nodes of an element, unused slots 0 (netgen counts from 1): a triangle 3 or 6, a quad 4 or 8; netgen 6.2.2608
-    # no longer has the field "np"
-    quad = np.isin((elements["nodes"] > 0).sum(axis=1), (4, 8))
-    tris = np.concatenate([nodes[~quad][:, :3], nodes[quad][:, [0, 1, 2]], nodes[quad][:, [0, 2, 3]]])
-    index = elements["index"][np.concatenate([np.flatnonzero(~quad), np.flatnonzero(quad), np.flatnonzero(quad)])]
+    # netgen before 6.2.2608: the number of nodes "np"; from 6.2.2608 the element type (QUAD 11, QUAD6 13, QUAD8 14), and
+    # "nodes" only as wide as the largest element
+    if "np" in elements.dtype.names:
+        quad = np.isin(elements["np"], (4, 8))
+    else:
+        quad = np.isin(elements["type"], (11, 13, 14))
+    order = [np.flatnonzero(~quad)]
+    tris = [nodes[~quad][:, :3]]
+    if quad.any():
+        order += [np.flatnonzero(quad)] * 2
+        tris += [nodes[quad][:, [0, 1, 2]], nodes[quad][:, [0, 2, 3]]]
+    tris = np.concatenate(tris)
+    index = elements["index"][np.concatenate(order)]
     faces = {i: ngmesh.FaceDescriptor(int(i)) for i in np.unique(index)}
     names = np.array([_name(faces[i].bcname) for i in index], dtype=object)
     domin = np.array([faces[i].domin for i in index])
