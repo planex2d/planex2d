@@ -104,7 +104,9 @@ def _ngsolve_boundary(mesh):
     ngmesh = mesh.ngmesh
     elements = ngmesh.Elements2D().NumPy()
     nodes = elements["nodes"].astype(np.int64) - 1
-    quad = np.isin(elements["np"], (4, 8))
+    # the nodes of an element, unused slots 0 (netgen counts from 1): a triangle 3 or 6, a quad 4 or 8; netgen 6.2.2608
+    # no longer has the field "np"
+    quad = np.isin((elements["nodes"] > 0).sum(axis=1), (4, 8))
     tris = np.concatenate([nodes[~quad][:, :3], nodes[quad][:, [0, 1, 2]], nodes[quad][:, [0, 2, 3]]])
     index = elements["index"][np.concatenate([np.flatnonzero(~quad), np.flatnonzero(quad), np.flatnonzero(quad)])]
     faces = {i: ngmesh.FaceDescriptor(int(i)) for i in np.unique(index)}

@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-"""Sketches without expressions solve bit for bit as before the expressions came: their solved points, dimensions, degrees
-of freedom, redundant constraints and condition against the values recorded with the build before
-(tests/data/constraintsketch_identity.json; `python tests/test_constraintsketch_identity.py` records them anew)."""
+"""Sketches without expressions solve as before the expressions came: their degrees of freedom, redundant constraints and
+ids exactly, their solved points and dimensions within rounding of the sketch's size and their condition, against the
+values recorded with the build before (tests/data/constraintsketch_identity.json; `python
+tests/test_constraintsketch_identity.py` records them anew). Within rounding, not bit for bit: compilers fuse multiply-adds
+differently."""
 import json
 import pathlib
 import warnings
@@ -111,12 +113,21 @@ def recorded():
         return {name: state(build()) for name, build in SKETCHES.items()}
 
 
-def test_sketches_without_expressions_solve_bit_for_bit_as_before():
+def test_sketches_without_expressions_solve_as_before():
     expected = json.loads(DATA.read_text())
     got = recorded()
     assert got.keys() == expected.keys()
-    for name in expected:
-        assert got[name] == expected[name], name
+    for name, want in expected.items():
+        have = got[name]
+        assert (have["dof"], have["redundant"]) == (want["dof"], want["redundant"]), name
+        assert have["locations"].keys() == want["locations"].keys(), name
+        assert have["dimensions"].keys() == want["dimensions"].keys(), name
+        size = max([1.0] + [abs(c) for p in want["locations"].values() for c in p])
+        for ref, p in want["locations"].items():
+            assert have["locations"][ref] == pytest.approx(p, rel=0, abs=1e-12 * size), (name, ref)
+        for ref, v in want["dimensions"].items():
+            assert have["dimensions"][ref] == pytest.approx(v, rel=1e-12, abs=1e-12 * size), (name, ref)
+        assert have["condition"] == pytest.approx(want["condition"], rel=1e-9), name
 
 
 if __name__ == "__main__":
