@@ -49,7 +49,7 @@ px.OCCGeometry(shape, fit_arcs=True, remove_edges_smaller=1e-6)
 
 &nbsp;
 
-Pad(*profile: [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch")*, *length: float \| None = None*, *length2: float = 0.0*, *dir: Point3 \| None = None*, *reverse: bool = False*, *until: [Plane](geometry.md#planex.Plane "planex.Plane") \| [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch") \| TopoDS_Shape \| None = None*) → TopoDS_Shape  
+Pad(*profile: [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch")*, *length: float \| None = None*, *length2: float = 0.0*, *dir: Point3 \| None = None*, *reverse: bool = False*, *until: [Plane](geometry.md#planex.Plane "planex.Plane") \| [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch") \| TopoDS_Shape \| None = None*, *offset: float = 0.0*) → TopoDS_Shape  
 The profile extruded into an OCC solid, as CATIA’s Pad.
 
 The solid has the name, maxh and colour of the profile’s face; each side face the properties of its profile edge; both end faces the colour and maxh of the face, no name; the edges along dir the properties of the profile vertex they start at.
@@ -67,22 +67,24 @@ Parameters:
 
 - **until** – instead of length: a px.Plane, a flat OCC face, or a planex Face, Shape or Sketch (up to its plane, the end of the prism lies inside it); a Pocket also px.first or px.last (the first or last flat face of the target the prism crosses along dir). Solids and curved faces are not allowed.
 
+- **offset** – with until=: the end this far from the plane along its normal, past it if positive, short of it if negative; the end face stays parallel to the plane.
+
 Raises:  
 - **TypeError** – profile or until has another form.
 
-- **ValueError** – neither length nor until, or both; a negative or infinite length; dir zero or parallel to the profile’s plane; until=px.first or px.last (a Pad has no target); until a solid, a curved face, or a plane that does not lie ahead of the whole profile, or a face that does not hold the end of the prism.
+- **ValueError** – neither length nor until, or both; a negative or infinite length; dir zero or parallel to the profile’s plane; until=px.first or px.last (a Pad has no target); until a solid, a curved face, or a plane that does not lie ahead of the whole profile, or a face that does not hold the end of the prism; offset without until, or an offset that puts the end behind the profile.
 
 Examples
 
 ``` python
 px.Pad(face, 3)
 px.Pad(sketch, 2, length2=1, dir=(0, 0, 1), reverse=True)
-px.Pad(face, until=px.Plane(origin=(0, 0, 5)))
+px.Pad(face, until=px.Plane(origin=(0, 0, 5)), offset=-0.5)
 ```
 
 &nbsp;
 
-Pocket(*target: TopoDS_Shape*, *profile: [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch")*, *length: float \| None = None*, *length2: float = 0.0*, *dir: Point3 \| None = None*, *reverse: bool = False*, *until: SketchUntil \| [Plane](geometry.md#planex.Plane "planex.Plane") \| [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch") \| TopoDS_Shape \| None = None*) → TopoDS_Shape  
+Pocket(*target: TopoDS_Shape*, *profile: [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch")*, *length: float \| None = None*, *length2: float = 0.0*, *dir: Point3 \| None = None*, *reverse: bool = False*, *until: SketchUntil \| [Plane](geometry.md#planex.Plane "planex.Plane") \| [Face](geometry.md#planex.Face "planex.Face") \| [Shape](geometry.md#planex.Shape "planex.Shape") \| [Sketch](sketches.md#planex.Sketch "planex.Sketch") \| [QuickSketch](sketches.md#planex.QuickSketch "planex.QuickSketch") \| TopoDS_Shape \| None = None*, *offset: float = 0.0*) → TopoDS_Shape  
 The target solid minus the profile’s prism, as CATIA’s Pocket.
 
 The prism is the one px.Pad makes, by default against the profile’s normal, into the material. The target’s faces keep their properties; the prism’s walls, floor and edges bring those of the profile as in px.Pad.
@@ -102,16 +104,18 @@ Parameters:
 
 - **until** – instead of length: a px.Plane, a flat OCC face, or a planex Face, Shape or Sketch (up to its plane, the end of the prism lies inside it); a Pocket also px.first or px.last (the first or last flat face of the target the prism crosses along dir). Solids and curved faces are not allowed.
 
+- **offset** – with until=: the end this far from the plane along its normal, past it if positive, short of it if negative; the end face stays parallel to the plane.
+
 Raises:  
 - **TypeError** – profile or until has another form.
 
-- **ValueError** – the target has no solid; neither length nor until, or both; a negative or infinite length; dir zero or parallel to the profile’s plane; until a solid, a curved face, a plane that does not lie ahead of the whole profile, or a face that does not hold the end of the prism; px.first or px.last reaching no face or a curved one; a prism that removes nothing or everything.
+- **ValueError** – the target has no solid; neither length nor until, or both; a negative or infinite length; dir zero or parallel to the profile’s plane; until a solid, a curved face, a plane that does not lie ahead of the whole profile, or a face that does not hold the end of the prism; px.first or px.last reaching no face or a curved one; a prism that removes nothing or everything; offset without until, or an offset that puts the end behind the profile.
 
 Examples
 
 ``` python
 px.Pocket(box, circle_face, 2)
-px.Pocket(box, circle_face, until=px.last)
+px.Pocket(box, circle_face, until=px.last, offset=-1)
 ```
 
 &nbsp;

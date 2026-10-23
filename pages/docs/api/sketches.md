@@ -8,22 +8,24 @@ A sketch without constraints: drawing without solves or analysis, as fast as it 
 Arc(*r: float*, *sweep: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Arc(*to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Arc(*to: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Arc(*from\_: Point \| Id*, *to: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Arc(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Arc(*start: Point \| Id*, *end: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
+Arc(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw an arc from the pen or between two ends.
 
-The positional arguments are read in this order: from, to, then the sizes (r, sweep), then the flags. The circle of the arc: center= or concentric= with radius r (default through the start), congruent= (an arc’s circle), else continuing the pen’s direction with radius r (r \> 0 turns left). On a given circle the start is from (an element: where it meets the circle nearest the pen, or (element, point)), else the pen projected onto it; the arc runs counterclockwise between two given ends, along the pen’s direction from the pen, with sweep= by its sign. Its end: a positional to, sweep= or until=.
+The positional arguments are read in this order: start, end, then the sizes (r, sweep), then the flags. The circle of the arc: center= or concentric= with radius r (default through the start), coincident= (an arc’s circle), else continuing the pen’s direction with radius r (r \> 0 turns left). On a given circle the start is the given start (an element: where it meets the circle nearest the pen, or (element, point)), else the pen projected onto it; the arc runs counterclockwise between two given ends, along the pen’s direction from the pen, with sweep= by its sign. Its end: a positional to, sweep= or until=.
 
 Parameters:  
 - **r** – the radius; from the pen a negative r starts backwards, its centre on the other side; with two ends the arc runs counterclockwise the short way, -r clockwise.
 
-- **sweep** – the turn in degrees from the pen, positive counterclockwise; a full turn (also sweep=360 with center=) draws one circle element (Circle.k, or id=) through the pen, its origin the pen’s point, and the pen stays; in a px.Sketch it touches the element before it; as sweep= the turn on a circle given by center=, concentric= or congruent=.
+- **sweep** – the turn in degrees from the pen, positive counterclockwise; a full turn (also sweep=360 with center=) draws one circle element (Circle.k, or id=) through the pen, its origin the pen’s point, and the pen stays; in a px.Sketch it touches the element before it; as sweep= the turn on a circle given by center=, concentric= or coincident=.
 
 - **to** – the end, as for Line: a point (h, v), a point id, sk.pen, an element (until=px.first, the default, or px.last picks the intersection along the arc) or (element, point). Arc(to) alone leaves the pen along its direction. An element as an end needs the circle.
 
-- **from** – the start, read as to.
+- **start** – the start of the two-end form, read as to.
 
-- **ends** – [from\_](#id3) and to, or a single from with sweep= or until=, then the sizes, then the flags.
+- **end** – the end of the two-end form, read as to.
+
+- **ends** – start and end, or a single start with sweep= or until=, then the sizes, then the flags.
 
 - **flags** – as for Line.
 
@@ -31,20 +33,20 @@ Parameters:
 
 - **concentric** – a point id or an arc whose centre the arc shares.
 
-- **congruent** – an arc whose circle the arc lies on.
+- **coincident** – an arc whose circle the arc lies on.
 
 - **tangent** – (dh, dv), the direction at the start; sk.pen, the pen’s direction; a target: the arc leaves the pen along its direction and ends touching it; (a, b) with r: the arc of radius r touching a and b, from a to b, by default in the corner they face. A target given as (target, point): of a line the side the point is on, of a circle a point inside puts the arc inside.
 
 - **through** – a third point the arc passes.
 
-- **until** – px.first / px.last until the first / last line, arc, circle or spline along the arc (the start not counted), or a target. With sweep= or until= a single positional is the from: sk.Arc(“tangent”, sweep=90, congruent=”c”).
+- **until** – px.first / px.last until the first / last line, arc, circle or spline along the arc (the start not counted), or a target. With sweep= or until= a single positional is the from: sk.Arc(“tangent”, sweep=90, coincident=”c”).
 
 - **reverse** – the other way round; with two ends and r the long way.
 
 - **options** – id= (the arc’s id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, partition=, construction=.
 
 Raises:  
-- **TypeError** – a wrong form of arguments, an unknown keyword, from\_=, to=, r= or ccw=, near=.
+- **TypeError** – a wrong form of arguments, an unknown keyword, a keyword for an end (the ends are positional), r= or ccw=, near=.
 
 - **ValueError** – the arc cannot be placed (the message names the form it needs); nothing is drawn.
 
@@ -52,14 +54,14 @@ Examples
 
 ``` python
 sk.Arc(5, 90).Arc((3, 1), tangent=(0, 1)).Arc((0, 0), (2, 0), 5)
-sk.Arc("lower", "upper", congruent="boss")
+sk.Arc("lower", "upper", coincident="boss")
 ```
 
 ArcSlot(*r: float*, *sweep: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 ArcSlot(*to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 ArcSlot(*to: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-ArcSlot(*from\_: Point \| Id*, *to: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-ArcSlot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+ArcSlot(*start: Point \| Id*, *end: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
+ArcSlot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw an arc slot: an arc and its offset on both sides, closed by round caps.
 
 Every form of Arc, with the width w as the last number before the flags. The arc is the slot’s spine, a construction element; the outline is its offset at w / 2 on both sides, the caps half circles around the spine’s ends. The pen goes on at the spine’s end in its direction (a new chain). The ids are those of Slot: ArcSlot.k is the wire, with ArcSlot.k.spine, .left, .right, .startcap and .endcap; a Sketch has the dimension ArcSlot.k.w and keeps the slot a slot when the spine moves. Remove(“ArcSlot.1”) removes the whole slot.
@@ -73,7 +75,9 @@ Parameters:
 
 - **to** – as for Arc, which draws the spine.
 
-- **from** – as for Arc, which draws the spine.
+- **start** – as for Arc, which draws the spine.
+
+- **end** – as for Arc, which draws the spine.
 
 - **ends** – as for Arc, which draws the spine.
 
@@ -83,7 +87,7 @@ Parameters:
 
 - **concentric** – as for Arc, which draws the spine.
 
-- **congruent** – as for Arc, which draws the spine.
+- **coincident** – as for Arc, which draws the spine.
 
 - **tangent** – as for Arc, which draws the spine.
 
@@ -146,10 +150,10 @@ sk.Chamfer([(4, 0), (4, 4)], 1, d2=2, id=["a", "b"])
 
 Circle(*r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Circle(*h: float*, *v: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Circle(*\*r: float \| [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Circle(*\*r: float \| [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a circle around the pen’s position, around (h, v), or placed by the helpers.
 
-With helpers the centre is center= or concentric=, else the pen’s position; the radius is r, congruent=, through= or tangent=. The circle is one circle edge starting at the point r from the centre along +h.
+With helpers the centre is center= or concentric=, else the pen’s position; the radius is r, coincident=, through= or tangent=. The circle is one circle edge starting at the point r from the centre along +h.
 
 Parameters:  
 - **r** – the radius; in the helper form at most one radius, then the flags.
@@ -164,7 +168,7 @@ Parameters:
 
 - **concentric** – a point id or an arc whose centre is the circle’s.
 
-- **congruent** – an arc or circle whose radius the circle takes.
+- **coincident** – an arc or circle whose radius the circle takes.
 
 - **through** – a point or point id on the circle.
 
@@ -281,24 +285,6 @@ sk.Direction((0, 1)).Line(5)
 sk.Direction(1, 1)
 ```
 
-Edge(*element: Id*, */*, *\**, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
-An element’s solved edges as a wire: a line one edge, a circle one circle edge, a spline its pieces.
-
-Parameters:  
-- **element** – an element, or a wire id (Chain.1, an id_wire): all its elements’ edges in one chain.
-
-- **id** – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.
-
-Raises:  
-**ValueError** – the edges form several chains (sk.Wires() gives them) or the chain crosses itself; in mode=’strict’ while the sketch can still move.
-
-Examples
-
-``` python
-sk.Edge("Line.1")
-sk.Edge("Chain.1")
-```
-
 Face(*\**, *id: str \| None = None*) → [Face](geometry.md#planex.Face "planex.Face")  
 The region the drawn elements bound.
 
@@ -384,7 +370,7 @@ sk.Geometry("Arc.1")["sweep"]
 
 Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Hexagon(*h: float*, *v: float*, *af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a regular hexagon of width af across its flats, as for a nut.
 
 A Polygon of six sides whose circle has the radius af / sqrt(3): the first corner is along the pen’s drawing direction from the centre, so two flats run parallel to it. Hexagon.k.Line.1 to .Line.6 run from the first corner counterclockwise, Hexagon.k.circle is the construction circle, and Hexagon.k is the wire of the lines. The pen and its direction stay. A Sketch keeps the hexagon regular and has the dimension Hexagon.k.af, the distance between two opposite flats (sk\[“Hexagon.1.af”\] = 17; sk.Update()). Remove(“Hexagon.1”) removes the whole hexagon.
@@ -402,7 +388,7 @@ Parameters:
 
 - **concentric** – as for Circle.
 
-- **congruent** – as for Circle.
+- **coincident** – as for Circle.
 
 - **through** – as for Circle.
 
@@ -446,8 +432,8 @@ sk.Intersect3d(box, construction=False, name="cut")
 Keyhole(*l: float*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Keyhole(*dh: float*, *dv: float*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Keyhole(*to: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Keyhole(*from\_: Point \| Id*, *to: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Keyhole(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Keyhole(*start: Point \| Id*, *end: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
+Keyhole(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a keyhole: a straight slot that starts in a round hole.
 
 Every form of Slot, with the hole’s radius r as the last number. The spine is a construction line; the hole is centred at its start. The outline is one loop: the two sides run from the hole’s circle to the round end cap, and the hole is the arc of its circle between the sides, the long way round. The pen goes on at the spine’s end in its direction (a new chain). Keyhole.k is the wire of the outline, with Keyhole.k.spine, Keyhole.k.left and Keyhole.k.right (left and right of the spine’s direction), Keyhole.k.endcap and Keyhole.k.hole. A Sketch keeps the keyhole a keyhole when the spine moves, and has the dimensions Keyhole.k.w and Keyhole.k.r (sk\[“Keyhole.1.r”\] = 4; sk.Update()); with auto_constraint the spine gets what Line gets. Remove(“Keyhole.1”) removes the whole keyhole.
@@ -465,7 +451,9 @@ Parameters:
 
 - **to** – as for Line, which draws the spine.
 
-- **from** – as for Line, which draws the spine.
+- **start** – as for Line, which draws the spine.
+
+- **end** – as for Line, which draws the spine.
 
 - **ends** – as for Line, which draws the spine.
 
@@ -479,7 +467,7 @@ Parameters:
 
 - **angle** – as for Line, which draws the spine.
 
-- **congruent** – as for Line, which draws the spine.
+- **coincident** – as for Line, which draws the spine.
 
 - **tangent** – as for Line, which draws the spine.
 
@@ -506,11 +494,11 @@ sk.Keyhole((0, 0), (0, 10), 2, 3, id="hook")
 Line(*l: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Line(*dh: float*, *dv: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Line(*to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Line(*from\_: Point \| Id*, *to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Line(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Line(*start: Point \| Id*, *end: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
+Line(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a line from the pen or between two ends.
 
-The positional arguments are read in this order: from, to, then a length, then the flags. The helpers (the keywords from until to reverse) place the line from references: one of parallel, perpendicular, angle, congruent, tangent or through fixes its carrier (else the pen’s direction), and l, to or until its end. A target is an id, px.H, px.V, an edge, Wire, Face, Shape or OCC shape (projected). Of several solutions the one on the edges before their extensions, then the shortest line, then the one nearest the pen is taken. With auto_constraint the helpers also constrain the line.
+The positional arguments are read in this order: start, end, then a length, then the flags. The helpers (the keywords from until to reverse) place the line from references: one of parallel, perpendicular, angle, coincident, tangent or through fixes its carrier (else the pen’s direction), and l, to or until its end. A target is an id, px.H, px.V, an edge, Wire, Face, Shape or OCC shape (projected). Of several solutions the one on the edges before their extensions, then the shortest line, then the one nearest the pen is taken. With auto_constraint the helpers also constrain the line.
 
 Parameters:  
 - **l** – the length along the pen’s direction, or with a helper the length along its carrier.
@@ -521,9 +509,11 @@ Parameters:
 
 - **to** – the end: a point (h, v), a point id (‘A’, ‘Line.1.end’), sk.pen, an element or another target (where the carrier meets it; (target, point) takes the intersection nearest the point). An element as an end needs a helper that fixes the carrier.
 
-- **from** – the start, read as to.
+- **start** – the start of the two-end form, read as to.
 
-- **ends** – [from\_](#id5) and to, or a single from with until=, or a length l, then the flags.
+- **end** – the end of the two-end form, read as to.
+
+- **ends** – start and end, or a single start with until=, or a length l, then the flags.
 
 - **flags** – px.Horizontal, px.Vertical, px.Fix (of the line); px.Tangent, px.Perpendicular, px.Parallel, px.Equal (with the element before it).
 
@@ -535,7 +525,7 @@ Parameters:
 
 - **angle** – degrees from the h axis, or (degrees, reference) from the line reference.
 
-- **congruent** – a line whose carrier the line lies on.
+- **coincident** – a line whose carrier the line lies on.
 
 - **tangent** – one target the line touches, or two circles (the line goes from the first to the second).
 
@@ -548,7 +538,7 @@ Parameters:
 - **options** – id= (the line’s id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, partition=, construction=.
 
 Raises:  
-- **TypeError** – a wrong form of arguments, an unknown keyword, from\_= or to= (the ends are positional), near=.
+- **TypeError** – a wrong form of arguments, an unknown keyword, a keyword for an end (the ends are positional), near=.
 
 - **ValueError** – the line cannot be placed (the message names what is missing); nothing is drawn.
 
@@ -811,7 +801,7 @@ shape.Plot3d(backend="webgui", height=400)
 
 Polygon(*r: float*, *n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Polygon(*h: float*, *v: float*, *r: float*, *n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Polygon(*n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Polygon(*n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a regular polygon of n equal sides, its corners on a circle.
 
 Every form of Circle, with the number of sides n as the last number. The circle is a construction element, Polygon.k.circle, of radius r around the pen’s position, around (h, v) or placed by the helpers; the first corner is on it along the pen’s drawing direction from its centre, the others follow counterclockwise. Polygon.k.Line.1 to .Line.n run from the first corner, and Polygon.k is their wire (sk(‘Polygon.1’), Offset, Remove, the patterns). The pen and its direction stay. A Sketch keeps the polygon regular (the corners on the circle, equal sides) and has the dimension Polygon.k.r (sk\[“Polygon.1.r”\] = 3; sk.Update()); with auto_constraint the circle gets what Circle gets. Remove(“Polygon.1”) removes the whole polygon.
@@ -831,7 +821,7 @@ Parameters:
 
 - **concentric** – as for Circle.
 
-- **congruent** – as for Circle.
+- **coincident** – as for Circle.
 
 - **through** – as for Circle.
 
@@ -1123,8 +1113,8 @@ shape = sk.Shape()
 Slot(*l: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Slot(*dh: float*, *dv: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
 Slot(*to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Slot(*from\_: Point \| Id*, *to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
-Slot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
+Slot(*start: Point \| Id*, *end: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")\
+Slot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [QuickSketch](#planex.QuickSketch "planex.QuickSketch")  
 Draw a straight slot: a line and its offset on both sides, closed by round caps.
 
 Every form of Line, with the width w as the last number before the flags. The line is the slot’s spine, a construction element; the outline is its offset at w / 2 on both sides, the caps half circles around the spine’s ends. The pen goes on at the spine’s end in its direction (a new chain). Slot.k is the wire of the outline, with Slot.k.spine, Slot.k.left and Slot.k.right (left and right of the spine’s direction), Slot.k.startcap and Slot.k.endcap. A Sketch keeps the slot a slot when the spine moves, and has the dimension Slot.k.w (sk\[“Slot.1.w”\] = 6; sk.Update()); with auto_constraint the spine gets what Line gets. Remove(“Slot.1”) removes the whole slot.
@@ -1140,7 +1130,9 @@ Parameters:
 
 - **to** – as for Line, which draws the spine.
 
-- **from** – as for Line, which draws the spine.
+- **start** – as for Line, which draws the spine.
+
+- **end** – as for Line, which draws the spine.
 
 - **ends** – as for Line, which draws the spine.
 
@@ -1154,7 +1146,7 @@ Parameters:
 
 - **angle** – as for Line, which draws the spine.
 
-- **congruent** – as for Line, which draws the spine.
+- **coincident** – as for Line, which draws the spine.
 
 - **tangent** – as for Line, which draws the spine.
 
@@ -1583,22 +1575,24 @@ sk.Vertex("A", (3, 4))
 sk.Line(5).Vertex("tip")
 ```
 
-Wire(*unify: bool = True*, *\**, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
-The drawn edges as one Wire, its ends within rounding joined; construction elements take no part.
+Wire(*element: Id \| None = None*, */*, *\**, *unify: bool = True*, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
+The drawn edges as one Wire, its ends within rounding joined; construction elements take no part. With element, that element’s solved edges (a line or arc one edge, a circle one circle edge, a spline its pieces) or a wire id’s elements in one chain.
 
 Parameters:  
-- **unify** – True cuts the drawn edges at crossings and T-junctions, keeps an overlapping stretch once and merges the pieces on one carrier where nothing else meets (as wire + wire); False keeps every drawn element uncut.
+- **element** – an element, or a wire id (Chain.1, an id_wire); None the whole sketch.
+
+- **unify** – for the whole sketch: True cuts the drawn edges at crossings and T-junctions, keeps an overlapping stretch once and merges the pieces on one carrier where nothing else meets (as wire + wire); False keeps every drawn element uncut.
 
 - **id** – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.
 
 Raises:  
-**ValueError** – nothing is drawn, the edges form several wires (sk.Wires() returns them as a list), or, with unify=False, the chain crosses, touches or overlaps itself; in mode=’strict’ while the sketch can still move.
+**ValueError** – nothing is drawn, the edges form several wires (sk.Wires() returns them as a list), or, with unify=False or an element, the chain crosses, touches or overlaps itself; in mode=’strict’ while the sketch can still move.
 
 Examples
 
 ``` python
 sk.Wire()
-sk.Wire(unify=False)
+sk.Wire("Chain.1")
 ```
 
 Wires(*unify: bool = True*, *\**, *id: str \| None = None*) → list\[[Wire](geometry.md#planex.Wire "planex.Wire")\]  
@@ -1782,22 +1776,24 @@ A sketch of elements and constraints between them, drawn with a pen. Ids (id=, i
 Arc(*r: float*, *sweep: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Arc(*to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Arc(*to: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Arc(*from\_: Point \| Id*, *to: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Arc(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Arc(*start: Point \| Id*, *end: Point \| Id*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
+Arc(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw an arc from the pen or between two ends.
 
-The positional arguments are read in this order: from, to, then the sizes (r, sweep), then the flags. The circle of the arc: center= or concentric= with radius r (default through the start), congruent= (an arc’s circle), else continuing the pen’s direction with radius r (r \> 0 turns left). On a given circle the start is from (an element: where it meets the circle nearest the pen, or (element, point)), else the pen projected onto it; the arc runs counterclockwise between two given ends, along the pen’s direction from the pen, with sweep= by its sign. Its end: a positional to, sweep= or until=.
+The positional arguments are read in this order: start, end, then the sizes (r, sweep), then the flags. The circle of the arc: center= or concentric= with radius r (default through the start), coincident= (an arc’s circle), else continuing the pen’s direction with radius r (r \> 0 turns left). On a given circle the start is the given start (an element: where it meets the circle nearest the pen, or (element, point)), else the pen projected onto it; the arc runs counterclockwise between two given ends, along the pen’s direction from the pen, with sweep= by its sign. Its end: a positional to, sweep= or until=.
 
 Parameters:  
 - **r** – the radius; from the pen a negative r starts backwards, its centre on the other side; with two ends the arc runs counterclockwise the short way, -r clockwise.
 
-- **sweep** – the turn in degrees from the pen, positive counterclockwise; a full turn (also sweep=360 with center=) draws one circle element (Circle.k, or id=) through the pen, its origin the pen’s point, and the pen stays; in a px.Sketch it touches the element before it; as sweep= the turn on a circle given by center=, concentric= or congruent=.
+- **sweep** – the turn in degrees from the pen, positive counterclockwise; a full turn (also sweep=360 with center=) draws one circle element (Circle.k, or id=) through the pen, its origin the pen’s point, and the pen stays; in a px.Sketch it touches the element before it; as sweep= the turn on a circle given by center=, concentric= or coincident=.
 
 - **to** – the end, as for Line: a point (h, v), a point id, sk.pen, an element (until=px.first, the default, or px.last picks the intersection along the arc) or (element, point). Arc(to) alone leaves the pen along its direction. An element as an end needs the circle.
 
-- **from** – the start, read as to.
+- **start** – the start of the two-end form, read as to.
 
-- **ends** – [from\_](#id7) and to, or a single from with sweep= or until=, then the sizes, then the flags.
+- **end** – the end of the two-end form, read as to.
+
+- **ends** – start and end, or a single start with sweep= or until=, then the sizes, then the flags.
 
 - **flags** – as for Line.
 
@@ -1805,20 +1801,20 @@ Parameters:
 
 - **concentric** – a point id or an arc whose centre the arc shares.
 
-- **congruent** – an arc whose circle the arc lies on.
+- **coincident** – an arc whose circle the arc lies on.
 
 - **tangent** – (dh, dv), the direction at the start; sk.pen, the pen’s direction; a target: the arc leaves the pen along its direction and ends touching it; (a, b) with r: the arc of radius r touching a and b, from a to b, by default in the corner they face. A target given as (target, point): of a line the side the point is on, of a circle a point inside puts the arc inside.
 
 - **through** – a third point the arc passes.
 
-- **until** – px.first / px.last until the first / last line, arc, circle or spline along the arc (the start not counted), or a target. With sweep= or until= a single positional is the from: sk.Arc(“tangent”, sweep=90, congruent=”c”).
+- **until** – px.first / px.last until the first / last line, arc, circle or spline along the arc (the start not counted), or a target. With sweep= or until= a single positional is the from: sk.Arc(“tangent”, sweep=90, coincident=”c”).
 
 - **reverse** – the other way round; with two ends and r the long way.
 
 - **options** – id= (the arc’s id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, partition=, construction=.
 
 Raises:  
-- **TypeError** – a wrong form of arguments, an unknown keyword, from\_=, to=, r= or ccw=, near=.
+- **TypeError** – a wrong form of arguments, an unknown keyword, a keyword for an end (the ends are positional), r= or ccw=, near=.
 
 - **ValueError** – the arc cannot be placed (the message names the form it needs); nothing is drawn.
 
@@ -1826,14 +1822,14 @@ Examples
 
 ``` python
 sk.Arc(5, 90).Arc((3, 1), tangent=(0, 1)).Arc((0, 0), (2, 0), 5)
-sk.Arc("lower", "upper", congruent="boss")
+sk.Arc("lower", "upper", coincident="boss")
 ```
 
 ArcSlot(*r: float*, *sweep: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 ArcSlot(*to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 ArcSlot(*to: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-ArcSlot(*from\_: Point \| Id*, *to: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-ArcSlot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+ArcSlot(*start: Point \| Id*, *end: Point \| Id*, *r: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
+ArcSlot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *sweep: float \| None = None*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *tangent: tuple\[float, float\] \| Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *through: Point \| None = None*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw an arc slot: an arc and its offset on both sides, closed by round caps.
 
 Every form of Arc, with the width w as the last number before the flags. The arc is the slot’s spine, a construction element; the outline is its offset at w / 2 on both sides, the caps half circles around the spine’s ends. The pen goes on at the spine’s end in its direction (a new chain). The ids are those of Slot: ArcSlot.k is the wire, with ArcSlot.k.spine, .left, .right, .startcap and .endcap; a Sketch has the dimension ArcSlot.k.w and keeps the slot a slot when the spine moves. Remove(“ArcSlot.1”) removes the whole slot.
@@ -1847,7 +1843,9 @@ Parameters:
 
 - **to** – as for Arc, which draws the spine.
 
-- **from** – as for Arc, which draws the spine.
+- **start** – as for Arc, which draws the spine.
+
+- **end** – as for Arc, which draws the spine.
 
 - **ends** – as for Arc, which draws the spine.
 
@@ -1857,7 +1855,7 @@ Parameters:
 
 - **concentric** – as for Arc, which draws the spine.
 
-- **congruent** – as for Arc, which draws the spine.
+- **coincident** – as for Arc, which draws the spine.
 
 - **tangent** – as for Arc, which draws the spine.
 
@@ -1922,10 +1920,10 @@ sk.Chamfer([(4, 0), (4, 4)], 1, d2=2, id=["a", "b"])
 
 Circle(*r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Circle(*h: float*, *v: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Circle(*\*r: float \| [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Circle(*\*r: float \| [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a circle around the pen’s position, around (h, v), or placed by the helpers.
 
-With helpers the centre is center= or concentric=, else the pen’s position; the radius is r, congruent=, through= or tangent=. The circle is one circle edge starting at the point r from the centre along +h.
+With helpers the centre is center= or concentric=, else the pen’s position; the radius is r, coincident=, through= or tangent=. The circle is one circle edge starting at the point r from the centre along +h.
 
 Parameters:  
 - **r** – the radius; in the helper form at most one radius, then the flags.
@@ -1940,7 +1938,7 @@ Parameters:
 
 - **concentric** – a point id or an arc whose centre is the circle’s.
 
-- **congruent** – an arc or circle whose radius the circle takes.
+- **coincident** – an arc or circle whose radius the circle takes.
 
 - **through** – a point or point id on the circle.
 
@@ -2079,24 +2077,6 @@ sk.Direction((0, 1)).Line(5)
 sk.Direction(1, 1)
 ```
 
-Edge(*element: Id*, */*, *\**, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
-An element’s solved edges as a wire: a line one edge, a circle one circle edge, a spline its pieces.
-
-Parameters:  
-- **element** – an element, or a wire id (Chain.1, an id_wire): all its elements’ edges in one chain.
-
-- **id** – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.
-
-Raises:  
-**ValueError** – the edges form several chains (sk.Wires() gives them) or the chain crosses itself; in mode=’strict’ while the sketch can still move.
-
-Examples
-
-``` python
-sk.Edge("Line.1")
-sk.Edge("Chain.1")
-```
-
 Expression(*text: str*, *rhs: str \| None = None*, *\**, *id: str \| None = None*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Add an equation between dimensions and measures of the solved geometry, solved with all the other constraints.
 
@@ -2206,7 +2186,7 @@ sk.Geometry("Arc.1")["sweep"]
 
 Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Hexagon(*h: float*, *v: float*, *af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Hexagon(*af: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a regular hexagon of width af across its flats, as for a nut.
 
 A Polygon of six sides whose circle has the radius af / sqrt(3): the first corner is along the pen’s drawing direction from the centre, so two flats run parallel to it. Hexagon.k.Line.1 to .Line.6 run from the first corner counterclockwise, Hexagon.k.circle is the construction circle, and Hexagon.k is the wire of the lines. The pen and its direction stay. A Sketch keeps the hexagon regular and has the dimension Hexagon.k.af, the distance between two opposite flats (sk\[“Hexagon.1.af”\] = 17; sk.Update()). Remove(“Hexagon.1”) removes the whole hexagon.
@@ -2224,7 +2204,7 @@ Parameters:
 
 - **concentric** – as for Circle.
 
-- **congruent** – as for Circle.
+- **coincident** – as for Circle.
 
 - **through** – as for Circle.
 
@@ -2268,8 +2248,8 @@ sk.Intersect3d(box, construction=False, name="cut")
 Keyhole(*l: float*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Keyhole(*dh: float*, *dv: float*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Keyhole(*to: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Keyhole(*from\_: Point \| Id*, *to: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Keyhole(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Keyhole(*start: Point \| Id*, *end: Point \| Id*, *w: float*, *r: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
+Keyhole(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a keyhole: a straight slot that starts in a round hole.
 
 Every form of Slot, with the hole’s radius r as the last number. The spine is a construction line; the hole is centred at its start. The outline is one loop: the two sides run from the hole’s circle to the round end cap, and the hole is the arc of its circle between the sides, the long way round. The pen goes on at the spine’s end in its direction (a new chain). Keyhole.k is the wire of the outline, with Keyhole.k.spine, Keyhole.k.left and Keyhole.k.right (left and right of the spine’s direction), Keyhole.k.endcap and Keyhole.k.hole. A Sketch keeps the keyhole a keyhole when the spine moves, and has the dimensions Keyhole.k.w and Keyhole.k.r (sk\[“Keyhole.1.r”\] = 4; sk.Update()); with auto_constraint the spine gets what Line gets. Remove(“Keyhole.1”) removes the whole keyhole.
@@ -2287,7 +2267,9 @@ Parameters:
 
 - **to** – as for Line, which draws the spine.
 
-- **from** – as for Line, which draws the spine.
+- **start** – as for Line, which draws the spine.
+
+- **end** – as for Line, which draws the spine.
 
 - **ends** – as for Line, which draws the spine.
 
@@ -2301,7 +2283,7 @@ Parameters:
 
 - **angle** – as for Line, which draws the spine.
 
-- **congruent** – as for Line, which draws the spine.
+- **coincident** – as for Line, which draws the spine.
 
 - **tangent** – as for Line, which draws the spine.
 
@@ -2328,11 +2310,11 @@ sk.Keyhole((0, 0), (0, 10), 2, 3, id="hook")
 Line(*l: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Line(*dh: float*, *dv: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Line(*to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Line(*from\_: Point \| Id*, *to: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Line(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Line(*start: Point \| Id*, *end: Point \| Id*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
+Line(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a line from the pen or between two ends.
 
-The positional arguments are read in this order: from, to, then a length, then the flags. The helpers (the keywords from until to reverse) place the line from references: one of parallel, perpendicular, angle, congruent, tangent or through fixes its carrier (else the pen’s direction), and l, to or until its end. A target is an id, px.H, px.V, an edge, Wire, Face, Shape or OCC shape (projected). Of several solutions the one on the edges before their extensions, then the shortest line, then the one nearest the pen is taken. With auto_constraint the helpers also constrain the line.
+The positional arguments are read in this order: start, end, then a length, then the flags. The helpers (the keywords from until to reverse) place the line from references: one of parallel, perpendicular, angle, coincident, tangent or through fixes its carrier (else the pen’s direction), and l, to or until its end. A target is an id, px.H, px.V, an edge, Wire, Face, Shape or OCC shape (projected). Of several solutions the one on the edges before their extensions, then the shortest line, then the one nearest the pen is taken. With auto_constraint the helpers also constrain the line.
 
 Parameters:  
 - **l** – the length along the pen’s direction, or with a helper the length along its carrier.
@@ -2343,9 +2325,11 @@ Parameters:
 
 - **to** – the end: a point (h, v), a point id (‘A’, ‘Line.1.end’), sk.pen, an element or another target (where the carrier meets it; (target, point) takes the intersection nearest the point). An element as an end needs a helper that fixes the carrier.
 
-- **from** – the start, read as to.
+- **start** – the start of the two-end form, read as to.
 
-- **ends** – [from\_](#id9) and to, or a single from with until=, or a length l, then the flags.
+- **end** – the end of the two-end form, read as to.
+
+- **ends** – start and end, or a single start with until=, or a length l, then the flags.
 
 - **flags** – px.Horizontal, px.Vertical, px.Fix (of the line); px.Tangent, px.Perpendicular, px.Parallel, px.Equal (with the element before it).
 
@@ -2357,7 +2341,7 @@ Parameters:
 
 - **angle** – degrees from the h axis, or (degrees, reference) from the line reference.
 
-- **congruent** – a line whose carrier the line lies on.
+- **coincident** – a line whose carrier the line lies on.
 
 - **tangent** – one target the line touches, or two circles (the line goes from the first to the second).
 
@@ -2370,7 +2354,7 @@ Parameters:
 - **options** – id= (the line’s id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, partition=, construction=.
 
 Raises:  
-- **TypeError** – a wrong form of arguments, an unknown keyword, from\_= or to= (the ends are positional), near=.
+- **TypeError** – a wrong form of arguments, an unknown keyword, a keyword for an end (the ends are positional), near=.
 
 - **ValueError** – the line cannot be placed (the message names what is missing); nothing is drawn.
 
@@ -2633,7 +2617,7 @@ shape.Plot3d(backend="webgui", height=400)
 
 Polygon(*r: float*, *n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Polygon(*h: float*, *v: float*, *r: float*, *n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Polygon(*n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *congruent: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Polygon(*n: int*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *center: Point \| None = None*, *concentric: Id \| None = None*, *coincident: Id \| None = None*, *through: Point \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a regular polygon of n equal sides, its corners on a circle.
 
 Every form of Circle, with the number of sides n as the last number. The circle is a construction element, Polygon.k.circle, of radius r around the pen’s position, around (h, v) or placed by the helpers; the first corner is on it along the pen’s drawing direction from its centre, the others follow counterclockwise. Polygon.k.Line.1 to .Line.n run from the first corner, and Polygon.k is their wire (sk(‘Polygon.1’), Offset, Remove, the patterns). The pen and its direction stay. A Sketch keeps the polygon regular (the corners on the circle, equal sides) and has the dimension Polygon.k.r (sk\[“Polygon.1.r”\] = 3; sk.Update()); with auto_constraint the circle gets what Circle gets. Remove(“Polygon.1”) removes the whole polygon.
@@ -2653,7 +2637,7 @@ Parameters:
 
 - **concentric** – as for Circle.
 
-- **congruent** – as for Circle.
+- **coincident** – as for Circle.
 
 - **through** – as for Circle.
 
@@ -2972,8 +2956,8 @@ shape = sk.Shape()
 Slot(*l: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Slot(*dh: float*, *dv: float*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
 Slot(*to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Slot(*from\_: Point \| Id*, *to: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
-Slot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *congruent: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
+Slot(*start: Point \| Id*, *end: Point \| Id*, *w: float*, */*, *\*flags: [Constraint](#planex.Constraint "planex.Constraint")*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")\
+Slot(*\*ends: Point \| Id \| float \| [Constraint](#planex.Constraint "planex.Constraint")*, *until: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| SketchUntil \| None = None*, *parallel: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *perpendicular: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| None = None*, *angle: float \| tuple\[float, Id\] \| None = None*, *coincident: Id \| None = None*, *tangent: Id \| [Shape](geometry.md#planex.Shape "planex.Shape") \| tuple\[Id, Id\] \| None = None*, *distance: float \| tuple\[float, Point\] \| None = None*, *through: Point \| None = None*, *reverse: bool = False*, *\*\*options*) → [Sketch](#planex.Sketch "planex.Sketch")  
 Draw a straight slot: a line and its offset on both sides, closed by round caps.
 
 Every form of Line, with the width w as the last number before the flags. The line is the slot’s spine, a construction element; the outline is its offset at w / 2 on both sides, the caps half circles around the spine’s ends. The pen goes on at the spine’s end in its direction (a new chain). Slot.k is the wire of the outline, with Slot.k.spine, Slot.k.left and Slot.k.right (left and right of the spine’s direction), Slot.k.startcap and Slot.k.endcap. A Sketch keeps the slot a slot when the spine moves, and has the dimension Slot.k.w (sk\[“Slot.1.w”\] = 6; sk.Update()); with auto_constraint the spine gets what Line gets. Remove(“Slot.1”) removes the whole slot.
@@ -2989,7 +2973,9 @@ Parameters:
 
 - **to** – as for Line, which draws the spine.
 
-- **from** – as for Line, which draws the spine.
+- **start** – as for Line, which draws the spine.
+
+- **end** – as for Line, which draws the spine.
 
 - **ends** – as for Line, which draws the spine.
 
@@ -3003,7 +2989,7 @@ Parameters:
 
 - **angle** – as for Line, which draws the spine.
 
-- **congruent** – as for Line, which draws the spine.
+- **coincident** – as for Line, which draws the spine.
 
 - **tangent** – as for Line, which draws the spine.
 
@@ -3450,22 +3436,24 @@ sk.Vertex("A", (3, 4))
 sk.Line(5).Vertex("tip")
 ```
 
-Wire(*unify: bool = True*, *\**, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
-The drawn edges as one Wire, its ends within rounding joined; construction elements take no part.
+Wire(*element: Id \| None = None*, */*, *\**, *unify: bool = True*, *id: str \| None = None*) → [Wire](geometry.md#planex.Wire "planex.Wire")  
+The drawn edges as one Wire, its ends within rounding joined; construction elements take no part. With element, that element’s solved edges (a line or arc one edge, a circle one circle edge, a spline its pieces) or a wire id’s elements in one chain.
 
 Parameters:  
-- **unify** – True cuts the drawn edges at crossings and T-junctions, keeps an overlapping stretch once and merges the pieces on one carrier where nothing else meets (as wire + wire); False keeps every drawn element uncut.
+- **element** – an element, or a wire id (Chain.1, an id_wire); None the whole sketch.
+
+- **unify** – for the whole sketch: True cuts the drawn edges at crossings and T-junctions, keeps an overlapping stretch once and merges the pieces on one carrier where nothing else meets (as wire + wire); False keeps every drawn element uncut.
 
 - **id** – the id of what it returns (of a list’s items id.1, id.2, …, of a dict’s id.key); default the kind that made it and a number, given when first asked for.
 
 Raises:  
-**ValueError** – nothing is drawn, the edges form several wires (sk.Wires() returns them as a list), or, with unify=False, the chain crosses, touches or overlaps itself; in mode=’strict’ while the sketch can still move.
+**ValueError** – nothing is drawn, the edges form several wires (sk.Wires() returns them as a list), or, with unify=False or an element, the chain crosses, touches or overlaps itself; in mode=’strict’ while the sketch can still move.
 
 Examples
 
 ``` python
 sk.Wire()
-sk.Wire(unify=False)
+sk.Wire("Chain.1")
 ```
 
 Wires(*unify: bool = True*, *\**, *id: str \| None = None*) → list\[[Wire](geometry.md#planex.Wire "planex.Wire")\]  
