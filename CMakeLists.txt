@@ -17,9 +17,10 @@ endif()
 set(PLANEX_OCC AUTO CACHE STRING "the OCC bindings _planex_occ (needs netgen and OpenCASCADE): ON, OFF or AUTO")
 option(PLANEX_CORE "the core module _planex; off builds only the OCC bindings, as planex2d-occ does from this sdist" ON)
 set(PLANEX_OCC_DESTINATION planex CACHE STRING "where the OCC bindings are installed (planex2d-occ: one folder per netgen version)")
-# the planex2d version of these sources (planex2d-occ gives it): the OCC bindings refuse a core of another one
+# the planex2d version of these sources (planex2d-occ gives it): the OCC bindings refuse a core of another one; the
+# version as written (0.2.0.dev1), SKBUILD_PROJECT_VERSION has only its release numbers (0.2.0)
 if(NOT DEFINED PLANEX_VERSION)
-    set(PLANEX_VERSION "${SKBUILD_PROJECT_VERSION}")
+    set(PLANEX_VERSION "${SKBUILD_PROJECT_VERSION_FULL}")
 endif()
 set(PLANEX_CORE_PYBIND11_INTERNALS "" CACHE STRING
     "tests: the core's pybind11 registry version (13: another registry than netgen's, as when netgen moves to another pybind11)")
@@ -99,8 +100,13 @@ function(planex_module name kind)
         if(PLANEX_CORE_PYBIND11_INTERNALS)
             target_compile_definitions(${name} PRIVATE PYBIND11_INTERNALS_VERSION=${PLANEX_CORE_PYBIND11_INTERNALS})
         endif()
-        # the CPU flags netgen gives the OCC bindings, so that the core computes the same numbers
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT MSVC)
+        # the CPU flags netgen gives the OCC bindings, so that the core computes the same numbers; a macOS build for
+        # given architectures (universal2 on an arm64 machine) gives them to its x86-64 part only, as netgen does
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            if("x86_64" IN_LIST CMAKE_OSX_ARCHITECTURES)
+                target_compile_options(${name} PRIVATE "SHELL:-Xarch_x86_64 -march=core-avx2")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT MSVC)
             target_compile_options(${name} PRIVATE -march=core-avx2)
         endif()
     endif()

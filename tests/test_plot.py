@@ -8,7 +8,7 @@ import types
 import pytest
 
 import planex as px
-from helpers import square
+from helpers import square, stub_webgui
 
 
 def legend_labels(ax):
@@ -210,7 +210,7 @@ def draws(monkeypatch):
     jupyter = types.ModuleType("ngsolve_webgpu.jupyter")
     jupyter.Draw = draw("webgpu")
     monkeypatch.setitem(sys.modules, "ngsolve_webgpu.jupyter", jupyter)
-    monkeypatch.setattr("netgen.webgui.Draw", draw("webgui"))
+    stub_webgui(monkeypatch, draw("webgui"))
     return calls
 
 
@@ -244,7 +244,7 @@ def test_plot3d_webgpu_without_the_package_says_how_to_install(monkeypatch):
 def test_plot3d_webgui_imports_no_webgpu(monkeypatch):
     before = set(sys.modules)
     calls = []
-    monkeypatch.setattr("netgen.webgui.Draw", lambda obj, **kwargs: calls.append(obj) or "webgui scene")
+    stub_webgui(monkeypatch, lambda obj, **kwargs: calls.append(obj) or "webgui scene")
     assert px.Plot3d(px.Move((0, 0)).Rectangle(1, 1).Face(), backend="webgui") == "webgui scene"
     assert len(calls) == 1 and len(calls[0].faces) == 1
     assert not [m for m in set(sys.modules) - before if m.split(".")[0] in ("webgpu", "ngsolve_webgpu")]

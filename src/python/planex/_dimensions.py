@@ -634,14 +634,14 @@ class Layout:
             if place is not None and place.radius is not None:
                 radius = place.radius
             else:
-                # the arc long enough for its value; where that is more than twice as far out as the part's size would
-                # put it (a small angle), past the edges' far ends with the value beyond its arrows
+                # the arc long enough for its value, but never further out than just past the shorter leg's end: past
+                # the longer one it reaches across the rest of the part, and a small angle or legs short on the paper
+                # get their value beyond the arrows there
                 fars = [far for _, far in d.legs if far > 0]
                 base = max(pen.mm(FIRST * 1.5), 0.5 * min(fars) if fars else 0.0)
                 radius = max(base, _room(pen, text) / math.radians(_ccw(a, b)))
-                if radius > 2 * base:
-                    # just past the shorter leg's end: past the longer one it reaches across the rest of the part
-                    radius = max(base, min(fars, default=0.0) + pen.mm(FIRST))
+                if fars:
+                    radius = min(radius, min(fars) + pen.mm(OVER))
             Angular(pen, d.c, a, b, legs, radius, text)
             middle = math.atan2(a[1], a[0]) + math.radians(_ccw(a, b)) / 2
             entity.update(c=d.c, a=a, b=b, legs=legs, radius=radius,

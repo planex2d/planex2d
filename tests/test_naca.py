@@ -3,6 +3,7 @@
 
 import math
 
+import numpy as np
 import pytest
 
 import planex as px
@@ -72,3 +73,12 @@ def test_errors():
             px.FromNACA("0012", trailing_edge=wrong)
     with pytest.raises(TypeError, match="samples"):
         px.FromNACA("0012", samples=100)
+
+
+def test_the_offset_of_the_exact_airfoil_keeps_its_distance_at_the_trailing_edge():
+    foil = px.FromNACA("0012", chord=100)
+    coated = foil.Offset(0.5, inplace=False)
+    gaps = np.asarray(foil.Distance(coated.Polylines(1e-3)[0]))
+    assert gaps.min() == pytest.approx(0.5, abs=1e-3) and gaps.max() == pytest.approx(0.5, abs=1e-3)
+    # Steiner: the parallel set of a convex region at d has the area A + L d + pi d^2
+    assert coated.mass == pytest.approx(foil.mass + foil.outer.mass * 0.5 + math.pi * 0.25, rel=1e-5)

@@ -731,9 +731,12 @@ class Selection:
             name: keeps the elements with this name; several joined by | ("web|flange").
             kind: keeps the elements of this kind: "line", "arc", "circle", "spline", "face", "vertex", "point";
                 several joined by | ("arc|circle").
-            near: near=point keeps the element whose center is nearest to the point ((h, v), (x, y, z), an element or
-                a one-element selection); nearh=, nearv=, nearx=, neary=, nearz= the one nearest to that coordinate.
-                Of an element and a point equally near, the element.
+            near: near=point keeps the element nearest to the point ((h, v), (x, y, z), or the center of an element or
+                a one-element selection): its distance to the element itself, so a line through the point is at 0 and
+                an arc at its distance from the arc, not from its circle's center; of elements equally near, the one
+                whose center is nearest, and an element before a point (a circle by its center: kind="circle",
+                near=center). nearh=, nearv=, nearx=, neary=, nearz= the one whose center is nearest to that
+                coordinate.
 
         Raises:
             ValueError: an id names no element here (the error names the closest ids), a negative number is out of
@@ -775,16 +778,24 @@ class Selection:
             if k == "near":
                 p = _point(target)
                 axes = ("h", "v") if len(p) == 2 else ("x", "y", "z")
-                dist = lambda i: math.dist(p, [_coords(i)[a] for a in axes])
+                # the element itself nearest (an arc is as far as the arc, not its circle's center); of those equally
+                # near, the one whose center is nearest
+                dist = lambda i: i.Distance(p)
+                centre = lambda i: math.dist(p, [_coords(i)[a] for a in axes])
                 scale = max(abs(c) for c in p)
             else:
                 dist = lambda i, a=k[4:]: abs(_coords(i)[a] - target)
+                centre = None
                 scale = abs(target)
             found = [(dist(i), i) for i in items]
             best = min(d for d, _ in found)
-            # equally near (a circle and its centre point): not the point
             tol = px.config.k * px.config.eps * max(1.0, scale, best)
             tied = [i for d, i in found if d <= best + tol]
+            if centre is not None and len(tied) > 1:
+                centres = [(centre(i), i) for i in tied]
+                nearest = min(c for c, _ in centres)
+                tied = [i for c, i in centres if c <= nearest + tol]
+            # equally near (a line and its end point): not the point
             items = [next((i for i in tied if _kind(i) not in ("point", "vertex")), tied[0])]
         return Selection(items)
 

@@ -349,3 +349,19 @@ def test_a_callable_honors_a_reversed_range_as_a_formula_does():
         assert (e.end.x, e.end.y) == pytest.approx((0, 0), abs=1e-12)
     sk = px.QuickSketch((5, 4)).Line(-3, 0).Curve(lambda t: (t, t * t), (2, 0))
     assert len(sk.Wires()) == 1
+
+
+def spirograph(ring, wheel, pen):
+    """a hypotrochoid: the pen pen away from the center of a wheel rolling inside a ring, closed after its turns"""
+    r, f = ring - wheel, (ring - wheel) / wheel
+    turns = wheel // math.gcd(ring, wheel)
+    return px.QuickSketch((r + pen, 0)).Curve((f"{r}*cos(t) + {pen}*cos({f!r}*t)", f"{r}*sin(t) - {pen}*sin({f!r}*t)"),
+                                              (0, 360 * turns))
+
+
+@pytest.mark.parametrize("ring, wheel, pen, loops, loop, middle", [(96, 84, 60, 8, 27.15, 8360.25),
+                                                                   (96, 72, 40, 4, 380.48, 1119.80)])
+def test_a_curve_crossing_itself_gives_every_loop(ring, wheel, pen, loops, loop, middle):
+    areas = sorted(f.mass for f in spirograph(ring, wheel, pen).Shape().faces)
+    assert len(areas) == loops + 1
+    assert areas[:loops] == pytest.approx([loop] * loops, abs=0.01) and areas[-1] == pytest.approx(middle, abs=0.01)

@@ -6,6 +6,7 @@ import math
 import pytest
 
 import planex as px
+from helpers import stub_webgui
 
 pytestmark = pytest.mark.constraints
 
@@ -143,5 +144,5 @@ def test_writers_and_conversions(tmp_path, monkeypatch):
     sk.WriteDXF(tmp_path / "p.dxf")
     assert all((tmp_path / n).stat().st_size > 0 for n in ("p.step", "p.brep", "p.dxf"))
     assert sk.ToShapely().area == pytest.approx(8)
-    monkeypatch.setattr("netgen.webgui.Draw", lambda obj, **kwargs: obj)
+    stub_webgui(monkeypatch, lambda obj, **kwargs: obj)
     assert len(sk.Plot3d(backend="webgui").edges) == 4

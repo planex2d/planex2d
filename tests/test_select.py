@@ -68,7 +68,9 @@ def test_constraint_sketch_elements_and_shape_faces():
     sk.Move((0, 0)).Rectangle(4, 2)
     assert sk("hole").ids == ["bracket.hole"]
     assert sk(kind="circle").ids == ["bracket.hole"]
-    assert sk(near=(1, 1.1)).ids == ["bracket.hole"]
+    # near= measures to the element itself: the hole's center point is nearer than the hole
+    assert sk(near=(1, 1.1)).ids == ["bracket.Center.1"]
+    assert sk(kind="circle", near=(1, 1.1)).ids == ["bracket.hole"] and sk(near=(1, 1.25)).ids == ["bracket.hole"]
     assert sk("hole").center == pytest.approx((1, 1, 0))
     g = px.Glue([px.QuickSketch().Rectangle(1, 1).Face(), px.QuickSketch().Move((1, 0)).Rectangle(1, 1).Face()])
     right = g.faces[px.x > 1]
@@ -170,3 +172,10 @@ def test_a_wire_to_a_polyline_and_back():
     back = px.FromPolyline(points, closed=True)
     assert back.Face().mass == pytest.approx(np.pi, rel=1e-2)
     assert (w.Polylines(1e-3)[0] == points).all()
+
+
+def test_near_measures_the_distance_to_the_element_itself():
+    half = px.QuickSketch((0, -600)).Arc(600, 180).Close().Face()
+    assert isinstance(half.edges(near=(0, 0))[0].edge, px.LineEdge)
+    assert isinstance(half.edges(near=(200, 0))[0].edge, px.LineEdge)
+    assert isinstance(half.edges(near=(500, 0))[0].edge, px.ArcEdge)
