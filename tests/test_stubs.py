@@ -4,6 +4,7 @@
 """The type stub of the compiled module ships with the package and is the one tools/stubgen.py writes from the
 docstrings now."""
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,8 @@ def test_the_package_ships_the_stub():
 
 
 @pytest.mark.occ
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.11 drops the docstrings of pybind11's static properties, "
+                    "so stubgen cannot read the types of px.config's settings")
 def test_the_stub_is_current():
     spec = importlib.util.spec_from_file_location("stubgen", ROOT / "tools" / "stubgen.py")
     stubgen = importlib.util.module_from_spec(spec)
