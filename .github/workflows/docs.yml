@@ -1,19 +1,25 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Publishes the folder pages/ (the site root, which sends visitors on to the built documentation in pages/docs/) to
-# GitHub Pages on every push to main or master that changes it, and when run by hand. The documentation is built
-# elsewhere and copied into pages/docs/; this workflow only publishes the folder as it is.
+# Publishes the site (the root page, which sends visitors on to the built documentation under docs/) to GitHub Pages.
+# The site is not in this repository: it is the asset site.zip of a GitHub release, its files at the zip's root
+# (index.html, robots.txt, docs/...). This workflow runs when a release is published and when run by hand with a tag;
+# it downloads that release's site.zip, unpacks it and publishes the folder as it is. A docs update between releases
+# replaces the asset (gh release upload vX.Y.Z site.zip --clobber) and runs this workflow by hand with the tag.
 #
 # Once, before the first run: in this repository's settings, Pages > Build and deployment > Source: "GitHub Actions",
-# and the custom domain planex2d.org (with its DNS records). A CNAME file is not needed for a workflow deployment.
+# and the custom domain planex2d.org (with its DNS records). A release run deploys from its tag, so the environment
+# github-pages needs a deployment rule for tags (Settings > Environments > github-pages: Ref type Tag, pattern v*).
 name: docs
 
 on:
-  push:
-    branches: [main, master]
-    paths: ["pages/**"]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release whose site.zip to publish (vX.Y.Z)"
+        required: true
 
 permissions:
   contents: read
@@ -31,10 +37,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: The site from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern site.zip
+          mkdir site
+          unzip -q site.zip -d site
+          test -f site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: pages
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4
