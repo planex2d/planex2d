@@ -2,24 +2,34 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 # Publishes the site (the root page, which sends visitors on to the built documentation under docs/) to GitHub Pages.
-# The site is not in this repository: it is the asset site.zip of a GitHub release, its files at the zip's root
-# (index.html, robots.txt, docs/...). This workflow runs when a release is published and when run by hand with a tag;
-# it downloads that release's site.zip, unpacks it and publishes the folder as it is. A docs update between releases
-# replaces the asset (gh release upload vX.Y.Z site.zip --clobber) and runs this workflow by hand with the tag.
+# The site is not in this repository: it is the one .zip asset of a v* release of the documentation repository
+# planex2d/docs, so the docs can be updated between code releases. The zip holds the site's files (index.html,
+# robots.txt, docs/...) at its root, as the export's site.zip does, or in one folder, as Finder's Compress on the pages
+# folder makes it (pages.zip; its __MACOSX folder and .DS_Store files are dropped). This workflow downloads that zip,
+# unpacks it and publishes the folder with index.html as it is: the newest v* release of planex2d/docs, or the one
+# given by hand. It runs by hand, when planex2d/docs announces a release
+# (repository_dispatch, event type docs-release, client_payload.tag), and when a code release is published.
 #
-# Once, before the first run: in this repository's settings, Pages > Build and deployment > Source: "GitHub Actions",
-# and the custom domain planex2d.org (with its DNS records). A release run deploys from its tag, so the environment
-# github-pages needs a deployment rule for tags (Settings > Environments > github-pages: Ref type Tag, pattern v*).
+# Once, before the first run:
+# - planex2d/docs is private, and this repository's own token cannot read it: a fine-grained personal access token,
+#   resource owner planex2d, repository access only planex2d/docs, permission Contents read-only, stored here as the
+#   environment secret DOCS_TOKEN of github-pages (Settings > Environments > github-pages); the organization must allow
+#   fine-grained tokens.
+# - Pages > Build and deployment > Source: "GitHub Actions", and the custom domain planex2d.org (with its DNS records).
+# - The environment github-pages deploys from the default branch (runs by hand and from planex2d/docs) and from v* tags
+#   (code releases): Settings > Environments > github-pages, deployment branches and tags: master and tag pattern v*.
 name: docs
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "The release whose site.zip to publish (vX.Y.Z)"
-        required: true
+        description: "The planex2d/docs release whose site.zip to publish (vX.Y.Z); empty: the newest v* release"
+        required: false
+  repository_dispatch:
+    types: [docs-release]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -38,14 +48,38 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/configure-pages@v5
-      - name: The site from the release
+      - name: The site from the docs release
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          GH_TOKEN: ${{ secrets.DOCS_TOKEN }}
+          DOCS: planex2d/docs
+          TAG: ${{ inputs.tag || github.event.client_payload.tag }}
         run: |
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern site.zip
-          mkdir site
-          unzip -q site.zip -d site
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release list --repo "$DOCS" --exclude-drafts --exclude-pre-releases --limit 100 \
+                    --json tagName --jq '[.[].tagName | select(startswith("v"))][0] // ""')
+          fi
+          case "$TAG" in
+            v*) echo "publishing the site of $DOCS $TAG" ;;
+            *) echo "no v* release of $DOCS to publish (tag: '$TAG')"; exit 1 ;;
+          esac
+          gh release download "$TAG" --repo "$DOCS" --pattern '*.zip' --dir download
+          zips=(download/*.zip)
+          if [ "${#zips[@]}" -ne 1 ]; then
+            echo "the release $TAG needs exactly one .zip asset, it has ${#zips[@]}"; exit 1
+          fi
+          unzip -q "${zips[0]}" -d unpacked
+          rm -rf unpacked/__MACOSX
+          find unpacked -name .DS_Store -delete
+          # the files at the zip's root (the export's site.zip) or in its one folder (Finder's Compress on pages/)
+          if [ -f unpacked/index.html ]; then
+            mv unpacked site
+          else
+            tops=(unpacked/*/)
+            if [ "${#tops[@]}" -ne 1 ] || [ ! -f "${tops[0]}index.html" ]; then
+              echo "no index.html at the zip's root or in its one folder"; exit 1
+            fi
+            mv "${tops[0]}" site
+          fi
           test -f site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
