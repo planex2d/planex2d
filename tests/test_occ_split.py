@@ -97,6 +97,10 @@ except ImportError as e:
 """
 
 
+def test_the_module_carries_the_installed_version():
+    assert px._planex._version == px.__version__
+
+
 @pytest.mark.occ
 def test_the_occ_bindings_refuse_a_core_of_another_version_or_other_sources():
     version = px._planex._version

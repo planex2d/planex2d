@@ -17,9 +17,10 @@ endif()
 set(PLANEX_OCC AUTO CACHE STRING "the OCC bindings _planex_occ (needs netgen and OpenCASCADE): ON, OFF or AUTO")
 option(PLANEX_CORE "the core module _planex; off builds only the OCC bindings, as planex2d-occ does from this sdist" ON)
 set(PLANEX_OCC_DESTINATION planex CACHE STRING "where the OCC bindings are installed (planex2d-occ: one folder per netgen version)")
-# the planex2d version of these sources (planex2d-occ gives it): the OCC bindings refuse a core of another one
+# the planex2d version of these sources (planex2d-occ gives it): the OCC bindings refuse a core of another one; the
+# version as written (0.2.0.dev1), SKBUILD_PROJECT_VERSION has only its release numbers (0.2.0)
 if(NOT DEFINED PLANEX_VERSION)
-    set(PLANEX_VERSION "${SKBUILD_PROJECT_VERSION}")
+    set(PLANEX_VERSION "${SKBUILD_PROJECT_VERSION_FULL}")
 endif()
 set(PLANEX_CORE_PYBIND11_INTERNALS "" CACHE STRING
     "tests: the core's pybind11 registry version (13: another registry than netgen's, as when netgen moves to another pybind11)")
