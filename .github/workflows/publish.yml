@@ -143,18 +143,20 @@ jobs:
   # the wheels, built from the sdist by cibuildwheel without the OCC bindings (planex2d-occ brings them for the
   # installed netgen) and each tested with the sdist's suite, whose tests that need netgen or an optional package skip:
   # Linux x86_64 and aarch64 (manylinux_2_28), macOS universal2 for macOS 13.3 and newer (std::to_chars; Xcode 16 for
-  # C++20), Python 3.11 to 3.14. Windows waits for the MSVC port of planex.
+  # C++20), Python 3.11 to 3.14, one job per platform and Python so that they run side by side. Windows waits for the
+  # MSVC port of planex.
   wheels:
     needs: sdist
     strategy:
       fail-fast: false
       matrix:
-        include:
+        platform:
           - {runner: ubuntu-latest, arch: x86_64}
           - {runner: ubuntu-24.04-arm, arch: aarch64}
           - {runner: macos-15, arch: universal2}
-    runs-on: ${{ matrix.runner }}
-    name: wheels (${{ matrix.arch }})
+        python: [cp311, cp312, cp313, cp314]
+    runs-on: ${{ matrix.platform.runner }}
+    name: wheels (${{ matrix.platform.arch }}, ${{ matrix.python }})
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -165,9 +167,9 @@ jobs:
           python-version: "3.13"
       - name: Build and test the wheels
         env:
-          CIBW_BUILD: "cp311-* cp312-* cp313-* cp314-*"
+          CIBW_BUILD: "${{ matrix.python }}-*"
           CIBW_SKIP: "*-musllinux_*"
-          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_ARCHS: ${{ matrix.platform.arch }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           CIBW_CONFIG_SETTINGS: cmake.define.PLANEX_OCC=OFF
@@ -179,7 +181,7 @@ jobs:
           python -m cibuildwheel dist/*.tar.gz --output-dir wheelhouse
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.arch }}
+          name: wheels-${{ matrix.platform.arch }}-${{ matrix.python }}
           path: wheelhouse/*.whl
 
   testpypi:
