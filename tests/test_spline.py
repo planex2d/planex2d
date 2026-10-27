@@ -15,7 +15,7 @@ def outline(lib):
         return lib.WorkPlane().MoveTo(0, 0).LineTo(4, 0).LineTo(4, 1).Spline(POINTS).Close()
     # netgen's curve exactly: OCC's interpolation through the pen's point and POINTS, as one spline edge
     w = px.Line((0, 0), (4, 0))
-    for e in (px.Line((4, 0), (4, 1)), px.Spline([(4, 1), *POINTS], style="occ"), px.Line(POINTS[-1], (0, 0))):
+    for e in (px.Line((4, 0), (4, 1)), px.Spline([(4, 1), *POINTS], style="clamped"), px.Line(POINTS[-1], (0, 0))):
         w.Add(e)
     return w
 
@@ -58,9 +58,9 @@ def test_spline_ending_at_the_start_closes_the_wire():
 PERIODIC = [(1, 0), (0, 1), (-1, 0), (0, -1)]
 
 
-def test_periodic_spline_is_split_into_two_pieces():
+def test_periodic_spline_is_one_closed_edge_and_two_in_occ():
     p = px.QuickSketch().Spline(PERIODIC, periodic=True, start_from_localpos=False).Face()
-    assert len(p.splines) == 2
+    assert len(p.splines) == 1 and len(p.ToOCCFace().edges) == 2
     assert polygon_area(p) > 0
 
 
@@ -111,21 +111,20 @@ def test_exported_spline_pieces_follow_the_original_curve():
     assert polygon_area(P + P * R) == pytest.approx(P_AREA, rel=1e-6)
 
 
-def test_spline_offset_consists_of_lines_and_arcs():
+# a spline's offset is one spline per side, no longer arcs and lines from its approximation
+def test_spline_offset_is_one_spline_per_side():
     trace = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire().Offset(0.1)
-    assert trace.splines == []
-    assert any(a.from_spline for a in trace.arcs)
+    assert len(trace.splines) == 2
+    assert not any(e.from_spline for e in trace.lines + trace.arcs)
     plain, fitted = trace.ToOCCFace(), trace.ToOCCFace(fit_splines=True)
-    assert len(fitted.edges) < len(plain.edges)
     assert area(fitted) == pytest.approx(area(plain), rel=1e-4)
 
 
-def test_remove_small_edges_keeps_the_edges_of_a_spline():
+def test_remove_small_edges_keeps_the_offset_splines():
     trace = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire().Offset(0.1)
-    n = sum(e.from_spline for e in trace.lines + trace.arcs)
+    n = len(trace.splines)
     trace.RemoveSmallEdges(10)
-    assert all(e.from_spline for e in trace.lines + trace.arcs)
-    assert sum(e.from_spline for e in trace.lines + trace.arcs) == n
+    assert len(trace.splines) == n
 
 
 def test_nearly_straight_splines_are_approximated_by_lines_not_far_centered_arcs():
@@ -141,7 +140,9 @@ def test_nearly_straight_splines_are_approximated_by_lines_not_far_centered_arcs
     assert len(s.Intersections(tiny)) == 1
 
 
-@pytest.mark.parametrize("half_width", [10, 1e3, 1e6])
+# the crossing of an axis-parallel line with an arc is exact at the arc's scale, whatever the line's length (the widths
+# fall in different binades)
+@pytest.mark.parametrize("half_width", [10, 1e3, 1e6, 3e6, 7.7e6, 1.3e8])
 def test_split_points_found_against_a_much_longer_edge(half_width):
     # the cut locates the crossings with the tolerance of the long edge; the spline must accept them
     r = P * rect(-half_width, 1.8, 2 * half_width, 0.1)

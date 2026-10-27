@@ -38,7 +38,7 @@ def test_arc_offset_area():
 
 
 def test_circle_offset_is_a_ring():
-    p = px.QuickSketch().Circle(0, 0, 2).Wire().Offset(0.5)
+    p = px.QuickSketch().Circle((0, 0), 2).Wire().Offset(0.5)
     face = p.ToOCCFace()
     assert len(face.faces) == 1
     assert len(face.wires) == 2
@@ -46,7 +46,7 @@ def test_circle_offset_is_a_ring():
 
 
 def test_offset_of_one_chain():
-    p = px.Move((0, 0)).Line(1).Finish().Move((5, 5)).Line(2, id="b").Edge("b").Offset(0.1)
+    p = px.Move((0, 0)).Line(1).Finish().Move((5, 5)).Line(2, id="b").Wire("b").Offset(0.1)
     assert polygon_area(p) == pytest.approx(stadium_area(2, 0.1))
 
 
@@ -154,7 +154,7 @@ def test_face_offsets_add_or_take_away_the_band_of_the_boundary():
 
 
 def test_a_hole_smaller_than_the_offset_closes():
-    holed = px.QuickSketch((-2, -2)).Rectangle(4, 4).Face() - px.QuickSketch().Circle(0, 0, 0.5).Face()
+    holed = px.QuickSketch((-2, -2)).Rectangle(4, 4).Face() - px.QuickSketch().Circle((0, 0), 0.5).Face()
     grown = holed.Offset(1)
     assert len(grown.faces) == 1 and len(grown.faces[0].inner) == 0
     assert grown.mass == pytest.approx(16 + 16 + math.pi, rel=1e-12)

@@ -9,6 +9,8 @@ import os
 import re
 from pathlib import Path
 
+import pytest
+
 import planex as px
 
 DATA = Path(__file__).parent / "data" / "public_api.json"
@@ -56,6 +58,7 @@ def _api():
     return api
 
 
+@pytest.mark.occ
 def test_the_public_api_is_the_frozen_one():
     api = _api()
     if os.environ.get("PLANEX_WRITE_API"):

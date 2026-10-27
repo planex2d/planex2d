@@ -20,7 +20,7 @@ def plate():
     sk.Constrain("fillet", px.Radius, 1, id="r")
     sk.Constrain("bottom.start", "right", px.Distance, 5, id="width")
     sk.Constrain("bottom", "top", px.Distance, 3, id="height")
-    sk.Circle(2, 1.5, 0.5, px.Fix, id="hole")
+    sk.Circle((2, 1.5), 0.5, px.Fix, id="hole")
     return sk
 
 
@@ -63,10 +63,11 @@ def test_ends_and_directions():
 
 
 def test_plotly_signs_keep_their_size_on_screen():
+    pytest.importorskip("plotly")
     sk = plate()
     fig = sk.Plot(show_constraints=True, show_ends=True, show_direction=True, backend="plotly")
     texts = [a.text for a in fig.layout.annotations]
-    assert "<b>width = 5</b>" in texts and "<b>H</b>" in texts
+    assert "width = 5" in texts and "<b>H</b>" in texts
     assert all(s.xsizemode == "pixel" and s.ysizemode == "pixel" for s in fig.layout.shapes)
     ends = [s for s in fig.layout.shapes if s.line.width == 3]
     assert len(ends) == 10
@@ -81,6 +82,7 @@ def test_plotly_signs_keep_their_size_on_screen():
 
 def test_matplotlib_draws_the_same_signs_at_a_fixed_size_on_screen():
     matplotlib = pytest.importorskip("matplotlib")
+    pytest.importorskip("plotly")
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
@@ -89,7 +91,7 @@ def test_matplotlib_draws_the_same_signs_at_a_fixed_size_on_screen():
     ax = sk.Plot(show_constraints=True, show_ends=True, show_direction=True)
     fig = sk.Plot(show_constraints=True, show_ends=True, show_direction=True, backend="plotly")
     texts = sorted(t.get_text() for t in ax.texts)
-    assert texts == sorted(a.text[3:-4] for a in fig.layout.annotations if a.text != " ")
+    assert texts == sorted(re.sub("<[^>]+>", "", a.text) for a in fig.layout.annotations if a.text != " ")
     ends = [l for l in ax.lines if l.get_linewidth() == pytest.approx(3 * 72 / 96)]
     assert len(ends) == 10 and {l.get_color() for l in ends} == {"#1c7ed6", "#f08c00"}
     assert len(ax.patches) >= 5
@@ -105,6 +107,7 @@ def test_matplotlib_draws_the_same_signs_at_a_fixed_size_on_screen():
 
 
 def test_signs_of_redundant_constraints_are_pink_in_both_views():
+    pytest.importorskip("plotly")
     sk = plate()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -126,6 +129,7 @@ def test_the_coincidence_circle_sits_next_to_its_point():
 
 def test_show_parent_draws_the_solid_under_the_sketch_with_its_edge_names():
     occ = pytest.importorskip("netgen.occ")
+    pytest.importorskip("plotly")
     box = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(40, 20, 10)) - occ.Cylinder(occ.Pnt(30, 10, -1), occ.Z, r=4, h=12)
     top = box.faces.Max(occ.Z)
     for k, e in enumerate(top.edges):

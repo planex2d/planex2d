@@ -70,38 +70,38 @@ def unit(t):
 
 
 @pytest.mark.parametrize("pts, periodic, tangents", CASES, ids=IDS)
-def test_occ_style_is_netgens_spline(pts, periodic, tangents):
+def test_clamped_style_is_netgens_spline(pts, periodic, tangents):
     curve = netgen(pts, periodic, tangents)
     end = chord(pts, periodic)
-    ours = [px._planex._InterpolatedAt(pts, tangents, periodic, end * k / 200, 0, style="occ") for k in range(201)]
+    ours = [px._planex._InterpolatedAt(pts, tangents, periodic, end * k / 200, 0, style="clamped") for k in range(201)]
     assert max(math.dist(p, (q.x, q.y)) for p, q in zip(ours, (curve.Value(end * k / 200) for k in range(201)))) < TOL
-    assert from_netgen(px.Spline(pts, periodic=periodic, tangents=tangents, style="occ"), curve) < TOL
+    assert from_netgen(px.Spline(pts, periodic=periodic, tangents=tangents, style="clamped"), curve) < TOL
 
 
 @pytest.mark.parametrize("pts, periodic, tangents", CASES, ids=IDS)
-def test_occ_style_in_a_sketch_is_netgens_spline(pts, periodic, tangents):
+def test_clamped_style_in_a_sketch_is_netgens_spline(pts, periodic, tangents):
     # a sketch keeps tangent directions: two points with one tangent take its unit vector for the other end too
     sketched = {k: unit(t) for k, t in tangents.items()} if len(pts) == 2 and len(tangents) == 1 else tangents
     sk = px.QuickSketch()
-    sk.Spline(pts, periodic=periodic, tangents=tangents, start_from_localpos=False, style="occ")
-    assert sk.Geometry("Spline.1")["style"] == "occ"
-    assert from_netgen(sk.Edge("Spline.1"), netgen(pts, periodic, sketched)) < TOL
+    sk.Spline(pts, periodic=periodic, tangents=tangents, start_from_localpos=False, style="clamped")
+    assert sk.Geometry("Spline.1")["style"] == "clamped"
+    assert from_netgen(sk.Wire("Spline.1"), netgen(pts, periodic, sketched)) < TOL
 
 
-def test_px_style_is_planexs_own():
-    w = px.Spline(P5, style="px")
-    assert from_netgen(px.Spline(P4, style="px"), netgen(P4, False, {})) < TOL
+def test_averaged_style_is_planexs_own():
+    w = px.Spline(P5, style="averaged")
+    assert from_netgen(px.Spline(P4, style="averaged"), netgen(P4, False, {})) < TOL
     assert from_netgen(w, netgen(P5, False, {})) > 1e-3
     assert w.mass == px.Spline(P5).mass
     sk = px.QuickSketch()
     sk.Spline(P5, start_from_localpos=False)
-    assert sk.Geometry("Spline.1")["style"] == "px"
-    assert from_netgen(sk.Edge("Spline.1"), netgen(P5, False, {})) > 1e-3
+    assert sk.Geometry("Spline.1")["style"] == "averaged"
+    assert from_netgen(sk.Wire("Spline.1"), netgen(P5, False, {})) > 1e-3
 
 
 @pytest.mark.parametrize("pts", [C4, C5, C7], ids=["4 points", "5 points", "7 points"])
 @pytest.mark.constraints
-def test_px_periodic_is_the_c2_periodic_cubic_from_every_start(pts):
+def test_averaged_periodic_is_the_c2_periodic_cubic_from_every_start(pts):
     areas = []
     for k in range(len(pts)):
         turned = pts[k:] + pts[:k]
@@ -115,7 +115,7 @@ def test_px_periodic_is_the_c2_periodic_cubic_from_every_start(pts):
         assert areas[0] == pytest.approx(61 / 20, rel=TOL)
 
 
-def test_px_periodic_spline_and_sketch_spline_are_one_curve():
+def test_averaged_periodic_spline_and_sketch_spline_are_one_curve():
     end = chord(C5, True)
     w = px.Spline(C5, periodic=True)
     for e in w.ToOCCWire().edges:
@@ -128,38 +128,52 @@ def test_px_periodic_spline_and_sketch_spline_are_one_curve():
 
 
 def test_config_spline_style(style):
-    assert px.config.spline_style == "px"
-    px.config.spline_style = "occ"
-    assert px.config.spline_style == "occ"
+    assert px.config.spline_style == "averaged"
+    px.config.spline_style = "clamped"
+    assert px.config.spline_style == "clamped"
     assert from_netgen(px.Spline(P5), netgen(P5, False, {})) < TOL
     sk = px.QuickSketch()
     sk.Spline(P5, start_from_localpos=False)
-    assert sk.Geometry("Spline.1")["style"] == "occ"
-    sk.Spline([(5, 1), (6, 2)], style="px")
-    assert sk.Geometry("Spline.2")["style"] == "px"
+    assert sk.Geometry("Spline.1")["style"] == "clamped"
+    sk.Spline([(5, 1), (6, 2)], style="averaged")
+    assert sk.Geometry("Spline.2")["style"] == "averaged"
     for wrong in ("OCC", "netgen", 1, None):
-        with pytest.raises(ValueError, match="'px' or 'occ'"):
+        with pytest.raises(ValueError, match="'averaged' or 'clamped'"):
             px.config.spline_style = wrong
-    assert px.config.spline_style == "occ"
-    with pytest.raises(ValueError, match=r"Spline: style 'b'; it is 'px' or 'occ'"):
+    assert px.config.spline_style == "clamped"
+    with pytest.raises(ValueError, match=r"Spline: style 'b'; it is 'averaged' or 'clamped'"):
         px.Spline(P3, style="b")
-    with pytest.raises(ValueError, match="'px' or 'occ'"):
+    with pytest.raises(ValueError, match="'averaged' or 'clamped'"):
         px.QuickSketch().Spline(P3, style="b")
 
 
+@pytest.mark.parametrize("old, new", [("px", "averaged"), ("occ", "clamped")])
+def test_the_old_style_names_raise_naming_the_new(style, old, new):
+    message = rf"style '{old}' is now '{new}'"
+    with pytest.raises(ValueError, match=r"^Spline: " + message):
+        px.Spline(P3, style=old)
+    with pytest.raises(ValueError, match=message):
+        px.QuickSketch().Spline(P3, style=old)
+    with pytest.raises(ValueError, match=message):
+        px.Sketch().Spline(P3, style=old)
+    with pytest.raises(ValueError, match=r"^config.spline_style: " + message):
+        px.config.spline_style = old
+    assert px.config.spline_style == "averaged"
+
+
 @pytest.mark.constraints
-def test_an_occ_spline_with_tangents_warns_in_a_sketch_with_constraints():
+def test_a_clamped_spline_with_tangents_warns_in_a_sketch_with_constraints():
     sk = px.Sketch()
-    with pytest.warns(px.PlanexWarning, match=r"Spline.1: style 'occ' with given tangents is not smooth for the "):
-        sk.Move((0, 0)).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, style="occ")
+    with pytest.warns(px.PlanexWarning, match=r"Spline.1: style 'clamped' with given tangents is not smooth for "):
+        sk.Move((0, 0)).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, style="clamped")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        sk.Move((0, 2)).Spline([(1, 3), (2, 2), (3, 3)], style="occ")
+        sk.Move((0, 2)).Spline([(1, 3), (2, 2), (3, 3)], style="clamped")
         sk.Move((0, 4)).Spline([(1, 5), (2, 4), (3, 5)], tangents={0: (1, 0)})
-        px.QuickSketch().Move((0, 0)).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, style="occ")
+        px.QuickSketch().Move((0, 0)).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, style="clamped")
 
 
-@pytest.mark.parametrize("style_", ["px", "occ"])
+@pytest.mark.parametrize("style_", ["averaged", "clamped"])
 @pytest.mark.constraints
 def test_constraints_move_a_spline_with_tangents_in_either_style(style_):
     sk = px.Sketch()

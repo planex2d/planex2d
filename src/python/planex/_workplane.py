@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 import math
-import warnings
 from typing import Any
 
 from . import _planex
+from ._caller import warn
 
 # netgen's: an end this close to the start closes the wire, a line shorter than this is not drawn
 CLOSE = 1e-10
@@ -44,12 +44,6 @@ class WorkPlane:
         pos: netgen's gp_Ax2d: the start position and direction of the cursor; default (0, 0), direction (1, 0).
         copy: True copies the geometry of axes in (OCC: projected); each copied wire is a finished wire of the
             WorkPlane, so Face() and Wires() take it.
-
-    Attributes:
-        cur_loc: the cursor's position, a px.Vertex.
-        cur_dir: the cursor's direction, a px.Vertex.
-        start_pnt: where the wire started, the point Close() goes back to, a px.Vertex.
-        sketch: the px.QuickSketch drawn on.
 
     Raises:
         TypeError: wrong arguments in a call (the message names the call).
@@ -302,7 +296,7 @@ class WorkPlane:
         self._meet("Spline", first, end)
         before = self._begin(first)
         self._sketch.Spline(pts, periodic=periodic, tangents={k: _xy(t) for k, t in (tangents or {}).items()},
-                            start_from_localpos=start_from_localpos, style="occ", tol=tol, **_named(name))
+                            start_from_localpos=start_from_localpos, style="clamped", tol=tol, **_named(name))
         self._loc = end
         self.Rotate(_angle(self._dir, tuple(self._sketch.pen.direction)) * 180 / math.pi)
         return self._drawn(before, closing, first, end)
@@ -323,7 +317,7 @@ class WorkPlane:
         return self
 
     def RectangleC(self, l: float, w: float, name: str | None = None) -> WorkPlane:
-        """Draws a rectangle centred on the cursor's position, l along the direction.
+        """Draws a rectangle centered on the cursor's position, l along the direction.
 
         Args:
             l: the length along the direction.
@@ -355,7 +349,7 @@ class WorkPlane:
             raise TypeError("Circle() takes (r) or (h, v, r), %d arguments given" % len(args))
         h, v, r = (*self._loc, args[0]) if len(args) == 1 else args
         self._require_no_open_wire("Circle")
-        self._sketch.Circle(h, v, r)
+        self._sketch.Circle((h, v), r)
         self._wires.append(self._sketch._Wire([self._sketch._LastId()]))
         return self
 
@@ -381,7 +375,7 @@ class WorkPlane:
         points = [(loc[0] + major * math.cos(a) * along[0] + minor * math.sin(a) * across[0],
                    loc[1] + major * math.cos(a) * along[1] + minor * math.sin(a) * across[1]) for a in angles]
         self._begin(points[0])
-        self._sketch.Spline(points, periodic=True, start_from_localpos=False, style="px")
+        self._sketch.Spline(points, periodic=True, start_from_localpos=False, style="averaged")
         self._wires.append(self._sketch._Wire([self._sketch._LastId()]))
         self._break_chain()
         return self
@@ -592,9 +586,9 @@ class WorkPlane:
         crossing = {k for k in range(n) for j in range(n)
                     if j != k and _partly_inside(wires[k], solo[j]) and not _inside(wires[k], solo[j])}
         if crossing:
-            warnings.warn("WorkPlane.Face(): wires %s cross. planex takes the region of all drawn edges (even-odd), so "
+            warn("WorkPlane.Face(): wires %s cross. planex takes the region of all drawn edges (even-odd), so "
                           "where they overlap is a hole; for the union use px.Unify of their faces."
-                          % ", ".join(str(k + 1) for k in sorted(crossing)), _planex.PlanexWarning, stacklevel=3)
+                          % ", ".join(str(k + 1) for k in sorted(crossing)), _planex.PlanexWarning)
         around = [[j for j in range(n) if j != k and _inside(wires[k], solo[j])] for k in range(n)]
         for k in range(n):
             if k in crossing:
@@ -612,14 +606,14 @@ class WorkPlane:
         if as_drawn:
             return
         if outer is not None:
-            warnings.warn("WorkPlane.Face(): wire %d lies inside wire %d and is taken as a hole. planex finds holes by "
+            warn("WorkPlane.Face(): wire %d lies inside wire %d and is taken as a hole. planex finds holes by "
                           "nesting, so Reverse() is not needed; the face is the one netgen returns when the hole is "
                           "reversed. A face cannot lie inside another face: to keep the inner region as a face of its "
-                          "own, use px.Glue([outer, inner])." % (k + 1, outer + 1), _planex.PlanexWarning, stacklevel=4)
+                          "own, use px.Glue([outer, inner])." % (k + 1, outer + 1), _planex.PlanexWarning)
         else:
-            warnings.warn("WorkPlane.Face(): wire %d runs clockwise and is taken as an outer wire. planex finds holes by "
+            warn("WorkPlane.Face(): wire %d runs clockwise and is taken as an outer wire. planex finds holes by "
                           "nesting, so Reverse() is not needed; the face is the one netgen returns when the wire is not "
-                          "reversed." % (k + 1), _planex.PlanexWarning, stacklevel=4)
+                          "reversed." % (k + 1), _planex.PlanexWarning)
 
     def _reversed(self, wire: _planex.Wire) -> _planex.Wire:
         return _planex.Wire([self._reversed_edge(e) for e in reversed(list(wire.edges))])

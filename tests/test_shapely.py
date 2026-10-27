@@ -20,7 +20,7 @@ def test_to_shapely_faces_with_holes_and_sampled_arcs():
     assert g.area == pytest.approx(8)
     two = square(0, 0) + square(5, 0)
     assert two.ToShapely().geom_type == "MultiPolygon"
-    disc = px.QuickSketch().Circle(0, 0, 1).Face()
+    disc = px.QuickSketch().Circle((0, 0), 1).Face()
     assert disc.ToShapely(tol=1e-4).area == pytest.approx(math.pi, abs=1e-3)
     assert disc.ToShapely(tol=1e-6).area == pytest.approx(math.pi, abs=1e-5)
 

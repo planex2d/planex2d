@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "constraint_sketch/copyrecords.hpp"
+#include "constraint_sketch/freemotions.hpp"
 #include "constraint_sketch/pending.hpp"
 #include "constraint_sketch/reports.hpp"
 #include "constraint_sketch/system.hpp"
@@ -32,20 +33,24 @@
 #include "sketch/cornerparts.hpp"
 #include "sketch/guards.hpp"
 #include "sketch/offsetsides.hpp"
+#include "sketch/relationfinder.hpp"
 #include "sketch/sketch.hpp"
 
 namespace planex2d {
 
     // the sketch with constraints: the drawing is the starting guess, the constraints move it as little as they need to
     class ConstraintSketch : public BasicSketch<cs::System> {
+        friend class SketchWriter;
+        friend class SketchReader;
+
     public:
         explicit ConstraintSketch(const AxisSystem &a = AxisSystem()) : BasicSketch(a) {}
-        // the constraint sketch of a QuickSketch: its elements, no constraints; with autoConstraint what its points show
-        // (JoinRelations)
-        ConstraintSketch(const Sketch &quick, bool autoConstraint) : BasicSketch(quick) {
+        // the constraint sketch of a QuickSketch: its elements, no constraints; with autoConstraint the relations its
+        // geometry shows
+        ConstraintSketch(const Sketch &quick, const std::optional<AutoConstraint> &autoConstraint) : BasicSketch(quick) {
             this->autoConstraint = autoConstraint;
             if (autoConstraint)
-                Atomic([&] { JoinRelations(); });
+                AddRelations(AutoRelations(*autoConstraint, std::vector<char>(s.elements.size(), 1)));
         }
         using BasicSketch::Mirror;
 
@@ -93,9 +98,12 @@ namespace planex2d {
         ConstraintSketch &Remove(const std::string &id) { return Remove(id, "Remove('" + id + "')"); }
         // call names it in the warnings about the expressions that go with what it removes
         ConstraintSketch &Remove(const std::string &id, const std::string &call) {
-            const std::map<size_t, std::string> held = ValueHolders();
-            RemoveOne(id);
-            Prune(call, held);
+            // a dimension a curve uses raises when it would go (DropConstraint): nothing changes then
+            sketch::Undoable(*this, [&] {
+                const std::map<size_t, std::string> held = ValueHolders();
+                RemoveOne(id);
+                Prune(call, held);
+            });
             return *this;
         }
 
@@ -141,24 +149,37 @@ namespace planex2d {
         // step is a dimension (pattern.angle or pattern.spacing), arc and circle copies by equal radius too, and its
         // count (pattern.count) can change; equal: a circular pattern over the full turn, which a new count spreads anew
         ConstraintSketch &AddPattern(const std::vector<std::string> &ids, const std::string &ref, size_t count, double step, bool linear,
-                                     bool keep, bool internal, const std::optional<std::string> &id, bool equal = false) {
+                                     bool keep, bool internal, const std::optional<std::string> &id, bool equal = false,
+                                     const std::optional<sketch::PatternDir2> &second = std::nullopt) {
             if (!keep) {
-                BasicSketch::AddPattern(ids, ref, count, step, linear, keep, internal, id, equal);
+                BasicSketch::AddPattern(ids, ref, count, step, linear, keep, internal, id, equal, second);
                 return *this;
             }
             const std::string call = linear ? "LinearPattern" : "CircularPattern";
-            CheckPattern(call, count, step);
+            CheckPattern(call, count, step, second);
             Atomic([&] {
                 const sketch::Ref r = PatternRef(call, ref, linear);
                 const std::vector<size_t> originals = Originals(ids, call);
                 cs::PatternInfo info{{}, ref, linear, equal && !linear, 0, {}, {}, ids, internal};
                 for (size_t e : originals)
                     info.originals.push_back(elementIds[e]);
-                AddElement(s.AddPattern(linear ? step : Radians(step), linear), call, {id, {}, true});
+                if (second) {
+                    PatternRef(call, second->ref, true);
+                    info.ref2 = second->ref;
+                    info.count = count;
+                    info.count2 = second->count;
+                }
+                AddElement(s.AddPattern(linear ? step : Radians(step), linear, second ? std::optional(second->step) : std::nullopt), call,
+                           {id, {}, true});
                 const size_t pattern = s.elements.size() - 1;
                 AddConstraint({linear ? sketch::Kind::Distance : sketch::Kind::Angle, {{pattern}}, step}, elementIds.back() + (linear ? ".spacing" : ".angle"));
-                for (size_t k = 1; k < count; ++k)
-                    PlaceTiedCopy(originals, r, linear, step, k, pattern, info);
+                if (second) {
+                    cs::Constraint c{sketch::Kind::Distance, {{pattern}}, second->step};
+                    c.variant2 = 2;
+                    AddConstraint(c, elementIds.back() + ".spacing2");
+                }
+                for (const auto &[k, j] : PatternSteps(count, second ? second->count : 0))
+                    PlaceTiedCopy(originals, r, linear, step, k, pattern, info, j);
                 patterns[elementIds[pattern]] = std::move(info);
                 groups.push_back({call, elementIds[pattern]});
             });
@@ -191,13 +212,19 @@ namespace planex2d {
         // ends and the dimension Fillet.k.r, a line by its ends on the two elements and the dimensions Chamfer.k.d and
         // Chamfer.k.d2 or Chamfer.k.angle, measured from the sharp corner, and Chamfer.k.reverse. The constraints on the
         // ends of the elements cut follow as with Trim; where nothing can be solved it raises and changes nothing
-        ConstraintSketch &Fillet(const std::vector<Vertex> &at, double r, const std::vector<std::string> &ids,
+        ConstraintSketch &Fillet(const std::vector<Vertex> &at, double r, bool curvature, const std::vector<std::string> &ids,
                                  const std::vector<Properties> &given) override {
-            return Cornered("Fillet", [&] { BasicSketch::Fillet(at, r, ids, given); });
+            return Cornered("Fillet", [&] { BasicSketch::Fillet(at, r, curvature, ids, given); });
         }
         ConstraintSketch &Chamfer(const std::vector<Vertex> &at, const ChamferRule &rule, const std::vector<std::string> &ids,
                                   const std::vector<Properties> &given) override {
             return Cornered("Chamfer", [&] { BasicSketch::Chamfer(at, rule, ids, given); });
+        }
+        // as BasicSketch.Connect: the blend follows the elements it joins, through their unknowns
+        ConstraintSketch &Connect(const std::string &a, const std::string &b, sketch::Kind continuity, bool reverse, const Options &opt) override {
+            BasicSketch::Connect(a, b, continuity, reverse, opt);
+            analysis.reset();
+            return *this;
         }
 
         // the mirrors, patterns and offsets whose copies of element e follow it, by their ids
@@ -322,6 +349,43 @@ namespace planex2d {
             });
             return *this;
         }
+        // the dimensions a curve's formula names (formula.ids): their constraints and values; each must drive
+        void CurveDimensions(sketch::CurveFormula &formula) {
+            Flush();
+            for (const std::string &id : formula.ids) {
+                const size_t k = DimensionAt(id);
+                if (s.constraints[k].reference)
+                    throw std::invalid_argument(formula.text + ": " + id + " is a reference dimension, it measures the solved geometry; a curve's "
+                                                "shape is known before each solve, from driving dimensions");
+                if (const std::optional<size_t> e = s.DriverOf(k))
+                    throw std::invalid_argument(formula.text + ": " + id + " is driven by " + constraintIds[*e] + " (" + s.constraints[*e].text +
+                                                "); a curve's shape is known before each solve, from driving dimensions");
+                formula.dimensions.push_back(k);
+                formula.used.push_back(s.constraints[k].value);
+            }
+        }
+        // the dimensions a curve's formula cannot use, each with why: references and the driven ones
+        std::vector<std::pair<std::string, std::string>> DrivenDimensions() const {
+            std::vector<std::pair<std::string, std::string>> out;
+            for (size_t k = 0; k < s.constraints.size(); ++k) {
+                if (!HasValue(s.constraints[k].kind))
+                    continue;
+                if (s.constraints[k].reference)
+                    out.push_back({constraintIds[k], "a reference dimension, it measures the solved geometry"});
+                else if (const std::optional<size_t> e = s.DriverOf(k))
+                    out.push_back({constraintIds[k], "driven by " + constraintIds[*e] + " (" + s.constraints[*e].text + ")"});
+            }
+            return out;
+        }
+        // the curve whose formula uses the dimension k, if any
+        std::optional<std::string> CurveUsing(size_t k) const {
+            for (size_t e = 0; e < s.elements.size(); ++e)
+                if (const sketch::Element &el = s.elements[e]; el.IsFitted(s))
+                    if (const std::optional<sketch::CurveFormula> &f = s.splines[el.SplineIndex()].fitted->formula;
+                        f && std::find(f->dimensions.begin(), f->dimensions.end(), k) != f->dimensions.end())
+                        return elementIds[e];
+            return std::nullopt;
+        }
         // the expression id goes; a dimension it drove keeps its value as its own
         ConstraintSketch &RemoveExpression(const std::string &id) {
             const auto it = byId.find(id);
@@ -338,89 +402,85 @@ namespace planex2d {
                 else
                     out.others.push_back({constraintIds[c], sketch::KindName(k)});
             }
-            for (const auto &[pattern, info] : patterns)
+            for (const auto &[pattern, info] : patterns) {
                 out.others.push_back({pattern + ".count", "count"});
+                if (info.IsGrid())
+                    out.others.push_back({pattern + ".count2", "count"});
+            }
             return out;
         }
 
-        // the relations a converted QuickSketch shows at its points: an arc tangent to the line or arc it shares an end with
-        // where it runs on smoothly, a full turn's pen point on its circle (tangent to what ends there), points apart at one
-        // place coincident
-        void JoinRelations() {
-            std::unordered_map<size_t, std::vector<size_t>> endingAt;
+        // the relations of o between the elements isNew marks (not projected ones) and the others, never with the origin
+        // or the axes; tol: an absolute length, none for rounding
+        std::vector<sketch::FoundRelation> AutoRelations(const AutoConstraint &o, std::vector<char> isNew, std::optional<double> tol = std::nullopt) const {
+            std::vector<char> skip(s.elements.size(), 0);
+            for (const char *id : {"origin", "H", "V"})
+                if (const auto at = byId.find(id); at != byId.end() && at->second.isElement)
+                    skip[at->second.index] = 1;
             for (size_t k = 0; k < s.elements.size(); ++k)
-                if (IsLineOrArc(k))
-                    for (size_t p : s.elements[k].Ends(s))
-                        endingAt[p].push_back(k);
-            std::set<std::pair<size_t, size_t>> tangent;
-            for (size_t k = 0; k < s.elements.size(); ++k) {
-                if (!IsLineOrArc(k))
-                    continue;
-                for (size_t p : s.elements[k].Ends(s))
-                    for (size_t j : endingAt[p])
-                        if (j > k && (IsArc(k) || IsArc(j)) && IsTangentAt(k, j, p) && tangent.insert({k, j}).second)
-                            Relate(sketch::Kind::Tangent, {{k}, {j}});
-            }
-            for (size_t k = 0; k < s.elements.size(); ++k) {
-                const sketch::Element &c = s.elements[k];
-                if (c.kind != sketch::ElementKind::Circle || c.OriginPoint() == sketch::none || !pointElementOf.contains(c.OriginPoint()))
-                    continue;
-                Relate(sketch::Kind::Coincident, {{pointElementOf.at(c.OriginPoint())}, {k}});
-                for (size_t j : endingAt[c.OriginPoint()])
-                    if (IsTangentAt(j, k, c.OriginPoint()))
-                        Relate(sketch::Kind::Tangent, {{j}, {k}});
-            }
-            CoincidentPoints();
+                if (isNew[k] && s.elements[k].IsHeld(s))
+                    isNew[k] = 0;
+            return sketch::RelationFinder(s, o, std::move(isNew), std::move(skip), tol).Find();
         }
-        bool IsLineOrArc(size_t k) const { return s.elements[k].kind == sketch::ElementKind::Line || IsArc(k); }
-        bool IsArc(size_t k) const { return s.elements[k].kind == sketch::ElementKind::Arc; }
-        bool IsTangentAt(size_t a, size_t b, size_t p) const {
-            const Vertex u = s.elements[a].DirectionAt(s, p), v = s.elements[b].DirectionAt(s, p);
-            return std::abs(Cross(u, v)) <= Tol(NormInf(s.Coords(p))) * (Norm(u) + Norm(v));
+        // relations found in bulk (copied or added geometry): added without a solve each, one solve, then the ones that
+        // follow from the others left out quietly
+        void AddRelations(const std::vector<sketch::FoundRelation> &found, const char *call = "auto_constraint") {
+            if (found.empty())
+                return;
+            Atomic([&] {
+                const std::set<std::string> have = ConstraintKeys();
+                for (const sketch::FoundRelation &r : found) {
+                    if (have.contains(KeyOf(r.kind, r.refs)))
+                        continue;
+                    const size_t k = s.Add({r.kind, r.refs});
+                    const std::string name = NewId(sketch::KindName(r.kind), std::nullopt);
+                    constraintIds.push_back(name);
+                    byId[name] = {false, k};
+                    impliedIds.insert(name);
+                }
+                analysis.reset();
+                if (!s.Solve().solved)
+                    throw std::invalid_argument(std::string(call) + ": the relations found have no solution");
+                DropRedundantImplied();
+            });
         }
-        // points of different elements at one place, not shared: each coincident with the first of them (by element order),
-        // the origin left out
-        void CoincidentPoints() {
-            const size_t origin = s.elements[byId.at("origin").index].Point();
-            std::vector<std::pair<size_t, sketch::Ref>> points;
-            std::set<size_t> seen{origin};
-            for (size_t k = 0; k < s.elements.size(); ++k) {
-                const sketch::Element &e = s.elements[k];
-                if (e.kind == sketch::ElementKind::Point && seen.insert(e.Point()).second)
-                    points.push_back({e.Point(), {k}});
-                else if (IsLineOrArc(k)) {
-                    const std::array<size_t, 2> ends = e.Ends(s);
-                    for (size_t end = 0; end < 2; ++end)
-                        if (seen.insert(ends[end]).second)
-                            points.push_back({ends[end], {k, end ? sketch::Part::End : sketch::Part::Start}});
-                }
+        // the elements from first on came in at once (Add): their relations in bulk, none found again when the call ends
+        void RelateAdded(size_t first) {
+            if (autoConstraint) {
+                std::vector<char> isNew(s.elements.size(), 0);
+                std::fill(isNew.begin() + (std::ptrdiff_t)std::min(first, isNew.size()), isNew.end(), 1);
+                AddRelations(AutoRelations(*autoConstraint, std::move(isNew)));
             }
-            std::vector<size_t> order(points.size());
-            for (size_t i = 0; i < order.size(); ++i)
-                order[i] = i;
-            const auto x = [&](size_t i) { return s.Coords(points[i].first).x; };
-            std::sort(order.begin(), order.end(), [&](size_t i, size_t j) { return x(i) < x(j); });
-            std::vector<size_t> first(points.size(), points.size());
-            for (size_t a = 0; a < order.size(); ++a) {
-                const Vertex p = s.Coords(points[order[a]].first);
-                const double tol = Tol(NormInf(p));
-                for (size_t b = a + 1; b < order.size() && x(order[b]) - p.x <= tol; ++b) {
-                    const size_t i = std::min(order[a], order[b]), j = std::max(order[a], order[b]);
-                    if (first[j] == points.size() && s.Coords(points[j].first).IsClose(s.Coords(points[i].first), tol))
-                        first[j] = first[i] == points.size() ? i : first[i];
-                }
-            }
-            for (size_t j = 0; j < points.size(); ++j)
-                if (first[j] != points.size())
-                    Relate(sketch::Kind::Coincident, {points[first[j]].second, points[j].second});
+            callElements = s.elements.size();
+            removedInCall = 0;
+            touched.clear();
+        }
+        // a constraint's kind and references in any order, to find the same relation again
+        static std::string KeyOf(sketch::Kind kind, std::vector<sketch::Ref> refs) {
+            std::sort(refs.begin(), refs.end(), [](const sketch::Ref &a, const sketch::Ref &b) {
+                return std::tie(a.element, a.part, a.index) < std::tie(b.element, b.part, b.index);
+            });
+            std::string key = std::to_string((int)kind);
+            for (const sketch::Ref &r : refs)
+                key += "," + std::to_string(r.element) + ":" + std::to_string((int)r.part) + ":" + std::to_string(r.index);
+            return key;
+        }
+        std::set<std::string> ConstraintKeys() const {
+            std::set<std::string> out;
+            for (const cs::Constraint &c : s.constraints)
+                out.insert(KeyOf(c.kind, c.refs));
+            return out;
         }
 
-        // a constraint the drawing helpers imply (auto_constraint): left out, with a warning, when it follows from the
-        // others already (it takes no degree of freedom); the implied ones it makes redundant are removed
-        ConstraintSketch &ConstrainImplied(const std::vector<std::string> &refs, sketch::Kind kind) {
+        // a constraint the drawing helpers imply (auto_constraint): left out, with a warning (warn), when it follows from
+        // the others already (it takes no degree of freedom); the implied ones it makes redundant are removed
+        ConstraintSketch &ConstrainImplied(const std::vector<std::string> &refs, sketch::Kind kind, bool warn = true) {
             cs::Constraint c{kind};
             for (const std::string &r : refs)
                 c.refs.push_back(RefOf(r));
+            return ConstrainImplied(std::move(c), warn);
+        }
+        ConstraintSketch &ConstrainImplied(const cs::Constraint &c, bool warn = true) {
             const std::string text = Text(c);
             const size_t dof = Analysis(false).dof;
             std::optional<std::string> with;
@@ -432,7 +492,7 @@ namespace planex2d {
                     DropRedundantImplied();
                     impliedIds.insert(added);
                     return true;
-                }))
+                }) && warn)
                 Warning() << "auto_constraint: left out " << text << ", it follows from " << (with->empty() ? "the others" : *with);
             return *this;
         }
@@ -446,9 +506,9 @@ namespace planex2d {
             }
             if (const std::optional<std::string> pattern = CountOf(id)) {
                 for (const auto &[i, n] : pending.counts)
-                    if (i == *pattern)
+                    if (i == id)
                         return (double)n;
-                return (double)(patterns.at(*pattern).copies.size() + 1);
+                return (double)CountNow(*pattern, id.ends_with("2"));
             }
             const size_t k = DimensionAt(id);
             if (s.constraints[k].reference || s.DriverOf(k)) {
@@ -467,8 +527,11 @@ namespace planex2d {
             for (size_t c = 0; c < s.constraints.size(); ++c)
                 if (HasValue(s.constraints[c].kind))
                     out.push_back({constraintIds[c], Value(constraintIds[c])});
-            for (const auto &[id, p] : patterns)
+            for (const auto &[id, p] : patterns) {
                 out.push_back({id + ".count", Value(id + ".count")});
+                if (p.IsGrid())
+                    out.push_back({id + ".count2", Value(id + ".count2")});
+            }
             for (const auto &[id, info] : chamfers)
                 out.push_back({id + ".reverse", Value(id + ".reverse")});
             return out;
@@ -484,15 +547,18 @@ namespace planex2d {
                 analysis.reset();
                 return;
             }
-            if (const std::optional<std::string> pattern = CountOf(id)) {
+            if (CountOf(id)) {
                 if (!(v >= 1.0) || v != std::floor(v))
                     throw std::invalid_argument(id + " = " + NumberText(v) + ": a count is a whole number of instances, the original included");
-                std::erase_if(pending.counts, [&](const auto &x) { return x.first == *pattern; });
-                pending.counts.push_back({*pattern, (size_t)v});
+                std::erase_if(pending.counts, [&](const auto &x) { return x.first == id; });
+                pending.counts.push_back({id, (size_t)v});
                 analysis.reset();
                 return;
             }
             const size_t k = DimensionAt(id);
+            if (s.constraints[k].kind == sketch::Kind::Parameter)
+                throw std::invalid_argument(id + " = " + NumberText(v) + ": " + id + " is a global parameter (px.Parameters); its Update sets it in "
+                                            "every sketch that uses it");
             if (const std::optional<size_t> e = s.DriverOf(k))
                 throw std::invalid_argument(id + " = " + NumberText(v) + ": " + id + " is driven by " + constraintIds[*e] + " (" + s.constraints[*e].text +
                                             "); remove the expression to set it");
@@ -586,6 +652,7 @@ namespace planex2d {
                 s.values = values0;
                 for (size_t k = 0; k < change.size(); ++k)
                     s.constraints[change[k].first].value = from[k];
+                s.RefitCurves();
             };
             Walk walk;
             std::optional<std::string> wrong;
@@ -689,7 +756,8 @@ namespace planex2d {
             return out;
         }
         static bool IsListed(const cs::Constraint &c) {
-            return c.kind != sketch::Kind::Copy && c.kind != sketch::Kind::Expression && c.kind != sketch::Kind::Offset && !c.tie;
+            return c.kind != sketch::Kind::Copy && c.kind != sketch::Kind::Expression && c.kind != sketch::Kind::Offset &&
+                   c.kind != sketch::Kind::Parameter && !c.tie;
         }
         std::vector<cs::ConstraintEntry> Constraints() const {
             std::vector<cs::ConstraintEntry> out;
@@ -718,6 +786,82 @@ namespace planex2d {
             return *analysis;
         }
         size_t Dof() { return Analysis(false).dof; }
+        std::vector<cs::FreeMotion> FreeMotions() {
+            Flush();
+            return cs::FreeMotionFinder(s, UnknownLabels(), elementIds).Find();
+        }
+        // the global parameters (px.Parameters) as values its expressions and curve formulas can name: a name new to the
+        // sketch joins it, one it has takes the value; a name the sketch has for anything else raises
+        ConstraintSketch &UseParameters(const std::vector<std::pair<std::string, double>> &values) {
+            Flush();
+            for (const auto &[name, v] : values) {
+                IsFinite(name.c_str(), {v});
+                if (const auto it = byId.find(name); it != byId.end() && (it->second.isElement || s.constraints[it->second.index].kind != sketch::Kind::Parameter))
+                    throw std::invalid_argument("Use: the sketch has " + std::string(it->second.isElement ? "an element" : "a constraint") + " '" + name +
+                                                "'; a parameter's name must be free in the sketches that use it");
+            }
+            Atomic([&] {
+                for (const auto &[name, v] : values)
+                    if (!byId.contains(name)) {
+                        cs::Constraint c{sketch::Kind::Parameter};
+                        c.value = v;
+                        AddConstraint(c, name);
+                    }
+            });
+            return UpdateParameters(values);
+        }
+        // the global parameters' values, the sketch solved with them (everything as before if it has no solution)
+        ConstraintSketch &UpdateParameters(const std::vector<std::pair<std::string, double>> &values) {
+            Flush();
+            for (const auto &[name, v] : values) {
+                IsFinite(name.c_str(), {v});
+                const auto it = byId.find(name);
+                if (it == byId.end() || it->second.isElement || s.constraints[it->second.index].kind != sketch::Kind::Parameter)
+                    throw std::invalid_argument("'" + name + "' is no global parameter of this sketch (sk.Use)");
+                if (s.constraints[it->second.index].value != v)
+                    pending.values.push_back({name, v});
+            }
+            UpdateDimensions(1);
+            RetrySuspended();
+            return *this;
+        }
+        // the relations geometric finds within tol (none: to rounding) that do not follow from the constraints, then
+        // (dimensional) the dimensions that each remove one of the free motions left, valued as the geometry is
+        std::vector<cs::Suggestion> SuggestConstraints(const std::optional<AutoConstraint> &geometric, bool dimensional, std::optional<double> tol) {
+            Flush();
+            ConstraintSketch scratch = *this;
+            std::vector<cs::Suggestion> out;
+            if (geometric)
+                for (const cs::Constraint &c : scratch.AddedRelations(*geometric, tol, "SuggestConstraints"))
+                    out.push_back(scratch.Suggested(c, ""));
+            if (dimensional)
+                for (const auto &[c, removes] : scratch.RemovingDimensions())
+                    out.push_back(scratch.Suggested(c, removes));
+            return out;
+        }
+        // adds what SuggestConstraints suggests; the ids of what it added
+        std::vector<std::string> AutoConstrain(const std::optional<AutoConstraint> &geometric, bool dimensional, std::optional<double> tol) {
+            Flush();
+            const std::set<std::string> had(constraintIds.begin(), constraintIds.end());
+            const std::vector<Vertex> was = PointPlaces();
+            Atomic([&] {
+                if (geometric)
+                    AddedRelations(*geometric, tol, "AutoConstrain");
+                if (dimensional)
+                    AddDimensions(RemovingDimensions());
+            });
+            const std::vector<Vertex> now = PointPlaces();
+            double moved = 0.0;
+            for (size_t p = 0; p < was.size(); ++p)
+                moved = std::max(moved, NormInf(now[p] - was[p]));
+            if (moved > Tol(s.Size()))
+                Warning() << "AutoConstrain: the relations moved the geometry by up to " << NumberText(moved);
+            std::vector<std::string> out;
+            for (const std::string &id : constraintIds)
+                if (!had.contains(id))
+                    out.push_back(id);
+            return out;
+        }
         // the elements keep their shape (as they are now) together, moving and turning as one
         ConstraintSketch &RigidGroup(const std::vector<std::string> &ids, const std::optional<std::string> &id) {
             if (ids.empty())
@@ -750,28 +894,33 @@ namespace planex2d {
                 const std::string &id = c < s.constraints.size() ? constraintIds[c]
                                         : value != held.end()   ? constraintIds[value->second]
                                                                 : elementIds[s.StructuralOwners()[c - s.constraints.size()]];
-                const std::vector<size_t> &idx = s.Indices(c);
-                const size_t height = s.Rows(c), width = idx.size();
-                r.assign(height, 0.0);
-                local.assign(height * width, 0.0);
+                size_t size = 0;
+                for (const RowBlock &block : s.Blocks(c))
+                    size += block.rows * block.indices.size();
+                r.assign(s.Rows(c), 0.0);
+                local.assign(size, 0.0);
                 s.Evaluate(c, s.values, r.data(), local.data());
-                for (size_t i = 0; i < height; ++i) {
-                    out.rows.push_back({id, value != held.end() ? std::nullopt : std::optional<size_t>(i)});
-                    out.row_scale.push_back(s.RowScale(c));
-                    entries.clear();
-                    for (size_t k = 0; k < width; ++k)
-                        if (column[idx[k]] != sketch::none)
-                            entries.push_back({column[idx[k]], local[i * width + k] * s.scale[idx[k]]});
-                    std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-                    for (const auto &[k, v] : entries)
-                        if (out.indices.size() > out.indptr.back() && out.indices.back() == k)
-                            out.data.back() += v;
-                        else {
-                            out.indices.push_back(k);
-                            out.data.push_back(v);
+                size_t i = 0, at = 0;
+                for (const RowBlock &block : s.Blocks(c))
+                    for (size_t row = 0; row < block.rows; ++row, ++i) {
+                        out.rows.push_back({id, value != held.end() ? std::nullopt : std::optional<size_t>(i)});
+                        out.row_scale.push_back(s.RowScale(c));
+                        entries.clear();
+                        for (size_t u : block.indices) {
+                            if (column[u] != sketch::none)
+                                entries.push_back({column[u], local[at] * s.scale[u]});
+                            ++at;
                         }
-                    out.indptr.push_back(out.indices.size());
-                }
+                        std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+                        for (const auto &[k, v] : entries)
+                            if (out.indices.size() > out.indptr.back() && out.indices.back() == k)
+                                out.data.back() += v;
+                            else {
+                                out.indices.push_back(k);
+                                out.data.push_back(v);
+                            }
+                        out.indptr.push_back(out.indices.size());
+                    }
             }
             return out;
         }
@@ -782,11 +931,11 @@ namespace planex2d {
             strict = mode == "strict";
             errorOnBranchChange = errorOnBranchChange || strict;
         }
-        void SetAutoConstraint(bool on) {
+        void SetAutoConstraint(const std::optional<AutoConstraint> &on) {
             autoConstraint = on;
         }
-        static constexpr const char *NotSmooth = "style 'occ' with given tangents is not smooth for the solver (OCC scales the "
-                                                 "tangents by L1 norms of Lagrange derivatives); style 'px' is";
+        static constexpr const char *NotSmooth = "style 'clamped' with given tangents is not smooth for the solver (OCC scales "
+                                                 "the tangents by L1 norms of Lagrange derivatives); style 'averaged' is";
         // 'over' while a constraint is suspended (it contradicts the others); else from the degrees of freedom alone: a solved sketch's redundant constraints are consistent, listed by Redundant()
         std::string Status() {
             const bool free = Analysis(false).dof > 0;
@@ -817,36 +966,55 @@ namespace planex2d {
         size_t ConstraintCount() const { return s.constraints.size(); }
 
         static bool HasValue(sketch::Kind k) {
-            return k == sketch::Kind::Distance || k == sketch::Kind::Radius || k == sketch::Kind::Diameter || k == sketch::Kind::Angle;
+            return k == sketch::Kind::Distance || k == sketch::Kind::Radius || k == sketch::Kind::Diameter || k == sketch::Kind::Angle ||
+                   k == sketch::Kind::Parameter;
         }
 
         // the pattern whose count id names ("LinearPattern.1.count"), if any
         std::optional<std::string> CountOf(const std::string &id) const {
-            constexpr std::string_view suffix = ".count";
-            if (id.size() <= suffix.size() || !id.ends_with(suffix))
-                return std::nullopt;
-            const std::string pattern = id.substr(0, id.size() - suffix.size());
-            return patterns.contains(pattern) ? std::optional<std::string>{pattern} : std::nullopt;
+            for (const std::string_view suffix : {std::string_view(".count"), std::string_view(".count2")}) {
+                if (id.size() <= suffix.size() || !id.ends_with(suffix))
+                    continue;
+                const std::string pattern = id.substr(0, id.size() - suffix.size());
+                if (const auto p = patterns.find(pattern); p != patterns.end() && (suffix == ".count" || p->second.IsGrid()))
+                    return pattern;
+            }
+            return std::nullopt;
         }
         bool IsCount(const std::string &id) const { return CountOf(id).has_value(); }
-        // the new counts: fewer copies go (the last ones, with the constraints on them), a pattern over the full turn
-        // takes its new angle, then more copies come at the step there is
+        // the new counts: fewer copies go (the last ones, with the constraints on them; a pattern of two directions loses
+        // the copies with a step beyond either count), a pattern over the full turn takes its new angle, then more copies
+        // come at the steps there are
         void ApplyCounts(size_t steps) {
             const std::vector<std::pair<std::string, size_t>> changes = std::exchange(pending.counts, {});
-            std::vector<std::pair<std::string, size_t>> grow;
-            for (const auto &[id, n] : changes) {
-                const auto it = patterns.find(id);
-                if (it == patterns.end())
-                    throw std::invalid_argument(id + ".count: the pattern is gone");
-                cs::PatternInfo &p = it->second;
-                const size_t now = p.copies.size() + 1;
-                if (n < now)
+            // per pattern its counts after the change (along dir, along dir2), in the order first changed
+            std::vector<std::pair<std::string, std::array<size_t, 2>>> wanted;
+            for (const auto &[count, n] : changes) {
+                const std::string id = count.substr(0, count.rfind('.'));
+                if (!patterns.contains(id))
+                    throw std::invalid_argument(count + ": the pattern is gone");
+                auto at = std::find_if(wanted.begin(), wanted.end(), [&](const auto &w) { return w.first == id; });
+                if (at == wanted.end())
+                    at = wanted.insert(wanted.end(), {id, {CountNow(id, false), CountNow(id, true)}});
+                at->second[count.ends_with("2") ? 1 : 0] = n;
+            }
+            std::vector<std::pair<std::string, std::array<size_t, 2>>> grow;
+            for (const auto &[id, n] : wanted) {
+                cs::PatternInfo &p = patterns.at(id);
+                const size_t now = CountNow(id, false), now2 = CountNow(id, true);
+                if (p.IsGrid() && n[0] * n[1] < 2)
+                    throw std::invalid_argument(CountText(id, n) + ": a pattern keeps the original and one copy at least");
+                if (n[0] < now || (p.IsGrid() && n[1] < now2))
                     RemoveCopies(id, n);
-                else if (n > now)
+                if (n[0] > now || (p.IsGrid() && n[1] > now2))
                     grow.push_back({id, n});
-                if (const std::string angle = id + ".angle"; p.equal && n != now && byId.contains(angle) && !s.DriverOf(DimensionAt(angle))) {
+                if (p.IsGrid()) {
+                    p.count = n[0];
+                    p.count2 = n[1];
+                }
+                if (const std::string angle = id + ".angle"; p.equal && n[0] != now && byId.contains(angle) && !s.DriverOf(DimensionAt(angle))) {
                     std::erase_if(pending.values, [&](const auto &x) { return x.first == angle; });
-                    pending.values.push_back({angle, 360.0 / (double)n});
+                    pending.values.push_back({angle, 360.0 / (double)n[0]});
                 }
             }
             UpdateDimensions(steps);
@@ -857,26 +1025,46 @@ namespace planex2d {
                     if (const auto at = byId.find(o); at != byId.end() && at->second.isElement)
                         originals.push_back(at->second.index);
                 if (originals.empty())
-                    throw std::invalid_argument(id + ".count = " + std::to_string(n) + ": the elements it copies are gone");
+                    throw std::invalid_argument(CountText(id, n) + ": the elements it copies are gone");
                 const size_t pattern = byId.at(id).index;
                 const double value = s.values[s.elements[pattern].Step()];
                 const double step = p.linear ? value : Degrees(value);
                 const sketch::Ref r = RefOf(p.ref);
-                for (size_t k = p.copies.size() + 1; k < n; ++k)
-                    PlaceTiedCopy(originals, r, p.linear, step, k, pattern, p);
+                for (const auto &[k, j] : PatternSteps(n[0], p.IsGrid() ? n[1] : 0))
+                    if (std::find(p.steps.begin(), p.steps.end(), std::pair{k, j}) == p.steps.end())
+                        PlaceTiedCopy(originals, r, p.linear, step, k, pattern, p, j);
             }
         }
-        void RemoveCopies(const std::string &id, size_t n) {
+        // a pattern's number of instances along dir (second: along dir2, 1 for a pattern of one direction)
+        size_t CountNow(const std::string &id, bool second) const {
+            const cs::PatternInfo &p = patterns.at(id);
+            if (!p.IsGrid())
+                return second ? 1 : p.copies.size() + 1;
+            return second ? p.count2 : p.count;
+        }
+        std::string CountText(const std::string &id, const std::array<size_t, 2> &n) const {
+            return id + ".count = " + std::to_string(n[0]) + (patterns.at(id).IsGrid() ? ", " + id + ".count2 = " + std::to_string(n[1]) : "");
+        }
+        // the copies beyond the counts n go, from the last made on (one direction: the counters as before them, so that
+        // they come back with the same ids)
+        void RemoveCopies(const std::string &id, const std::array<size_t, 2> &n) {
             cs::PatternInfo &p = patterns.at(id);
+            const std::string text = CountText(id, n);
             std::vector<std::string> dropped;
-            while (p.copies.size() + 1 > n) {
-                const auto [elements, ties] = std::move(p.copies.back());
-                p.copies.pop_back();
-                if (!p.before.empty()) {
-                    std::erase_if(counters, [&](const auto &c) { return c.first.starts_with(id + "."); });
-                    counters.insert(p.before.back().first.begin(), p.before.back().first.end());
-                    p.ties = p.before.back().second;
-                    p.before.pop_back();
+            for (size_t ci = p.copies.size(); ci-- > 0;) {
+                const auto [k, j] = p.steps[ci];
+                if (k < n[0] && (!p.IsGrid() || j < n[1]))
+                    continue;
+                const auto [elements, ties] = std::move(p.copies[ci]);
+                p.copies.erase(p.copies.begin() + (std::ptrdiff_t)ci);
+                p.steps.erase(p.steps.begin() + (std::ptrdiff_t)ci);
+                if (ci < p.before.size()) {
+                    if (!p.IsGrid()) {
+                        std::erase_if(counters, [&](const auto &c) { return c.first.starts_with(id + "."); });
+                        counters.insert(p.before[ci].first.begin(), p.before[ci].first.end());
+                        p.ties = p.before[ci].second;
+                    }
+                    p.before.erase(p.before.begin() + (std::ptrdiff_t)ci);
                 }
                 std::set<size_t> mine;
                 for (const std::string &e : elements)
@@ -889,15 +1077,14 @@ namespace planex2d {
                 for (auto e = elements.rbegin(); e != elements.rend(); ++e)
                     if (const auto at = byId.find(*e); at != byId.end() && at->second.isElement) {
                         try {
-                            Remove(*e, id + ".count = " + std::to_string(n));
+                            Remove(*e, text);
                         } catch (const std::invalid_argument &x) {
-                            throw std::invalid_argument(id + ".count = " + std::to_string(n) + ": " + x.what());
+                            throw std::invalid_argument(text + ": " + x.what());
                         }
                     }
             }
-            if (!dropped.empty()) {
-                Warning() << id << ".count = " << n << ": removed " << Joined(dropped) << " with the copies they held";
-            }
+            if (!dropped.empty())
+                Warning() << text << ": removed " << Joined(dropped) << " with the copies they held";
         }
 
         // its distance and the unknowns of its source, as the check compares them; empty if a source element is gone
@@ -948,7 +1135,7 @@ namespace planex2d {
                         return call + ": " + *wrong + again;
                 }
                 try {
-                    const auto sides = SidesOf(source, SourceEdges(source), d, info.towards, call);
+                    const auto sides = SidesOf(source, SourceEdges(source), d, info.towards, info.forms, call);
                     if (sketch::ShapeOf(sides) == info.shape) {
                         info.checked = state;
                         continue;
@@ -1036,8 +1223,8 @@ namespace planex2d {
             return std::nullopt;
         }
 
-        // the drawing helpers (to=, tangent=, ...) also become constraints
-        bool autoConstraint = false;
+        // the relations auto constraints find, none when off
+        std::optional<AutoConstraint> autoConstraint;
         // the amplification of the last analysis: a new constraint warns when it takes it over config::sensitivity_warning
         double amplified = 0.0;
         // a solve that turns a line round or an arc to its other side left the branch the sketch was drawn in: an error
@@ -1075,6 +1262,11 @@ namespace planex2d {
                 if (const std::optional<size_t> e = s.DriverOf(k))
                     throw std::invalid_argument(call + ": " + *drives + " is driven by " + constraintIds[*e] + " (" + s.constraints[*e].text +
                                                 ") already");
+                if (const std::optional<std::string> curve = CurveUsing(k))
+                    throw std::invalid_argument(call + ": " + *curve + " uses " + *drives + " in its formula, which takes driving dimensions only; "
+                                                "it cannot be driven");
+                if (s.constraints[k].kind == sketch::Kind::Parameter)
+                    throw std::invalid_argument(call + ": " + *drives + " is a global parameter (px.Parameters), its Update sets it; it cannot be driven");
                 c.drives = s.constraints[k].valueAt;
             }
             for (size_t n = 0; n < names.size(); ++n)
@@ -1142,6 +1334,25 @@ namespace planex2d {
             AddConstraint({sketch::Kind::Tangent, {{c.arms[0]}, {c.made}}}, std::nullopt);
             AddConstraint({sketch::Kind::Tangent, {{c.made}, {c.arms[1]}}}, std::nullopt);
             AddConstraint({sketch::Kind::Radius, {{c.made}}, rule.r}, elementIds[c.made] + ".r");
+        }
+
+        // the fillet's arc, tangent to both elements with the radius r, stays as a hidden helper (id.arc, its centre point
+        // hidden too) that sets where the blend starts and ends; the blend between its ends is the fillet, with its id,
+        // properties and the dimension id.r
+        void CornerMade(const CurvatureFilletRule &rule, const sketch::CornerParts &c) override {
+            CheckNotOffset(c, "Fillet");
+            CheckBlendArms({c.arms[0], c.arms[1]}, "Fillet");
+            FixCorners();
+            const std::string id = elementIds[c.made];
+            const sketch::Element arc = s.elements[c.made];
+            const size_t centre = pointElementOf.at(arc.Center());
+            Rename(c.made, id + ".arc");
+            roles[c.made] = sketch::Role::Helper;
+            roles[centre] = sketch::Role::Helper;
+            AddElement(s.AddBlend(arc.Start(), arc.End(), {{c.arms[0], c.arms[1]}, c.made, true}), "Fillet", {id, props[c.made], false});
+            AddConstraint({sketch::Kind::Tangent, {{c.arms[0]}, {c.made}}}, std::nullopt);
+            AddConstraint({sketch::Kind::Tangent, {{c.made}, {c.arms[1]}}}, std::nullopt);
+            AddConstraint({sketch::Kind::Radius, {{c.made}}, rule.r}, id + ".r");
         }
 
         // the chamfer whose reverse the id names ("Chamfer.1.reverse"), if any
@@ -1242,8 +1453,14 @@ namespace planex2d {
         void CallStarts() override {
             Flush();
             analysis.reset();
+            if (atomic == 0) {
+                callElements = s.elements.size();
+                removedInCall = 0;
+                touched.clear();
+            }
         }
         void CallEnds() override {
+            RelationsOfCall();
             RewriteExpressions();
             if (!offsetInfos.empty())
                 if (const std::optional<std::string> wrong = OffsetProblem())
@@ -1252,10 +1469,42 @@ namespace planex2d {
         void CallUndone() override {
             constraintIds.resize(s.constraints.size());
             analysis.reset();
+            touched.clear();
+        }
+        void Chained(size_t a, size_t b) override {
+            if (autoConstraint) {
+                touched.push_back(elementIds[a]);
+                touched.push_back(elementIds[b]);
+            }
+        }
+        // the relations auto constraints find between what the call drew (and the elements its chain joints join) and
+        // the rest, each left out quietly where it follows from the others
+        void RelationsOfCall() {
+            std::vector<std::string> joints;
+            joints.swap(touched);
+            if (!autoConstraint)
+                return;
+            std::vector<char> isNew(s.elements.size(), 0);
+            bool any = false;
+            for (size_t k = callElements - std::min(callElements, removedInCall); k < s.elements.size(); ++k) {
+                isNew[k] = 1;
+                any = true;
+            }
+            for (const std::string &id : joints)
+                if (const auto at = byId.find(id); at != byId.end() && at->second.isElement) {
+                    isNew[at->second.index] = 1;
+                    any = true;
+                }
+            if (!any)
+                return;
+            const std::set<std::string> have = ConstraintKeys();
+            for (const sketch::FoundRelation &r : AutoRelations(*autoConstraint, std::move(isNew)))
+                if (!have.contains(KeyOf(r.kind, r.refs)))
+                    ConstrainImplied({r.kind, r.refs}, false);
         }
         void SplineAdded(size_t e) override {
             const sketch::SplineData &d = s.splines[s.elements[e].SplineIndex()];
-            if (d.style == SplineStyle::Occ && !d.tangentAt.empty())
+            if (d.style == SplineStyle::Clamped && !d.tangentAt.empty())
                 Warning() << elementIds[e] << ": " << NotSmooth;
         }
         void Reindex() override {
@@ -1319,16 +1568,24 @@ namespace planex2d {
                     return;
                 }
             }
+            // a curvature fillet's hidden arc goes after it
+            std::optional<std::string> helper;
+            if (const auto it = byId.find(id); it != byId.end() && it->second.isElement && IsBlend(it->second.index))
+                if (const size_t h = s.splines[s.elements[it->second.index].SplineIndex()].blend->helper; h != sketch::none)
+                    helper = elementIds[h];
             BasicSketch::RemoveOne(id);
+            if (helper)
+                RemoveOne(*helper);
             analysis.reset();
             RetrySuspended();
         }
         // what goes with element k: its pattern, the constraints tied to it, the constraints on it
         void ElementGoes(size_t k, const std::string &id) override {
+            ++removedInCall;
             patterns.erase(id);
             chamfers.erase(id);
             std::erase_if(pending.flips, [&](const auto &x) { return x.first == id; });
-            std::erase_if(pending.counts, [&](const auto &x) { return x.first == id; });
+            std::erase_if(pending.counts, [&](const auto &x) { return x.first == id + ".count" || x.first == id + ".count2"; });
             if (const auto tied = companions.find(id); tied != companions.end()) {
                 const std::vector<std::string> others = tied->second;
                 companions.erase(tied);
@@ -1453,8 +1710,9 @@ namespace planex2d {
 
         // the k-th copy of a kept pattern (the pattern element), tied through it; its ids go under the pattern's, what it
         // made goes to info
+        // (in a pattern of two directions also j steps along its second, the copy's ids under both steps)
         void PlaceTiedCopy(const std::vector<size_t> &originals, const sketch::Ref &r, bool linear, double step, size_t k, size_t pattern,
-                           cs::PatternInfo &info) {
+                           cs::PatternInfo &info, size_t j = 0) {
             sketch::Scoped scope{idScope, std::exchange(idScope, elementIds[pattern])};
             std::map<std::string, size_t> mine;
             for (const auto &[key, n] : counters)
@@ -1462,12 +1720,18 @@ namespace planex2d {
                     mine.emplace(key, n);
             info.before.push_back({std::move(mine), info.ties});
             const size_t elements = elementIds.size(), constraints = constraintIds.size();
-            const sketch::Copies made = PlaceCopy(originals, r, linear, step, k, elementIds[pattern] + "." + std::to_string(k));
-            CopyWires(info.given, made, elementIds[pattern] + "." + std::to_string(k));
+            const std::optional<sketch::Ref> r2 = info.IsGrid() ? std::optional(RefOf(info.ref2)) : std::nullopt;
+            const double step2 = info.IsGrid() ? s.values[s.elements[pattern].Step2()] : 0.0;
+            const std::string prefix = StepPrefix(elementIds[pattern], k, j, info.IsGrid());
+            const sketch::Copies made = PlaceCopy(originals, r, linear, step, k, prefix, r2, step2, j);
+            CopyWires(info.given, made, prefix);
             const auto tie = [&] { return elementIds[pattern] + ".copy." + std::to_string(++info.ties); };
             const auto copyOf = [&](const sketch::Ref &a, const sketch::Ref &b) {
                 cs::Constraint c{sketch::Kind::Copy, {a, b, {pattern}, r}};
+                if (r2)
+                    c.refs.push_back(*r2);
                 c.variant = (int)k;
+                c.variant2 = (int)j;
                 AddConstraint(c, tie());
             };
             for (const auto &[a, b] : made.points)
@@ -1482,11 +1746,12 @@ namespace planex2d {
             }
             const auto id = [&](size_t) { return std::optional<std::string>{tie()}; };
             for (const auto &[a, b] : made.splines)
-                TieTangents(a, b, {{pattern}, r}, (int)k, id);
+                TieTangents(a, b, r2 ? std::vector<sketch::Ref>{{pattern}, r, *r2} : std::vector<sketch::Ref>{{pattern}, r}, (int)k, id, (int)j);
             for (const sketch::Copies::Position &x : made.positions)
                 TiePosition(x, id(0));
             info.copies.push_back({{elementIds.begin() + (std::ptrdiff_t)elements, elementIds.end()},
                                    {constraintIds.begin() + (std::ptrdiff_t)constraints, constraintIds.end()}});
+            info.steps.push_back({k, j});
         }
 
         // a constraint of a call that solves once all of them are in
@@ -1517,7 +1782,7 @@ namespace planex2d {
         // the ties solved once all are in: they take no degree of freedom, and the offset curves have no cusp and do not
         // cross themselves; then what the offset was made as, for the checks after later changes
         void OffsetMade(const std::string &name, const std::vector<std::string> &made, const std::vector<std::string> &tieIds, const sketch::OffsetChain &source,
-                        const EdgeList &edges, double ad, const std::vector<int> &towards,
+                        const EdgeList &edges, double ad, const std::vector<int> &towards, const OffsetForms &forms,
                         const sketch::OffsetSides &sides,
                         const std::vector<std::pair<std::string, std::string>> &curveIds, const std::string &call) override {
             if (!s.Solve().solved) {
@@ -1539,7 +1804,7 @@ namespace planex2d {
             }
             Sync();
             const auto element = [&](size_t k) { return source.elements[k]; };
-            cs::OffsetInfo info{{}, made, tieIds, source.forward, source.closed, towards, sketch::ShapeOf(sides), sketch::SidePieces(sides), {}, {}, curveIds};
+            cs::OffsetInfo info{{}, made, tieIds, source.forward, source.closed, towards, sketch::ShapeOf(sides), sketch::SidePieces(sides), {}, {}, curveIds, forms};
             for (size_t e : source.elements)
                 info.sources.push_back(elementIds[e]);
             for (const auto &[fixed, loops] : sides)
@@ -1651,10 +1916,11 @@ namespace planex2d {
                     derived(scope, true);
             }
             for (const auto &[pattern, p] : patterns)
-                for (size_t k = 1; k <= p.copies.size(); ++k) {
-                    const std::string prefix = pattern + "." + std::to_string(k);
-                    out.push_back({prefix, p.linear ? "LinearPattern" : "CircularPattern",
-                                   Given(p.given) + ", step " + std::to_string(k) + " of \"" + pattern + "\"", {}, std::nullopt, false, false, false, true});
+                for (const auto &[k, j] : p.steps) {
+                    const std::string prefix = StepPrefix(pattern, k, j, p.IsGrid());
+                    const std::string step = p.IsGrid() ? "steps " + std::to_string(k) + ", " + std::to_string(j) : "step " + std::to_string(k);
+                    out.push_back({prefix, p.linear ? "LinearPattern" : "CircularPattern", Given(p.given) + ", " + step + " of \"" + pattern + "\"", {},
+                                   std::nullopt, false, false, false, true});
                     if (p.internal)
                         derived(prefix, false);
                 }
@@ -1665,10 +1931,13 @@ namespace planex2d {
             for (const cs::ConstraintInfo &i : CopyEntries()) {
                 if (i.id != id)
                     continue;
-                if (i.tie && patterns.contains(id.substr(0, id.rfind('.')))) {
-                    const std::string pattern = id.substr(0, id.rfind('.'));
-                    return id + " is a copy of " + pattern + ", it follows the pattern: change " + pattern +
-                           (patterns.at(pattern).linear ? ".spacing" : ".angle") + " or " + pattern + ".count";
+                std::string pattern = id.substr(0, id.rfind('.'));
+                if (!patterns.contains(pattern) && pattern.find('.') != std::string::npos)
+                    pattern = pattern.substr(0, pattern.rfind('.'));
+                if (i.tie && patterns.contains(pattern)) {
+                    const cs::PatternInfo &p = patterns.at(pattern);
+                    return id + " is a copy of " + pattern + ", it follows the pattern: change " + pattern + (p.linear ? ".spacing" : ".angle") +
+                           (p.IsGrid() ? ", " + pattern + ".spacing2, " + pattern + ".count or " + pattern + ".count2" : " or " + pattern + ".count");
                 }
                 if (i.tie)
                     return id + " holds the copies symmetric to their originals; Remove('" + id + "') removes the copies";
@@ -1680,7 +1949,7 @@ namespace planex2d {
         // the rest and for lines too short to have a direction
         std::vector<double> Headings() const {
             const auto at = [&](size_t p) { return Vertex{s.values[s.coordsOf[p]], s.values[s.coordsOf[p] + 1]}; };
-            const double tiny = config::branch_check_min_length * s.Size();
+            const double tiny = config::state->branch_check_min_length * s.Size();
             std::vector<double> h(s.elements.size(), std::numeric_limits<double>::quiet_NaN());
             for (size_t e = 3; e < s.elements.size(); ++e) {
                 const sketch::Element &el = s.elements[e];
@@ -1715,15 +1984,30 @@ namespace planex2d {
         }
         // the copy's tangent directions follow the original's: mirrored at the axis in how, or turned by the
         // pattern how[0] step times (how: the pattern and its centre or direction)
+        // (a fitted spline's frame: its turn as a tangent's, its place as a point's; step2: the steps along a grid's second
+        // direction, how[2] its line)
         template <class Id>
-        void TieTangents(size_t original, size_t copy, const std::vector<sketch::Ref> &how, int step, Id id) {
-            const std::vector<size_t> from = s.splines[s.elements[original].SplineIndex()].tangent, to = s.splines[s.elements[copy].SplineIndex()].tangent;
+        void TieTangents(size_t original, size_t copy, const std::vector<sketch::Ref> &how, int step, Id id, int step2 = 0) {
+            const sketch::SplineData &a = s.splines[s.elements[original].SplineIndex()], &b = s.splines[s.elements[copy].SplineIndex()];
+            std::vector<size_t> from = a.tangent, to = b.tangent;
+            if (a.fitted) {
+                from.push_back(a.fitted->angle);
+                to.push_back(b.fitted->angle);
+            }
             for (size_t t = 0; t < from.size(); ++t) {
                 cs::Constraint c{sketch::Kind::Copy, {{original}, {copy}}};
-                c.refs.insert(c.refs.end(), how.begin(), how.end());
+                c.refs.insert(c.refs.end(), how.begin(), how.begin() + (std::ptrdiff_t)std::min<size_t>(how.size(), 2));
                 c.held = {from[t], to[t]};
                 c.variant = step;
                 AddConstraint(c, id(t));
+            }
+            if (a.fitted) {
+                cs::Constraint c{sketch::Kind::Copy, {{original}, {copy}}};
+                c.refs.insert(c.refs.end(), how.begin(), how.end());
+                c.heldPoints = {a.fitted->origin, b.fitted->origin};
+                c.variant = step;
+                c.variant2 = step2;
+                AddConstraint(c, id(from.size()));
             }
         }
         // a copied piece ends where the original does along its spline: mirrors and patterns keep chord lengths
@@ -1841,20 +2125,133 @@ namespace planex2d {
             Reindex();
             analysis.reset();
         }
-        // the implied constraints that are redundant now go
-        void DropRedundantImplied() {
-            const std::vector<char> redundant = s.Redundancies(Analysis());
-            std::vector<std::string> drop;
+        // the relations o finds between all elements within tol, added in bulk; the ones kept
+        std::vector<cs::Constraint> AddedRelations(const AutoConstraint &o, std::optional<double> tol, const char *call) {
+            const std::set<std::string> had(constraintIds.begin(), constraintIds.end());
+            AddRelations(AutoRelations(o, std::vector<char>(s.elements.size(), 1), tol), call);
+            std::vector<cs::Constraint> out;
             for (size_t c = 0; c < constraintIds.size(); ++c)
-                if (redundant[c] && impliedIds.contains(constraintIds[c]))
-                    drop.push_back(constraintIds[c]);
-            for (const std::string &id : drop) {
-                Remove(id);
-                impliedIds.erase(id);
+                if (!had.contains(constraintIds[c]))
+                    out.push_back(s.constraints[c]);
+            return out;
+        }
+        // the candidates that each remove one of the free motions, with the drag of the motion each removes
+        std::vector<std::pair<cs::Constraint, std::string>> RemovingDimensions() {
+            const std::vector<cs::Constraint> candidates = DimensionCandidates();
+            std::vector<std::pair<cs::Constraint, std::string>> out;
+            for (const auto &[k, removes] : cs::FreeMotionFinder(s, UnknownLabels(), elementIds).Removing(candidates))
+                out.push_back({candidates[k], removes});
+            return out;
+        }
+        // in the order they are tried, sizes first: every line's length, arc's radius and full circle's diameter, the
+        // angle between two lines that meet; then every free point's h and v from the origin (Distance from V and H; a
+        // point on an axis: Coincident with it); values as the geometry has them
+        std::vector<cs::Constraint> DimensionCandidates() const {
+            const double rounding = Tol(s.Size());
+            std::vector<cs::Constraint> out;
+            std::map<size_t, std::vector<size_t>> linesAt;
+            for (size_t e = 3; e < s.elements.size(); ++e) {
+                const sketch::Element &element = s.elements[e];
+                const sketch::ElementKind kind = element.kind;
+                if (element.IsHeld(s) || (kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc && kind != sketch::ElementKind::Circle))
+                    continue;
+                cs::Constraint c{kind == sketch::ElementKind::Line  ? sketch::Kind::Distance
+                                 : kind == sketch::ElementKind::Arc ? sketch::Kind::Radius
+                                                                    : sketch::Kind::Diameter,
+                                 {sketch::Ref{e}}};
+                c.value = std::abs(s.Measured(c));
+                if (c.value > rounding)
+                    out.push_back(c);
+                if (kind == sketch::ElementKind::Line)
+                    for (size_t p : {element.Start(), element.End()})
+                        linesAt[s.coordsOf[p]].push_back(e);
+            }
+            for (const auto &[point, lines] : linesAt)
+                for (size_t i = 0; i < lines.size(); ++i)
+                    for (size_t j = i + 1; j < lines.size(); ++j) {
+                        cs::Constraint c{sketch::Kind::Angle, {sketch::Ref{lines[i]}, sketch::Ref{lines[j]}}};
+                        c.value = std::abs(s.Measured(c));
+                        // parallel lines: an angle of 0 or 180 degrees is no dimension
+                        if (std::abs(std::sin(c.value * std::numbers::pi / 180.0)) > 1e-9)
+                            out.push_back(c);
+                    }
+            const std::vector<std::pair<std::string, std::string>> label = UnknownLabels();
+            std::vector<char> seen(s.values.size(), 0);
+            for (size_t e = 3; e < s.elements.size(); ++e) {
+                const sketch::ElementKind kind = s.elements[e].kind;
+                if (kind != sketch::ElementKind::Point && kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc &&
+                    kind != sketch::ElementKind::Circle && kind != sketch::ElementKind::Spline)
+                    continue;
+                const std::vector<size_t> u = s.elements[e].Values(s);
+                const sketch::Element::Names names = s.elements[e].ValueNames(s);
+                for (size_t k = 0; k < u.size(); ++k) {
+                    // a curve's frame is no point to dimension: its ends are
+                    if (names[k].second != "x" || names[k].first == ".origin" || s.held[u[k]] || seen[u[k]])
+                        continue;
+                    seen[u[k]] = 1;
+                    const sketch::Ref p = RefOf(label[u[k]].first);
+                    // V (element 1) measures h, H (element 0) v
+                    for (const size_t axis : {1, 0}) {
+                        const double at = s.values[u[k] + 1 - axis];
+                        cs::Constraint c{std::abs(at) > rounding ? sketch::Kind::Distance : sketch::Kind::Coincident, {p, sketch::Ref{axis}}};
+                        c.value = std::abs(at);
+                        out.push_back(c);
+                    }
+                }
+            }
+            return out;
+        }
+        // dimensions that hold as the geometry is: added in bulk, one solve
+        void AddDimensions(const std::vector<std::pair<cs::Constraint, std::string>> &found) {
+            if (found.empty())
+                return;
+            Atomic([&] {
+                for (const auto &[c, removes] : found) {
+                    const size_t k = s.Add(c);
+                    const std::string name = NewId(sketch::KindName(c.kind), std::nullopt);
+                    constraintIds.push_back(name);
+                    byId[name] = {false, k};
+                }
+                analysis.reset();
+                s.Solve();
+            });
+        }
+        cs::Suggestion Suggested(const cs::Constraint &c, const std::string &removes) const {
+            cs::Suggestion out{c.kind, {}, std::nullopt, Text(c), removes};
+            for (const sketch::Ref &r : c.refs)
+                out.refs.push_back(RefName(r));
+            if (HasValue(c.kind))
+                out.value = c.value;
+            return out;
+        }
+        std::vector<Vertex> PointPlaces() const {
+            std::vector<Vertex> out;
+            for (size_t p = 0; p < s.coordsOf.size(); ++p)
+                out.push_back(s.Coords(p));
+            return out;
+        }
+
+        // the implied constraints that are redundant now go, the last first: of two that are redundant only with each
+        // other one stays
+        void DropRedundantImplied() {
+            for (;;) {
+                const std::vector<char> redundant = s.Redundancies(Analysis());
+                std::optional<std::string> drop;
+                for (size_t c = constraintIds.size(); c-- > 0 && !drop;)
+                    if (redundant[c] && impliedIds.contains(constraintIds[c]))
+                        drop = constraintIds[c];
+                if (!drop)
+                    return;
+                Remove(*drop);
+                impliedIds.erase(*drop);
             }
         }
-        // the constraint k goes; the dimension an expression drove keeps its value as its own
+        // the constraint k goes; the dimension an expression drove keeps its value as its own; one a curve uses raises
         void DropConstraint(size_t k) {
+            if (s.constraints[k].kind == sketch::Kind::Parameter)
+                throw std::invalid_argument(constraintIds[k] + ": a global parameter (px.Parameters) the sketch uses stays with it");
+            if (const std::optional<std::string> curve = CurveUsing(k))
+                throw std::invalid_argument(constraintIds[k] + ": " + *curve + " uses it in its formula; remove " + *curve + " first");
             const cs::Constraint &c = s.constraints[k];
             if (c.kind == sketch::Kind::Expression && c.drives != sketch::none)
                 for (cs::Constraint &d : s.constraints)
@@ -2163,7 +2560,7 @@ namespace planex2d {
                 Warning() << name << " (" << text << ") is redundant (consistent)" << WithText(with);
             } else if (reportMakes)
                 ReportMadeRedundant(now, before, name);
-            if (amplified > config::sensitivity_warning && amplifiedBefore <= config::sensitivity_warning)
+            if (amplified > config::state->sensitivity_warning && amplifiedBefore <= config::state->sensitivity_warning)
                 Warning() << name << " (" << text << "): nearly singular, a small change of the dimensions can move the geometry "
                           << NumberText(amplified) << " times as much";
             return std::nullopt;
@@ -2176,6 +2573,10 @@ namespace planex2d {
         std::vector<std::string> constraintIds;
         // the constraints the drawing helpers implied (auto_constraint), which go when another makes them redundant
         std::set<std::string> impliedIds;
+        // the elements of the outermost call (from callElements, less the ones it removed) and those its chain joints
+        // join (ids): related to the others when it ends (auto_constraint)
+        size_t callElements = 0, removedInCall = 0;
+        std::vector<std::string> touched;
         // per element id the constraints that go with it although they do not refer to it
         std::map<std::string, std::vector<std::string>> companions;
         // the kept patterns, the chamfers and the offsets made with the constraints on, by id; the mirror calls by scope

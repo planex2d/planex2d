@@ -10,7 +10,6 @@ import math
 import os
 import re
 import uuid
-import warnings
 from importlib import metadata
 from typing import TYPE_CHECKING
 
@@ -18,6 +17,7 @@ from . import _planex as px
 from ._geom import oriented, xy
 from ._compound import Compound
 from ._units import m
+from ._caller import warn
 
 if TYPE_CHECKING:
     from ._planex import Face, Shape, Wire
@@ -69,7 +69,7 @@ def _arc(a, b, c, r, ccw, sweep):
 
 
 def _on_arc(seg, t, eps):
-    """the direction t from the centre lies on the arc seg (within the angle eps of its ends)"""
+    """the direction t from the center lies on the arc seg (within the angle eps of its ends)"""
     _, a, _, _, c, _, ccw, sweep = seg
     d = t - math.atan2(a[1] - c[1], a[0] - c[0])
     d = d % (2 * math.pi) if ccw else (-d) % (2 * math.pi)
@@ -237,7 +237,7 @@ def _keyholed(outer, holes, eps, grid):
 
 
 def _segments(wire, tol, eps):
-    """a loop or chain of edges as segments ("L", a, b) and ("A", a, b, mid, centre, radius, ccw, sweep) in its order,
+    """a loop or chain of edges as segments ("L", a, b) and ("A", a, b, mid, center, radius, ccw, sweep) in its order,
     splines as lines within tol"""
     out = []
     edges = [v.edge for v in wire.edges]
@@ -265,7 +265,7 @@ def _segments(wire, tol, eps):
 
 
 def _circle(loop, eps):
-    """(centre, radius) if the loop is one whole circle of arcs"""
+    """(center, radius) if the loop is one whole circle of arcs"""
     if not loop or any(s[0] != "A" for s in loop):
         return None
     c, r = loop[0][4], loop[0][5]
@@ -323,7 +323,7 @@ class _Board:
         self.cache = {}
 
     def loops(self, face):
-        """the face's loops, the outer first, as [(wire, segments, hole key, (centre, radius) if round)], worked out
+        """the face's loops, the outer first, as [(wire, segments, hole key, (center, radius) if round)], worked out
         once per face"""
         got = self.cache.get(id(face))
         if got is None or got[0] is not face:
@@ -450,7 +450,7 @@ def _quantum(v, q):
 
 
 def _hole_key(loop, eps, q):
-    """a key the same for the same hole drawn anywhere (q a micrometre), and (centre, radius) if the hole is round"""
+    """a key the same for the same hole drawn anywhere (q a micrometer), and (center, radius) if the hole is round"""
     circle = _circle(loop, eps)
     if circle is not None:
         (cx, cy), r = circle
@@ -466,7 +466,7 @@ def _named_hole(wire):
 
 
 class _Drills:
-    """the board's holes, each once: [kind, (centre, radius) if round, key, face to cut out]"""
+    """the board's holes, each once: [kind, (center, radius) if round, key, face to cut out]"""
 
     def __init__(self, board):
         self.board = board
@@ -507,7 +507,7 @@ class _Drills:
 
 
 class _Rings:
-    """the copper around a hole: the distance from its centre to the face's other loops, the widest disc there within
+    """the copper around a hole: the distance from its center to the face's other loops, the widest disc there within
     the copper; the holes sorted by the middle of their box in x, so a search looks at the near ones only"""
 
     def __init__(self, loops):
@@ -583,8 +583,8 @@ def _nets(copper, faces, through, drills):
             if len(named) > 1:
                 a, b, at = clash.get(r, (named[0], named[1], None))
                 where = " at (%.6g, %.6g)" % at if at is not None else ""
-                warnings.warn("WriteKiCad: faces %r and %r are connected through a plated hole%s; their net is %r" %
-                              (a, b, where, net), px.PlanexWarning, stacklevel=3)
+                warn("WriteKiCad: faces %r and %r are connected through a plated hole%s; their net is %r" %
+                              (a, b, where, net), px.PlanexWarning)
         else:
             count += 1
             while "net%d" % count in used:
@@ -600,7 +600,7 @@ def WriteKiCad(path: str | os.PathLike,
                outline: Shape | Face | Wire | Compound | None = None, unit: float = m,
                pth: Shape | Face | Wire | Compound | None = None, npth: Shape | Face | Wire | Compound | None = None,
                tol: float = 1e-6, thickness: float = 1.6e-3, line_width: float = 1e-4) -> None:
-    """Writes the layers as a KiCad 9 board (.kicad_pcb, millimetres, y down).
+    """Writes the layers as a KiCad 9 board (.kicad_pcb, millimeters, y down).
 
     The board has as many copper layers as the highest one given needs, those not given empty. Everything lies in one
     plane, the xy plane or the plane of the first shape. Every face becomes one filled polygon (gr_poly): lines and
@@ -617,7 +617,7 @@ def WriteKiCad(path: str | os.PathLike,
 
     Nets: faces on one layer with one name, and faces a plated hole goes through, are one net, named after the first
     named face from the top layer down (faces with two names warn), else net1, net2, ... from the top. Numbers are
-    written in millimetres with 6 decimals; the uuids are made from each element's text, so the same layers give the
+    written in millimeters with 6 decimals; the uuids are made from each element's text, so the same layers give the
     same file.
 
     Args:
@@ -742,8 +742,8 @@ def WriteKiCad(path: str | os.PathLike,
                 board.stroke(s, name, board.line_width)
     if free:
         n = sum(free.values())
-        warnings.warn("WriteKiCad: %d edge%s on no face left out on %s (copper needs an area)" %
-                      (n, "s" if n > 1 else "", ", ".join(free)), px.PlanexWarning, stacklevel=2)
+        warn("WriteKiCad: %d edge%s on no face left out on %s (copper needs an area)" %
+                      (n, "s" if n > 1 else "", ", ".join(free)), px.PlanexWarning)
     text = _header(copper, thickness * board.k, codes) + board.footprints + board.items + board.vias + [")"]
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(text) + "\n")

@@ -18,7 +18,7 @@ def base_and_hub(auto):
     sk.Move((0, 0)).Line(4, 0, px.Horizontal, id="base")
     sk.Constrain("base.start", px.Fix)
     sk.Constrain("base", px.Distance, 4)
-    sk.Circle(6, 3, 1, id="hub")
+    sk.Circle((6, 3), 1, id="hub")
     sk.Constrain("hub.center", px.Fix)
     sk.Constrain("hub", px.Radius, 1, id="r")
     return sk
@@ -72,9 +72,9 @@ def test_points_of_elements_and_the_axes_as_targets():
     sk.Circle(0.5, center="base.end", id="pin")
     assert sk._Geometry("pin")["center"] == pytest.approx((4, 0), abs=TOL)
     assert '"pin.center", "base.end", px.Coincident' in [str(t) for t in sk.constraints["Coincident"].values()]
-    sk.Move((-1, 2)).Line(px.V, parallel=px.H, id="h")
-    assert sk._Geometry("h")["end"] == pytest.approx((0, 2), abs=TOL)
-    assert '"h.end", px.V, px.Coincident' in [str(t) for t in sk.constraints["Coincident"].values()]
+    sk.Move((-1, 2)).Line(px.V, parallel=px.H, id="hl")
+    assert sk._Geometry("hl")["end"] == pytest.approx((0, 2), abs=TOL)
+    assert '"hl.end", px.V, px.Coincident' in [str(t) for t in sk.constraints["Coincident"].values()]
 
 
 def test_until_ends_on_what_it_meets():
@@ -108,8 +108,8 @@ def test_a_helper_that_fails_draws_nothing():
 def test_a_line_tangent_to_two_circles_gets_both_tangents():
     for tangent in (("a", "b"), ["a", "b"]):
         sk = px.Sketch(auto_constraint=True)
-        sk.Circle(0, 0, 1, id="a")
-        sk.Circle(5, 0, 1.5, id="b")
+        sk.Circle((0, 0), 1, id="a")
+        sk.Circle((5, 0), 1.5, id="b")
         for c, r in (("a", 1), ("b", 1.5)):
             sk.Constrain(c + ".center", px.Fix)
             sk.Constrain(c, px.Radius, r, id="r" + c)
@@ -140,15 +140,15 @@ def test_a_helper_constraint_that_follows_from_the_others_is_left_out():
 
 def test_a_helper_constraint_that_still_takes_freedom_is_kept():
     """the arc's start lies where the line touches the circle: on the circle twice over, yet the arc's centre and
-    radius come only from congruent="c\""""
+    radius come only from coincident="c\""""
     sk = px.Sketch(auto_constraint=True)
-    sk.Circle(0, 0, 1, px.Fix, id="c")
+    sk.Circle((0, 0), 1, px.Fix, id="c")
     sk.Move((-1, -1)).Line(1, 0, px.Horizontal, id="tangent")
     sk.Constrain("tangent", "c", px.Tangent)
     sk.Constrain("tangent.end", "c", px.Coincident)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        sk.Arc("tangent", sweep=90, congruent="c", id="a")
+        sk.Arc("tangent", sweep=90, coincident="c", id="a")
     assert '"a", "c", px.Coincident' in [repr(t) for t in sk.constraints["Coincident"].values()]
     g = sk.Geometry("a")
     assert g["center"] == pytest.approx((0, 0), abs=TOL) and g["r"] == pytest.approx(1, abs=TOL)
@@ -156,7 +156,7 @@ def test_a_helper_constraint_that_still_takes_freedom_is_kept():
 
 def boss_and_tangent(sk):
     """a fixed boss of radius 1 and a horizontal line tangent to it from below, ending at the touch point"""
-    sk.Circle(0, 0, 1, px.Fix, id="boss")
+    sk.Circle((0, 0), 1, px.Fix, id="boss")
     sk.Move((-3, -1)).Line(3, 0, px.Horizontal, id="lower")
     sk.Constrain("lower", "boss", px.Tangent)
     sk.Constrain("lower.end", "boss", px.Coincident)
@@ -169,7 +169,7 @@ def test_a_point_given_as_from_shares_the_vertex():
     sk.Move((5, 5))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        sk.Arc("lower.end", sweep=90, congruent="boss", id="a")
+        sk.Arc("lower.end", sweep=90, coincident="boss", id="a")
     texts = [repr(t) for t in sk.constraints["Coincident"].values()]
     assert '"a.start", "lower.end", px.Coincident' in texts
     assert sk.Location("a.start") == sk.Location("lower.end")
@@ -180,4 +180,4 @@ def test_an_end_landing_on_the_end_of_its_target_warns():
     sk.Move((5, 5))
     with pytest.warns(px.PlanexWarning, match=r'Arc\("lower"\): its start lands on lower.end but only lies on lower; '
                                               r'"lower.end" as from makes them one point'):
-        sk.Arc("lower", sweep=90, congruent="boss", id="a")
+        sk.Arc("lower", sweep=90, coincident="boss", id="a")

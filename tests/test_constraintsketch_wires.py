@@ -26,7 +26,7 @@ def test_the_end_of_a_chain_names_it():
     sk.Move((9, 9)).Rectangle(2, 1, id="pad")
     assert sk.wires["hook"] == ["Line.3", "Arc.1"]
     assert sk.wires["pad"] == [f"pad.Line.{k}" for k in range(1, 5)]
-    assert len(sk.Edge("tooth").edges) == 4 and sk.Measure("pad")["length"] == pytest.approx(6, abs=TOL)
+    assert len(sk.Wire("tooth").edges) == 4 and sk.Measure("pad")["length"] == pytest.approx(6, abs=TOL)
 
 
 def test_a_wire_id_is_checked_like_any_id():
@@ -85,8 +85,8 @@ def test_every_pen_chain_is_a_wire_named_chain_k():
     sk.Move((0, 8)).Line(1, 0).Line(0, 1).Close()
     assert sk.wires["Chain.3"] == ["Line.5"]
     assert sk.wires["Chain.4"] == ["Line.6", "Line.7", "Line.8"]
-    assert len(sk.Edge("Chain.4").edges) == 3 and len(sk.wires) == 4
-    sk.Circle(20, 20, 1)
+    assert len(sk.Wire("Chain.4").edges) == 3 and len(sk.wires) == 4
+    sk.Circle((20, 20), 1)
     sk.Line(1, 0)
     assert len(sk.wires) == 5 and sk.wires["Chain.5"] == ["Line.9"]
 

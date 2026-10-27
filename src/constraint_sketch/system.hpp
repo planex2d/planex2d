@@ -20,6 +20,7 @@
 #include "constraint_sketch/dual.hpp"
 #include "constraint_sketch/eval.hpp"
 #include "constraint_sketch/expression.hpp"
+#include "constraint_sketch/shapedsystem.hpp"
 #include "constraint_sketch/solver.hpp"
 #include "core/disjointsets.hpp"
 #include "core/vertex.hpp"
@@ -61,7 +62,7 @@ namespace planex2d::cs {
             }
             if (c.kind == Kind::RigidGroup)
                 GiveFrame(c);
-            const std::vector<size_t> idx = IndicesOf(c);
+            const std::vector<size_t> idx = LocalsOf(c);
             const Eval e{*this, sharedCurves, values, idx, size_};
             Freeze(c, e);
             if (c.reference)
@@ -89,7 +90,7 @@ namespace planex2d::cs {
         }
         // the choices of constraint c taken anew from the geometry now (after a mirror)
         void Refreeze(size_t c) {
-            const std::vector<size_t> idx = IndicesOf(constraints[c]);
+            const std::vector<size_t> idx = LocalsOf(constraints[c]);
             const Eval e{*this, sharedCurves, values, idx, Size()};
             Freeze(constraints[c], e);
         }
@@ -106,6 +107,11 @@ namespace planex2d::cs {
             if (constraints[c].valueAt != sketch::none)
                 held[constraints[c].valueAt] = 1;
             constraints.erase(constraints.begin() + (std::ptrdiff_t)c);
+            // the dimensions a curve's formula uses, by their constraints; a removed curve's may go
+            for (SplineData &d : splines)
+                if (d.fitted && d.fitted->formula)
+                    for (size_t &k : d.fitted->formula->dimensions)
+                        k = k == c ? sketch::none : k != sketch::none && k > c ? k - 1 : k;
             Remerge();
         }
         // a spline in a Tangent gets a tangent direction (an angle unknown) at the joint where it has none, so the
@@ -121,9 +127,10 @@ namespace planex2d::cs {
                 const std::vector<size_t> u = elements[element].Values(*this);
                 return std::any_of(u.begin(), u.end(), [&](size_t k) { return !analysis->determined[k]; });
             };
+            // a fitted spline keeps its shape
             const auto lacks = [&](size_t element, size_t k) {
                 const SplineData &d = splines[elements[element].SplineIndex()];
-                return std::find(d.tangentAt.begin(), d.tangentAt.end(), k) == d.tangentAt.end();
+                return !d.fitted && !d.blend && std::find(d.tangentAt.begin(), d.tangentAt.end(), k) == d.tangentAt.end();
             };
             const auto give = [&](size_t element, size_t k, const Vertex &t) {
                 const size_t spline = elements[element].SplineIndex();
@@ -141,7 +148,7 @@ namespace planex2d::cs {
             for (const Ref &r : c.refs)
                 if (r.part == Part::Tangent && lacks(r.element, r.index) && free(r.element))
                     give(r.element, r.index, direction({r.element}, r.PointAt(*this)));
-            if (c.kind != Kind::Tangent || c.refs.size() != 2)
+            if ((c.kind != Kind::Tangent && c.kind != Kind::Curvature) || c.refs.size() != 2)
                 return;
             const std::optional<size_t> joint = JointOf(c);
             if (!joint)
@@ -343,7 +350,7 @@ namespace planex2d::cs {
                 double a = Degrees(std::atan2(Cross(u, w).v, Dot(u, w).v));
                 if (c.sign < 0.0)
                     a += a > 0.0 ? -180.0 : 180.0;
-                return a;
+                return c.variant < 0 ? -a : a;
             }
             if (m.kind == Kind::Angle && m.refs.size() == 1 && m.refs[0].IsPattern(*this))
                 return Degrees(values[elements[m.refs[0].element].Step()]);
@@ -385,13 +392,23 @@ namespace planex2d::cs {
                 break;
             case ElementKind::Pattern:
                 others = {e.Step()};
+                if (e.HasStep2())
+                    others.push_back(e.Step2());
                 break;
             case ElementKind::Offset:
                 others = {e.Distance()};
                 break;
             case ElementKind::Spline:
-                points = splines[e.SplineIndex()].points;
-                others = splines[e.SplineIndex()].tangent;
+                if (splines[e.SplineIndex()].blend)
+                    throw std::invalid_argument("Fix: a blend follows the elements it joins; fix them");
+                // a fitted spline: its frame's place and turn
+                if (const std::optional<sketch::FittedShape> &f = splines[e.SplineIndex()].fitted) {
+                    points = {f->origin};
+                    others = {f->angle};
+                } else {
+                    points = splines[e.SplineIndex()].points;
+                    others = splines[e.SplineIndex()].tangent;
+                }
                 if (const SplinePiece *piece = e.Piece(*this))
                     for (size_t u : {piece->from, piece->to})
                         if (u != sketch::none)
@@ -404,6 +421,7 @@ namespace planex2d::cs {
 
         // the solver's view: the constraints, then the arcs' own equations
         void Build() {
+            RefitCurves();
             fixed.assign(held.begin(), held.end());
             for (size_t p = 0; p < ownCoordsOf.size(); ++p)
                 if (coordsOf[p] != ownCoordsOf[p])
@@ -411,6 +429,7 @@ namespace planex2d::cs {
             structural.clear();
             owner.clear();
             AddArcEquations();
+            AddCurveEquations();
             AddValueEquations();
             size_ = Size();
             scale.resize(values.size());
@@ -422,12 +441,24 @@ namespace planex2d::cs {
             rows.assign(count, 0);
             joints.assign(count, std::nullopt);
             levers.assign(count, size_);
+            blocks.assign(count, {});
             std::vector<Dual> r;
             for (size_t c = 0; c < count; ++c) {
+                if (IsPointwise(At(c))) {
+                    blocks[c] = BlocksOf(At(c));
+                    for (const RowBlock &b : blocks[c]) {
+                        rows[c] += b.rows;
+                        indices[c].insert(indices[c].end(), b.indices.begin(), b.indices.end());
+                    }
+                    std::sort(indices[c].begin(), indices[c].end());
+                    indices[c].erase(std::unique(indices[c].begin(), indices[c].end()), indices[c].end());
+                    continue;
+                }
                 indices[c] = IndicesOf(At(c));
                 joints[c] = JointOf(At(c));
                 levers[c] = LeverOf(At(c));
                 rows[c] = Residuals(At(c), Eval{*this, sharedCurves, values, indices[c], size_, levers[c]}, r, joints[c]);
+                blocks[c] = {{rows[c], indices[c]}};
             }
         }
         // an end on a circle once: arcs cut from one circle share its centre, radius and the points where they meet
@@ -450,6 +481,50 @@ namespace planex2d::cs {
                     structural.push_back(c);
                     owner.push_back(k);
                 }
+        }
+        // a fitted spline's ends on its placed shape, once per spline, as an arc's ends on its circle
+        void AddCurveEquations() {
+            std::set<size_t> done;
+            for (size_t k = 0; k < elements.size(); ++k) {
+                const Element &e = elements[k];
+                if (!e.IsFitted(*this) || !done.insert(e.SplineIndex()).second)
+                    continue;
+                const sketch::FittedShape &f = *splines[e.SplineIndex()].fitted;
+                // held for good: its own equations would be constant ones
+                const std::vector<size_t> u = e.Values(*this);
+                if (std::all_of(u.begin(), u.end(), [&](size_t x) { return bool(fixed[x]); }) && fixed[coordsOf[f.origin]])
+                    continue;
+                structural.push_back({Kind::OnCurve, {{k}}});
+                owner.push_back(k);
+            }
+        }
+        // the fitted splines whose formula uses a dimension that changed take the shape it gives now, their copies the
+        // shape of their source; a removed curve keeps its shape. Public: a sketch that sets its dimensions back takes the
+        // shapes back with them
+        void RefitCurves() {
+            std::vector<char> alive(splines.size(), 0);
+            for (const Element &e : elements)
+                if (e.kind == ElementKind::Spline)
+                    alive[e.SplineIndex()] = 1;
+            for (size_t k = 0; k < splines.size(); ++k) {
+                if (!splines[k].fitted || !alive[k])
+                    continue;
+                sketch::FittedShape &f = *splines[k].fitted;
+                if (f.copyOf != sketch::none) {
+                    f.shape = splines[f.copyOf].fitted->shape;
+                    continue;
+                }
+                if (!f.formula)
+                    continue;
+                // a scaled sketch's lengths as the formula knew them: Reshape scales the shape it gives
+                std::vector<double> now;
+                for (size_t c : f.formula->dimensions)
+                    now.push_back(constraints[c].kind == Kind::Angle ? constraints[c].value : constraints[c].value / f.scale);
+                if (now != f.formula->used) {
+                    f.Reshape(f.formula->Shape(now));
+                    f.formula->used = std::move(now);
+                }
+            }
         }
         // the values of the dimensions an expression uses but does not drive, held
         void AddValueEquations() {
@@ -512,10 +587,22 @@ namespace planex2d::cs {
         }
         // per constraint: it, or the equation that keeps its value (a driving dimension an expression uses), takes no
         // rank; a is the analysis of the last Build
+        // the redundant constraints: by the analysis's rows, and a coincidence of two points that earlier ones merged
+        // already (a merge takes no row, the analysis cannot see it)
         std::vector<char> Redundancies(const ConstraintAnalysis &a) const {
             std::vector<char> out(a.redundant.begin(), a.redundant.begin() + (std::ptrdiff_t)constraints.size());
             for (const auto &[row, c] : valueRows)
                 out[c] = out[c] || a.redundant[row];
+            DisjointSets groups(ownCoordsOf.size());
+            for (size_t c = 0; c < constraints.size(); ++c) {
+                if (!IsMerge(constraints[c]))
+                    continue;
+                const size_t p = groups.Find(constraints[c].refs[0].PointAt(*this)), q = groups.Find(constraints[c].refs[1].PointAt(*this));
+                if (p == q)
+                    out[c] = 1;
+                else
+                    groups.Join(p, q);
+            }
             return out;
         }
         // the expression that drives the dimension c
@@ -557,8 +644,22 @@ namespace planex2d::cs {
         const std::vector<std::pair<size_t, size_t>> &ValueRows() const { return valueRows; }
         size_t Rows(size_t c) const { return rows[c]; }
         const std::vector<size_t> &Indices(size_t c) const { return indices[c]; }
+        const std::vector<RowBlock> &Blocks(size_t c) const { return blocks[c]; }
         void Evaluate(size_t c, const std::vector<double> &v, double *r, double *J) const {
             thread_local std::vector<Dual> res;
+            if (IsPointwise(At(c))) {
+                std::array<Dual, 2> d;
+                for (size_t k = 0, row = 0; k < blocks[c].size(); row += blocks[c][k].rows, ++k) {
+                    const RowBlock &b = blocks[c][k];
+                    HeldRows(At(c), Eval{*this, sharedCurves, v, b.indices, size_, levers[c]}, k, d.data());
+                    for (size_t i = 0; i < b.rows; ++i) {
+                        r[row + i] = d[i].v;
+                        for (size_t j = 0; j < b.indices.size(); ++j)
+                            *J++ = d[i].g[j];
+                    }
+                }
+                return;
+            }
             const std::vector<size_t> &idx = indices[c];
             const size_t n = Residuals(At(c), Eval{*this, sharedCurves, v, idx, size_, levers[c]}, res, joints[c]);
             for (size_t i = 0; i < n; ++i) {
@@ -580,11 +681,15 @@ namespace planex2d::cs {
             return (k.refs.size() == 1 && k.refs[0].IsPattern(*this) ? size_ : levers[c]) * degree;
         }
 
-        // predict: with the linear prediction of the move (SolveResult::predicted)
+        // predict: with the linear prediction of the move (SolveResult::predicted). The least change keeps the drawn
+        // shapes (ShapedSystem): what a constraint moves takes the elements it belongs to along
         SolveResult Solve(bool predict = false, const std::vector<double> *origin = nullptr) {
             Build();
-            Unknowns x = SolverUnknowns();
-            const SolveResult r = SolveConstraints(*this, x, size_, predict, origin);
+            const ShapedSystem<System> shaped(*this, origin ? *origin : values);
+            Unknowns x = shaped.Extended(SolverUnknowns());
+            const std::vector<double> from = shaped.Origin();
+            const SolveResult r = SolveConstraints(shaped, x, size_, predict, origin ? &from : nullptr);
+            x.value.resize(values.size());
             values = std::move(x.value);
             return r;
         }
@@ -594,6 +699,14 @@ namespace planex2d::cs {
                 Build();
             return AnalyzeConstraints(*this, SolverUnknowns(), size_, complete, &analysisCache);
         }
+        // the solver's unknowns as they are (values, scales, what is fixed) and the basis of the motions the constraints
+        // allow (MotionBasis)
+        std::pair<Unknowns, Eigen::MatrixXd> Motions() {
+            Build();
+            Unknowns x = SolverUnknowns();
+            Eigen::MatrixXd N = MotionBasis(*this, x, size_);
+            return {std::move(x), std::move(N)};
+        }
 
     private:
         std::vector<Constraint> structural;
@@ -601,6 +714,7 @@ namespace planex2d::cs {
         // the value equations among the constraints and structural ones (their index in Count()) and their dimensions
         std::vector<std::pair<size_t, size_t>> valueRows;
         std::vector<std::vector<size_t>> indices;
+        std::vector<std::vector<RowBlock>> blocks;
         std::vector<size_t> rows;
         std::vector<double> levers;
         std::vector<std::optional<size_t>> joints;
@@ -625,6 +739,35 @@ namespace planex2d::cs {
                                             " has no such point");
         }
 
+
+        // a Fix of an element that is no point or arc, and a rigid group: their rows are evaluated per held point and
+        // value, each with only its own unknowns (and the group's place), so that they take any number of points
+        bool IsPointwise(const Constraint &c) const {
+            return c.kind == Kind::RigidGroup ||
+                   (c.kind == Kind::Fix && c.refs.size() == 1 && !c.refs[0].IsPoint(*this) && !c.refs[0].IsArc(*this));
+        }
+        // the blocks of a pointwise constraint: two rows per held point, one per held value, in the order of HeldRows
+        std::vector<RowBlock> BlocksOf(const Constraint &c) const {
+            std::vector<RowBlock> out;
+            if ((c.reference && c.valueAt == sketch::none) || c.suspended)
+                return out;
+            const bool rigid = c.kind == Kind::RigidGroup;
+            const auto block = [&](size_t rows, std::vector<size_t> u) {
+                std::sort(u.begin(), u.end());
+                u.erase(std::unique(u.begin(), u.end()), u.end());
+                std::erase_if(u, [&](size_t k) { return held[k]; });
+                out.push_back({rows, std::move(u)});
+            };
+            for (size_t p : c.heldPoints)
+                block(2, rigid ? std::vector<size_t>{coordsOf[p], coordsOf[p] + 1, c.params[0], c.params[1], c.params[2]}
+                               : std::vector<size_t>{coordsOf[p], coordsOf[p] + 1});
+            for (size_t u : c.held)
+                block(1, rigid && isAngle[u] ? std::vector<size_t>{u, c.params[2]} : std::vector<size_t>{u});
+            return out;
+        }
+        // the unknowns a whole constraint is evaluated with outside the solver: none for a pointwise one, which is
+        // evaluated there block by block and here only for its values
+        std::vector<size_t> LocalsOf(const Constraint &c) const { return IsPointwise(c) ? std::vector<size_t>{} : IndicesOf(c); }
 
         std::vector<size_t> IndicesOf(const Constraint &c) const {
             const bool angles = c.kind == Kind::Copy && !c.held.empty();
@@ -651,7 +794,7 @@ namespace planex2d::cs {
             // held for good: constants, as projected geometry
             std::erase_if(out, [&](size_t u) { return held[u]; });
             if (out.size() > maxLocal)
-                throw std::invalid_argument("a constraint on more than about 60 points (a spline's, a rigid group's)");
+                throw std::invalid_argument("a constraint on more than about 60 points (a spline's)");
             return out;
         }
 
@@ -679,7 +822,7 @@ namespace planex2d::cs {
         // radius standing on the line (or the centres in line with the point) replaces "the centre at distance r",
         // which is singular when the point is on both curves anyway
         std::optional<size_t> JointOf(const Constraint &c) const {
-            if (c.kind != Kind::Tangent || c.refs.size() != 2)
+            if ((c.kind != Kind::Tangent && c.kind != Kind::Curvature) || c.refs.size() != 2)
                 return std::nullopt;
             const Ref &a = c.refs[0], &b = c.refs[1];
             if (const std::optional<size_t> j = Joint(a, b))
@@ -741,6 +884,8 @@ namespace planex2d::cs {
                 return ParallelPerpendicularRows(c, e, r);
             case Kind::Tangent:
                 return TangentRows(c, e, r, joint);
+            case Kind::Curvature:
+                return CurvatureRows(c, e, r, joint);
             case Kind::Equal:
                 return EqualRows(c, e, r);
             case Kind::Symmetric:
@@ -770,6 +915,11 @@ namespace planex2d::cs {
                 return ExpressionRows(c, e, r);
             case Kind::Value:
                 return ValueRows(c, e, r);
+            case Kind::OnCurve:
+                return OnCurveRows(c, e, r);
+            // a global parameter: a value, held by a value equation where an expression or a curve uses it
+            case Kind::Parameter:
+                return 0;
             }
             return std::nullopt;
         }
@@ -933,6 +1083,17 @@ namespace planex2d::cs {
             }
             return std::nullopt;
         }
+        // where two elements share a point: tangent there, and bending alike (curvatures signed along one way)
+        std::optional<size_t> CurvatureRows(const Constraint &c, const Eval &e, std::vector<Dual> &r, std::optional<size_t> joint) const {
+            if (c.refs.size() != 2 || !joint)
+                return std::nullopt;
+            const Ref &a = c.refs[0], &b = c.refs[1];
+            const Dual lever(e.lever), sign(c.sign);
+            const DualVector ta = e.TangentAt(a, *joint), tb = e.TangentAt(b, *joint);
+            r[0] = Atan2(Cross(ta, tb), Dot(ta, tb) * sign) * lever;
+            r[1] = (e.CurvatureAt(a, *joint) - e.CurvatureAt(b, *joint) * sign) * lever * lever;
+            return 2;
+        }
         std::optional<size_t> EqualRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
             const size_t n = q.size();
@@ -1011,7 +1172,6 @@ namespace planex2d::cs {
         std::optional<size_t> FixRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
             const size_t n = q.size();
-            const Dual size(e.size);
             const Ref a = n > 0 ? q[0] : Ref{};
             if (n != 1)
                 return std::nullopt;
@@ -1035,19 +1195,8 @@ namespace planex2d::cs {
                     r[3 + k] = Cross(DualVector{Dual(t.x / length), Dual(t.y / length)}, p[k] - DualVector{Dual(tc.x), Dual(tc.y)});
                 }
                 return 5;
-            } else {
-                const std::vector<size_t> &u = c.held;
-                const size_t m = 2 * c.heldPoints.size();
-                r.resize(std::max(r.size(), m + u.size()));
-                for (size_t k = 0; k < c.heldPoints.size(); ++k) {
-                    const DualVector p = e.At(c.heldPoints[k]);
-                    r[2 * k] = p.x - Dual(c.target[2 * k]);
-                    r[2 * k + 1] = p.y - Dual(c.target[2 * k + 1]);
-                }
-                for (size_t k = 0; k < u.size(); ++k)
-                    r[m + k] = isAngle[u[k]] ? (e.Var(u[k]) - Dual(c.target[m + k])) * size : e.Var(u[k]) - Dual(c.target[m + k]);
-                return m + u.size();
             }
+            return AllHeldRows(c, e, r);
         }
         std::optional<size_t> DistanceRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
@@ -1057,7 +1206,7 @@ namespace planex2d::cs {
             Ref a = n > 0 ? q[0] : Ref{}, b = n > 1 ? q[1] : Ref{};
             if (n == 1 && (a.IsPattern(*this) || a.IsOffset(*this))) {
                 const Element &el = elements[a.element];
-                r[0] = e.Var(a.IsPattern(*this) ? el.Step() : el.Distance()) - v;
+                r[0] = e.Var(a.IsPattern(*this) ? (c.variant2 == 2 ? el.Step2() : el.Step()) : el.Distance()) - v;
                 return 1;
             }
             if (n == 1 && a.IsSegment(*this)) {
@@ -1138,13 +1287,20 @@ namespace planex2d::cs {
             const Dual size(e.size), lever(e.lever), sign(c.sign);
             const Ref a = n > 0 ? q[0] : Ref{}, b = n > 1 ? q[1] : Ref{};
             const bool linked = c.valueAt != sketch::none;
-            const auto rotated = [&](const DualVector &u) { return linked ? TurnedRadians(u, e.Var(c.valueAt)) : Turned(u, c.value); };
+            // two lines turn the side the drawing showed (variant -1: clockwise by the value)
+            const bool back = c.variant < 0 && n == 2 && a.IsLine(*this) && b.IsLine(*this);
+            const auto rotated = [&](const DualVector &u) {
+                if (linked)
+                    return TurnedRadians(u, back ? Dual(0.0) - e.Var(c.valueAt) : e.Var(c.valueAt));
+                return Turned(u, back ? -c.value : c.value);
+            };
             if (n == 1 && a.IsPattern(*this)) {
                 r[0] = (e.Var(elements[a.element].Step()) - (linked ? e.Var(c.valueAt) : Dual(Radians(c.value)))) * size;
                 return 1;
             }
             if (n == 2 && a.IsLine(*this) && b.IsLine(*this)) {
-                // the angle itself, on the branch the drawing chose (the angle or the angle + 180 degrees)
+                // the angle between the lines, on the branch the drawing chose: the side it turns to and the angle or the
+                // angle + 180 degrees (the lines' directions do not count)
                 const DualVector turned = rotated(e.CarrierOf(a).u), w = e.CarrierOf(b).u;
                 r[0] = Atan2(Cross(turned, w), Dot(turned, w) * sign) * lever;
                 return 1;
@@ -1159,27 +1315,41 @@ namespace planex2d::cs {
             }
             return std::nullopt;
         }
-        std::optional<size_t> RigidGroupRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
-            const Dual size(e.size);
-            const Dual turn = e.Var(c.params[2]), cs = Cos(turn), sn = Sin(turn);
-            const DualVector o{e.Var(c.params[0]), e.Var(c.params[1])};
+        std::optional<size_t> RigidGroupRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const { return AllHeldRows(c, e, r); }
+        // the k-th held point (two rows) or, after the points, held value (one row) of a Fix or a rigid group at its
+        // target; a rigid group's targets lie in its frame: params are the place of its first point and its turn
+        size_t HeldRows(const Constraint &c, const Eval &e, size_t k, Dual *r) const {
             const size_t m = 2 * c.heldPoints.size();
-            r.resize(std::max(r.size(), m + c.held.size()));
-            for (size_t k = 0; k < c.heldPoints.size(); ++k) {
-                const Dual lx(c.target[2 * k]), ly(c.target[2 * k + 1]);
+            const bool rigid = c.kind == Kind::RigidGroup;
+            if (k < c.heldPoints.size()) {
                 const DualVector p = e.At(c.heldPoints[k]);
-                r[2 * k] = p.x - (o.x + lx * cs - ly * sn);
-                r[2 * k + 1] = p.y - (o.y + lx * sn + ly * cs);
+                const Dual lx(c.target[2 * k]), ly(c.target[2 * k + 1]);
+                if (!rigid) {
+                    r[0] = p.x - lx;
+                    r[1] = p.y - ly;
+                    return 2;
+                }
+                const Dual turn = e.Var(c.params[2]), cs = Cos(turn), sn = Sin(turn);
+                r[0] = p.x - (e.Var(c.params[0]) + lx * cs - ly * sn);
+                r[1] = p.y - (e.Var(c.params[1]) + lx * sn + ly * cs);
+                return 2;
             }
-            for (size_t k = 0; k < c.held.size(); ++k) {
-                const size_t u = c.held[k];
-                if (isAngle[u]) {
-                    const Dual d = e.Var(u) - (Dual(c.target[m + k]) + turn);
-                    r[m + k] = Atan2(Sin(d), Cos(d)) * size;
-                } else
-                    r[m + k] = e.Var(u) - Dual(c.target[m + k]);
-            }
-            return m + c.held.size();
+            const size_t j = k - c.heldPoints.size(), u = c.held[j];
+            const Dual target(c.target[m + j]), size(e.size);
+            if (rigid && isAngle[u]) {
+                const Dual d = e.Var(u) - (target + e.Var(c.params[2]));
+                r[0] = Atan2(Sin(d), Cos(d)) * size;
+            } else
+                r[0] = isAngle[u] && !rigid ? (e.Var(u) - target) * size : e.Var(u) - target;
+            return 1;
+        }
+        // every held point and value of a Fix or a rigid group, as the solver's blocks take them one by one
+        size_t AllHeldRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
+            r.resize(std::max(r.size(), 2 * c.heldPoints.size() + c.held.size()));
+            size_t rows = 0;
+            for (size_t k = 0; k < c.heldPoints.size() + c.held.size(); ++k)
+                rows += HeldRows(c, e, k, &r[rows]);
+            return rows;
         }
         std::optional<size_t> CopyRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
@@ -1204,25 +1374,50 @@ namespace planex2d::cs {
                 r[0] = Atan2(Sin(d), Cos(d)) * size;
                 return 1;
             }
-            if (n != 4 || !a.IsPoint(*this) || !b.IsPoint(*this) || !q[2].IsPattern(*this))
-                return std::nullopt;
-            const DualVector p = e.PointOf(a), copy = e.PointOf(b);
-            const Dual step = e.Var(elements[q[2].element].Step()) * Dual((double)c.variant);
-            DualVector to;
-            if (elements[q[2].element].IsLinear()) {
-                if (!q[3].IsLine(*this))
+            // a copied fitted spline's frame: its place where the copy takes its original's
+            if (c.heldPoints.size() == 2) {
+                const std::optional<DualVector> to = CopiedPoint(c, e, e.At(c.heldPoints[0]));
+                if (!to)
                     return std::nullopt;
-                to = p + e.CarrierOf(q[3]).u * step;
-            } else {
-                if (!q[3].IsPoint(*this))
-                    return std::nullopt;
-                const DualVector o = e.PointOf(q[3]), d = p - o;
-                const Dual cs = Cos(step), sn = Sin(step);
-                to = o + DualVector{d.x * cs - d.y * sn, d.x * sn + d.y * cs};
+                const DualVector w = e.At(c.heldPoints[1]) - *to;
+                r[0] = w.x;
+                r[1] = w.y;
+                return 2;
             }
-            r[0] = copy.x - to.x;
-            r[1] = copy.y - to.y;
+            if ((n != 4 && n != 5) || !a.IsPoint(*this) || !b.IsPoint(*this))
+                return std::nullopt;
+            const std::optional<DualVector> to = CopiedPoint(c, e, e.PointOf(a));
+            if (!to)
+                return std::nullopt;
+            const DualVector copy = e.PointOf(b);
+            r[0] = copy.x - to->x;
+            r[1] = copy.y - to->y;
             return 2;
+        }
+        // where the copy c puts the point p: mirrored at the line refs[2], or moved by the pattern refs[2] along the line
+        // refs[3] (a pattern of two directions also along refs[4]) or turned about the point refs[3]
+        std::optional<DualVector> CopiedPoint(const Constraint &c, const Eval &e, const DualVector &p) const {
+            const std::vector<Ref> &q = c.refs;
+            const size_t n = q.size();
+            if (n == 3 && q[2].IsLine(*this))
+                return e.CarrierOf(q[2]).Mirrored(p);
+            if ((n != 4 && n != 5) || !q[2].IsPattern(*this))
+                return std::nullopt;
+            const Element &pattern = elements[q[2].element];
+            const Dual step = e.Var(pattern.Step()) * Dual((double)c.variant);
+            if (pattern.IsLinear()) {
+                if (!q[3].IsLine(*this) || (n == 5 && (!q[4].IsLine(*this) || !pattern.HasStep2())))
+                    return std::nullopt;
+                DualVector to = p + e.CarrierOf(q[3]).u * step;
+                if (n == 5)
+                    to = to + e.CarrierOf(q[4]).u * (e.Var(pattern.Step2()) * Dual((double)c.variant2));
+                return to;
+            }
+            if (!q[3].IsPoint(*this))
+                return std::nullopt;
+            const DualVector o = e.PointOf(q[3]), d = p - o;
+            const Dual cs = Cos(step), sn = Sin(step);
+            return o + DualVector{d.x * cs - d.y * sn, d.x * sn + d.y * cs};
         }
         std::optional<size_t> OnCircleRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
@@ -1234,6 +1429,16 @@ namespace planex2d::cs {
             for (int i = 0; i < 2; ++i)
                 if (c.variant & (1 << i))
                     r[k++] = Norm(p[i] - o.c) - o.r;
+            return k;
+        }
+        std::optional<size_t> OnCurveRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
+            const SplineData &d = splines[elements[c.refs[0].element].SplineIndex()];
+            size_t k = 0;
+            for (size_t i = 0; i < d.points.size(); ++i) {
+                const DualVector w = e.At(d.points[i]) - e.PlacedEnd(*d.fitted, i == 1);
+                r[k++] = w.x;
+                r[k++] = w.y;
+            }
             return k;
         }
         std::optional<size_t> OffsetRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
@@ -1285,6 +1490,16 @@ namespace planex2d::cs {
             case OffsetTie::Radius:
                 r[0] = e.RoundOf(a).r - e.RoundOf(b).r - dist * sign;
                 return 1;
+            case OffsetTie::Spur: {
+                const DualVector p = e.PointOf(q[2]), n = normal(b, p);
+                r[0] = Dot(e.PointOf(a) - (p + n * (dist * sign)), n);
+                return 1;
+            }
+            case OffsetTie::Beyond: {
+                const DualVector p = e.PointOf(q[2]), n = normal(b, p);
+                r[0] = Dot(e.PointOf(a) - p, Right(n)) * sign - dist;
+                return 1;
+            }
             case OffsetTie::Along: {
                 const OffsetCurveData &o = offsetCurves[elements[b.element].OffsetCurveIndex()];
                 const std::array<Dual, 2> t = e.OffsetRange(elements[b.element]);
@@ -1314,6 +1529,10 @@ namespace planex2d::cs {
             case Kind::Distance:
             case Kind::Tangent:
                 FreezeSide(c, e);
+                return;
+            case Kind::Curvature:
+                if (const std::optional<size_t> j = JointOf(c))
+                    c.sign = Sense(c.refs[0], c.refs[1], *j, e);
                 return;
             case Kind::Angle:
                 FreezeAngle(c, e);
@@ -1388,10 +1607,22 @@ namespace planex2d::cs {
                 c.variant = d + p.r.v <= o.r.v ? 1 : d + o.r.v <= p.r.v ? 2 : 0;
             }
         }
+        // two lines: of the value turned either way, the angle or the angle + 180 degrees, the one nearest the second line
+        // as drawn
         void FreezeAngle(Constraint &c, const Eval &e) const {
             const std::vector<Ref> &q = c.refs;
-            if (q.size() == 2 && q[0].IsLine(*this) && q[1].IsLine(*this))
-                c.sign = Side(Dot(Turned(e.CarrierOf(q[0]).u, c.value), e.CarrierOf(q[1]).u));
+            if (q.size() != 2 || !q[0].IsLine(*this) || !q[1].IsLine(*this))
+                return;
+            const DualVector u = e.CarrierOf(q[0]).u, w = e.CarrierOf(q[1]).u;
+            double best = -std::numeric_limits<double>::infinity();
+            for (const int side : {1, -1}) {
+                const double d = Dot(Turned(u, side * c.value), w).v;
+                if (std::abs(d) > best + 1e-12) {
+                    best = std::abs(d);
+                    c.variant = side;
+                    c.sign = Side(Dual(d));
+                }
+            }
         }
         void FreezeSymmetric(Constraint &c, const Eval &e) const {
             const std::vector<Ref> &q = c.refs;

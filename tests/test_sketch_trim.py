@@ -51,7 +51,7 @@ def test_split_keeps_every_piece_and_returns_the_sketch():
     s = overshoot()
     assert s.Split("a", "b") is s
     assert s.Measure()["edges"] == 2 and s.Measure()["length"] == pytest.approx(5)
-    c = px.QuickSketch().Circle(0, 0, 1, id="c").Move((-2, 0)).Line((2, 0), id="d", construction=True)
+    c = px.QuickSketch().Circle((0, 0), 1, id="c").Move((-2, 0)).Line((2, 0), id="d", construction=True)
     c.Trim(("c", (0, -1)), "d")
     m = c.Measure("c")
     assert m["type"] == "arc" and m["angle"] == pytest.approx(180) and m["bounding_box"][0][1] == pytest.approx(0)

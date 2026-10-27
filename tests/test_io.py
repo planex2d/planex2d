@@ -15,11 +15,11 @@ def test_mass_is_length_for_edges_and_wires_and_area_for_faces():
     assert p.mass == pytest.approx(8)
     assert p.wires[0].mass == pytest.approx(12) or p.wires[1].mass == pytest.approx(12)
     assert [e.mass for e in square(0, 0, 2).edges] == [2, 2, 2, 2]
-    disc = px.QuickSketch().Circle(0, 0, 1).Face()
+    disc = px.QuickSketch().Circle((0, 0), 1).Face()
     assert disc.mass == pytest.approx(math.pi)
     assert disc.Wire().mass == pytest.approx(2 * math.pi)
     assert px.Move((0, 0)).Line((1, 0)).Line((1, 1)).Wire().mass == pytest.approx(2)
-    ring = px.QuickSketch().Circle(0, 0, 2).Face() - px.QuickSketch().Circle(0, 0, 1).Face()
+    ring = px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0, 0), 1).Face()
     assert ring.mass == pytest.approx(3 * math.pi)
     curved = px.Move((0, 0)).Line((2, 0)).Line((2, 1))
     curved.Spline([(1, 1.5), (0, 1)])
@@ -29,7 +29,7 @@ def test_mass_is_length_for_edges_and_wires_and_area_for_faces():
 
 def test_write_step_and_brep(tmp_path):
     p = square(0, 0, 2) - square(0.5, 0.5, 1)
-    p.WriteStep(tmp_path / "p.step")
+    p.WriteStep(tmp_path / "p.step", unit=px.mm, scale=1)
     p.WriteBrep(tmp_path / "p.brep")
     for name in ("p.step", "p.brep"):
         shape = occ.OCCGeometry(str(tmp_path / name)).shape
@@ -44,6 +44,7 @@ def test_write_step_and_brep(tmp_path):
 
 
 def test_bspline_round_trip_through_its_data():
+    pytest.importorskip("shapely")
     s = px.Spline([(0, 0), (1, 1), (2, 0), (3, 1)])
     b = s.edges[0].edge.bspline
     assert b["degree"] == 3 and b["weights"] is None

@@ -68,7 +68,7 @@ def rect(x, y, w, h):
 
 
 def circle(x, y, r):
-    return px.QuickSketch().Circle(x, y, r).Face()
+    return px.QuickSketch().Circle((x, y), r).Face()
 
 
 def stadium_area(length, d):

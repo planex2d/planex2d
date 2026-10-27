@@ -28,6 +28,10 @@
  "px.ArcEdge.radius": "property",
  "px.ArcEdge.start": "property",
  "px.ArcEdge.sweep": "property",
+ "px.Auto": [
+  "(no signature)"
+ ],
+ "px.Chamfer": "value",
  "px.Circle": [
   "Circle(center: Point, r: float, reverse: bool = False, plane: Plane | None = None, *, id: str | None = None) -> Wire"
  ],
@@ -79,10 +83,10 @@
   "(self, *args: Any, **kwargs: Any) -> Compound"
  ],
  "px.Compound.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.Compound.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.Compound.Polylines": [
   "(self, tol: float) -> list[np.ndarray]"
@@ -115,16 +119,19 @@
   "(self, *args: Any, **kwargs: Any) -> Compound"
  ],
  "px.Compound.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Compound.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.Compound.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.Compound.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.Compound.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Compound.bounding_box": "property",
  "px.Compound.id": "property",
@@ -135,6 +142,7 @@
  "px.Constraint.Angle": "member",
  "px.Constraint.Coincident": "member",
  "px.Constraint.Concentric": "member",
+ "px.Constraint.Curvature": "member",
  "px.Constraint.Diameter": "member",
  "px.Constraint.Distance": "member",
  "px.Constraint.Equal": "member",
@@ -150,8 +158,12 @@
  "px.Constraint.Vertical": "member",
  "px.Constraint.name": "property",
  "px.Constraint.value": "property",
+ "px.Curvature": "value",
+ "px.Curve": [
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float, float], /, *, plane: Plane | None = None, id: str | None = None) -> Wire"
+ ],
  "px.DeformableShape": [
-  "(self, shape: Face | Shape, h: float, min_distance: float | None = None, clean: bool = False, topology_changed_callback: Callable[[DeformableShape], Any] | None = None) -> None"
+  "(self, shape: Face | Shape, h: float, min_distance: float | Auto = px.Auto, clean: bool = False, topology_changed_callback: Callable[[DeformableShape], Any] | None = None) -> None"
  ],
  "px.DeformableShape.Clean": [
   "(self) -> bool"
@@ -160,7 +172,7 @@
   "(self) -> bool"
  ],
  "px.DeformableShape.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.DeformableShape.SetDeformation": [
   "(self, d: np.ndarray | Any, commit: bool = True) -> bool"
@@ -170,6 +182,52 @@
  ],
  "px.Diameter": "value",
  "px.Distance": "value",
+ "px.Drawing": [
+  "(self, sketch, /, unit: float | None = None, names: bool = False, view_name: str | None = None)"
+ ],
+ "px.Drawing.Add": [
+  "(self, sketch, /) -> Drawing"
+ ],
+ "px.Drawing.Axis": [
+  "(self, a, b=None, /, through=None) -> Drawing"
+ ],
+ "px.Drawing.Callout": [
+  "(self, tip, direction, letter: str, /) -> Drawing"
+ ],
+ "px.Drawing.Center": [
+  "(self, id: str, /, *, arms: str | None = None, cross: bool = False, pitch: bool = False, off: bool = False) -> Drawing"
+ ],
+ "px.Drawing.Hide": [
+  "(self, *ids: str) -> Drawing"
+ ],
+ "px.Drawing.Line": [
+  "(self, points, /, hidden: bool = False) -> Drawing"
+ ],
+ "px.Drawing.Measure": [
+  "(self, p, q, /, value=None, offset: float = 10.0) -> Drawing"
+ ],
+ "px.Drawing.Place": [
+  "(self, id: str, place: Any = px.Auto, /, *, leader: bool = False, outside: bool = False, inside: bool = False, across: float | None = None, supplement: bool = False, count: int | Auto = px.Auto, text: str | None = None, suffix: str | None = None) -> Drawing"
+ ],
+ "px.Drawing.ToSVG": [
+  "(self) -> str"
+ ],
+ "px.Drawing.Update": [
+  "(self) -> Drawing"
+ ],
+ "px.Drawing.ViewName": [
+  "(self, name: str | None, /) -> Drawing"
+ ],
+ "px.Drawing.WriteDXF": [
+  "(self, path, /) -> None"
+ ],
+ "px.Drawing.WritePDF": [
+  "(self, path, /) -> None"
+ ],
+ "px.Drawing.WriteSVG": [
+  "(self, path, /) -> None"
+ ],
+ "px.Drawing.plane": "property",
  "px.Edge": [
   "(self, /, *args, **kwargs)"
  ],
@@ -177,13 +235,16 @@
   "(self, /, *args, **kwargs)"
  ],
  "px.EdgeView.ClosestPoint": [
-  "ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray"
+  "ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray",
+  "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]"
  ],
  "px.EdgeView.Copy": [
   "Copy() -> Wire"
  ],
  "px.EdgeView.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, on_carrier: bool = False, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, on_carrier: bool = False, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, on_carrier: bool = False, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str, on_carrier: bool = False) -> float | tuple[float, ...]"
  ],
  "px.EdgeView.Hausdorff": [
   "(self, other: Any, samples: int = 64) -> float"
@@ -261,6 +322,9 @@
  "px.EdgesView.minh": "property",
  "px.EdgesView.name": "property",
  "px.EdgesView.partition": "property",
+ "px.Ellipse": [
+  "Ellipse(center: Point, major: float, minor: float, angle: float = 0, reverse: bool = False, plane: Plane | None = None) -> Wire"
+ ],
  "px.Equal": "value",
  "px.Face": [
   "Face()",
@@ -277,22 +341,35 @@
   "CloseGaps(tol: float) -> Face"
  ],
  "px.Face.ClosestPoint": [
-  "ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray"
+  "ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray",
+  "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]"
  ],
  "px.Face.Contains": [
-  "Contains(point: Point | Point3 | np.ndarray, /, boundary: bool = True) -> bool | np.ndarray"
+  "Contains(other: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, boundary: bool = True) -> np.ndarray",
+  "Contains(other: Point | Point3 | Face | Shape | Wire, /, boundary: bool = True) -> bool"
  ],
  "px.Face.Copy": [
   "Copy(*, id: str | None = None) -> Face"
  ],
+ "px.Face.Covers": [
+  "Covers(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Face.Crosses": [
+  "Crosses(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Face.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str) -> float | tuple[float, ...]"
+ ],
+ "px.Face.Equals": [
+  "Equals(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Face.Fillet": [
-  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /) -> Face"
+  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /) -> Face"
  ],
  "px.Face.Filleted": [
-  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /, *, id: str | None = None) -> Face"
+  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /, *, id: str | None = None) -> Face"
  ],
  "px.Face.FitArcs": [
   "FitArcs(tol: float | None = None, max_edge_length: float | None = None, max_edge_angle: float | None = None, ignore_edges_smaller: float | None = None) -> Face"
@@ -301,13 +378,25 @@
   "(self, other: Any, samples: int = 64) -> float"
  ],
  "px.Face.Identify": [
-  "Identify(a: str, b: str, /, trafo: Transformation | tuple | None = None, *, name: str | None = None, type: IdentificationType | None = None) -> Face"
+  "Identify(a: str, b: str, /, trafo: Transformation | tuple | Auto = px.Auto, *, name: str | None = None, type: IdentificationType | None = None) -> Face"
  ],
  "px.Face.Intersections": [
   "Intersections(other: Wire, /) -> list[Vertex]"
  ],
+ "px.Face.Intersects": [
+  "Intersects(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Face.IsClosed": [
   "IsClosed() -> bool"
+ ],
+ "px.Face.IsCoveredBy": [
+  "IsCoveredBy(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Face.IsDisjoint": [
+  "IsDisjoint(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Face.IsWithin": [
+  "IsWithin(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Face.Measure": [
   "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict",
@@ -328,22 +417,28 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.Face.Offset": [
-  "Offset(d: float, inplace: bool = True, *, id: str | None = None) -> Face | Shape"
+  "Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round, *, id: str | None = None) -> Face | Shape"
  ],
  "px.Face.OpenEnds": [
   "OpenEnds() -> list[tuple[int, bool]]"
  ],
+ "px.Face.Overlaps": [
+  "Overlaps(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Face.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.Face.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.Face.Polylines": [
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Face.Project": [
-  "Project(shape: TopoDS_Shape, /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+ ],
+ "px.Face.Relate": [
+  "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
  ],
  "px.Face.RemoveIdentification": [
   "RemoveIdentification(name: str) -> Face"
@@ -408,6 +503,9 @@
   "ToXYZ(point: Point, /) -> tuple[float, float, float]",
   "ToXYZ(points: list[Point], /) -> list[tuple[float, float, float]]"
  ],
+ "px.Face.Touches": [
+  "Touches(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Face.Translate": [
   "Translate(d: tuple[float, float]) -> Face",
   "Translate(dh: float, dv: float) -> Face",
@@ -427,16 +525,19 @@
   "Wire() -> Wire"
  ],
  "px.Face.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Face.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.Face.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.Face.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.Face.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Face.arcs": "property",
  "px.Face.bounding_box": "property",
@@ -475,22 +576,35 @@
   "CloseGaps(tol: float) -> Face"
  ],
  "px.FaceView.ClosestPoint": [
-  "ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray"
+  "ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray",
+  "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]"
  ],
  "px.FaceView.Contains": [
-  "Contains(point: Point | Point3 | np.ndarray, /, boundary: bool = True) -> bool | np.ndarray"
+  "Contains(other: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, boundary: bool = True) -> np.ndarray",
+  "Contains(other: Point | Point3 | Face | Shape | Wire, /, boundary: bool = True) -> bool"
  ],
  "px.FaceView.Copy": [
   "Copy(*, id: str | None = None) -> Face"
  ],
+ "px.FaceView.Covers": [
+  "Covers(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.FaceView.Crosses": [
+  "Crosses(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.FaceView.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str) -> float | tuple[float, ...]"
+ ],
+ "px.FaceView.Equals": [
+  "Equals(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.FaceView.Fillet": [
   "(self, *args, **kwargs)"
  ],
  "px.FaceView.Filleted": [
-  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /) -> Face"
+  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /) -> Face"
  ],
  "px.FaceView.FitArcs": [
   "(self, *args, **kwargs)"
@@ -501,8 +615,20 @@
  "px.FaceView.Intersections": [
   "Intersections(other: Wire, /) -> list[Vertex]"
  ],
+ "px.FaceView.Intersects": [
+  "Intersects(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.FaceView.IsClosed": [
   "IsClosed() -> bool"
+ ],
+ "px.FaceView.IsCoveredBy": [
+  "IsCoveredBy(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.FaceView.IsDisjoint": [
+  "IsDisjoint(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.FaceView.IsWithin": [
+  "IsWithin(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.FaceView.Measure": [
   "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict",
@@ -522,10 +648,13 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.FaceView.Offset": [
-  "Offset(d: float, inplace: bool = True) -> Face | Shape"
+  "Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round) -> Face | Shape"
  ],
  "px.FaceView.OpenEnds": [
   "OpenEnds() -> list[tuple[int, bool]]"
+ ],
+ "px.FaceView.Overlaps": [
+  "Overlaps(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.FaceView.Plot": [
   "(self, *args, **kwargs)"
@@ -537,7 +666,10 @@
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.FaceView.Project": [
-  "Project(shape: TopoDS_Shape, /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+ ],
+ "px.FaceView.Relate": [
+  "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
  ],
  "px.FaceView.RemoveIdentification": [
   "(self, *args, **kwargs)"
@@ -600,6 +732,9 @@
   "ToXYZ(point: Point, /) -> tuple[float, float, float]",
   "ToXYZ(points: list[Point], /) -> list[tuple[float, float, float]]"
  ],
+ "px.FaceView.Touches": [
+  "Touches(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.FaceView.Translate": [
   "(self, *args, **kwargs)"
  ],
@@ -622,6 +757,9 @@
   "(self, *args, **kwargs)"
  ],
  "px.FaceView.WriteGeo": [
+  "(self, *args, **kwargs)"
+ ],
+ "px.FaceView.WriteSVG": [
   "(self, *args, **kwargs)"
  ],
  "px.FaceView.WriteStep": [
@@ -677,17 +815,24 @@
   "(id: str) -> Any"
  ],
  "px.Fix": "value",
+ "px.Flat": "value",
+ "px.FromBrep": [
+  "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> Face | Shape | Wire | Compound"
+ ],
  "px.FromDXF": [
-  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | None = None, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
+  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
  ],
  "px.FromKiCad": [
   "(path: str | os.PathLike, /, layer: str | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = 5e-08, merge_small_faces_instead: bool | None = True, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
  ],
  "px.FromLevelSet": [
-  "(field: Any, /, edge_length: float | None, inside: str = 'positive', name: str = 'interface', project: bool = True, subdivide: int | None = None, plane: Plane | None = None, periodic: bool = True, *, id: str | None = None) -> Shape"
+  "(field: Any, /, edge_length: float | None, inside: str = 'positive', name: str = 'interface', project: bool = True, subdivide: int | Auto = px.Auto, plane: Plane | None = None, periodic: bool = True, *, id: str | None = None) -> Shape"
  ],
  "px.FromNACA": [
-  "(code: str, /, chord: float = 1.0, samples: int = 100, trailing_edge: str = 'sharp', angle: float = 0.0, pivot: float = 0.25, plane: Plane | None = None, *, id: str | None = None) -> Face"
+  "(code: str, /, chord: float = 1.0, trailing_edge: OffsetForm = px.Sharp, angle: float = 0.0, pivot: float = 0.25, plane: Plane | None = None, *, id: str | None = None) -> Face"
+ ],
+ "px.FromNumpy": [
+  "FromNumpy(data: dict, /, plane: Plane | None = None) -> Wire"
  ],
  "px.FromOCC": [
   "(source: Any, /, *, id: str | None = None) -> Shape"
@@ -695,8 +840,14 @@
  "px.FromPolyline": [
   "FromPolyline(points: np.ndarray | list[Point], /, closed: bool = False, *, plane: Plane | None = None, name: str | None = None, maxh: float | None = None, col: tuple[float, ...] | None = None, minh: float | None = None, hpref: float | None = None, layer: int | None = None, partition: list[float] | None = None, id: str | None = None) -> Wire"
  ],
+ "px.FromSVG": [
+  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None) -> list[Wire]"
+ ],
  "px.FromShapely": [
   "(geom: Any, /, plane: Plane | None = None, tol: float = 1e-07, *, id: str | None = None) -> Shape | list[Wire] | Compound"
+ ],
+ "px.FromStep": [
+  "(path: str | os.PathLike, /, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto) -> Face | Shape | Wire | Compound"
  ],
  "px.GetTransformation": [
   "GetTransformation(a: Wire | Face | Shape | EdgeView | EdgesView | Selection | LineEdge | ArcEdge | list, b: Wire | Face | Shape | EdgeView | EdgesView | Selection | LineEdge | ArcEdge | list, /, reverse: bool = False) -> Transformation"
@@ -737,8 +888,8 @@
  "px.LineEdge.from_spline": "property",
  "px.LineEdge.start": "property",
  "px.Move": [
-  "Move(start: Point, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool = False, error_on_branch_change: bool | None = None, mode: str = \"normal\", id: str | None = None, id: str | None = None) -> Sketch | QuickSketch",
-  "Move(h: float, v: float, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool = False, error_on_branch_change: bool | None = None, mode: str = \"normal\", id: str | None = None, id: str | None = None) -> Sketch | QuickSketch"
+  "Move(start: Point, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None) -> Sketch | QuickSketch",
+  "Move(h: float, v: float, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None) -> Sketch | QuickSketch"
  ],
  "px.OCCGeometry": [
   "OCCGeometry(face: Face, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
@@ -746,13 +897,35 @@
   "OCCGeometry(shape: Shape, /, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
   "OCCGeometry(sketch: Sketch | QuickSketch, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry"
  ],
+ "px.OffsetForm": [
+  "(no signature)"
+ ],
+ "px.OffsetForm.Chamfer": "member",
+ "px.OffsetForm.Flat": "member",
+ "px.OffsetForm.Round": "member",
+ "px.OffsetForm.Sharp": "member",
+ "px.OffsetForm.Square": "member",
+ "px.OffsetForm.name": "property",
+ "px.OffsetForm.value": "property",
  "px.Pad": [
-  "Pad(profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, dir: Point3 | None = None, reverse: bool = False, until: Plane | Face | Shape | Sketch | QuickSketch | TopoDS_Shape | None = None) -> TopoDS_Shape"
+  "Pad(profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, dir: Point3 | Auto = px.Auto, reverse: bool = False, until: Plane | Face | Shape | Sketch | QuickSketch | TopoDS_Shape | Sequence[TopoDS_Shape] | None = None, offset: float = 0.0) -> TopoDS_Shape"
  ],
  "px.Parallel": "value",
+ "px.Parameters": [
+  "(self, values: dict[str, float] | None = None, /, **kwargs: float) -> None"
+ ],
+ "px.Parameters.Update": [
+  "(self, values: dict[str, float] | None = None, /, **kwargs: float) -> Parameters"
+ ],
  "px.Perpendicular": "value",
  "px.Plane": [
-  "Plane(plane: Plane | None, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(plane: Plane | None, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(plane: Plane, point: Point3, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(plane: Plane, offset: float, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(line: Wire, line2: Wire, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(line: Wire, point: Point3, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(p1: Point3, p2: Point3, p3: Point3, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
+  "Plane(point: Point3, normal: Point3, /, *, origin: Point3 | None = None, axis: Point3 | None = None)",
   "Plane(*, origin: Point3 = (0, 0, 0), normal: Point3 = (0, 0, 1), axis: Point3 | None = None)"
  ],
  "px.Plane.Copy": [
@@ -760,9 +933,6 @@
  ],
  "px.Plane.Mirrored": [
   "Mirrored(point: Point3, /, normal: tuple[float, float, float]) -> Plane"
- ],
- "px.Plane.Offset": [
-  "Offset(d: float) -> Plane"
  ],
  "px.Plane.Rotated": [
   "Rotated(point: Point3, /, dir: tuple[float, float, float], angle: float) -> Plane"
@@ -789,54 +959,60 @@
   "(self, /, *args, **kwargs)"
  ],
  "px.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.PlotField": [
-  "(field: Any, mesh: Any = None, obj: Any = None, /, on: str = 'faces', ax: Any = None, backend: str | None = None, samples: int | None = None, vectors: bool = False, min: float | None = None, max: float | None = None, contours: int | list[float] | None = None, field_lines: bool | float = False, colormap: str | Any = 'default', legend: bool = True) -> Any"
+  "(field: Any, mesh: Any = None, obj: Any = None, /, on: str = 'faces', ax: Any = None, backend: str | None = None, samples: int | None = None, vectors: bool = False, min: float | Auto = px.Auto, max: float | Auto = px.Auto, contours: int | list[float] | None = None, field_lines: bool | float = False, colormap: str | Any = 'default', legend: bool = True) -> Any"
  ],
  "px.PlotMesh": [
   "(mesh: Any, obj: Any = None, /, ax: Any = None, backend: str | None = None, legend: bool = True) -> Any"
  ],
  "px.Pocket": [
-  "Pocket(target: TopoDS_Shape, profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, dir: Point3 | None = None, reverse: bool = False, until: SketchUntil | Plane | Face | Shape | Sketch | QuickSketch | TopoDS_Shape | None = None) -> TopoDS_Shape"
+  "Pocket(target: TopoDS_Shape, profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, dir: Point3 | Auto = px.Auto, reverse: bool = False, until: SketchUntil | Plane | Face | Shape | Sketch | QuickSketch | TopoDS_Shape | Sequence[TopoDS_Shape] | None = None, offset: float = 0.0) -> TopoDS_Shape"
  ],
  "px.Project": [
-  "Project(shape: TopoDS_Shape, /, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
  ],
  "px.QuickSketch": [
   "QuickSketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, copy: bool = False, id: str | None = None)",
   "QuickSketch(start: Point, /, *flags: Constraint, dir: tuple[float, float] | None = None, id: str | None = None)"
  ],
+ "px.QuickSketch.Add": [
+  "Add(geometry: Wire | Face | Shape, /) -> QuickSketch"
+ ],
  "px.QuickSketch.Arc": [
   "Arc(r: float, sweep: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Arc(to: Point | Id, /, *flags: Constraint, **options) -> QuickSketch",
   "Arc(to: Point | Id, r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Arc(from_: Point | Id, to: Point | Id, r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Arc(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Arc(start: Point | Id, end: Point | Id, r: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "Arc(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.ArcSlot": [
   "ArcSlot(r: float, sweep: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "ArcSlot(to: Point | Id, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "ArcSlot(to: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "ArcSlot(from_: Point | Id, to: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "ArcSlot(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "ArcSlot(start: Point | Id, end: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "ArcSlot(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Chamfer": [
   "Chamfer(at: Id | Point | list[Id | Point], d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False, *, id: str | list[str] | None = None, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Circle": [
   "Circle(r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Circle(h: float, v: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Circle(*r: float | Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Circle(center: Point, r: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "Circle(*r: float | Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.CircularPattern": [
-  "CircularPattern(ids: Ids, center: Id, count: int, angle: float | None = None, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> QuickSketch"
+  "CircularPattern(ids: Ids, center: Id, count: int, angle: float | Auto = px.Auto, auto_constraint: bool = False, internal_constraints: bool = False, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Close": [
   "Close(*flags: Constraint, id_wire: str | None = None, **options) -> QuickSketch"
+ ],
+ "px.QuickSketch.Connect": [
+  "Connect(a: Id, b: Id, continuity: Constraint = px.Tangent, /, reverse: bool = False, *, id: str | None = None, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Construction": [
   "Construction(*, id: str | None = None) -> Wire"
@@ -844,18 +1020,21 @@
  "px.QuickSketch.Copy": [
   "Copy(*, id: str | None = None) -> QuickSketch"
  ],
+ "px.QuickSketch.Curve": [
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, **options) -> QuickSketch"
+ ],
+ "px.QuickSketch.Diagnose": [
+  "Diagnose(gap: float | Auto = px.Auto) -> dict"
+ ],
  "px.QuickSketch.Direction": [
   "Direction(d: tuple[float, float], /) -> QuickSketch",
   "Direction(dh: float, dv: float, /) -> QuickSketch"
- ],
- "px.QuickSketch.Edge": [
-  "Edge(element: Id, /, *, id: str | None = None) -> Wire"
  ],
  "px.QuickSketch.Face": [
   "Face(*, id: str | None = None) -> Face"
  ],
  "px.QuickSketch.Fillet": [
-  "Fillet(at: Id | Point | list[Id | Point], r: float, /, *, id: str | list[str] | None = None, **options) -> QuickSketch"
+  "Fillet(at: Id | Point | list[Id | Point], r: float, continuity: Constraint = px.Tangent, /, *, id: str | list[str] | None = None, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Finish": [
   "Finish(id_wire: str | None = None) -> QuickSketch"
@@ -866,27 +1045,27 @@
  "px.QuickSketch.Hexagon": [
   "Hexagon(af: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Hexagon(h: float, v: float, af: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Intersect3d": [
-  "Intersect3d(shape: occ.TopoDS_Shape, /, construction: bool = True, name: str | None = None, id: str | None = None) -> QuickSketch"
+  "Intersect3d(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Keyhole": [
   "Keyhole(l: float, w: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Keyhole(dh: float, dv: float, w: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Keyhole(to: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Keyhole(from_: Point | Id, to: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Keyhole(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Keyhole(start: Point | Id, end: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "Keyhole(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Line": [
   "Line(l: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Line(dh: float, dv: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Line(to: Point | Id, /, *flags: Constraint, **options) -> QuickSketch",
-  "Line(from_: Point | Id, to: Point | Id, /, *flags: Constraint, **options) -> QuickSketch",
-  "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Line(start: Point | Id, end: Point | Id, /, *flags: Constraint, **options) -> QuickSketch",
+  "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.LinearPattern": [
-  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> QuickSketch"
+  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = False, internal_constraints: bool = False, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Location": [
   "Location(id: Id, /) -> tuple[float, float]"
@@ -901,7 +1080,7 @@
  ],
  "px.QuickSketch.Mirrored": [
   "Mirrored(axis: Id) -> QuickSketch",
-  "Mirrored(ids: Ids, axis: Id, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> QuickSketch"
+  "Mirrored(ids: Ids, axis: Id, auto_constraint: bool = False, internal_constraints: bool = False, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Move": [
   "Move(point: Point, /, *flags: Constraint, dir: tuple[float, float] | None = None) -> QuickSketch",
@@ -912,24 +1091,24 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.QuickSketch.Offset": [
-  "Offset(source: Ids, /, d: float | tuple[float, Point], both_sides: bool | None = None, **options) -> QuickSketch"
+  "Offset(source: Ids, /, d: float | tuple[float, Point], both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Plot": [
-  "(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: Any = None, backend: str | None = None) -> Any"
+  "(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: Any = None, backend: str | None = None) -> Any"
  ],
  "px.QuickSketch.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.QuickSketch.Polygon": [
   "Polygon(r: float, n: int, /, *flags: Constraint, **options) -> QuickSketch",
   "Polygon(h: float, v: float, r: float, n: int, /, *flags: Constraint, **options) -> QuickSketch",
-  "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Polylines": [
   "(sketch: Sketch | QuickSketch, tol: float) -> list[np.ndarray]"
  ],
  "px.QuickSketch.Project": [
-  "Project(shape: occ.TopoDS_Shape, /, construction: bool = True, name: str | None = None, id: str | None = None) -> QuickSketch"
+  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Rectangle": [
   "Rectangle(l: float, w: float, **options) -> QuickSketch",
@@ -972,8 +1151,8 @@
   "Slot(l: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Slot(dh: float, dv: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Slot(to: Point | Id, w: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Slot(from_: Point | Id, to: Point | Id, w: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
+  "Slot(start: Point | Id, end: Point | Id, w: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Spline": [
   "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tol: float | None = None, **options) -> QuickSketch"
@@ -1032,22 +1211,25 @@
   "Vertex(id: str, point: tuple[float, float] | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Wire": [
-  "Wire(unify: bool = True, *, id: str | None = None) -> Wire"
+  "Wire(element: Id | None = None, /, *, unify: bool = True, id: str | None = None) -> Wire"
  ],
  "px.QuickSketch.Wires": [
   "Wires(unify: bool = True, *, id: str | None = None) -> list[Wire]"
  ],
  "px.QuickSketch.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.QuickSketch.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.QuickSketch.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.QuickSketch.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.QuickSketch.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.QuickSketch.bounding_box": "property",
  "px.QuickSketch.chain_start": "property",
@@ -1067,6 +1249,7 @@
  "px.Rotation": [
   "Rotation(angle: float, center: Point = (0, 0)) -> Transformation"
  ],
+ "px.Round": "value",
  "px.Selection": [
   "(self, items: Any, /) -> None"
  ],
@@ -1123,25 +1306,38 @@
   "CloseGaps(tol: float) -> Shape"
  ],
  "px.Shape.ClosestPoint": [
-  "ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray"
+  "ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray",
+  "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]"
  ],
  "px.Shape.Contains": [
-  "Contains(point: Point | Point3 | np.ndarray, /, boundary: bool = True) -> bool | np.ndarray"
+  "Contains(other: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, boundary: bool = True) -> np.ndarray",
+  "Contains(other: Point | Point3 | Face | Shape | Wire, /, boundary: bool = True) -> bool"
  ],
  "px.Shape.Copy": [
   "Copy(*, id: str | None = None) -> Shape"
  ],
+ "px.Shape.Covers": [
+  "Covers(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Shape.Crosses": [
+  "Crosses(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Shape.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str) -> float | tuple[float, ...]"
+ ],
+ "px.Shape.Equals": [
+  "Equals(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Shape.Face": [
   "Face(*, id: str | None = None) -> Face"
  ],
  "px.Shape.Fillet": [
-  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /) -> Shape"
+  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /) -> Shape"
  ],
  "px.Shape.Filleted": [
-  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /, *, id: str | None = None) -> Shape"
+  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /, *, id: str | None = None) -> Shape"
  ],
  "px.Shape.FitArcs": [
   "FitArcs(tol: float | None = None, max_edge_length: float | None = None, max_edge_angle: float | None = None, ignore_edges_smaller: float | None = None) -> Shape"
@@ -1150,7 +1346,19 @@
   "(self, other: Any, samples: int = 64) -> float"
  ],
  "px.Shape.Identify": [
-  "Identify(a: str, b: str, /, trafo: Transformation | tuple | None = None, *, name: str | None = None, type: IdentificationType | None = None) -> Shape"
+  "Identify(a: str, b: str, /, trafo: Transformation | tuple | Auto = px.Auto, *, name: str | None = None, type: IdentificationType | None = None) -> Shape"
+ ],
+ "px.Shape.Intersects": [
+  "Intersects(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Shape.IsCoveredBy": [
+  "IsCoveredBy(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Shape.IsDisjoint": [
+  "IsDisjoint(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Shape.IsWithin": [
+  "IsWithin(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Shape.Measure": [
   "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict",
@@ -1171,19 +1379,25 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.Shape.Offset": [
-  "Offset(d: float, inplace: bool = True, *, id: str | None = None) -> Shape"
+  "Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round, *, id: str | None = None) -> Shape"
+ ],
+ "px.Shape.Overlaps": [
+  "Overlaps(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Shape.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.Shape.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.Shape.Polylines": [
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Shape.Project": [
-  "Project(shape: TopoDS_Shape, /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+ ],
+ "px.Shape.Relate": [
+  "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
  ],
  "px.Shape.RemoveIdentification": [
   "RemoveIdentification(name: str) -> Shape"
@@ -1242,6 +1456,9 @@
   "ToXYZ(point: Point, /) -> tuple[float, float, float]",
   "ToXYZ(points: list[Point], /) -> list[tuple[float, float, float]]"
  ],
+ "px.Shape.Touches": [
+  "Touches(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Shape.Translate": [
   "Translate(d: tuple[float, float]) -> Shape",
   "Translate(dh: float, dv: float) -> Shape",
@@ -1261,16 +1478,19 @@
   "Wire(*, id: str | None = None) -> Wire"
  ],
  "px.Shape.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Shape.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.Shape.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.Shape.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.Shape.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Shape.arcs": "property",
  "px.Shape.bounding_box": "property",
@@ -1294,37 +1514,74 @@
  "px.Shape.splines": "property",
  "px.Shape.vertices": "property",
  "px.Shape.wires": "property",
+ "px.Sharp": "value",
+ "px.Sheet": [
+  "(self, *drawings: Drawing, size: str = 'A4', scale: float | None = None, frame: bool = False, font: str | os.PathLike | None = None, landscape: bool | None = None)"
+ ],
+ "px.Sheet.Add": [
+  "(self, drawing: Drawing, /, at=None) -> Sheet"
+ ],
+ "px.Sheet.Notes": [
+  "(self, left: str = '', right: str = '') -> Sheet"
+ ],
+ "px.Sheet.Table": [
+  "(self, rows, /, at=(0, 0), widths=(44, 20), height: float = 7) -> Sheet"
+ ],
+ "px.Sheet.Title": [
+  "(self, template: str | os.PathLike | None = None, /, **fields: Any) -> Sheet"
+ ],
+ "px.Sheet.ToSVG": [
+  "(self) -> str"
+ ],
+ "px.Sheet.WriteDXF": [
+  "(self, path, /) -> None"
+ ],
+ "px.Sheet.WritePDF": [
+  "(self, path, /) -> None"
+ ],
+ "px.Sheet.WriteSVG": [
+  "(self, path, /) -> None"
+ ],
  "px.Sketch": [
-  "Sketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, copy: bool = False, auto_constraint: bool = False, error_on_branch_change: bool | None = None, mode: str = \"normal\", id: str | None = None)",
-  "Sketch(start: Point, /, *flags: Constraint, dir: tuple[float, float] | None = None, auto_constraint: bool = False, error_on_branch_change: bool | None = None, mode: str = \"normal\", id: str | None = None)"
+  "Sketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, copy: bool = False, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None)",
+  "Sketch(start: Point, /, *flags: Constraint, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None)"
+ ],
+ "px.Sketch.Add": [
+  "Add(geometry: Wire | Face | Shape, /) -> Sketch"
  ],
  "px.Sketch.Arc": [
   "Arc(r: float, sweep: float, /, *flags: Constraint, **options) -> Sketch",
   "Arc(to: Point | Id, /, *flags: Constraint, **options) -> Sketch",
   "Arc(to: Point | Id, r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Arc(from_: Point | Id, to: Point | Id, r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Arc(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> Sketch"
+  "Arc(start: Point | Id, end: Point | Id, r: float, /, *flags: Constraint, **options) -> Sketch",
+  "Arc(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.ArcSlot": [
   "ArcSlot(r: float, sweep: float, w: float, /, *flags: Constraint, **options) -> Sketch",
   "ArcSlot(to: Point | Id, w: float, /, *flags: Constraint, **options) -> Sketch",
   "ArcSlot(to: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> Sketch",
-  "ArcSlot(from_: Point | Id, to: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> Sketch",
-  "ArcSlot(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> Sketch"
+  "ArcSlot(start: Point | Id, end: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> Sketch",
+  "ArcSlot(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> Sketch"
+ ],
+ "px.Sketch.AutoConstrain": [
+  "AutoConstrain(geometric: bool | dict = True, dimensional: bool = True, tol: float | None = None) -> list[str]"
  ],
  "px.Sketch.Chamfer": [
   "Chamfer(at: Id | Point | list[Id | Point], d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False, *, id: str | list[str] | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Circle": [
   "Circle(r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Circle(h: float, v: float, r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Circle(*r: float | Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
+  "Circle(center: Point, r: float, /, *flags: Constraint, **options) -> Sketch",
+  "Circle(*r: float | Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.CircularPattern": [
-  "CircularPattern(ids: Ids, center: Id, count: int, angle: float | None = None, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> Sketch"
+  "CircularPattern(ids: Ids, center: Id, count: int, angle: float | Auto = px.Auto, auto_constraint: bool = True, internal_constraints: bool = True, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Close": [
   "Close(*flags: Constraint, id_wire: str | None = None, **options) -> Sketch"
+ ],
+ "px.Sketch.Connect": [
+  "Connect(a: Id, b: Id, continuity: Constraint = px.Tangent, /, reverse: bool = False, *, id: str | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Constrain": [
   "Constrain(*args: Id | Constraint | float, id: str | None = None, reference: bool = False) -> Sketch"
@@ -1335,12 +1592,15 @@
  "px.Sketch.Copy": [
   "Copy(*, id: str | None = None) -> Sketch"
  ],
+ "px.Sketch.Curve": [
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, **options) -> Sketch"
+ ],
+ "px.Sketch.Diagnose": [
+  "Diagnose(gap: float | Auto = px.Auto) -> dict"
+ ],
  "px.Sketch.Direction": [
   "Direction(d: tuple[float, float], /) -> Sketch",
   "Direction(dh: float, dv: float, /) -> Sketch"
- ],
- "px.Sketch.Edge": [
-  "Edge(element: Id, /, *, id: str | None = None) -> Wire"
  ],
  "px.Sketch.Expression": [
   "Expression(text: str, rhs: str | None = None, *, id: str | None = None) -> Sketch"
@@ -1349,10 +1609,13 @@
   "Face(*, id: str | None = None) -> Face"
  ],
  "px.Sketch.Fillet": [
-  "Fillet(at: Id | Point | list[Id | Point], r: float, /, *, id: str | list[str] | None = None, **options) -> Sketch"
+  "Fillet(at: Id | Point | list[Id | Point], r: float, continuity: Constraint = px.Tangent, /, *, id: str | list[str] | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Finish": [
   "Finish(id_wire: str | None = None) -> Sketch"
+ ],
+ "px.Sketch.FreeMotions": [
+  "FreeMotions() -> list[dict]"
  ],
  "px.Sketch.Geometry": [
   "Geometry(id: Id) -> dict"
@@ -1360,27 +1623,27 @@
  "px.Sketch.Hexagon": [
   "Hexagon(af: float, /, *flags: Constraint, **options) -> Sketch",
   "Hexagon(h: float, v: float, af: float, /, *flags: Constraint, **options) -> Sketch",
-  "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
+  "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Intersect3d": [
-  "Intersect3d(shape: occ.TopoDS_Shape, /, construction: bool = True, name: str | None = None, id: str | None = None) -> Sketch"
+  "Intersect3d(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Keyhole": [
   "Keyhole(l: float, w: float, r: float, /, *flags: Constraint, **options) -> Sketch",
   "Keyhole(dh: float, dv: float, w: float, r: float, /, *flags: Constraint, **options) -> Sketch",
   "Keyhole(to: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Keyhole(from_: Point | Id, to: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> Sketch",
-  "Keyhole(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
+  "Keyhole(start: Point | Id, end: Point | Id, w: float, r: float, /, *flags: Constraint, **options) -> Sketch",
+  "Keyhole(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Line": [
   "Line(l: float, /, *flags: Constraint, **options) -> Sketch",
   "Line(dh: float, dv: float, /, *flags: Constraint, **options) -> Sketch",
   "Line(to: Point | Id, /, *flags: Constraint, **options) -> Sketch",
-  "Line(from_: Point | Id, to: Point | Id, /, *flags: Constraint, **options) -> Sketch",
-  "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
+  "Line(start: Point | Id, end: Point | Id, /, *flags: Constraint, **options) -> Sketch",
+  "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.LinearPattern": [
-  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> Sketch"
+  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = True, internal_constraints: bool = True, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Location": [
   "Location(id: Id, /) -> tuple[float, float]"
@@ -1395,7 +1658,7 @@
  ],
  "px.Sketch.Mirrored": [
   "Mirrored(axis: Id) -> Sketch",
-  "Mirrored(ids: Ids, axis: Id, auto_constraint: bool | None = None, internal_constraints: bool | None = None, id: str | None = None) -> Sketch"
+  "Mirrored(ids: Ids, axis: Id, auto_constraint: bool = True, internal_constraints: bool = True, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Move": [
   "Move(point: Point, /, *flags: Constraint, dir: tuple[float, float] | None = None) -> Sketch",
@@ -1406,24 +1669,24 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.Sketch.Offset": [
-  "Offset(source: Ids, /, d: float | tuple[float, Point], both_sides: bool | None = None, **options) -> Sketch"
+  "Offset(source: Ids, /, d: float | tuple[float, Point], both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round, **options) -> Sketch"
  ],
  "px.Sketch.Plot": [
-  "(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: Any = None, backend: str | None = None) -> Any"
+  "(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: Any = None, backend: str | None = None) -> Any"
  ],
  "px.Sketch.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.Sketch.Polygon": [
   "Polygon(r: float, n: int, /, *flags: Constraint, **options) -> Sketch",
   "Polygon(h: float, v: float, r: float, n: int, /, *flags: Constraint, **options) -> Sketch",
-  "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, congruent: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
+  "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Polylines": [
   "(sketch: Sketch | QuickSketch, tol: float) -> list[np.ndarray]"
  ],
  "px.Sketch.Project": [
-  "Project(shape: occ.TopoDS_Shape, /, construction: bool = True, name: str | None = None, id: str | None = None) -> Sketch"
+  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Rectangle": [
   "Rectangle(l: float, w: float, **options) -> Sketch",
@@ -1472,14 +1735,17 @@
   "Slot(l: float, w: float, /, *flags: Constraint, **options) -> Sketch",
   "Slot(dh: float, dv: float, w: float, /, *flags: Constraint, **options) -> Sketch",
   "Slot(to: Point | Id, w: float, /, *flags: Constraint, **options) -> Sketch",
-  "Slot(from_: Point | Id, to: Point | Id, w: float, /, *flags: Constraint, **options) -> Sketch",
-  "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, congruent: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
+  "Slot(start: Point | Id, end: Point | Id, w: float, /, *flags: Constraint, **options) -> Sketch",
+  "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Spline": [
   "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tol: float | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Split": [
   "Split(a: Id, b: Ids | None = None, /, *, auto_constraint: bool = True) -> Sketch"
+ ],
+ "px.Sketch.SuggestConstraints": [
+  "SuggestConstraints(geometric: bool | dict = True, dimensional: bool = True, tol: float | None = None) -> list[dict]"
  ],
  "px.Sketch.SymmetryLine": [
   "SymmetryLine(a: Point | Id, b: Point | Id, /, *, reverse: bool = False, id: str | None = None) -> Sketch"
@@ -1531,26 +1797,32 @@
  "px.Sketch.Update": [
   "Update(values: dict[str, float] | None = None, steps: int = 1) -> Sketch"
  ],
+ "px.Sketch.Use": [
+  "(sketch: Sketch, parameters: Parameters, /) -> Sketch"
+ ],
  "px.Sketch.Vertex": [
   "Vertex(id: str, point: tuple[float, float] | None = None) -> Sketch"
  ],
  "px.Sketch.Wire": [
-  "Wire(unify: bool = True, *, id: str | None = None) -> Wire"
+  "Wire(element: Id | None = None, /, *, unify: bool = True, id: str | None = None) -> Wire"
  ],
  "px.Sketch.Wires": [
   "Wires(unify: bool = True, *, id: str | None = None) -> list[Wire]"
  ],
  "px.Sketch.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Sketch.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.Sketch.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.Sketch.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.Sketch.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Sketch.auto_constraint": "property",
  "px.Sketch.bounding_box": "property",
@@ -1574,7 +1846,7 @@
  "px.Sketch.status": "property",
  "px.Sketch.wires": "property",
  "px.Spline": [
-  "Spline(points: list[Point], /, periodic: bool = False, tol: float = 1e-08, tangents: dict[int, tuple[float, float]] = {}, plane: Plane | None = None, style: str | None = None, *, id: str | None = None) -> Wire"
+  "Spline(points: list[Point] | np.ndarray, /, periodic: bool = False, tol: float = 1e-08, tangents: dict[int, tuple[float, float]] | None = None, plane: Plane | None = None, style: str | None = None, *, id: str | None = None) -> Wire"
  ],
  "px.SplineEdge": [
   "(self, /, *args, **kwargs)"
@@ -1600,11 +1872,15 @@
  "px.SplineEdge.napprox": "property",
  "px.SplineEdge.points": "property",
  "px.SplineEdge.start": "property",
+ "px.Square": "value",
  "px.Subtract": [
   "Subtract(parts: list[Face | Shape | Wire], /, multithreaded: bool = True, *, id: str | None = None) -> Shape"
  ],
  "px.Symmetric": "value",
  "px.SymmetricCarriers": "value",
+ "px.SymmetricDifference": [
+  "SymmetricDifference(parts: list[Face | Shape], /, multithreaded: bool = True) -> Shape"
+ ],
  "px.Tangent": "value",
  "px.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
@@ -1617,7 +1893,7 @@
   "Translation(d: tuple[float, float]) -> Transformation"
  ],
  "px.Unify": [
-  "Unify(parts: list[Face | Shape | Wire | Compound], /, multithreaded: bool = True, *, id: str | None = None) -> Shape"
+  "Unify(parts: list[Face | Shape | Wire | Compound] | Compound, /, multithreaded: bool = True, *, id: str | None = None) -> Shape"
  ],
  "px.V": "value",
  "px.Vertex": [
@@ -1637,7 +1913,9 @@
   "Copy() -> Vertex"
  ],
  "px.VertexView.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str) -> float | tuple[float, ...]"
  ],
  "px.VertexView.angle": "property",
  "px.VertexView.h": "property",
@@ -1672,10 +1950,10 @@
  "px.VerticesView.name": "property",
  "px.Wire": [
   "Wire()",
-  "Wire(edges: Wire | EdgeView | list[Wire | EdgeView], /, tol: float | None = None)"
+  "Wire(edges: Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge | list[Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge], /, tol: float | None = None)"
  ],
  "px.Wire.Add": [
-  "Add(edge: Wire | EdgeView | list[Wire | EdgeView], tol: float | None = None) -> Wire"
+  "Add(edge: Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge | list[Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge], tol: float | None = None) -> Wire"
  ],
  "px.Wire.Chamfer": [
   "Chamfer(at: VertexView | Point | str | list[VertexView | Point | str], d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False) -> Wire"
@@ -1687,22 +1965,37 @@
   "CloseGaps(tol: float) -> Wire"
  ],
  "px.Wire.ClosestPoint": [
-  "ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray"
+  "ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray",
+  "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]"
+ ],
+ "px.Wire.Contains": [
+  "Contains(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Wire.Copy": [
   "Copy(*, id: str | None = None) -> Wire"
  ],
+ "px.Wire.Covers": [
+  "Covers(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Wire.Crosses": [
+  "Crosses(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Wire.Distance": [
-  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | tuple[float, ...] | np.ndarray"
+  "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, signed: bool = False) -> np.ndarray",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, components: None = None, signed: bool = False) -> float",
+  "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, project: bool = False, *, components: str) -> float | tuple[float, ...]"
+ ],
+ "px.Wire.Equals": [
+  "Equals(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Wire.Face": [
   "Face(*, id: str | None = None) -> Face"
  ],
  "px.Wire.Fillet": [
-  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /) -> Wire"
+  "Fillet(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /) -> Wire"
  ],
  "px.Wire.Filleted": [
-  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, /, *, id: str | None = None) -> Wire"
+  "Filleted(at: VertexView | Point | str | list[VertexView | Point | str], r: float, continuity: Constraint = px.Tangent, /, *, id: str | None = None) -> Wire"
  ],
  "px.Wire.FitArcs": [
   "FitArcs(tol: float | None = None, max_edge_length: float | None = None, max_edge_angle: float | None = None, ignore_edges_smaller: float | None = None) -> Wire"
@@ -1713,8 +2006,20 @@
  "px.Wire.Intersections": [
   "Intersections(other: Wire, /) -> list[Vertex]"
  ],
+ "px.Wire.Intersects": [
+  "Intersects(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Wire.IsClosed": [
   "IsClosed() -> bool"
+ ],
+ "px.Wire.IsCoveredBy": [
+  "IsCoveredBy(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Wire.IsDisjoint": [
+  "IsDisjoint(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
+ "px.Wire.IsWithin": [
+  "IsWithin(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Wire.Measure": [
   "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict",
@@ -1735,22 +2040,28 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.Wire.Offset": [
-  "Offset(d: float, *, id: str | None = None) -> Shape"
+  "Offset(d: float, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round, *, id: str | None = None) -> Shape"
  ],
  "px.Wire.OpenEnds": [
   "OpenEnds() -> list[tuple[int, bool]]"
  ],
+ "px.Wire.Overlaps": [
+  "Overlaps(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Wire.Plot": [
-  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /, ax: Any = None, line_col: Color = 'black', arc_col: Color = '#ff7f0e', spline_col: Color = '#2ca02c', face_col: Color | None = '#dde6f0', mark_edges_smaller: float | None = None, mark_free_edges: bool = False, highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None, show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False, show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any"
  ],
  "px.Wire.Plot3d": [
-  "(objects: Any, /, plane_size: float | None = None, backend: str = 'webgpu', **kwargs: Any) -> Any"
+  "(objects: Any, /, plane_size: float | Auto = px.Auto, backend: str = 'webgpu', **kwargs: Any) -> Any"
  ],
  "px.Wire.Polylines": [
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Wire.Project": [
-  "Project(shape: TopoDS_Shape, /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+ ],
+ "px.Wire.Relate": [
+  "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
  ],
  "px.Wire.RemoveMeasure": [
   "(self, id: str) -> None"
@@ -1790,6 +2101,9 @@
   "ToHV(point: Point3, /) -> tuple[float, float]",
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
+ "px.Wire.ToNumpy": [
+  "ToNumpy() -> dict"
+ ],
  "px.Wire.ToOCCFace": [
   "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
  ],
@@ -1815,6 +2129,9 @@
   "ToXYZ(point: Point, /) -> tuple[float, float, float]",
   "ToXYZ(points: list[Point], /) -> list[tuple[float, float, float]]"
  ],
+ "px.Wire.Touches": [
+  "Touches(other: Face | Shape | Wire | Point, /) -> bool"
+ ],
  "px.Wire.Translate": [
   "Translate(d: tuple[float, float]) -> Wire",
   "Translate(dh: float, dv: float) -> Wire",
@@ -1831,16 +2148,19 @@
   "Trim(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, *, keep_closest_to: Point | Point3 | None = None, remove_closest_to: Point | Point3 | None = None, keep_largest: bool = False, keep_smallest: bool = False, keep_left: bool = False, keep_right: bool = False, id: str | None = None) -> Shape"
  ],
  "px.Wire.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Wire.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.Wire.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
  ],
+ "px.Wire.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.Wire.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.Wire.arcs": "property",
  "px.Wire.bounding_box": "property",
@@ -1864,7 +2184,7 @@
  "px.Wire.vertices": "property",
  "px.Wire.wires": "property",
  "px.Wires": [
-  "Wires(edges: Wire | EdgeView | list[Wire | EdgeView], /, tol: float | None = None, *, id: str | None = None) -> list[Wire]"
+  "Wires(edges: Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge | list[Wire | EdgeView | LineEdge | ArcEdge | CircleEdge | SplineEdge], /, tol: float | None = None, *, id: str | None = None) -> list[Wire]"
  ],
  "px.WorkPlane": [
   "(self, axes: Any = None, pos: Any = None, *, copy: bool = False) -> None"
@@ -1955,10 +2275,10 @@
  "px.WorkPlane.sketch": "property",
  "px.WorkPlane.start_pnt": "property",
  "px.WriteBrep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.WriteDXF": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
  ],
  "px.WriteGeo": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /) -> None"
@@ -1966,10 +2286,14 @@
  "px.WriteKiCad": [
   "(path: str | os.PathLike, layers: dict[str, Shape | Face | Wire | Compound] | list[Shape | Face | Compound], /, outline: Shape | Face | Wire | Compound | None = None, unit: float = 1.0, pth: Shape | Face | Wire | Compound | None = None, npth: Shape | Face | Wire | Compound | None = None, tol: float = 1e-06, thickness: float = 0.0016, line_width: float = 0.0001) -> None"
  ],
+ "px.WriteSVG": [
+  "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto) -> None"
+ ],
  "px.WriteStep": [
-  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, **options: Any) -> None"
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: str | os.PathLike, /, unit: float = 1.0, scale: float | Auto = px.Auto, **options: Any) -> None"
  ],
  "px.XY": "value",
+ "px.XZ": "value",
  "px.YZ": "value",
  "px.ZX": "value",
  "px.cm": "value",
@@ -1991,7 +2315,7 @@
   "(method: str = 'ball', samples: int = 400, ignore_corners: float | None = None) -> Callable"
  ],
  "px.measurements.TorsionConstant": [
-  "(order: int = 3, maxh: float | None = None) -> Callable"
+  "(order: int = 3, maxh: float | Auto = px.Auto) -> Callable"
  ],
  "px.mil": "value",
  "px.mm": "value",

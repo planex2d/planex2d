@@ -301,7 +301,7 @@ def test_holes_touching_two_rotated_cutters_are_cut():
     arc leave in the same direction, also leftwards, where the angles meet at pi"""
     hole = math.pi * 2.75**2
     plate = px.QuickSketch((-20, -20)).Rectangle(40, 40).Face()
-    holes = [px.QuickSketch().Circle(x, y, 2.75).Face() for x, y in [(14.5, 14.5), (-14.5, 14.5), (-14.5, -14.5), (14.5, -14.5)]]
+    holes = [px.QuickSketch().Circle((x, y), 2.75).Face() for x, y in [(14.5, 14.5), (-14.5, 14.5), (-14.5, -14.5), (14.5, -14.5)]]
     for open_top in (False, True):
         pts = [(-11.75, 13.5), (11.75, 13.5), (11.75, 17.5)]
         pts += [(4.1, 17.5), (4.1, 20), (-4.1, 20), (-4.1, 17.5)] if open_top else []

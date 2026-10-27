@@ -11,17 +11,18 @@ def test_the_stub_compiles():
 
 
 @pytest.mark.parametrize("make", [px.QuickSketch, px.Sketch])
-def test_edge_takes_the_element_by_position(make):
+def test_wire_takes_the_element_by_position(make):
     sk = make().Move((0, 0)).Line((1, 0), id="a")
-    assert sk.Edge("a").mass == pytest.approx(1)
+    assert sk.Wire("a").mass == pytest.approx(1)
     with pytest.raises(TypeError):
-        sk.Edge(element="a")
+        sk.Wire(element="a")
+    assert not hasattr(sk, "Edge")
 
 
 @pytest.mark.parametrize("make", [px.QuickSketch, px.Sketch])
 def test_both_sketch_kinds_name_what_their_calls_return(make):
     sk = make().Move((0, 0)).Line((1, 0), id="a").Line((0, 1)).Close()
-    assert sk.Edge("a", id="side").id == "side"
+    assert sk.Wire("a", id="side").id == "side"
     assert sk.Face(id="plate").id == "plate"
     assert sk.Wire(id="outline").id == "outline"
     assert sk.Copy(id="twin").id == "twin"

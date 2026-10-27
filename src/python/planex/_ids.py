@@ -20,12 +20,12 @@ METHODS = {
              "Chamfered"],
     "Shape": ["Copy", "Rotated", "Translated", "Mirrored", "Scaled", "Face", "Wire", "Offset", "Simplified", "Split",
               "Trim", "Filleted", "Chamfered"],
-    "Sketch": ["Copy", "Rotated", "Translated", "Scaled", "Face", "Shape", "Wire", "Wires", "Edge", "Construction"],
-    "QuickSketch": ["Copy", "Rotated", "Translated", "Scaled", "Face", "Shape", "Wire", "Wires", "Edge", "Construction"],
+    "Sketch": ["Copy", "Rotated", "Translated", "Scaled", "Face", "Shape", "Wire", "Wires", "Construction"],
+    "QuickSketch": ["Copy", "Rotated", "Translated", "Scaled", "Face", "Shape", "Wire", "Wires", "Construction"],
     "EdgeView": ["Wire", "Rotated", "Translated", "Mirrored", "Scaled"],
     "FaceView": ["Copy"],
 }
-FUNCTIONS = ["Line", "Arc", "Circle", "FromPolyline", "Spline", "BSpline", "Wires", "Glue", "Unify", "Subtract", "Intersect",
+FUNCTIONS = ["Line", "Arc", "Circle", "FromPolyline", "Spline", "BSpline", "Curve", "Wires", "Glue", "Unify", "Subtract", "Intersect",
              "Move"]
 # the imports: their results count in a kind of their own
 IMPORTS = {"FromDXF": "DXF", "FromKiCad": "KiCad", "FromOCC": "OCC", "Project": "OCC", "Intersect3d": "OCC",
@@ -94,6 +94,10 @@ def _with_id_doc(doc):
     while k < len(lines) and re.match(r"^[A-Za-z_]\w*\(.*\)( -> .+)?$", lines[k]):
         head, sep, tail = lines[k].rpartition(")")
         inside = head[head.index("(") + 1:]
+        # a signature line that has id already (written by the C++ docstring) keeps it once
+        if re.search(r"(^|, )id(:|=| =)", inside):
+            k += 1
+            continue
         if "**" in inside:
             head = head.replace("**", "id: str | None = None, **", 1)
         elif re.search(r"(^|, )\*($|,|\w)", inside):
@@ -103,6 +107,8 @@ def _with_id_doc(doc):
         lines[k] = head + sep + tail
         k += 1
     entry = "    id: " + ID_TEXT
+    if any(line.startswith("    id:") for line in lines):
+        return "\n".join(lines)
     if "Args:" in lines:
         at = lines.index("Args:") + 1
         while at < len(lines) and lines[at].startswith("    "):

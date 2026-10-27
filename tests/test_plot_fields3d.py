@@ -322,7 +322,7 @@ def test_a_3d_mesh_takes_any_plane_a_2d_mesh_only_the_xy_plane(ngs, box, mpl):
 
 
 def test_a_face_on_xy_with_a_3d_mesh(ngs, occ, backend):
-    disc = px.QuickSketch().Circle(0, 0, 1).Face() - px.QuickSketch().Circle(0.3, 0, 0.3).Face()
+    disc = px.QuickSketch().Circle((0, 0), 1).Face() - px.QuickSketch().Circle((0.3, 0), 0.3).Face()
     solid = occ.Box((-1, -1, -1), (1, 1, 1))
     mesh = ngs.Mesh(occ.OCCGeometry(solid).GenerateMesh(maxh=0.5))
     z = raster(px.PlotField(ngs.x * ngs.y + ngs.z, mesh, disc, samples=100, backend=backend),

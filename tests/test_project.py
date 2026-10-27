@@ -38,7 +38,7 @@ def test_tilted_curves_become_exact_splines():
     tilt = math.radians(60)
     circle = occ.Circle(occ.Pnt(0, 0, 0), occ.Dir(0, math.sin(tilt), math.cos(tilt)), 1)
     [w] = px.Project(circle)
-    assert kinds(w) == ["SplineEdge", "SplineEdge"]
+    assert kinds(w) == ["SplineEdge"]
     face = px.Face([w])
     assert face.mass == pytest.approx(math.pi * math.cos(tilt), rel=1e-6)
     assert sum(f.mass for f in face.ToOCCFace().faces) == pytest.approx(math.pi * math.cos(tilt), rel=1e-12)
@@ -104,7 +104,7 @@ def test_occ_shapes_as_targets_are_projected_once():
     assert point(s.Line(until=top).pen.position) == (0, 0.5)
     assert point(s.Move((-1, 0.25)).Line(top, angle=0, reverse=True).pen.position) == pytest.approx((2, 0.25))
     assert len(s.Construction().edges) == 0
-    s = px.QuickSketch().Circle(5, 0, 1, name="c", construction=True)
+    s = px.QuickSketch().Circle((5, 0), 1, name="c", construction=True)
     s.Move((0, 0)).Line(tangent=occ.Circle(occ.Pnt(5, 0, 2), occ.Z, 1))
     assert point(s.pen.position) == pytest.approx((4.8, math.sqrt(24) / 5))
 
@@ -125,3 +125,40 @@ def test_edges_falling_together_stay_once_with_the_front_name():
     assert len(s.Wires()[0].edges) == 4 and s.points == {}
     crossing = occ.Compound([occ.Segment(occ.Pnt(0, 1, 0), occ.Pnt(2, 1, 0)), occ.Segment(occ.Pnt(1, 0, 5), occ.Pnt(1, 2, 5))])
     assert sum(len(w.edges) for w in px.Project(crossing)) == 4
+
+
+def test_a_list_of_shapes_projects_as_their_compound():
+    a = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(2, 1, 3)).faces.Max(occ.Z)
+    b = occ.Box(occ.Pnt(3, 0, 0), occ.Pnt(4, 2, 1)).faces.Max(occ.Z)
+    expected = px.Project(occ.Compound([a, b]))
+    for given in ([a, b], (a, b)):
+        got = px.Project(given)
+        assert len(got) == len(expected) == 2
+        assert sorted(w.mass for w in got) == pytest.approx(sorted(w.mass for w in expected))
+    square = px.Move((0, 0)).Line((1, 0)).Line((1, 1)).Line((0, 1)).Close().Wire()
+    for plane in (square, px.Face([square]), px.Unify([square])):
+        assert sorted(w.mass for w in plane.Project([a, b])) == pytest.approx([6, 6])
+    for make in (px.QuickSketch, px.Sketch):
+        sk = make()
+        sk.Project([a, b], construction=False)
+        assert sorted(f.mass for f in sk.Shape().faces) == pytest.approx([2, 2])
+
+
+def test_a_list_with_something_else_names_the_call():
+    a = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(2, 1, 3)).faces.Max(occ.Z)
+    with pytest.raises(TypeError, match=r"^Project: 3 is no OCC shape; give a shape or a list of shapes"):
+        px.Project([a, 3])
+    with pytest.raises(TypeError, match=r"^Project: 'face' is no OCC shape"):
+        px.Sketch().Project("face")
+
+
+def test_intersect3d_takes_a_list_as_one_compound():
+    from netgen import occ
+
+    a, b = occ.Box((0, 0, 0), (1, 1, 1)), occ.Box((2, 0, 0), (3, 1, 1))
+    cut = px.Intersect3d(px.Plane(px.XY, 0.5), [a, b])
+    assert len(cut.faces) == 2 and cut.mass == pytest.approx(2, rel=1e-12)
+    sk = px.Sketch(px.Plane(px.XY, 0.5)).Intersect3d((a, b))
+    assert len(sk.elements["Line"]) == 8
+    with pytest.raises(TypeError, match="Intersect3d: 3 is no OCC shape"):
+        px.Intersect3d(px.XY, [a, 3])

@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any
 
 from . import _planex as px
 from ._sketches import sketch_types
 from ._compound import Compound
+from ._caller import warn
 
 if TYPE_CHECKING:
     from ._planex import Face, QuickSketch, Shape, Sketch, Wire
@@ -27,7 +27,8 @@ def _parts(obj):
     return list(obj.parts) if isinstance(obj, Compound) else [obj]
 
 
-def FromShapely(geom: Any, /, plane: Plane | None = None, tol: float = 1e-7) -> Shape | list[Wire] | Compound:
+# id= is the id wrapper's (_ids.with_id), which names the result; declared here so that type checkers see it
+def FromShapely(geom: Any, /, plane: Plane | None = None, tol: float = 1e-7, *, id: str | None = None) -> Shape | list[Wire] | Compound:
     """Converts a shapely geometry: polygons become faces with their holes subtracted, line strings clean wires.
 
     The wires are built as by px.Wires: ends within tol joined, crossings cut. A GeometryCollection becomes a Compound
@@ -88,12 +89,12 @@ def _polygon(face, tol, which="the face"):
         g = shapely.Polygon(outer, holes)
         if g.is_valid:
             if first:
-                warnings.warn("ToShapely: %s is thinner than tol=%g, its chords cross (%s); sampled at tol=%g" % (which, tol, first, t),
-                              px.PlanexWarning, stacklevel=3)
+                warn("ToShapely: %s is thinner than tol=%g, its chords cross (%s); sampled at tol=%g" % (which, tol, first, t),
+                              px.PlanexWarning)
             return g
         first = first or shapely.is_valid_reason(g)
-    warnings.warn("ToShapely: %s is thinner than tol=%g, its chords cross (%s) also at tol=%g; made valid with shapely's make_valid"
-                  % (which, tol, first, t), px.PlanexWarning, stacklevel=3)
+    warn("ToShapely: %s is thinner than tol=%g, its chords cross (%s) also at tol=%g; made valid with shapely's make_valid"
+                  % (which, tol, first, t), px.PlanexWarning)
     return shapely.make_valid(g)
 
 

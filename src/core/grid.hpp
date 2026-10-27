@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <vector>
@@ -80,6 +81,23 @@ namespace planex2d {
                 Grid grid(all, CellSize(all, pts.size(), minimum));
                 for (size_t k = 0; k < pts.size(); ++k)
                     grid.Insert(k, pts[k]);
+                return grid;
+            }
+
+            // about one cell per box, none smaller than the median box; boxes not empty
+            static Grid OfBoxes(const std::vector<BBox> &boxes) {
+                BBox all;
+                std::vector<double> extent;
+                for (const BBox &b : boxes) {
+                    all.Grow(b);
+                    extent.push_back(NormInf(b.Size()));
+                }
+                const size_t n = boxes.size();
+                std::nth_element(extent.begin(), extent.begin() + (long)(n / 2), extent.end());
+                const double cell = std::max(extent[n / 2], std::sqrt((all.x1 - all.x0) * (all.y1 - all.y0) / (double)n));
+                Grid grid(all, cell > 0.0 ? cell : 1.0);
+                for (size_t k = 0; k < n; ++k)
+                    grid.Insert(k, boxes[k]);
                 return grid;
             }
 

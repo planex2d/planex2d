@@ -1,0 +1,19 @@
+osifont-lgpl3fe.ttf
+
+osifont, a font after ISO 3098 (the lettering DIN EN ISO 3098-2 asks for on technical drawings), version
+0.1.20221020, by Zefram Cochrane (hikikomori82@gmail.com) and the osifont contributors,
+https://github.com/hikikomori82/osifont, the file osifont-lgpl3fe.ttf of commit 2e9aa86a8a09 (2026-04-16), unmodified.
+
+planex's px.Drawing and px.Sheet write their lettering in it (px.Sheet(..., font=...) takes another TrueType file).
+
+License: GNU Lesser General Public License version 3 with the GPL font exception. The full texts: LICENSE-LGPL-3.0.txt
+(the LGPL version 3) and LICENSE-GPL-3.0.txt (the GPL version 3, which the LGPL version 3 adds its permissions to), in
+this folder. The font's license notice and exception, quoted verbatim from its copyright string (name ID 0):
+
+Distributed under GNU LGPL version 3 with GPL font exception:
+
+As a special exception, if you create a document which uses this font, and embed this font or unaltered portions of
+this font into the document, this font does not by itself cause the resulting document to be covered by the GNU General
+Public License. This exception does not however invalidate any other reasons why the document might be covered by the
+GNU General Public License. If you modify this font, you may extend this exception to your version of the font, but you
+are not obligated to do so. If you do not wish to do so, delete this exception statement from your version.

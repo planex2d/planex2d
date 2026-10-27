@@ -4,6 +4,7 @@
 #pragma once
 
 #include <algorithm>
+#include <charconv>
 #include <map>
 #include <numeric>
 #include <stdexcept>
@@ -11,14 +12,22 @@
 #include <utility>
 #include <vector>
 
+#include "core/config.hpp"
+
 namespace planex2d {
 
-    // the counters of the auto ids, one per kind ("Sketch", "Shape", "Mirror")
-    inline std::map<std::string, size_t> &IdCounters() {
-        static std::map<std::string, size_t> counters;
-        return counters;
-    }
+    inline std::map<std::string, size_t> &IdCounters() { return config::state->id_counters; }
     inline std::string NextId(const std::string &kind) { return kind + "." + std::to_string(++IdCounters()[kind]); }
+    // an id "kind.N" read in: the auto ids of its kind go on after N
+    inline void AdvanceIdCounter(const std::string &kind, const std::string &id) {
+        if (id.size() <= kind.size() + 1 || id.compare(0, kind.size(), kind) != 0 || id[kind.size()] != '.')
+            return;
+        size_t n = 0;
+        const char *end = id.data() + id.size();
+        const auto [p, error] = std::from_chars(id.data() + kind.size() + 1, end, n);
+        if (error == std::errc() && p == end)
+            IdCounters()[kind] = std::max(IdCounters()[kind], n);
+    }
 
     // an object's id: the kind that made it and its number, given on first use or set. A copy is another object of
     // the same kind; an assignment changes the target, which stays the object it was
@@ -81,6 +90,9 @@ namespace planex2d {
     inline void CheckUserId(const std::string &id) {
         if (id.empty())
             throw std::invalid_argument("an id must not be empty");
+        if (id == "h" || id == "v" || id == "t")
+            throw std::invalid_argument("id '" + id + "' is reserved: h, v and t are a curve's coordinates and parameter (Curve), no id may be one "
+                                        "of them");
         const auto letter = [](unsigned char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
         if (!letter(id[0]))
             throw std::invalid_argument("id '" + id + "' must start with a letter (a to z, A to Z)");

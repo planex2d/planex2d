@@ -14,7 +14,7 @@ NO_BOOLEANS = r"^a Compound has no booleans, merge it first with px\.Unify\(comp
 
 
 def compound():
-    return px.Compound([square(0, 0), px.QuickSketch().Circle(3, 3, 1).Face()])
+    return px.Compound([square(0, 0), px.QuickSketch().Circle((3, 3), 1).Face()])
 
 
 def operands():

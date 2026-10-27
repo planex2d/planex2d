@@ -66,12 +66,12 @@ def test_0101_arc_radius_tangent_pair(cls):
 
 def _link():
     sk = px.Sketch(auto_constraint=True)
-    sk.Circle(0, 0, 1.5, id="boss1", construction=True)
-    sk.Circle(6, 0, 1.0, id="boss2", construction=True)
+    sk.Circle((0, 0), 1.5, id="boss1", construction=True)
+    sk.Circle((6, 0), 1.0, id="boss2", construction=True)
     sk.Line(tangent=("boss1", "boss2"), id="upper")
     sk.Line(tangent=("boss1", "boss2"), reverse=True, id="lower")
-    sk.Arc("lower.end", "upper.end", congruent="boss2", id="end2")
-    sk.Arc("upper.start", "lower.start", congruent="boss1", id="end1")
+    sk.Arc("lower.end", "upper.end", coincident="boss2", id="end2")
+    sk.Arc("upper.start", "lower.start", coincident="boss1", id="end1")
     return sk
 
 
@@ -96,9 +96,9 @@ def _overlaps(boxes):
 
 def _dimensioned_link():
     sk = px.Sketch(auto_constraint=True)
-    sk.Circle(0, 0, 1.5, id="boss1")
-    sk.Circle(0, 0, 0.6, id="hole")
-    sk.Circle(6, 0, 1.0, id="boss2")
+    sk.Circle((0, 0), 1.5, id="boss1")
+    sk.Circle((0, 0), 0.6, id="hole")
+    sk.Circle((6, 0), 1.0, id="boss2")
     sk.Constrain("boss1", px.Radius, 1.5, id="r1")
     sk.Constrain("hole", px.Radius, 0.6, id="d1")
     sk.Constrain("boss2", px.Radius, 1.0, id="r2")
@@ -130,11 +130,11 @@ def _bracket():
     sk = px.Sketch(auto_constraint=True)
     sk.Move((0, 0)).Line((30, 0), px.Horizontal, id="a").Line((30, 10), px.Vertical, id="b").Line((10, 10), px.Horizontal, id="c")
     sk.Line((10, 50), px.Vertical, id="d").Line((0, 50), px.Horizontal, id="e").Line((0, 0), px.Vertical, id="f")
-    sk.Constrain("d", px.Distance, 40, id="h")
-    sk.Constrain("b", px.Distance, 10, id="t")
+    sk.Constrain("d", px.Distance, 40, id="g")
+    sk.Constrain("b", px.Distance, 10, id="s")
     sk.Constrain("a", px.Distance, 30, id="w")
     sk.Constrain("c", px.Distance, 20, id="u")
-    sk.Circle(5, 30, 2, id="hole")
+    sk.Circle((5, 30), 2, id="hole")
     sk.Constrain("hole.center", "f", px.Distance, 5, id="dx")
     sk.Constrain("a", "hole.center", px.Distance, 30, id="dy")
     return sk
@@ -142,16 +142,16 @@ def _bracket():
 
 def _pattern():
     sk = px.Sketch(auto_constraint=True)
-    sk.Circle(0, 0, 40, id="plate")
-    sk.Circle(25, 0, 4, id="hole")
+    sk.Circle((0, 0), 40, id="plate")
+    sk.Circle((25, 0), 4, id="hole")
     sk.Constrain("hole", px.Diameter, 8, id="d")
-    sk.Circle(0, 0, 3, id="hub")
+    sk.Circle((0, 0), 3, id="hub")
     sk.CircularPattern("hole", "hub.center", 6, id="k")
     return sk
 
 
 def _text_boxes(sk, dpi):
-    import matplotlib
+    matplotlib = pytest.importorskip("matplotlib")
     from matplotlib.transforms import Bbox
 
     matplotlib.use("Agg")

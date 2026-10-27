@@ -6,89 +6,41 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "core/config.hpp"
 #include "core/vertex.hpp"
+#include "curves/curve.hpp"
 
 namespace planex2d {
 
-    inline double ValueOf(double v) { return v; }
-    inline bool ExactlyZero(double v) { return v == 0.0; }
-
-    // the knot span of u among n control points of degree p
-    template <class S>
-    size_t FindSpan(const std::vector<S> &t, size_t p, size_t n, const S &u) {
-        const double v = ValueOf(u);
-        if (v >= ValueOf(t[n]))
-            return n - 1;
-        if (v <= ValueOf(t[p]))
-            return p;
-        size_t lo = p, hi = n, mid = (lo + hi) / 2;
-        while (v < ValueOf(t[mid]) || v >= ValueOf(t[mid + 1])) {
-            if (v < ValueOf(t[mid]))
-                hi = mid;
-            else
-                lo = mid;
-            mid = (lo + hi) / 2;
+    inline void CheckSpline(const std::vector<Vertex> &pts, const std::map<size_t, Vertex> &tangents, bool periodic, double tol) {
+        const auto point = [](const Vertex &p) { return "(" + std::to_string(p.x) + ", " + std::to_string(p.y) + ")"; };
+        for (const Vertex &p : pts)
+            IsFinite("Spline", {p.x, p.y});
+        for (const auto &[i, t] : tangents)
+            IsFinite("Spline tangent", {t.x, t.y});
+        if (pts.size() < (periodic ? 3u : 2u))
+            throw std::invalid_argument("Spline: " + std::to_string(pts.size()) + " points; a" + (periodic ? " periodic" : "") +
+                                        " spline needs at least " + (periodic ? "3" : "2"));
+        for (size_t i = 0; i + 1 < pts.size(); ++i)
+            if (Norm(pts[i + 1] - pts[i]) <= tol)
+                throw std::invalid_argument("Spline: points " + std::to_string(i) + " and " + std::to_string(i + 1) + " coincide at " +
+                                            point(pts[i]));
+        if (periodic && Norm(pts.back() - pts.front()) <= tol)
+            throw std::invalid_argument("Spline: the last point is the first; a periodic spline lists its start once");
+        for (const auto &[i, t] : tangents) {
+            if (i >= pts.size())
+                throw std::invalid_argument("Spline: a tangent at point " + std::to_string(i) + ", but the points are 0 to " +
+                                            std::to_string(pts.size() - 1));
+            if (!(Norm(t) > 0.0))
+                throw std::invalid_argument("Spline: the tangent at point " + std::to_string(i) + " is zero");
         }
-        return mid;
-    }
-
-    // d[k][j]: the k-th derivative (k <= kmax) of the basis function span - p + j of degree p at u (The NURBS Book, A2.3)
-    template <class S>
-    std::vector<std::vector<S>> BasisDerivatives(const std::vector<S> &t, size_t p, size_t span, const S &u, size_t kmax) {
-        std::vector<std::vector<S>> ndu(p + 1, std::vector<S>(p + 1, S(0.0))), a(2, std::vector<S>(p + 1, S(0.0)));
-        std::vector<S> left(p + 1, S(0.0)), right(p + 1, S(0.0));
-        ndu[0][0] = S(1.0);
-        for (size_t j = 1; j <= p; ++j) {
-            left[j] = u - t[span + 1 - j];
-            right[j] = t[span + j] - u;
-            S saved(0.0);
-            for (size_t r = 0; r < j; ++r) {
-                ndu[j][r] = right[r + 1] + left[j - r];
-                const S tmp = ndu[r][j - 1] / ndu[j][r];
-                ndu[r][j] = saved + right[r + 1] * tmp;
-                saved = left[j - r] * tmp;
-            }
-            ndu[j][j] = saved;
-        }
-        std::vector<std::vector<S>> d(kmax + 1, std::vector<S>(p + 1, S(0.0)));
-        for (size_t j = 0; j <= p; ++j)
-            d[0][j] = ndu[j][p];
-        for (size_t r = 0; r <= p; ++r) {
-            size_t s1 = 0, s2 = 1;
-            a[0][0] = S(1.0);
-            for (size_t k = 1; k <= std::min(kmax, p); ++k) {
-                S sum(0.0);
-                const long rk = (long)r - (long)k, pk = (long)p - (long)k;
-                if ((long)r >= (long)k) {
-                    a[s2][0] = a[s1][0] / ndu[pk + 1][rk];
-                    sum = a[s2][0] * ndu[rk][pk];
-                }
-                const long j1 = rk >= -1 ? 1 : -rk, j2 = (long)r - 1 <= pk ? (long)k - 1 : (long)p - (long)r;
-                for (long j = j1; j <= j2; ++j) {
-                    a[s2][j] = (a[s1][j] - a[s1][j - 1]) / ndu[pk + 1][rk + j];
-                    sum = sum + a[s2][j] * ndu[rk + j][pk];
-                }
-                if ((long)r <= pk) {
-                    a[s2][k] = -a[s1][k - 1] / ndu[pk + 1][r];
-                    sum = sum + a[s2][k] * ndu[r][pk];
-                }
-                d[k][r] = sum;
-                std::swap(s1, s2);
-            }
-        }
-        double f = (double)p;
-        for (size_t k = 1; k <= std::min(kmax, p); ++k) {
-            for (size_t j = 0; j <= p; ++j)
-                d[k][j] = d[k][j] * S(f);
-            f *= (double)(p - k);
-        }
-        return d;
     }
 
     // solves A x = b in place (partial pivoting by value); false if A is singular. A zero value is not skipped, as a dual
@@ -132,49 +84,6 @@ namespace planex2d {
         return true;
     }
 
-    // a B-spline by its poles: S its numbers (double, or dual numbers that carry the derivatives with respect to the
-    // points and tangents it was made from), P its points (with +, - and * S)
-    template <class S, class P>
-    struct Curve {
-        size_t degree = 3;
-        bool closed = false;
-        std::vector<S> knots;
-        // of the points, a closed curve's end (back at the first point) last
-        std::vector<S> params;
-        std::vector<size_t> tangentAt;
-        std::vector<P> poles;
-
-        // the k-th derivative (k <= 2) at u
-        P At(const S &u, size_t k) const {
-            const size_t span = FindSpan(knots, degree, poles.size(), u);
-            const std::vector<std::vector<S>> d = BasisDerivatives(knots, degree, span, u, k);
-            P sum = poles[span - degree] * d[k][0];
-            for (size_t j = 1; j <= degree; ++j)
-                sum = sum + poles[span - degree + j] * d[k][j];
-            return sum;
-        }
-        // the parameter nearest p: the best of 32 samples per point (or guess), then Newton steps
-        S Project(const P &p, std::optional<S> guess = std::nullopt) const {
-            const S end = params.back();
-            const size_t n = 32 * params.size();
-            S u = guess.value_or(S(0.0));
-            for (size_t k = 0; k <= n && !guess; ++k)
-                if (const S t = end * (double)k / (double)n; Norm(At(t, 0) - p) < Norm(At(u, 0) - p))
-                    u = t;
-            for (int i = 0; i < 30; ++i) {
-                const P c = At(u, 0) - p, d1 = At(u, 1), d2 = At(u, 2);
-                const S h = Dot(d1, d1) + Dot(c, d2);
-                if (!(h > 0.0))
-                    break;
-                const S step = Dot(c, d1) / h;
-                u = std::clamp(u - step, S(0.0), end);
-                if (std::abs(step) <= 1e-15 * end)
-                    break;
-            }
-            return u;
-        }
-    };
-
     inline double AbsOf(double v) { return std::abs(v); }
 
     // OCC's PLib::EvalLagrange, its order of operations kept: the value and first derivative at u of the polynomial of
@@ -194,30 +103,7 @@ namespace planex2d {
         return {value, derivative};
     }
 
-    // the knot u inserted once (Boehm), the curve the same
-    template <class S, class P>
-    void InsertKnot(std::vector<S> &t, std::vector<P> &q, size_t p, const S &u) {
-        size_t k = 0, s = 0;
-        for (size_t i = 0; i < t.size(); ++i)
-            if (ValueOf(t[i]) <= ValueOf(u))
-                k = i;
-        for (size_t i = k + 1; i-- > 0 && ValueOf(t[i]) == ValueOf(u);)
-            ++s;
-        std::vector<P> r;
-        for (size_t i = 0; i <= q.size(); ++i) {
-            if (i + p <= k)
-                r.push_back(q[i]);
-            else if (i + s <= k) {
-                const S alpha = (u - t[i]) / (t[i + p] - t[i]);
-                r.push_back(q[i] * alpha + q[i - 1] * (S(1.0) - alpha));
-            } else
-                r.push_back(q[i - 1]);
-        }
-        t.insert(t.begin() + (std::ptrdiff_t)k + 1, u);
-        q = std::move(r);
-    }
-
-    // OCC's Geom2dAPI_Interpolate (the style "occ") as netgen calls it, its quirks kept: a point without a tangent
+    // OCC's Geom2dAPI_Interpolate (the style "clamped") as netgen calls it, its quirks kept: a point without a tangent
     // gets the first given one, the given tangents are scaled to the L1 norm of a Lagrange derivative (ScaleTangents),
     // an end without one gets the derivative of the cubic through its four points, a given tangent makes a double knot;
     // a periodic curve is C1 at its start only and comes here in a clamped form
@@ -346,11 +232,11 @@ namespace planex2d {
     // parameters of all conditions, a parameter with a derivative condition counted twice, which keeps the system
     // regular. Cubic, lower with fewer conditions. A closed curve returns to its first point with equal first and
     // second derivatives; without tangents its knots are the parameters: the C2 periodic cubic, whichever point comes
-    // first. style Occ: InterpolateOcc
+    // first. style Clamped: InterpolateOcc
     template <class S, class P, class L>
     Curve<S, P> Interpolate(const std::vector<P> &points, const std::vector<size_t> &tangentAt, const std::vector<P> &tangents, bool closed,
-                            L length, SplineStyle style = SplineStyle::Px) {
-        if (style == SplineStyle::Occ)
+                            L length, SplineStyle style = SplineStyle::Averaged) {
+        if (style == SplineStyle::Clamped)
             return InterpolateOcc<S>(points, tangentAt, tangents, closed, length);
         const size_t m = points.size();
         if (m < (closed ? 3 : 2))
@@ -425,7 +311,7 @@ namespace planex2d {
     }
 
     inline Curve<double, Vertex> Interpolate(const std::vector<Vertex> &points, const std::vector<size_t> &tangentAt,
-                                             const std::vector<Vertex> &tangents, bool closed, SplineStyle style = SplineStyle::Px) {
+                                             const std::vector<Vertex> &tangents, bool closed, SplineStyle style = SplineStyle::Averaged) {
         return Interpolate<double>(points, tangentAt, tangents, closed, [](const Vertex &d) { return Norm(d); }, style);
     }
 

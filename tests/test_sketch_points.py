@@ -25,7 +25,7 @@ def centres(sk):
 @pytest.mark.constraints
 def test_arcs_and_circles_get_centre_points_and_no_point_id_changes():
     sk = bend()
-    sk.Circle(10, 0, 2, id="hole")
+    sk.Circle((10, 0), 2, id="hole")
     assert [p for p in sk.elements["Point"] if p.startswith("Point.")] == ["Point.1", "Point.2", "Point.3"]
     assert centres(sk) == ["Center.1", "Center.2"]
     assert [i.local for i in sk("bend.center")] == ["Center.1"] and [i.local for i in sk("hole.center")] == ["Center.2"]
@@ -36,7 +36,7 @@ def test_arcs_and_circles_get_centre_points_and_no_point_id_changes():
 @pytest.mark.constraints
 def test_a_shared_centre_has_one_point():
     sk = px.Sketch()
-    sk.Circle(0, 0, 2, id="c")
+    sk.Circle((0, 0), 2, id="c")
     sk.Move((-3, 0)).Line(6, 0, id="cut")
     sk.Split("c", "cut")
     assert sorted(sk.elements["Arc"]) == ["c.1", "c.2"] and sk._Geometry("c.1")["start"] == pytest.approx((2, 0), abs=1e-12)
@@ -46,13 +46,13 @@ def test_a_shared_centre_has_one_point():
 @pytest.mark.parametrize("make", [pytest.param(px.Sketch, marks=pytest.mark.constraints, id="Sketch"), px.QuickSketch])
 def test_a_centre_goes_with_its_last_element(make):
     sk = make()
-    sk.Circle(0, 0, 1, id="c")
-    with pytest.raises(ValueError, match=r"Remove\('Center.1'\): c has its centre there, remove it first"):
+    sk.Circle((0, 0), 1, id="c")
+    with pytest.raises(ValueError, match=r"Remove\('Center.1'\): c has its center there, remove it first"):
         sk.Remove("Center.1")
     sk.Remove("c")
     assert centres(sk) == []
     if make is px.Sketch:
-        sk.Circle(0, 0, 1, id="d")
+        sk.Circle((0, 0), 1, id="d")
         sk.Constrain("Center.2", px.Fix)
         sk.Remove("d")
         assert centres(sk) == ["Center.2"]
@@ -61,7 +61,7 @@ def test_a_centre_goes_with_its_last_element(make):
 @pytest.mark.constraints
 def test_copies_get_one_centre_each():
     sk = px.Sketch()
-    sk.Circle(2, 0, 0.3, id="bolt")
+    sk.Circle((2, 0), 0.3, id="bolt")
     sk.CircularPattern("bolt", sk.origin, 4)
     assert len(centres(sk)) == 4 and "CircularPattern.1.1.Center.1" in centres(sk)
     sk["CircularPattern.1.count"] = 6
@@ -153,8 +153,8 @@ def test_references_are_taken_where_points_and_ids_are():
 def test_dimensions_from_centre_points():
     sk = px.Sketch((0, 0))
     sk.Line(4, 0, px.Horizontal, px.Fix, id="base")
-    sk.Circle(2, 3, 1, id="hole")
-    sk.Circle(6, 2, 0.5, id="pin")
+    sk.Circle((2, 3), 1, id="hole")
+    sk.Circle((6, 2), 0.5, id="pin")
     sk.Constrain("Center.1", "base", px.Distance, 3, id="a")
     sk.Constrain("pin.center", "base", px.Distance, 2, id="b")
     sk.Expression("b = a/2")
@@ -169,7 +169,7 @@ def test_dimensions_from_centre_points():
 @pytest.mark.constraints
 def test_centres_are_no_lone_points_in_plots():
     sk = bend()
-    sk.Circle(10, 0, 2)
+    sk.Circle((10, 0), 2)
     drawing = sk._Drawing()
     ends = px._svg._ends(drawing)
     assert all(tuple(g["point"]) in ends for g in drawing if g["kind"] == "Point" and g["id"] != "origin")

@@ -9,6 +9,7 @@
 struct PyConstraintSystem {
     std::vector<std::vector<size_t>> indices;
     std::vector<size_t> rows;
+    std::vector<std::vector<RowBlock>> blocks;
     std::vector<py::object> functions;
 
     explicit PyConstraintSystem(const py::list &constraints) {
@@ -17,11 +18,13 @@ struct PyConstraintSystem {
             indices.push_back(t[0].cast<std::vector<size_t>>());
             rows.push_back(t[1].cast<size_t>());
             functions.push_back(t[2].cast<py::object>());
+            blocks.push_back({{rows.back(), indices.back()}});
         }
     }
     size_t Count() const { return functions.size(); }
     size_t Rows(size_t c) const { return rows[c]; }
     const std::vector<size_t> &Indices(size_t c) const { return indices[c]; }
+    const std::vector<RowBlock> &Blocks(size_t c) const { return blocks[c]; }
     void Evaluate(size_t c, const std::vector<double> &x, double *r, double *J) const {
         std::vector<double> local;
         for (size_t i : indices[c])

@@ -22,17 +22,22 @@ class ViewAwareType(base):
 }
 
 PYBIND11_MODULE(_planex, m) {
-    // registers netgen's OCC types (Axes, gp_Ax2d, Wire, Face, ...) before they are used, e.g. as default arguments
-    py::module_::import("netgen.occ");
-
     planexWarning = PyErr_NewExceptionWithDoc("planex.PlanexWarning", "A warning of the planex kernel.", PyExc_UserWarning, nullptr);
     m.attr("PlanexWarning") = py::handle(planexWarning);
-    config::warning_handler = WarnPython;
+    config::state->warning_handler = WarnPython;
+    // the OCC module shares these, see config::state
+    m.attr("_state") = py::capsule(config::state, "planex._state");
+    m.attr("_occ_hooks") = py::capsule(occ, "planex._occ_hooks");
+    m.attr("_services") = py::capsule(&coreServices, "planex._services");
+    m.attr("_version") = PLANEX_VERSION;
+    m.attr("_layout") = Layout();
 
     BindConfig(m);
     BindVertex(m);
     BindPlane(m);
     BindEdgeGeometry(m);
+    BindConstraintKinds(m);
+    BindOffsetForms(m);
 
     // every class before any method: a signature names the classes it takes and returns
     auto wire = py::class_<Wire>(m, "Wire",
@@ -57,12 +62,22 @@ PYBIND11_MODULE(_planex, m) {
     BindFace(face);
     BindShape(m, shape, face, faceView, facesView);
     BindDeformable(m);
-    BindOCC(m);
     BindSketch(m);
 #ifdef PLANEX_CONSTRAINTS
     BindSolver(m);
     BindConstraintSketch(m);
 #endif
-    BindSection(m);
     BindIdentify(m);
+    BindStep(m);
+    // what the OCC bindings made, taken over from their capsule as the core's own object (binding.hpp ToCore); the
+    // capsule's destructor frees what the move leaves
+    py::options options;
+    options.disable_function_signatures();
+    m.def("_adopt", [](const std::string &kind, const py::capsule &made) -> py::object {
+        if (kind == "Shape")
+            return py::cast(std::move(*made.get_pointer<Shape>()));
+        if (kind == "WireList")
+            return py::cast(std::move(*made.get_pointer<WireList>()));
+        throw std::invalid_argument("_adopt: no " + kind);
+    }, py::arg("kind"), py::arg("made"), "_adopt(kind: str, made: object) -> Any\n\nfor planex's OCC bindings: an object they made, as the core's");
 }

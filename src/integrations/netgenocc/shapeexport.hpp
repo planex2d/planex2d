@@ -33,8 +33,8 @@ namespace planex2d {
     }
 
     // the face with its properties and identifications
-    inline TopoDS_Shape ToOCCFace(const Face &f, const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                                  const Cleanup &cleanup = config::cleanup) {
+    inline TopoDS_Shape ToOCCFace(const Face &f, const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                                  const Cleanup &cleanup = config::state->cleanup) {
         TopoDS_Shape s = ToOCCFace(f.Edges(), arcs, fit, cleanup, f.Props());
         ApplyIdentifications(s, f.Axes(), f.Ids());
         return s;
@@ -42,8 +42,9 @@ namespace planex2d {
 
     // the faces first, then one wire per connected chain of every wire part; an edge on several parts is one OCC edge in
     // all of them
-    inline std::vector<TopoDS_Shape> ToOCCParts(const Shape &shape, const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                                                const Cleanup &cleanup = config::cleanup, bool wires = true) {
+    inline std::vector<TopoDS_Shape> ToOCCParts(const Shape &shape, const ArcFit &arcs = config::state->arc_fit,
+                                                const SplineFit &fit = config::state->spline_fit, const Cleanup &cleanup = config::state->cleanup,
+                                                bool wires = true) {
         const Shape::ExportPlan plan = shape.Export(arcs, fit, cleanup);
         const Wire &c = plan.edges;
         const size_t groups = plan.groupProps.size();
@@ -107,8 +108,8 @@ namespace planex2d {
     }
 
     // a single part as itself, else a compound of the parts
-    inline TopoDS_Shape ToOCCShape(const Shape &shape, const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                                   const Cleanup &cleanup = config::cleanup, bool wires = true) {
+    inline TopoDS_Shape ToOCCShape(const Shape &shape, const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                                   const Cleanup &cleanup = config::state->cleanup, bool wires = true) {
         std::vector<TopoDS_Shape> parts = ToOCCParts(shape, arcs, fit, cleanup, wires);
         if (parts.empty())
             throw std::runtime_error("no edges to export");

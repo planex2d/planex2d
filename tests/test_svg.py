@@ -65,7 +65,7 @@ def test_large_or_empty_objects_fall_back_to_the_text_repr(monkeypatch):
 
 
 def test_overlapping_parts_of_a_compound_are_filled_not_holed():
-    discs = px.Compound([px.QuickSketch().Circle(0, 0, 1).Face(), px.QuickSketch().Circle(1, 0, 1).Face()])
+    discs = px.Compound([px.QuickSketch().Circle((0, 0), 1).Face(), px.QuickSketch().Circle((1, 0), 1).Face()])
     _, ps = paths(discs.ToSVG())
     fills = [p for p in ps if p.get("fill") != "none"]
     assert len(fills) == 2 and all(p.get("d").count("Z") == 1 for p in fills)

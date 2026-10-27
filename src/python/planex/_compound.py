@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import types
 import weakref
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable, overload
 
 import numpy as np
 
@@ -79,6 +79,17 @@ class Compound:
         px.Compound([outline, holes], id="board")
     """
 
+    # attached by the planex module, as to Face, Shape and Wire; declared so that type checkers see them
+    Plot: Callable[..., Any]
+    Plot3d: Callable[..., Any]
+    WriteStep: Callable[..., None]
+    WriteBrep: Callable[..., None]
+    WriteDXF: Callable[..., None]
+    WriteSVG: Callable[..., None]
+    WriteGeo: Callable[..., None]
+    ToShapely: Callable[..., Any]
+    ToSVG: Callable[..., str]
+
     def __init__(self, parts: Iterable[Face | Shape | Wire | Compound] = (), /, id: str | None = None) -> None:
         self.parts = [_same(p) for p in parts]
         if id is not None:
@@ -110,7 +121,7 @@ class Compound:
     def _no_booleans(self, other):
         raise TypeError("a Compound has no booleans, merge it first with px.Unify(comp)")
 
-    __add__ = __radd__ = __sub__ = __rsub__ = __mul__ = __rmul__ = _no_booleans
+    __add__ = __radd__ = __sub__ = __rsub__ = __mul__ = __rmul__ = __xor__ = __rxor__ = _no_booleans
 
     def __repr__(self):
         return "Compound(%r)" % self.parts
@@ -207,6 +218,11 @@ class Compound:
         _on_one_plane(leaves, "Polylines: the parts of the compound lie on different planes")
         return [a for p in leaves for a in p.Polylines(tol)]
 
+    # the forms for type checkers: many points give an array
+    @overload
+    def Contains(self, points: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, boundary: bool = True) -> np.ndarray: ...
+    @overload
+    def Contains(self, points: Point | Point3, /, boundary: bool = True) -> bool: ...
     def Contains(self, points: Point | Point3 | np.ndarray, /, boundary: bool = True) -> bool | np.ndarray:
         """True if a part contains the point, as Shape.Contains.
 
@@ -225,13 +241,22 @@ class Compound:
 
         points, coordinates = _points(points)
         found = [p.Contains(points, boundary=boundary) for p in self._measured("Contains", coordinates)
-                 if hasattr(p, "Contains")]
+                 if hasattr(p, "Contains") and not isinstance(p, _planex.Wire)]
         if not found:
             return _planex.Shape().Contains(points, boundary=boundary)
         if _many(points):
             return np.logical_or.reduce(found)
         return any(found)
 
+    @overload
+    def Distance(self, target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None,
+                 signed: bool = False) -> np.ndarray: ...
+    @overload
+    def Distance(self, target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView, /, project: bool = False,
+                 components: None = None, signed: bool = False) -> float: ...
+    @overload
+    def Distance(self, target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView, /, project: bool = False, *,
+                 components: str) -> float | tuple[float, ...]: ...
     def Distance(self, target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | np.ndarray, /,
                  project: bool = False, components: str | None = None,
                  signed: bool = False) -> float | tuple[float, ...] | np.ndarray:
@@ -271,6 +296,10 @@ class Compound:
             return np.stack(c)[_nearest(d), np.arange(len(target))]
         return c[d.index(min(d))]
 
+    @overload
+    def ClosestPoint(self, point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray: ...
+    @overload
+    def ClosestPoint(self, point: Point | Point3, /) -> tuple[float, ...]: ...
     def ClosestPoint(self, point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray:
         """The closest point of the nearest part, as Shape.ClosestPoint.
 

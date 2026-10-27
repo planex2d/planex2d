@@ -67,10 +67,13 @@ namespace planex2d {
                 size_t counts = 0;
             };
 
-            static Profiler &Get() {
+            static Profiler &Own() {
                 static Profiler p;
                 return p;
             }
+            // every extension module has its own statics: the OCC bindings point of at the core's profiler
+            static inline Profiler &(*of)() = Own;
+            static Profiler &Get() { return of(); }
             int Register(const std::string &name) {
                 std::lock_guard lock(mutex);
                 names.push_back(name);

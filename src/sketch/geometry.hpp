@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -21,14 +22,15 @@ namespace planex2d::sketch {
 
     enum class Kind {
         Coincident, Horizontal, Vertical, Parallel, Perpendicular, Tangent, Equal, Symmetric, Concentric, Fix,
-        Distance, Radius, Diameter, Angle, SymmetricCarriers, OnCircle, Copy, RigidGroup, Expression, Value, Offset
+        Distance, Radius, Diameter, Angle, SymmetricCarriers, OnCircle, Copy, RigidGroup, Expression, Value, Offset, OnCurve, Parameter,
+        Curvature
     };
 
     inline const char *KindName(Kind k) {
         constexpr const char *names[] = {"Coincident", "Horizontal", "Vertical", "Parallel", "Perpendicular", "Tangent",
                                          "Equal", "Symmetric", "Concentric", "Fix", "Distance", "Radius", "Diameter",
                                          "Angle", "SymmetricCarriers", "OnCircle", "Copy", "RigidGroup", "Expression", "Value",
-                                         "Offset"};
+                                         "Offset", "OnCurve", "Parameter", "Curvature"};
         return names[(size_t)k];
     }
 
@@ -37,8 +39,10 @@ namespace planex2d::sketch {
     // x's normal through p; Carrier: j on x's offset line or circle (x a point: on the circle of radius d around it);
     // Center: the centre of an arc (the first reference) where the point s (the second) is along its chord's bisector;
     // Radius: a circle (the first) of the radius of the circle x plus d; Along: j at its end of the offset curve x, whose
-    // chord length there is an unknown of the curve
-    enum class OffsetTie { Point, Foot, Carrier, Center, Radius, Along };
+    // chord length there is an unknown of the curve; Spur: j on the tangent of x at its point p, offset by d (decision
+    // 0202: a sharp corner's straight piece along a curve); Beyond: j d beyond x's end p, along x's way there times the
+    // sign (a square cap)
+    enum class OffsetTie { Point, Foot, Carrier, Center, Radius, Along, Spur, Beyond };
 
     class Geometry {
     public:
@@ -81,7 +85,7 @@ namespace planex2d::sketch {
             return Added({ElementKind::Axis, {NewValue(a, true, hold), NewValue(d, false, hold)}});
         }
         size_t AddSpline(const std::vector<size_t> &points, const std::vector<size_t> &tangentAt, const std::vector<double> &angles,
-                         bool closed, SplineStyle style = SplineStyle::Px) {
+                         bool closed, SplineStyle style = SplineStyle::Averaged) {
             SplineData d{points, tangentAt, {}, closed, style};
             for (double a : angles)
                 d.tangent.push_back(NewValue(a, true));
@@ -90,11 +94,29 @@ namespace planex2d::sketch {
             splines.back().Interpolated(*this);
             return Added({ElementKind::Spline, {splines.size() - 1}});
         }
+        // a spline fitted to a curve, from the point start to the point end (end == start: closed), its frame at origin
+        // turned by angle
+        size_t AddFittedSpline(size_t start, size_t end, FittedShape f, const Vertex &origin, double angle) {
+            f.origin = NewPoint(origin);
+            f.angle = NewValue(angle, true);
+            const bool closed = start == end;
+            splines.push_back({closed ? std::vector<size_t>{start} : std::vector<size_t>{start, end}, {}, {}, closed, SplineStyle::Averaged, std::move(f)});
+            return Added({ElementKind::Spline, {splines.size() - 1}});
+        }
+        // a spline computed from the elements it joins, from the point start (an end of b.arms[0]) to end (of b.arms[1])
+        size_t AddBlend(size_t start, size_t end, const BlendShape &b) {
+            splines.push_back({{start, end}, {}, {}, false, SplineStyle::Averaged, std::nullopt, b});
+            return Added({ElementKind::Spline, {splines.size() - 1}});
+        }
         size_t AddSplinePiece(size_t spline, const SplinePiece &piece) {
             pieces.push_back(piece);
             return Added({ElementKind::Spline, {spline, pieces.size()}});
         }
-        size_t AddPattern(double step, bool linear) { return Added({ElementKind::Pattern, {NewValue(step, !linear), linear}}); }
+        // step2: the step along a linear pattern's second direction, if it has one
+        size_t AddPattern(double step, bool linear, std::optional<double> step2 = std::nullopt) {
+            const size_t first = NewValue(step, !linear);
+            return Added({ElementKind::Pattern, {first, linear, step2 ? NewValue(*step2) : none}});
+        }
         size_t AddOffset(double d) { return Added({ElementKind::Offset, {NewValue(d)}}); }
         size_t AddOffsetCurve(const OffsetCurveData &c) {
             offsetCurves.push_back(c);
@@ -187,13 +209,22 @@ namespace planex2d::sketch {
         held[elements[element].AxisAngle()] = 1;
         held[elements[element].AxisDistance()] = 1;
     }
-    template <> inline void Geometry::HoldOwnValues<ElementKind::Pattern>(size_t element) { held[elements[element].Step()] = 1; }
+    template <> inline void Geometry::HoldOwnValues<ElementKind::Pattern>(size_t element) {
+        held[elements[element].Step()] = 1;
+        if (elements[element].HasStep2())
+            held[elements[element].Step2()] = 1;
+    }
     template <> inline void Geometry::HoldOwnValues<ElementKind::Offset>(size_t element) { held[elements[element].Distance()] = 1; }
     template <> inline void Geometry::HoldOwnValues<ElementKind::Spline>(size_t element) {
         const size_t spline = elements[element].SplineIndex();
-        if (IsOnlyElementOf(spline, element))
-            for (size_t a : splines[spline].tangent)
-                held[a] = 1;
+        if (!IsOnlyElementOf(spline, element))
+            return;
+        for (size_t a : splines[spline].tangent)
+            held[a] = 1;
+        if (const std::optional<FittedShape> &f = splines[spline].fitted) {
+            HoldPoint(f->origin);
+            held[f->angle] = 1;
+        }
     }
     template <> inline void Geometry::HoldOwnValues<ElementKind::OffsetCurve>(size_t element) {
         const OffsetCurveData &c = offsetCurves[elements[element].OffsetCurveIndex()];
@@ -215,6 +246,11 @@ namespace planex2d::sketch {
         case ElementKind::OffsetCurve: HoldOwnValues<ElementKind::OffsetCurve>(element); break;
         }
         elements.erase(elements.begin() + (std::ptrdiff_t)element);
+        for (SplineData &d : splines)
+            if (d.blend)
+                for (size_t *k : {&d.blend->arms[0], &d.blend->arms[1], &d.blend->helper})
+                    if (*k != none && *k > element)
+                        --*k;
     }
 
 }

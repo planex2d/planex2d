@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import numpy as np
 
 from . import _planex as px
+from ._auto import Auto
 
 if TYPE_CHECKING:
     from ._planex import Face, Shape
@@ -61,7 +62,7 @@ class DeformableShape(px.DeformableShape):
     Args:
         shape: the Face or Shape whose faces are sampled.
         h: the largest segment length.
-        min_distance: the smallest distance between boundary parts; None takes h.
+        min_distance: the smallest distance between boundary parts; px.Auto takes h.
         clean: True cleans the given shape of parts closer than min_distance right away.
         topology_changed_callback: called with the DeformableShape whenever SetDeformation, Clean or Defeature
             changes its loops.
@@ -71,7 +72,7 @@ class DeformableShape(px.DeformableShape):
         px.DeformableShape(shape, 0.01, min_distance=0.005, topology_changed_callback=print)
     """
 
-    def __init__(self, shape: Face | Shape, h: float, min_distance: float | None = None, clean: bool = False,
+    def __init__(self, shape: Face | Shape, h: float, min_distance: float | Auto = Auto, clean: bool = False,
                  topology_changed_callback: Callable[[DeformableShape], Any] | None = None) -> None:
         super().__init__(shape, h, min_distance, clean)
         self.topology_changed_callback = topology_changed_callback

@@ -201,7 +201,7 @@ namespace planex2d::sketch {
                 r.Fail("tangent is one target or two");
             if (r.parallel.has_value() + r.perpendicular.has_value() + r.angle.has_value() + r.congruent.has_value() +
                     !r.tangent.empty() > 1)
-                r.Fail("give at most one of parallel, perpendicular, angle, congruent and tangent");
+                r.Fail("give at most one of parallel, perpendicular, angle, coincident and tangent");
             if (r.to && r.to->at && r.until != Until::No && !r.untilTarget)
                 r.Fail("until= picks among the intersections with an element as the end, a point has none; through= gives a "
                        "point the line passes");
@@ -220,7 +220,7 @@ namespace planex2d::sketch {
             if (tangentPair && r.through)
                 r.Fail("a line touching two targets lies where they are");
             if ((fromElement || toElement) && !directed && !(r.through && !fromElement))
-                r.Fail("an element as an end needs what fixes the line: through=, parallel=, perpendicular=, angle=, congruent= "
+                r.Fail("an element as an end needs what fixes the line: through=, parallel=, perpendicular=, angle=, coincident= "
                        "or tangent=; until=<target> goes along the pen's direction until it");
         }
         const Line &AsLine(const Edge &e, const std::string &what) const {
@@ -259,8 +259,8 @@ namespace planex2d::sketch {
             } else if (r.angle) {
                 direction = Rotated(r.angleRef ? DirectionOf(*r.angleRef, "angle") : Vertex{1.0, 0.0}, *r.angle);
             } else if (r.congruent) {
-                direction = Sense(DirectionOf(*r.congruent, "congruent"));
-                anchor = AsLine(*r.congruent, "congruent").Start();
+                direction = Sense(DirectionOf(*r.congruent, "coincident"));
+                anchor = AsLine(*r.congruent, "coincident").Start();
             } else if (throughGivesDirection) {
                 if (!(Norm(*r.through - origin) > tol))
                     r.Fail("through= is the start; give a point the line passes after it");

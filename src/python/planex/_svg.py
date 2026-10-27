@@ -5,13 +5,16 @@
 from __future__ import annotations
 
 import math
-import warnings
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
+from . import _dimensions as dims
 from . import _planex as px
 from ._sketches import Sketch, sketch_types
 from ._compound import Compound
 from ._geom import edge_views, oriented, parts, scale
+from ._caller import warn
 
 if TYPE_CHECKING:
     from ._planex import Face, QuickSketch, Shape, Wire
@@ -67,15 +70,15 @@ def ToSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, s
           **options: Any) -> str | None:
     """The object as the text of an SVG picture in its plane coordinates, its faces filled.
 
-    A sketch is drawn in its own look: every element in the colour of its state (green fully constrained, black free,
+    A sketch is drawn in its own look: every element in the color of its state (green fully constrained, black free,
     pink over-constrained) with its id when hovered, construction dashed, in a frame with numbered ticks on a grid.
 
     Args:
         obj: a Face, Shape, Wire, Compound, sketch or DeformableShape.
         size: the larger side of the picture in pixels.
-        options: for a sketch: show_constraints=True adds a sign per constraint, show_ends=True a blue start and an
-            orange end piece on every line and arc, show_direction=True an arrow from start to end; other objects
-            ignore them.
+        options: for a sketch: show_constraints=True adds a sign per constraint and the dimensions drawn as on a
+            drawing, show_ends=True a blue start and an orange end piece on every line and arc, show_direction=True
+            an arrow from start to end; other objects ignore them.
 
     Returns:
         the SVG text; None if the object has no extent.
@@ -118,7 +121,7 @@ PROJECTED = "#d4a017"
 
 
 def _colour(g):
-    """an element's colour: gold where it is projected, else its state's"""
+    """an element's color: gold where it is projected, else its state's"""
     return PROJECTED if g.get("projected") else STATE[g["state"]]
 GRID, SUBGRID, FRAME, LABEL = "#c8c8c8", "#e4e4e4", "#555555", "#333333"
 START, END, GLYPH = "#1c7ed6", "#f08c00", "#495057"
@@ -241,17 +244,67 @@ def _esc(text):
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+# the drafting dimensions on screen: the lettering's cap height per its font size; their sizes in mm
+# (arrows, rows, lettering) at the pixels per mm that make the lettering that font
+CAP = 0.72
+
+
+def _drafting(sketch, everything, k, font):
+    """the sketch's dimension constraints as drafting dimensions at k pixels per unit and the lettering font px high:
+    {constraint id: Strokes} with the center lines under "center lines", and the sketch units per mm of their sizes;
+    a dimension the drafting look has no form for is not in it (it keeps its value label)"""
+    per_mm = CAP * font / dims.HEIGHT
+    mm = per_mm / k
+    outline = [_path(g) for i, g in everything.items() if g["kind"] in CURVES and not g["construction"]
+               and not g.get("projected")]
+    found = dims.Dimensions(sketch, everything)
+    # the values in the sketch's own units as the plot has always written them (the drawings' DIN form is for mm)
+    layout = dims.Layout(outline, mm, lambda text: 0.56 * font * len(text) / per_mm, None, True, lambda v: f"{v:g}")
+    # the centre lines first: the radii, diameters and leaders keep clear of them
+    centres = dims.CenterLines({i: g for i, g in everything.items() if g["kind"] != "Axis"}, found, mm, outline)
+    layout.drawn.append(centres)
+    out = {d.id: layout.Draw(d) for d in sorted(found, key=lambda d: (d.kind != "linear", d.span))}
+    out["center lines"] = centres
+    return out, mm
+
+
+def _drafted_points(drafted, mm, font, k):
+    """the points the drafting dimensions reach, their lettering's boxes included"""
+    out = []
+    for s in drafted.values():
+        out += [tuple(p) for a, b, _ in s.lines for p in (a, b)] + [tuple(p) for arc in s.arcs for p in arc]
+        for anchor, angle, text in s.texts:
+            out += [tuple(a) for a, _ in dims._box(anchor, angle, 0.56 * font * len(text) / k, dims.HEIGHT * mm)[:4]]
+    return out
+
+
+def _middle(anchor, angle, mm):
+    """the middle of a drafting text whose baseline is centered at anchor"""
+    t = math.radians(angle)
+    return anchor[0] - math.sin(t) * dims.HEIGHT * mm / 2, anchor[1] + math.cos(t) * dims.HEIGHT * mm / 2
+
+
+def _drafted_extent(sketch, everything, pts, fit, font):
+    """the scale fit(points) gives once the drafting dimensions drawn at it are among the points, and those points"""
+    k = fit(pts)
+    for _ in range(2):
+        drafted, mm = _drafting(sketch, everything, k, font)
+        k = fit(pts + _drafted_points(drafted, mm, font, k))
+    drafted, mm = _drafting(sketch, everything, k, font)
+    return k, pts + _drafted_points(drafted, mm, font, k)
+
+
 def _shown_constraints(sketch, show_constraints):
     """show_constraints for a sketch: always off for a QuickSketch, which has none, with a warning if asked for"""
     if isinstance(sketch, Sketch):
         return bool(show_constraints)
     if show_constraints:
-        warnings.warn("a QuickSketch has no constraints, show_constraints is ignored", px.PlanexWarning, stacklevel=3)
+        warn("a QuickSketch has no constraints, show_constraints is ignored", px.PlanexWarning)
     return False
 
 
 def SketchSVG(sketch, size=SIZE, show_constraints=None, show_ends=False, show_direction=False):
-    """a sketch: every element in the colour of its state (green fully constrained, black free, pink over-constrained;
+    """a sketch: every element in the color of its state (green fully constrained, black free, pink over-constrained;
     all free while its constraints are disabled) with its id when hovered, construction dashed, in a frame with
     numbered ticks on a light dashed grid; show_constraints adds a small sign per constraint (hover: what it is; not
     while the constraints are disabled), show_ends a blue start and an orange end piece on every line and arc,
@@ -273,13 +326,23 @@ def SketchSVG(sketch, size=SIZE, show_constraints=None, show_ends=False, show_di
             pts += _arc_samples(g)
     if not pts:
         return None
-    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-    extent = max(max(xs) - min(xs), max(ys) - min(ys)) or 1.0
-    m = 0.06 * extent
-    step, sub = _ticks(0, extent)
-    x0, x1 = math.floor((min(xs) - m) / sub) * sub, math.ceil((max(xs) + m) / sub) * sub
-    y0, y1 = math.floor((min(ys) - m) / sub) * sub, math.ceil((max(ys) + m) / sub) * sub
-    k = size / max(x1 - x0, y1 - y0)
+    def frame(pts):
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        extent = max(max(xs) - min(xs), max(ys) - min(ys)) or 1.0
+        m = 0.06 * extent
+        step, sub = _ticks(0, extent)
+        x0, x1 = math.floor((min(xs) - m) / sub) * sub, math.ceil((max(xs) + m) / sub) * sub
+        y0, y1 = math.floor((min(ys) - m) / sub) * sub, math.ceil((max(ys) + m) / sub) * sub
+        return step, sub, x0, x1, y0, y1
+
+    def scale(pts):
+        _, _, x0, x1, y0, y1 = frame(pts)
+        return size / max(x1 - x0, y1 - y0)
+
+    if show_constraints:
+        k, pts = _drafted_extent(sketch, everything, pts, scale, 10)
+    step, sub, x0, x1, y0, y1 = frame(pts)
+    k = k if show_constraints else size / max(x1 - x0, y1 - y0)
     left, bottom, top, right = 44, 24, 8, 16
     groups = _signs(sketch, everything, k) if show_constraints else []
     # the margins grow until every sign's label fits (bold 10 px text, about 6 px a character)
@@ -361,9 +424,27 @@ def SketchSVG(sketch, size=SIZE, show_constraints=None, show_ends=False, show_di
             f' viewBox="0 0 {_fmt(width)} {_fmt(height)}">{body}</svg>')
 
 
+def _meets_box(segments, c, half):
+    """one of the segments (n, 2, 2) runs through the box centered c of half sizes half (Liang-Barsky clipping)"""
+    if not len(segments):
+        return False
+    a, d = segments[:, 0], segments[:, 1] - segments[:, 0]
+    t0, t1 = np.zeros(len(a)), np.ones(len(a))
+    inside = np.ones(len(a), bool)
+    for j in (0, 1):
+        lo, hi = c[j] - half[j], c[j] + half[j]
+        flat = d[:, j] == 0
+        inside &= ~flat | ((a[:, j] >= lo) & (a[:, j] <= hi))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            u0, u1 = (lo - a[:, j]) / d[:, j], (hi - a[:, j]) / d[:, j]
+        u0, u1 = np.where(flat, -np.inf, np.minimum(u0, u1)), np.where(flat, np.inf, np.maximum(u0, u1))
+        t0, t1 = np.maximum(t0, u0), np.minimum(t1, u1)
+    return bool(np.any(inside & (t0 <= t1)))
+
+
 def _signs(sketch, everything, k=None, font=10):
     """the signs of the constraints, in the sketch's coordinates with offsets in pixels (sx, sy; sy up on screen), so
-    that every renderer draws them at the same size whatever the zoom: one group per constraint, with its colour,
+    that every renderer draws them at the same size whatever the zoom: one group per constraint, with its color,
     hover text and items: ("text", at, (sx, sy), text, angle), ("circle", at, (sx, sy)), ("leader", a, b),
     ("corner", at, u, v), ("anchor", at, (sx, sy)), ("chevron", at, d), ("tangent", at, t): two short lines along the
     tangent t on both sides of the touch point"""
@@ -380,9 +461,22 @@ def _signs(sketch, everything, k=None, font=10):
     # pixels per unit: the place of every sign on screen, to keep them apart
     k = k or 300 / extent
     taken = []
+    drafted, mm = _drafting(sketch, everything, k, font)
+    # the dimension and centre lines in pixels: no sign on them
+    runs = [np.array([a, b]) for strokes in drafted.values() for a, b, _ in strokes.lines]
+    runs += [np.asarray(arc, float) for strokes in drafted.values() for arc in strokes.arcs]
+    segments = np.concatenate([np.stack([r[:-1], r[1:]], axis=1) for r in runs if len(r) > 1]) * k if runs else np.zeros((0, 2, 2))
+    for strokes in drafted.values():
+        for anchor, angle, text in strokes.texts:
+            c = _middle(anchor, angle, mm)
+            w, h = 0.28 * font * len(text), CAP * font / 2
+            t = math.radians(angle)
+            taken.append(((c[0] * k, c[1] * k), (abs(w * math.cos(t)) + abs(h * math.sin(t)),
+                                                 abs(w * math.sin(t)) + abs(h * math.cos(t)))))
 
     def free(c, half):
-        return all(abs(c[0] - x) >= half[0] + hx or abs(c[1] - y) >= half[1] + hy for (x, y), (hx, hy) in taken)
+        return (all(abs(c[0] - x) >= half[0] + hx or abs(c[1] - y) >= half[1] + hy for (x, y), (hx, hy) in taken)
+                and not _meets_box(segments, c, half))
 
     def occupy(p, shift, half):
         taken.append(((p[0] * k + shift[0], p[1] * k + shift[1]), half))
@@ -540,6 +634,13 @@ def _signs(sketch, everything, k=None, font=10):
             items += [label(p, n, glyph) for p, n in marks]
             if len(marks) == 2:
                 items.append(("leader", marks[0][0], marks[1][0]))
+        elif kind == "Curvature" and len(drawn) == 2:
+            # the tangent mark and G2 where the two meet
+            j = joint(*drawn) or touch(*drawn)
+            if j is not None:
+                t = direction(drawn[0], j)
+                occupy(j, (0.0, 0.0), (7.0, 7.0))
+                items += [("tangent", j, t), label(j, (-t[1], t[0]), "G2")]
         elif kind == "Tangent" and len(drawn) == 2 and "Spline" in (everything[drawn[0]]["kind"], everything[drawn[1]]["kind"]):
             j = touch(*drawn) or contact(*drawn)
             if j is not None:
@@ -567,6 +668,8 @@ def _signs(sketch, everything, k=None, font=10):
         elif kind == "Fix" and drawn:
             p, n = middle(drawn[0]) if drawn[0] in paths else (center(drawn[0]), (0.0, 1.0))
             items.append(("anchor", p, spot(p, n, (7.0, 8.0))))
+        elif c["id"] in drafted:
+            items.append(("drafting", drafted[c["id"]], mm, font))
         elif c["value"] is not None:
             v = c["value"]
             value = {"Radius": f"R{v:g}", "Diameter": f"⌀{v:g}", "Angle": f"{v:g}°"}.get(kind, f"{v:g}")
@@ -594,6 +697,9 @@ def _signs(sketch, everything, k=None, font=10):
         if items:
             groups.append({"title": c["id"] + ": " + c["text"], "colour": STATE["over"] if c["state"] == "over" else GLYPH,
                            "items": items})
+    centres = drafted["center lines"]
+    if centres.lines or centres.arcs:
+        groups.append({"title": "center lines", "colour": GLYPH, "items": [("drafting", centres, mm, font)]})
     return groups
 
 
@@ -638,6 +744,22 @@ def _svg_signs(groups, P):
                 for side in (3.5, -3.5):
                     c = (j[0] + side * n[0], j[1] + side * n[1])
                     body += f'<path d="{_d([(c[0] - 6 * t[0], c[1] - 6 * t[1]), (c[0] + 6 * t[0], c[1] + 6 * t[1])])}" stroke="{colour}" stroke-width="1.2" fill="none"/>'
+            elif kind == "drafting":
+                strokes, mm, font = item[1], item[2], item[3]
+                centre = ' stroke-dasharray="9 2.5 1.5 2.5"'
+                for a, b, style in strokes.lines:
+                    body += (f'<path d="{_d([P(a), P(b)])}" stroke="{colour}" stroke-width="0.8" fill="none"'
+                             f'{centre if style == "center" else ""}/>')
+                for arc in strokes.arcs:
+                    body += (f'<path d="{_d([P(p) for p in arc])}" stroke="{colour}" stroke-width="0.8" fill="none"'
+                             f'{centre if strokes.id == "center lines" else ""}/>')
+                for tip, d in strokes.arrows:
+                    body += f'<path d="{_d([P(p) for p in dims.Head(tip, d, dims.ARROW * mm)], True)}" fill="{colour}" stroke="none"/>'
+                for anchor, angle, text in strokes.texts:
+                    x, y = P(_middle(anchor, angle, mm))
+                    turn = f' transform="rotate({_fmt(-angle)} {_fmt(x)} {_fmt(y)})"' if angle else ""
+                    body += (f'<text x="{_fmt(x)}" y="{_fmt(y)}" font-family="sans-serif" font-size="{font}" '
+                             f'text-anchor="middle" dominant-baseline="central" fill="{colour}"{turn}>{_esc(text)}</text>')
             elif kind == "chevron":
                 p, d = P(item[1]), (item[2][0], -item[2][1])
                 n = (d[1], -d[0])

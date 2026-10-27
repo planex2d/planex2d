@@ -14,16 +14,20 @@
 #include <vector>
 
 #include "shape/shape.hpp"
+// after shape.hpp: offset.hpp, at the end of boolean.hpp, includes it once Arrange is there
+#include "offset/offsetpath.hpp"
 
 namespace planex2d {
 
     // a piece of the exact offset of a chain of lines, arcs and splines (edge k runs from vertex k to vertex k + 1, the
     // last edge of a closed chain back to vertex 0): the line or arc of edge k at the distance (Line, Arc), the offset of
-    // spline k (Curve: the offsets of its arcs and lines), or the circle of that radius around vertex k (Vertex: a corner,
-    // or at an open chain's end a cap), from start to end. side: +1 left of the chain, -1 right of it, 0 a cap; along: it
-    // runs the way the chain does; at, heading: a point of a Curve and its direction there
+    // spline k (Curve), or the circle of that radius around vertex k (Vertex: a corner, or at an open chain's end a cap),
+    // the line across a chamfered corner at vertex k (CornerLine) or across the flat or square cap at vertex k (CapLine),
+    // the line along curved edge k's tangent at its start or end (SpurBefore, SpurAfter: a sharp corner, a square
+    // cap), from start to end. side: +1 left of the chain, -1 right of it, 0 a cap; along: it runs the way the chain
+    // does; at, heading: a point of a Curve and its direction there
     struct OffsetPiece {
-        enum class Kind { Line, Arc, Vertex, Curve };
+        enum class Kind { Line, Arc, Vertex, Curve, CornerLine, CapLine, SpurBefore, SpurAfter };
         Kind kind;
         size_t k;
         Vertex start, end, center;
@@ -45,28 +49,6 @@ namespace planex2d {
         bool closed = true;
     };
 
-    // the unit normal to the left of a line, arc or spline at its point p
-    inline Vertex LeftNormal(const Edge &e, const Vertex &p) {
-        if (const Line *l = std::get_if<Line>(&e)) {
-            const Vertex u = Normalized(l->End() - l->Start());
-            return Vertex{-u.y, u.x};
-        }
-        if (const Spline *spline = std::get_if<Spline>(&e)) {
-            const Vertex t = std::visit([&](const auto &x) { return x.template Tangent<false>(x.NearestPoint(p)); }, spline->NearestPiece(p));
-            return Vertex{-t.y, t.x};
-        }
-        const Arc &a = std::get<Arc>(e);
-        const Vertex out = Normalized(p - a.Center());
-        return a.CCW() ? out * -1.0 : out;
-    }
-    // the area a closed chain encloses, positive counterclockwise
-    inline double ChainArea(const EdgeList &chain) {
-        const Vertex o = StartOf(chain.front());
-        double a = 0.0;
-        for (const Edge &e : chain)
-            a += SignedArea(e, o);
-        return a;
-    }
     inline double PieceSweep(const OffsetPiece &p) {
         const Vertex a = p.start - p.center, b = p.end - p.center;
         const double t = std::atan2(Cross(a, b), Dot(a, b)) * (p.ccw ? 1.0 : -1.0);
@@ -138,66 +120,43 @@ namespace planex2d {
     inline size_t VertexAfter(size_t k, size_t n, bool closed) { return closed ? (k + 1) % n : k + 1; }
     inline Vertex ChainVertex(const EdgeList &chain, size_t v) { return v < chain.size() ? StartOf(chain[v]) : EndOf(chain.back()); }
 
-    // the piece of a loop edge e of the offset, running from a to b if forward: on the line or arc of its source edge k,
-    // or on a vertex circle (an edge of a spline's offset on neither belongs to its Curve)
-    inline OffsetPiece PieceOf(const Edge &e, bool forward, size_t k, const EdgeList &chain, bool closed, double ad,
-                               double tol, const std::string &call) {
+    // the piece of a loop edge e of the offset, running from a to b if forward, by its tag (OffsetTag, its layer)
+    inline OffsetPiece PieceOf(const Edge &e, bool forward, int tag, const EdgeList &chain) {
         const Vertex a = StartOf(e), b = EndOf(e);
-        const bool spline = std::holds_alternative<Spline>(chain[k]);
+        const size_t k = IndexOfTag(tag);
         OffsetPiece piece{OffsetPiece::Kind::Line, k, forward ? a : b, forward ? b : a, {}, 0.0, true};
-        if (const Arc *arc = std::get_if<Arc>(&e)) {
+        const Arc *arc = std::get_if<Arc>(&e);
+        if (arc) {
             piece.center = arc->Center();
             piece.r = arc->Radius();
             piece.ccw = arc->CCW() == forward;
-            struct Candidate {
-                OffsetPiece::Kind kind;
-                size_t k;
-                Vertex c;
-                double r;
-            };
-            std::vector<Candidate> candidates{{OffsetPiece::Kind::Vertex, k, StartOf(chain[k]), ad},
-                                              {OffsetPiece::Kind::Vertex, VertexAfter(k, chain.size(), closed), EndOf(chain[k]), ad}};
-            if (const Arc *source = std::get_if<Arc>(&chain[k])) {
-                candidates.push_back({OffsetPiece::Kind::Arc, k, source->Center(), source->Radius() + ad});
-                if (source->Radius() > ad)
-                    candidates.push_back({OffsetPiece::Kind::Arc, k, source->Center(), source->Radius() - ad});
-            }
-            const auto off = [&](const Candidate &c) { return Norm(piece.center - c.c) + std::abs(piece.r - c.r); };
-            const Candidate &best = *std::min_element(candidates.begin(), candidates.end(),
-                                                      [&](const Candidate &x, const Candidate &y) { return off(x) < off(y); });
-            // the Booleans snap ends by up to Tol, an arc's centre follows its ends
-            if (spline && off(best) > 100.0 * tol)
+        }
+        switch (SourceOfTag(tag)) {
+        case OffsetSource::Edge:
+            if (std::holds_alternative<Spline>(chain[k])) {
+                // a spline's offset is one spline: a point on it, its direction there
                 piece.kind = OffsetPiece::Kind::Curve;
-            else if (off(best) > 100.0 * tol)
-                throw std::logic_error(call + ": internal error, an arc of the exact offset lies on no offset circle");
-            else {
-                piece.kind = best.kind;
-                piece.k = best.k;
-            }
-            if (piece.kind == OffsetPiece::Kind::Curve) {
-                piece.at = arc->MidPoint();
-                piece.heading = arc->Tangent<false>(piece.at) * (forward ? 1.0 : -1.0);
-            }
-        } else if (spline) {
-            piece.kind = OffsetPiece::Kind::Curve;
-            piece.at = (a + b) * 0.5;
-            piece.heading = forward ? b - a : a - b;
-        } else if (!std::holds_alternative<Line>(chain[k]))
-            throw std::logic_error(call + ": internal error, a line of the exact offset belongs to an arc");
+                piece.at = MidPointOf(e);
+                const Vertex n = LeftNormal(e, piece.at);
+                piece.heading = Vertex{n.y, -n.x} * (forward ? 1.0 : -1.0);
+            } else
+                piece.kind = arc ? OffsetPiece::Kind::Arc : OffsetPiece::Kind::Line;
+            break;
+        case OffsetSource::Corner: piece.kind = arc ? OffsetPiece::Kind::Vertex : OffsetPiece::Kind::CornerLine; break;
+        case OffsetSource::Cap: piece.kind = arc ? OffsetPiece::Kind::Vertex : OffsetPiece::Kind::CapLine; break;
+        case OffsetSource::SpurBefore: piece.kind = OffsetPiece::Kind::SpurBefore; break;
+        case OffsetSource::SpurAfter: piece.kind = OffsetPiece::Kind::SpurAfter; break;
+        }
         return piece;
     }
+    inline bool IsStraightPiece(OffsetPiece::Kind k) { return k == OffsetPiece::Kind::CornerLine || k == OffsetPiece::Kind::CapLine || k == OffsetPiece::Kind::SpurBefore || k == OffsetPiece::Kind::SpurAfter; }
+    // a piece on an edge's offset (not around or across a vertex, not a spur)
+    inline bool IsEdgePiece(OffsetPiece::Kind k) { return k == OffsetPiece::Kind::Line || k == OffsetPiece::Kind::Arc || k == OffsetPiece::Kind::Curve; }
 
-    // the pieces turned to run counterclockwise if ccw, pieces on one line, arc or circle merged, a corner too short to
-    // tell from rounding dropped
-    inline std::vector<OffsetPiece> Merged(std::vector<OffsetPiece> pieces, const std::vector<char> &straight, bool ccw, double tol,
-                                           const std::string &call) {
-        double area = 0.0;
-        for (size_t i = 0; i < pieces.size(); ++i) {
-            const OffsetPiece &p = pieces[i];
-            area += straight[i] ? Line(p.start, p.end).SignedArea(pieces.front().start)
-                                : Arc(p.start, p.end, p.center, p.ccw).SignedArea(pieces.front().start);
-        }
-        if ((area > 0.0) != ccw) {
+    // the pieces turned round if reversed, pieces on one line, arc or circle merged, a corner or a straight piece too
+    // short to tell from rounding dropped
+    inline std::vector<OffsetPiece> Merged(std::vector<OffsetPiece> pieces, bool reversed, double tol, const std::string &call) {
+        if (reversed) {
             std::reverse(pieces.begin(), pieces.end());
             for (OffsetPiece &p : pieces) {
                 std::swap(p.start, p.end);
@@ -217,7 +176,8 @@ namespace planex2d {
         }
         // a corner at a vertex the chain runs through smoothly (within rounding): the pieces beside it touch there
         for (size_t i = 0; i < merged.size() && merged.size() > 1;)
-            if (merged[i].kind == OffsetPiece::Kind::Vertex && merged[i].r * PieceSweep(merged[i]) <= tol) {
+            if ((merged[i].kind == OffsetPiece::Kind::Vertex && merged[i].r * PieceSweep(merged[i]) <= tol) ||
+                (IsStraightPiece(merged[i].kind) && Norm(merged[i].end - merged[i].start) <= tol)) {
                 const Vertex end = merged[(i + merged.size() - 1) % merged.size()].end;
                 merged.erase(merged.begin() + (std::ptrdiff_t)i);
                 merged[i % merged.size()].start = end;
@@ -237,7 +197,7 @@ namespace planex2d {
                 const Vertex foot = NearestPointOf(chain[p.k], p.at), normal = LeftNormal(chain[p.k], foot);
                 p.side = Dot(p.at - foot, normal) > 0.0 ? 1 : -1;
                 p.along = Dot(p.heading, Vertex{normal.y, -normal.x}) > 0.0;
-            } else if (p.kind != OffsetPiece::Kind::Vertex) {
+            } else if (IsEdgePiece(p.kind)) {
                 const Edge &source = chain[p.k];
                 if (const Arc *arc = std::get_if<Arc>(&source)) {
                     p.side = (p.r > arc->Radius()) == arc->CCW() ? -1 : 1;
@@ -247,10 +207,18 @@ namespace planex2d {
                     p.side = Cross(u, (p.start + p.end) * 0.5 - StartOf(source)) > 0.0 ? 1 : -1;
                     p.along = Dot(p.end - p.start, u) > 0.0;
                 }
-            } else if (closed || (p.k > 0 && p.k < n)) {
+            } else if (p.kind == OffsetPiece::Kind::SpurBefore || p.kind == OffsetPiece::Kind::SpurAfter) {
+                const bool after = p.kind == OffsetPiece::Kind::SpurAfter;
+                const Vertex v = after ? EndOf(chain[p.k]) : StartOf(chain[p.k]), normal = LeftNormal(chain[p.k], v);
+                p.side = Dot((p.start + p.end) * 0.5 - v, normal) > 0.0 ? 1 : -1;
+                p.along = Dot(p.end - p.start, Vertex{normal.y, -normal.x}) > 0.0;
+            } else if (p.kind != OffsetPiece::Kind::CapLine && (closed || (p.k > 0 && p.k < n))) {
                 const Vertex v = ChainVertex(chain, p.k), in = LeftNormal(chain[closed ? (p.k + n - 1) % n : p.k - 1], v);
-                const double half = 0.5 * PieceSweep(p) * (p.ccw ? 1.0 : -1.0);
-                const Vertex mid = Rotated(p.start, p.center, std::cos(half), std::sin(half));
+                Vertex mid = (p.start + p.end) * 0.5;
+                if (p.kind == OffsetPiece::Kind::Vertex) {
+                    const double half = 0.5 * PieceSweep(p) * (p.ccw ? 1.0 : -1.0);
+                    mid = Rotated(p.start, p.center, std::cos(half), std::sin(half));
+                }
                 p.side = Dot(mid - v, in + LeftNormal(chain[p.k % n], v)) > 0.0 ? 1 : -1;
                 const Vertex from = v + in * (p.side * ad);
                 p.along = Norm(p.start - from) <= Norm(p.end - from);
@@ -268,7 +236,18 @@ namespace planex2d {
             const bool av = a.kind == OffsetPiece::Kind::Vertex, bv = b.kind == OffsetPiece::Kind::Vertex;
             const auto endsAt = [&](const OffsetPiece &p, size_t v) { return p.k == v || VertexAfter(p.k, n, closed) == v; };
             OffsetJoint j;
-            if (av != bv) {
+            if (IsStraightPiece(a.kind) || IsStraightPiece(b.kind)) {
+                // at the foot of a vertex both pieces come from (the end of a chamfer, a flat cap, a spur): d from it
+                const auto vertices = [&](const OffsetPiece &p) {
+                    return IsEdgePiece(p.kind) || p.kind == OffsetPiece::Kind::SpurBefore || p.kind == OffsetPiece::Kind::SpurAfter
+                               ? std::vector<size_t>{p.k, VertexAfter(p.k, n, closed)}
+                               : std::vector<size_t>{p.k};
+                };
+                for (size_t v : vertices(a))
+                    for (size_t w : vertices(b))
+                        if (v == w && std::abs(Norm(b.start - ChainVertex(chain, v)) - ad) <= tol)
+                            j = {true, v};
+            } else if (av != bv) {
                 const OffsetPiece &around = av ? a : b, &other = av ? b : a;
                 if (endsAt(other, around.k))
                     j = {true, around.k};
@@ -294,14 +273,14 @@ namespace planex2d {
                                  const std::string &call) {
         const size_t n = chain.size(), m = loop.Size();
         const double ad = std::abs(d);
-        const auto sourceOf = [&](const Edge &e) {
+        const auto tagOf = [&](const Edge &e) {
             const Properties &p = PropsOf(e);
-            if (!p || !p->layer || *p->layer < 0 || (size_t)*p->layer >= n)
+            if (!p || !p->layer || *p->layer < 0 || IndexOfTag(*p->layer) > n)
                 throw std::logic_error(call + ": internal error, an edge of the exact offset lost its source");
-            return (size_t)*p->layer;
+            return *p->layer;
         };
         std::vector<OffsetPiece> pieces;
-        std::vector<char> straight;
+        double area = 0.0;
         Vertex at;
         for (size_t i = 0; i < m; ++i) {
             const Edge &e = loop[i];
@@ -315,15 +294,16 @@ namespace planex2d {
             } else
                 forward = true;
             at = forward ? b : a;
-            pieces.push_back(PieceOf(e, forward, sourceOf(e), chain, closed, ad, tol, call));
-            straight.push_back(std::holds_alternative<Line>(e));
+            pieces.push_back(PieceOf(e, forward, tagOf(e), chain));
+            area += SignedArea(forward ? e : ReversedOf(e), StartOf(loop[0]));
         }
-        std::vector<OffsetPiece> merged = Merged(std::move(pieces), straight, ccw, tol, call);
+        std::vector<OffsetPiece> merged = Merged(std::move(pieces), (area > 0.0) != ccw, tol, call);
         SetSides(merged, chain, closed, ad);
-        // each edge's piece before the corner at its end
+        // along the chain: a corner or cap at vertex v, then the spur before edge v, edge v, the spur after it
         const auto order = [&](const OffsetPiece &p) {
-            const bool around = p.kind == OffsetPiece::Kind::Vertex;
-            return 2 * (around && closed && p.k == 0 ? n : p.k) + (around ? 0 : 1);
+            const bool around = p.kind == OffsetPiece::Kind::Vertex || p.kind == OffsetPiece::Kind::CornerLine || p.kind == OffsetPiece::Kind::CapLine;
+            const size_t base = 4 * (around && closed && p.k == 0 ? n : p.k);
+            return around ? base : base + (p.kind == OffsetPiece::Kind::SpurBefore ? 1 : p.kind == OffsetPiece::Kind::SpurAfter ? 3 : 2);
         };
         std::rotate(merged.begin(), std::min_element(merged.begin(), merged.end(), [&](const OffsetPiece &x, const OffsetPiece &y) {
                         return order(x) < order(y);
@@ -337,16 +317,16 @@ namespace planex2d {
     // the loops of the exact offset of the closed chain (its edges in order, each starting where the one before ends) by
     // d, d > 0 outside, d < 0 inside, as Face.Offset: the face of the chain with its band added or taken away. Every piece
     // runs the way its edge does; nothing if nothing is left
-    inline std::vector<OffsetLoop> ClosedOffsetLoops(const EdgeList &chain, double d, const AxisSystem &axes, const std::string &call) {
+    inline std::vector<OffsetLoop> ClosedOffsetLoops(const EdgeList &chain, double d, OffsetCorner corners, const AxisSystem &axes,
+                                                     const std::string &call) {
         const Wire w = Tagged(chain, axes);
         const FaceList faces = WireList{w}.Region().Faces();
         if (faces.size() != 1)
             throw std::invalid_argument(call + ": the chain crosses itself (it bounds " + std::to_string(faces.size()) + " regions)");
-        const Shape region(faces.front()), band(w.Offset(std::abs(d)), nullptr);
-        const Shape result = d > 0.0 ? Unify({region, band}) : Subtract({region, band});
+        const double tol = Tol(OffsetScale(chain, d));
+        const Shape result(TaggedLoopOffset(chain, d, corners, axes, tol), nullptr);
         // the pieces run as their edges do: around a counterclockwise chain the result's outer loops counterclockwise
         const bool chainCcw = ChainArea(chain) > 0.0;
-        const double tol = Tol(OffsetScale(chain, d));
         std::vector<OffsetLoop> out;
         for (const Face &f : result.Faces()) {
             out.push_back(LoopPieces(f.Outer(), chain, true, d, chainCcw, tol, call));
@@ -358,9 +338,10 @@ namespace planex2d {
 
     // the loops of the exact band of width 2 |d| around the open chain (Wire.Offset): the offsets of its edges on both
     // sides, the corners, the caps around its two ends
-    inline std::vector<OffsetLoop> BandLoops(const EdgeList &chain, double d, const AxisSystem &axes, const std::string &call) {
-        const Shape band(Tagged(chain, axes).Offset(std::abs(d)), nullptr);
+    inline std::vector<OffsetLoop> BandLoops(const EdgeList &chain, double d, OffsetEnd ends, OffsetCorner corners, const AxisSystem &axes,
+                                             const std::string &call) {
         const double tol = Tol(OffsetScale(chain, d));
+        const Shape band(TaggedBand(chain, std::abs(d), ends, corners, axes, tol), nullptr);
         std::vector<OffsetLoop> out;
         for (const Face &f : band.Faces()) {
             out.push_back(LoopPieces(f.Outer(), chain, false, d, true, tol, call));

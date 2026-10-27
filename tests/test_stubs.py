@@ -6,6 +6,8 @@ docstrings now."""
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 import planex
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +18,7 @@ def test_the_package_ships_the_stub():
     assert (package / "_planex.pyi").is_file() and (package / "py.typed").is_file()
 
 
+@pytest.mark.occ
 def test_the_stub_is_current():
     spec = importlib.util.spec_from_file_location("stubgen", ROOT / "tools" / "stubgen.py")
     stubgen = importlib.util.module_from_spec(spec)

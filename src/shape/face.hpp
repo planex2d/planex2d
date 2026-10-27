@@ -120,8 +120,8 @@ namespace planex2d {
                 wire.MergeCollinearEdges(tol);
                 return *this;
             }
-            Face &Simplify(const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                           const Cleanup &cleanup = config::cleanup) {
+            Face &Simplify(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                           const Cleanup &cleanup = config::state->cleanup) {
                 wire.Simplify(arcs, fit, cleanup);
                 return *this;
             }

@@ -10,12 +10,12 @@ import planex as px
 
 
 def plate():
-    """a rectangle at the origin: its bottom w = 4 and its left side h = 2"""
+    """a rectangle at the origin: its bottom w = 4 and its left side ht = 2"""
     sk = px.Sketch()
     sk.Move(sk.origin, px.Coincident).Line(4, 0, px.Horizontal, id="bottom").Line(0, 2, px.Perpendicular, id="right") \
         .Line(-4, 0, px.Perpendicular, id="top").Close(px.Perpendicular, id="left")
     sk.Constrain("bottom", px.Distance, 4, id="w")
-    sk.Constrain("left", px.Distance, 2, id="h")
+    sk.Constrain("left", px.Distance, 2, id="ht")
     return sk
 
 
@@ -67,7 +67,7 @@ def test_with_scipy_the_matrix_is_a_csr_array_of_the_same_values(monkeypatch):
 def test_rows_and_columns_are_labelled():
     sk = plate()
     j = sk.jacobian
-    assert ("w", 0) in j["rows"] and ("h", 0) in j["rows"]
+    assert ("w", 0) in j["rows"] and ("ht", 0) in j["rows"]
     # a point by the first element drawn through it; the start of bottom is at the origin, held
     assert ("bottom.end", "x") in j["columns"] and ("right.start", "x") not in j["columns"]
     assert ("bottom.start", "x") not in j["columns"]
@@ -89,7 +89,7 @@ def test_a_length_row_moves_the_end_along_the_line():
 @pytest.mark.constraints
 def test_an_expression_holds_the_dimension_it_uses_in_an_unknown():
     sk = plate()
-    sk.Expression("h = w/4")
+    sk.Expression("ht = w/4")
     j = sk.jacobian
     assert ("w", "value") in j["rows"] and ("w", "value") in j["columns"]
     assert j["shape"][1] - np.linalg.matrix_rank(dense(j)) == sk.dof

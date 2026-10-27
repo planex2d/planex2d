@@ -9,14 +9,13 @@
 #include <numbers>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <vector>
-
-#include <Geom2d_BSplineCurve.hxx>
 
 #include "core/config.hpp"
 #include "core/vertex.hpp"
+#include "curves/curve.hpp"
 #include "curves/primitiveedge.hpp"
-#include "curves/occspline.hpp"
 #include "curves/spline.hpp"
 
 namespace planex2d {
@@ -50,12 +49,11 @@ namespace planex2d {
         }
         return true;
     }
-    inline bool Fits(const Handle(Geom2d_BSplineCurve) &c, std::span<const PrimitiveEdge> chain, double tol) {
-        double u0 = c->FirstParameter(), u1 = c->LastParameter();
-        if (!WithinTol([&](double s) { return OccPoint(c, u0 + (u1 - u0) * s); }, chain, tol))
+    inline bool Fits(const Curve<double, Vertex> &c, std::span<const PrimitiveEdge> chain, double tol) {
+        double u0 = c.First(), u1 = c.Last();
+        if (!WithinTol([&](double s) { return c.At(u0 + (u1 - u0) * s); }, chain, tol))
             return false;
-        return Dot(OccDerivative(c, u0), chain.front().StartTangent()) > 0.0 &&
-               Dot(OccDerivative(c, u1), chain.back().EndTangent()) > 0.0;
+        return Dot(c.Derivative(u0), chain.front().StartTangent()) > 0.0 && Dot(c.Derivative(u1), chain.back().EndTangent()) > 0.0;
     }
     inline std::vector<Vertex> FitPoints(std::span<const PrimitiveEdge> chain, double spacing, size_t arcPieces = 2) {
         std::vector<Vertex> pts{chain.front().Start()};
@@ -126,58 +124,20 @@ namespace planex2d {
         return Edge(arc);
     }
 
-    inline std::vector<double> ChainParams(std::span<const PrimitiveEdge> chain) {
-        std::vector<double> u{0.0};
-        Vertex prev = chain.front().Start();
-        for (const PrimitiveEdge &e : chain) {
-            double l = 0.0;
-            if (const Arc *a = std::get_if<Arc>(&e)) {
-                l = Norm(a->MidPoint() - prev);
-                prev = a->MidPoint();
-            }
-            l += Norm(e.End() - prev);
-            prev = e.End();
-            u.push_back(u.back() + l);
-        }
-        return u;
-    }
-    inline Handle(Geom2d_BSplineCurve) FittedCurve(std::span<const PrimitiveEdge> chain, const std::vector<Vertex> &pts, double tol,
-                                                   const std::optional<Vertex> &startTangent, const std::optional<Vertex> &endTangent) {
-        Handle(Geom2d_BSplineCurve) c = Approximate(pts, tol, startTangent, endTangent);
-        if (!c.IsNull() && Fits(c, chain, tol))
-            return c;
-        std::map<size_t, Vertex> tangents;
-        if (startTangent)
-            tangents[0] = *startTangent;
-        if (endTangent)
-            tangents[pts.size() - 1] = *endTangent;
-        double S = 0.0;
-        for (const Vertex &p : pts)
-            S = std::max(S, NormInf(p));
-        c = InterpolateOcc(pts, tangents, false, Tol(S), false);
-        return Fits(c, chain, tol) ? c : Handle(Geom2d_BSplineCurve)();
-    }
-    inline std::optional<Spline> Spline::Fitted(std::vector<PrimitiveEdge> chain, const std::vector<Vertex> &pts, double tol,
+    // the fitted curve between the chain's two ends, its approximation within spline_tol of it as every spline's (the
+    // chain's pieces are only within tol)
+    inline std::optional<Spline> Spline::Fitted(const std::vector<PrimitiveEdge> &chain, const std::vector<Vertex> &pts, double tol,
                                                 const std::optional<Vertex> &startTangent, const std::optional<Vertex> &endTangent) {
-        Handle(Geom2d_BSplineCurve) c = FittedCurve(chain, pts, tol, startTangent, endTangent);
-        if (c.IsNull())
+        if (!config::state->spline_fitter)
+            throw std::logic_error("Spline::Fitted: no spline fit loaded");
+        std::optional<Curve<double, Vertex>> c = config::state->spline_fitter(chain, pts, tol, startTangent, endTangent);
+        if (!c)
             return std::nullopt;
-        const std::vector<double> u = ChainParams(chain);
-        auto d = std::make_shared<SplineData>();
-        d->curve = c;
-        double u0 = c->FirstParameter(), u1 = c->LastParameter();
-        for (size_t k = 0; k < u.size(); ++k) {
-            d->params.push_back(u0 + (u1 - u0) * u[k] / u.back());
-            d->nodes.emplace_back(d->params.back(), k == 0 ? chain.front().Start() : chain[k - 1].End());
-        }
-        Properties props = PropsOf(chain.front());
-        d->approx = std::move(chain);
-        for (PrimitiveEdge &e : d->approx)
-            std::visit([](auto &x) {
-                x.fromSpline = true;
-                x.ends = nullptr;
-            }, e);
-        return Spline(d, 0, d->approx.size(), props);
+        // a node in the middle: a closed curve's two ends are one point
+        const double mid = 0.5 * (c->First() + c->Last());
+        Spline s = Pieces(*c, {c->First(), mid, c->Last()}, {chain.front().Start(), c->At(mid), chain.back().End()}, ApproximationTol(pts)).front();
+        s.props = PropsOf(chain.front());
+        return s;
     }
 
 }

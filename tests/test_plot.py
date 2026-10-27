@@ -49,7 +49,7 @@ class TestMatplotlib:
 
     def test_every_edge_in_one_colour_by_default(self):
         from matplotlib.collections import LineCollection
-        wp = px.Move((0, 0)).Rectangle(1, 1).Circle(3, 3, 1)
+        wp = px.Move((0, 0)).Rectangle(1, 1).Circle((3, 3), 1)
         wp.Spline([(5, 5), (6, 4)], start_from_localpos=False)
         shape = wp.Shape()
         ax = shape.Plot(face_col="C0")
@@ -74,11 +74,11 @@ class TestMatplotlib:
     def test_wire_workplane_and_repeated_plots_into_one_axis(self):
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        wp = px.Move((0, 0)).Rectangle(1, 1).Circle(3, 3, 1)
+        wp = px.Move((0, 0)).Rectangle(1, 1).Circle((3, 3), 1)
         wp.Spline([(5, 5), (6, 4)], start_from_localpos=False, id="s")
         filled = wp.Shape()
         assert px.Plot(filled, ax=ax, face_col="C5", line_col="type") is ax
-        assert wp.Edge("s").Plot(ax=ax, line_col="type") is ax
+        assert wp.Wire("s").Plot(ax=ax, line_col="type") is ax
         assert wp.Shape().Plot(ax=ax, line_col="type", face_col=None) is ax
         for w in wp.Wires():
             w.Plot(ax=ax, line_col="type")
@@ -111,7 +111,7 @@ class TestPlotly:
         assert fig.layout.yaxis.scaleanchor == "x"
 
     def test_every_edge_in_one_colour_by_default(self):
-        wp = px.Move((0, 0)).Rectangle(1, 1).Circle(3, 3, 1)
+        wp = px.Move((0, 0)).Rectangle(1, 1).Circle((3, 3), 1)
         fig = wp.Shape().Plot(backend="plotly", face_col="C0")
         edges = [t for t in fig.data if t.mode == "lines"]
         assert [t.name for t in edges] == ["edges"] and not edges[0].showlegend
@@ -126,11 +126,11 @@ class TestPlotly:
     def test_figure_selects_the_backend_and_legend_entries_are_unique(self):
         import plotly.graph_objects as go
         fig = go.Figure()
-        wp = px.Move((0, 0)).Rectangle(1, 1).Circle(3, 3, 1, id="c")
+        wp = px.Move((0, 0)).Rectangle(1, 1).Circle((3, 3), 1, id="c")
         first = wp.Shape()
         assert px.Plot(first, ax=fig, line_col="type") is fig
         wp.Shape().Plot(ax=fig, face_col="C1", line_col="type")
-        wp.Edge("c").Plot(ax=fig, line_col="type")
+        wp.Wire("c").Plot(ax=fig, line_col="type")
         shown = [t.name for t in fig.data if t.showlegend]
         assert sorted(shown) == ["arcs", "lines"]
         assert len(fig.data) > len(shown)
@@ -234,6 +234,7 @@ def test_plot3d_draws_with_webgpu_by_default(draws):
     assert [d[0] for d in draws] == ["webgpu", "webgpu"] and draws[1][2] == {}
 
 
+@pytest.mark.occ
 def test_plot3d_webgpu_without_the_package_says_how_to_install(monkeypatch):
     monkeypatch.setitem(sys.modules, "ngsolve_webgpu.jupyter", None)
     with pytest.raises(ImportError, match="pip install ngsolve_webgpu.*backend='webgui'"):
@@ -256,7 +257,7 @@ def test_plot3d_unknown_backend():
 
 def test_plotly_fills_overlapping_compound_parts():
     pytest.importorskip("plotly")
-    discs = px.Compound([px.QuickSketch().Circle(0, 0, 1).Face(), px.QuickSketch().Circle(1, 0, 1).Face()])
+    discs = px.Compound([px.QuickSketch().Circle((0, 0), 1).Face(), px.QuickSketch().Circle((1, 0), 1).Face()])
     fig = discs.Plot(backend="plotly", face_col="C0")
     assert fig.layout.shapes[0].fillrule == "nonzero"
 

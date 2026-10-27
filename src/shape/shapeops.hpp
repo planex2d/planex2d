@@ -237,6 +237,8 @@ namespace planex2d {
                 of.push_back((uint32_t)(faces.size() + k));
             }
         const double tol = all.Tol();
+        // faces from independent booleans (one per face) can put a vertex they share a rounding apart
+        SnapEndpoints(all, tol, [](size_t) { return true; });
         auto key = [](const Edge &e) {
             return std::visit([](const auto &x) { return std::array<Vertex, 3>{x.Start(), x.End(), x.MidPoint()}; }, e);
         };
@@ -409,6 +411,23 @@ namespace planex2d {
                                    : Boolean(shapes.front().FaceEdges(), BalancedBoolean(std::move(rest), BooleanOp::Union, multithreaded),
                                              BooleanOp::Difference);
         return Result(axes, std::move(region), {shapes.front()}, &FaceList::InheritProps);
+    }
+
+    // the regions covered by an odd number of the shapes, chained left to right: a ^ b is the faces of a - b and of
+    // b - a, each keeping its part's properties, sharing the edges where they touch
+    inline Shape SymmetricDifference(const ShapeList &shapes, bool multithreaded = false) {
+        shapes.CheckParts(false);
+        const AxisSystem axes = shapes.CommonAxes();
+        if (shapes.empty())
+            return Shape();
+        Shape r = shapes.front();
+        for (size_t k = 1; k < shapes.size(); ++k) {
+            FaceList faces = Subtract({r, shapes[k]}, multithreaded).Faces();
+            const FaceList other = Subtract({shapes[k], r}, multithreaded).Faces();
+            faces.insert(faces.end(), other.begin(), other.end());
+            r = SharingFaces(axes, faces);
+        }
+        return r;
     }
 
     inline Shape Boolean(const Shape &a, const Shape &b, BooleanOp op) {

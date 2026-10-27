@@ -15,7 +15,7 @@ def fresh_counters():
 
 def plate():
     outer = px.QuickSketch().Move((0, 0)).Rectangle(4, 2, name="outer").Face()
-    holes = px.QuickSketch().Circle(1, 1, 0.3, name="hole").Circle(3, 1, 0.3, name="hole").Shape()
+    holes = px.QuickSketch().Circle((1, 1), 0.3, name="hole").Circle((3, 1), 0.3, name="hole").Shape()
     return outer - holes
 
 
@@ -64,7 +64,7 @@ def test_ids_objects_and_chains():
 @pytest.mark.constraints
 def test_constraint_sketch_elements_and_shape_faces():
     sk = px.Sketch(id="bracket")
-    sk.Circle(1, 1, 0.3, id="hole")
+    sk.Circle((1, 1), 0.3, id="hole")
     sk.Move((0, 0)).Rectangle(4, 2)
     assert sk("hole").ids == ["bracket.hole"]
     assert sk(kind="circle").ids == ["bracket.hole"]
@@ -117,7 +117,7 @@ def test_points_by_id_ends_midpoints_and_centres():
     g = px.Glue([px.QuickSketch().Rectangle(1, 1).Face(), px.QuickSketch().Move((1, 0)).Rectangle(1, 1).Face()])
     assert g(g.faces[px.x > 1][0].id + ".center")[0] == pytest.approx((1.5, 0.5))
     sk = px.Sketch(id="bracket")
-    sk.Circle(1, 1, 0.3, id="hole")
+    sk.Circle((1, 1), 0.3, id="hole")
     assert sk("hole.center")[0] == pytest.approx((1, 1)) and sk("hole.center")[0].id == "bracket.Center.1"
 
 
@@ -147,7 +147,7 @@ def test_a_name_has_no_bar():
     with pytest.raises(ValueError, match=r"a name has no '\|'"):
         px.FromPolyline([(0, 0), (1, 0)], name="a|b")
     with pytest.raises(ValueError, match=r"a name has no '\|'"):
-        px.QuickSketch().Circle(0, 0, 1, name="a|b")
+        px.QuickSketch().Circle((0, 0), 1, name="a|b")
 
 
 def test_a_name_read_in_gets_an_underscore_for_the_bar():
@@ -163,7 +163,7 @@ def test_a_name_read_in_gets_an_underscore_for_the_bar():
 def test_a_wire_to_a_polyline_and_back():
     import numpy as np
 
-    w = px.QuickSketch().Circle(0, 0, 1).Wire()
+    w = px.QuickSketch().Circle((0, 0), 1).Wire()
     points = w.ToPolyline(1e-3)
     assert isinstance(points, np.ndarray) and points.shape[1] == 2 and (points[0] == points[-1]).all()
     assert np.allclose(np.hypot(points[:, 0], points[:, 1]), 1)

@@ -32,7 +32,7 @@ void BindFace(py::class_<Face> &face) {
                                "edges: EdgesView\n\nThe edges, a view of the face's edges: a property set on it is set on all of them.")
         .def_property_readonly("vertices", py::cpp_function([](Face &f) { return VerticesView{&f.Edges()}; }, py::keep_alive<0, 1>()),
                                "vertices: VerticesView\n\nThe vertices, each once, in the order the edges reach them.")
-        .def_property_readonly("mass", &Face::Area, "mass: float\n\nThe area, holes subtracted; splines by their approximation.")
+        .def_property_readonly("mass", &Face::Area, "mass: float\n\nThe area, holes subtracted; splines on their exact curve.")
         .def_property_readonly("wires", &Face::Wires, "wires: list[Wire]\n\nThe loops, the outline and the holes, a list of wires.")
         .def_property_readonly("faces", [](const py::object &self) { return py::list(py::make_tuple(self)); },
                                "faces: list[Face]\n\nA list of this face alone.")
@@ -48,9 +48,9 @@ void BindFace(py::class_<Face> &face) {
            "    ValueError: the face has holes; .wires gives the loops, .outer the outline.\n\n"
            "Examples:\n"
            "    face.Wire()")
-        .def("Offset", [](const py::object &self, double d, bool inplace) -> py::object {
+        .def("Offset", [](const py::object &self, double d, bool inplace, OffsetForm corners) -> py::object {
             Face &f = self.cast<Face &>();
-            Shape r = OffsetFaces(Shape(f), d);
+            Shape r = OffsetFaces(Shape(f), d, CornersOf(corners));
             if (!inplace)
                 return py::cast(std::move(r));
             FaceList faces = r.Faces();
@@ -59,8 +59,8 @@ void BindFace(py::class_<Face> &face) {
                                       " faces, which one face cannot hold; Offset(d, inplace=False) returns them as a Shape");
             ReplaceKeepingId(f, std::move(faces.front()));
             return self;
-        }, py::arg("d"), py::arg("inplace") = true,
-           OffsetDoc("Face", "Face | Shape", "in place, the offset is several faces; inplace=False returns them as a Shape.", "face"))
+        }, py::arg("d"), py::arg("inplace") = true, py::arg("corners") = OffsetForm::Round,
+           OffsetDoc("Face", "Face | Shape", "in place, the offset is several faces; inplace=False returns them as a Shape;", "face"))
         .def("OpenEnds", &Face::OpenEnds, OpenEndsDoc("face"))
         .def("IsClosed", &Face::IsClosed, IsClosedDoc("face"))
         .def("SmallEdges", &Face::SmallEdges, py::arg("tol"), SmallEdgesDoc("face"))
@@ -73,21 +73,10 @@ void BindFace(py::class_<Face> &face) {
                        "face", false))
         .def("Simplified", [](const Face &face, EXPORT_PARAMS) { Face r = face; return r.Simplify(EXPORT_OPTIONS), r; }, EXPORT_ARGS,
              ExportDoc("Simplified", "Face", "A copy defeatured as Simplify does it; this face is not changed.", "face", false))
-        .def("ToOCCShape", [](const Face &face, EXPORT_PARAMS) { return TypedShape(ToOCCFace(face, EXPORT_OPTIONS)); }, EXPORT_ARGS,
-             ExportDoc("ToOCCShape", "TopoDS_Shape", "The face as an OCC face, or a compound if the export gives "
-                                                    "several, as ToOCCFace().", "face", false))
-        .def("ToOCCWire", [](const Face &face, bool approximation, EXPORT_PARAMS) { return ToOCCWire(face.Edges(), approximation, EXPORT_OPTIONS); },
-             py::arg("approximation") = false, EXPORT_ARGS, ExportDoc("ToOCCWire", "TopoDS_Shape", "The edges as a single OCC wire.", "face", false, true))
-        .def("ToOCCWires", [](const Face &face, bool approximation, EXPORT_PARAMS) {
-            return CompoundOf(ToOCCWires(face.Edges(), approximation, EXPORT_OPTIONS));
-        }, py::arg("approximation") = false, EXPORT_ARGS,
-           ExportDoc("ToOCCWires", "TopoDS_Shape", "The loops as an OCC compound of wires.", "face", false, true))
-        .def("ToOCCFace", [](const Face &face, EXPORT_PARAMS) { return TypedShape(ToOCCFace(face, EXPORT_OPTIONS)); }, EXPORT_ARGS,
-             ExportDoc("ToOCCFace", "TopoDS_Shape", "The face as an OCC face, or a compound if the export gives several.", "face", false))
         .def("CloseGaps", &Face::RemoveSmallGaps, py::arg("tol"), ref, CloseGapsDoc("Face", "face", ""))
         .def("RemoveSmallEdges", &Face::RemoveSmallEdges, py::arg("tol"), ref, RemoveSmallEdgesDoc("Face", "face"))
         .def("MergeCollinearEdges", [](Face &f, OptDouble tol) -> Face & {
-            return f.MergeCollinearEdges(Or(tol, config::cleanup.merge_collinear_closer));
+            return f.MergeCollinearEdges(Or(tol, config::state->cleanup.merge_collinear_closer));
         }, py::arg("tol") = py::none(), ref, MergeCollinearEdgesDoc("Face", "", "face"))
         .def("FitArcs", [](Face &f, OptDouble tol, OptDouble l, OptDouble a, OptDouble ig) -> Face & {
             return f.FitArcs(Arcs(true, l, a, tol, ig));
@@ -96,9 +85,10 @@ void BindFace(py::class_<Face> &face) {
                               "degrees (or lines) that stay within tol of the chain, in place.", "face"));
     face.def_property_readonly("outer", &Face::Outer, "outer: Wire\n\nThe outer loop, a Wire, its edges in counterclockwise order.")
         .def_property_readonly("inner", &Face::Holes, "inner: list[Wire]\n\nThe inner loops (the holes), a list of wires, their edges in clockwise order.")
-        .def("Contains", [](const Face &f, const py::object &point, bool boundary) {
-            return ContainsOf(Planar{f.Edges(), Wire(f.Axes())}, f.Axes(), point, boundary);
-        }, py::arg("point"), py::pos_only(), py::arg("boundary") = true, ContainsDoc("face", "the face"));
+        .def("Contains", [](const Face &f, const py::object &other, bool boundary) {
+            return ContainsAny(Planar{f.Edges(), Wire(f.Axes())}, f.Axes(), other, boundary,
+                               [&] { return RelateOperand{2, f.Edges(), {}}; });
+        }, py::arg("other"), py::pos_only(), py::arg("boundary") = true, ContainsDoc("face", "the face"));
     face.def("Polylines", [](const Face &f, double tol) {
         CheckSampleTol("Polylines", tol);
         py::list out;
@@ -110,6 +100,7 @@ void BindFace(py::class_<Face> &face) {
         .def("Trim", [](const Face &f, TRIM_PARAMS) {
             return TrimShape(Shape(f), CutterIn(f.Axes(), cutter), RuleOf(f.Axes(), kc, rc, kl, ks, kleft, kright));
         }, TRIM_ARGS, TrimDoc("face"));
+    BindRelations<Face>(face, [](const Face &f) { return RelateOperand{2, f.Edges(), {}}; });
     BindMeasures<Face>(face, [](const Face &f) { return ThingOf(f); },
                        [](const Face &f, const std::optional<std::string> &n) { return NamedIn(f.Axes(), {f}, f.Edges(), n); });
     BindMotion<Face>(face);
@@ -121,6 +112,4 @@ void BindFace(py::class_<Face> &face) {
     });
     BindCopy<Face>(face);
     BindCorners<Face>(face, [](Face &f) -> Wire & { return f.Edges(); });
-    face.def("Project", [](const Face &x, const TopoDS_Shape &shape) { return ProjectedWires(shape, x.Axes()); }, py::arg("shape"), py::pos_only(),
-             ProjectDoc("face"));
 }

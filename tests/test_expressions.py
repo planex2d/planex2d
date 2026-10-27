@@ -160,7 +160,7 @@ def test_a_name_with_two_meanings_is_ambiguous():
 
 
 def test_functions_and_operators_that_are_not_allowed():
-    fails("h = log(w)", "no function 'log' (sqrt, abs, min, max, sin, cos, tan, asin, acos, atan2)")
+    fails("h = floor(w)", "no function 'floor' (sqrt, abs, min, max, sin, cos, tan, asin, acos, atan2, exp, log, sinh, cosh, tanh, asinh, acosh, atanh)")
     fails("h = w(2)", "'w' is a dimension, not a function")
     fails("h = sqrt", "'sqrt' is a function: sqrt(...)")
     fails("h = atan2(w)", "atan2 takes 2 arguments, 1 given")
@@ -282,8 +282,8 @@ def test_the_hook_checks_the_nodes():
         px._planex._EvaluateExpression([("add", 0)], [])
     with pytest.raises(ValueError, match="the nodes leave 2 values, not one"):
         px._planex._EvaluateExpression([("num", 1.0), ("num", 2.0)], [])
-    with pytest.raises(ValueError, match="no operation 'log'"):
-        px._planex._EvaluateExpression([("num", 1.0), ("log", 0)], [])
+    with pytest.raises(ValueError, match="no operation 'floor'"):
+        px._planex._EvaluateExpression([("num", 1.0), ("floor", 0)], [])
     with pytest.raises(ValueError, match="no value 1"):
         px._planex._EvaluateExpression([("val", 1)], [2.0])
 
@@ -292,12 +292,12 @@ TOL = 1e-12
 
 
 def plate(mode="normal"):
-    """a rectangle at the origin: its bottom w = 4 and its left side h = 2"""
+    """a rectangle at the origin: its bottom w = 4 and its left side ht = 2"""
     sk = px.Sketch(mode=mode)
     sk.Move(sk.origin, px.Coincident).Line(4, 0, px.Horizontal, id="bottom").Line(0, 2, px.Perpendicular, id="right") \
         .Line(-4, 0, px.Perpendicular, id="top").Close(px.Perpendicular, id="left")
     sk.Constrain("bottom", px.Distance, 4, id="w")
-    sk.Constrain("left", px.Distance, 2, id="h")
+    sk.Constrain("left", px.Distance, 2, id="ht")
     return sk
 
 
@@ -308,25 +308,25 @@ def length(sk, line):
 @pytest.mark.constraints
 def test_a_dimension_alone_on_the_left_is_driven():
     sk = plate()
-    assert sk.Expression("h = w/4") is sk
-    assert sk.expressions == {"Expression.1": "h = w/4"}
-    assert sk["h"] == pytest.approx(1, abs=TOL) and length(sk, "left") == pytest.approx(1, abs=TOL)
+    assert sk.Expression("ht = w/4") is sk
+    assert sk.expressions == {"Expression.1": "ht = w/4"}
+    assert sk["ht"] == pytest.approx(1, abs=TOL) and length(sk, "left") == pytest.approx(1, abs=TOL)
     assert (sk.dof, sk.redundant) == (0, [])
     sk.Update({"w": 6})
-    assert sk["h"] == pytest.approx(1.5, abs=TOL) and length(sk, "left") == pytest.approx(1.5, abs=TOL)
-    assert float(repr(sk.constraints["Distance"]["h"]).rsplit(", ", 1)[1]) == pytest.approx(1.5, abs=TOL)
+    assert sk["ht"] == pytest.approx(1.5, abs=TOL) and length(sk, "left") == pytest.approx(1.5, abs=TOL)
+    assert float(repr(sk.constraints["Distance"]["ht"]).rsplit(", ", 1)[1]) == pytest.approx(1.5, abs=TOL)
     assert "Expression.1" not in str(sk.constraints)
-    with pytest.raises(ValueError, match=re.escape("h = 3: h is driven by Expression.1 (h = w/4); remove the expression to set it")):
-        sk["h"] = 3
-    with pytest.raises(ValueError, match=re.escape("h is driven by Expression.1")):
-        sk.Update({"h": 3})
-    with pytest.raises(ValueError, match=re.escape("Expression 'h = 3': h is driven by Expression.1 (h = w/4) already")):
-        sk.Expression("h = 3")
+    with pytest.raises(ValueError, match=re.escape("ht = 3: ht is driven by Expression.1 (ht = w/4); remove the expression to set it")):
+        sk["ht"] = 3
+    with pytest.raises(ValueError, match=re.escape("ht is driven by Expression.1")):
+        sk.Update({"ht": 3})
+    with pytest.raises(ValueError, match=re.escape("Expression 'ht = 3': ht is driven by Expression.1 (ht = w/4) already")):
+        sk.Expression("ht = 3")
     sk.RemoveExpression("Expression.1")
-    assert sk.expressions == {} and sk["h"] == pytest.approx(1.5, abs=TOL)
+    assert sk.expressions == {} and sk["ht"] == pytest.approx(1.5, abs=TOL)
     sk.Update({"w": 8})
     assert length(sk, "left") == pytest.approx(1.5, abs=TOL)
-    sk.Update({"h": 3})
+    sk.Update({"ht": 3})
     assert length(sk, "left") == pytest.approx(3, abs=TOL)
     for wrong in ("Expression.1", "w"):
         with pytest.raises(ValueError, match=re.escape("RemoveExpression('%s'): no such expression" % wrong)):
@@ -336,25 +336,25 @@ def test_a_dimension_alone_on_the_left_is_driven():
 @pytest.mark.constraints
 def test_two_sides_an_id_and_the_id_rule():
     sk = plate()
-    sk.Expression("h", "w/4", id="h ratio")
-    assert sk.expressions == {"h ratio": "h = w/4"}
+    sk.Expression("ht", "w/4", id="ht ratio")
+    assert sk.expressions == {"ht ratio": "ht = w/4"}
     with pytest.raises(ValueError, match=re.escape("Expression 'w = 4': id 'bad-id' contains '-'")):
         sk.Expression("w = 4", id="bad-id")
-    with pytest.raises(ValueError, match=re.escape("Expression 'w = h ratio': 'h ratio' is an expression, not a value")):
-        sk.Expression("w = h ratio")
-    assert sk.expressions == {"h ratio": "h = w/4"}
-    sk.Remove("h ratio")
+    with pytest.raises(ValueError, match=re.escape("Expression 'w = ht ratio': 'ht ratio' is an expression, not a value")):
+        sk.Expression("w = ht ratio")
+    assert sk.expressions == {"ht ratio": "ht = w/4"}
+    sk.Remove("ht ratio")
     assert sk.expressions == {}
 
 
 @pytest.mark.constraints
 def test_names_the_sketch_knows():
     sk = plate()
-    for text, message in (("h = ww/2", "unknown id 'ww'"),
-                          ("h = bottom/2", "'bottom' is an element, not a value (its measures: bottom.length, bottom.angle)"),
-                          ("h = bottom.end", "'bottom.end' is a point, not a value (its measures: bottom.end.h, bottom.end.v)"),
-                          ("h = Horizontal.1", "'Horizontal.1' (px.Horizontal) has no value"),
-                          ("h = bottom.r", "a line has no measure 'r' (length, angle)")):
+    for text, message in (("ht = ww/2", "unknown id 'ww'"),
+                          ("ht = bottom/2", "'bottom' is an element, not a value (its measures: bottom.length, bottom.angle)"),
+                          ("ht = bottom.end", "'bottom.end' is a point, not a value (its measures: bottom.end.h, bottom.end.v)"),
+                          ("ht = Horizontal.1", "'Horizontal.1' (px.Horizontal) has no value"),
+                          ("ht = bottom.r", "a line has no measure 'r' (length, angle)")):
         with pytest.raises(ValueError, match=re.escape("Expression '%s': %s" % (text, message))):
             sk.Expression(text)
     assert sk.expressions == {} and sk.dof == 0
@@ -363,35 +363,35 @@ def test_names_the_sketch_knows():
 @pytest.mark.constraints
 def test_a_plain_equation_is_one_more_constraint():
     sk = plate()
-    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (h/2 = w/4) is redundant (consistent) with w, h")):
-        sk.Expression("h/2 = w/4")
-    assert sk.redundant == ["w", "h", "Expression.1"]
+    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (ht/2 = w/4) is redundant (consistent) with w, ht")):
+        sk.Expression("ht/2 = w/4")
+    assert sk.redundant == ["w", "ht", "Expression.1"]
     with pytest.raises(ValueError, match=re.escape("Update(w = 5): no solution, nothing changed")):
         sk.Update({"w": 5})
     other = plate()
-    with pytest.warns(px.PlanexWarning, match=re.escape("h/2 = w/2: no solution, it contradicts the constraints there are; Expression.1 is kept")):
-        other.Expression("h/2 = w/2")
-    assert other["h"] == 2 and other.status == "over"
+    with pytest.warns(px.PlanexWarning, match=re.escape("ht/2 = w/2: no solution, it contradicts the constraints there are; Expression.1 is kept")):
+        other.Expression("ht/2 = w/2")
+    assert other["ht"] == 2 and other.status == "over"
 
 
 @pytest.mark.constraints
 def test_a_reference_takes_part_and_stays_a_reference():
     sk = plate()
-    sk.Remove("h")
-    sk.Constrain("left", px.Distance, id="h", reference=True)
+    sk.Remove("ht")
+    sk.Constrain("left", px.Distance, id="ht", reference=True)
     assert sk.dof == 1
-    sk.Expression("h/2 = w/2")
-    assert length(sk, "left") == pytest.approx(4, abs=TOL) and sk["h"] == pytest.approx(4, abs=TOL)
+    sk.Expression("ht/2 = w/2")
+    assert length(sk, "left") == pytest.approx(4, abs=TOL) and sk["ht"] == pytest.approx(4, abs=TOL)
     assert (sk.dof, sk.redundant) == (0, [])
     sk.Update({"w": 3})
     assert length(sk, "left") == pytest.approx(3, abs=TOL)
     sk.RemoveExpression("Expression.1")
-    sk.Expression("h = w + 1")
+    sk.Expression("ht = w + 1")
     assert length(sk, "left") == pytest.approx(4, abs=TOL)
     with pytest.raises(ValueError, match="a reference dimension measures, it is not set"):
-        sk["h"] = 2
+        sk["ht"] = 2
     sk.RemoveExpression("Expression.2")
-    assert sk.dof == 1 and repr(sk.constraints["Distance"]["h"]) == '"left", px.Distance, reference=True'
+    assert sk.dof == 1 and repr(sk.constraints["Distance"]["ht"]) == '"left", px.Distance, reference=True'
 
 
 def chain():
@@ -421,13 +421,13 @@ def test_measures_are_solved_with_the_geometry():
     sk = plate()
     sk.Move("bottom.start", px.Coincident).Line(4, 2, id="diagonal", construction=True)
     sk.Constrain("diagonal.end", "right.end", px.Coincident)
-    # h = |diagonal| / 2 = sqrt(w^2 + h^2) / 2: 3 h^2 = w^2
-    sk.Expression("h = diagonal.length/2")
-    assert sk["h"] == pytest.approx(4 / math.sqrt(3), abs=TOL) and length(sk, "left") == pytest.approx(4 / math.sqrt(3), abs=TOL)
+    # ht = |diagonal| / 2 = sqrt(w^2 + ht^2) / 2: 3 ht^2 = w^2
+    sk.Expression("ht = diagonal.length/2")
+    assert sk["ht"] == pytest.approx(4 / math.sqrt(3), abs=TOL) and length(sk, "left") == pytest.approx(4 / math.sqrt(3), abs=TOL)
     assert repr(sk.constraints["Distance"]["Reference.1"]) == '"diagonal", px.Distance, reference=True'
     assert sk["Reference.1"] == pytest.approx(8 / math.sqrt(3), abs=TOL) and (sk.dof, sk.redundant) == (0, [])
     sk.Update({"w": 6})
-    assert sk["h"] == pytest.approx(6 / math.sqrt(3), abs=TOL)
+    assert sk["ht"] == pytest.approx(6 / math.sqrt(3), abs=TOL)
 
 
 @pytest.mark.constraints
@@ -435,7 +435,7 @@ def test_point_coordinates_and_directions_are_signed():
     sk = plate()
     sk.Vertex("P", (1, 1))
     sk.Expression("P.h = -1.5")
-    sk.Expression("P.v = h/4 + Reference.1")
+    sk.Expression("P.v = ht/4 + Reference.1")
     assert sk.Location("P") == pytest.approx((-1.5, -1.0), abs=TOL)
     assert repr(sk.constraints["Distance"]["Reference.1"]) == '"P", px.V, px.Distance, reference=True'
     assert repr(sk.constraints["Distance"]["Reference.2"]) == '"P", px.H, px.Distance, reference=True'
@@ -454,7 +454,7 @@ def test_radii_sweeps_and_one_reference_per_measure():
     sk = px.Sketch()
     sk.Move((0, 0), px.Fix).Arc(1, 90, id="bend")
     sk.Constrain("bend.center", px.Fix)
-    sk.Circle(3, 0, 0.5, px.Fix, id="hole")
+    sk.Circle((3, 0), 0.5, px.Fix, id="hole")
     sk.Expression("bend.r = 2*hole.r")
     sk.Expression("bend.sweep = 120 + 0*hole.r")
     assert sk.Geometry("bend")["r"] == pytest.approx(1, abs=TOL) and sk.Geometry("bend")["sweep"] == pytest.approx(120, abs=1e-10)
@@ -467,7 +467,7 @@ def test_radii_sweeps_and_one_reference_per_measure():
 @pytest.mark.constraints
 def test_units_and_degrees():
     sk = plate()
-    sk.Expression("h = 1500*mm")
+    sk.Expression("ht = 1500*mm")
     assert length(sk, "left") == pytest.approx(1.5, abs=TOL)
     sk.Move((6, 0), px.Fix).Line(1, 0.2, id="arm")
     sk.Constrain(px.H, "arm", px.Angle, 10, id="phi")
@@ -486,29 +486,29 @@ def test_units_and_degrees():
 @pytest.mark.constraints
 def test_domain_errors_name_the_expression():
     sk = plate()
-    with pytest.raises(ValueError, match=re.escape("Expression 'h = sqrt(w - 10)': sqrt of a negative number (-6)")):
-        sk.Expression("h = sqrt(w - 10)")
-    with pytest.raises(ValueError, match=re.escape("Expression 'h = sqrt(w - 4)': sqrt of 0 has no derivative there")):
-        sk.Expression("h = sqrt(w - 4)")
-    assert sk.expressions == {} and (sk["h"], sk.dof) == (2, 0)
-    sk.Expression("h = sqrt(w - 3)")
-    assert sk["h"] == pytest.approx(1, abs=TOL)
-    with pytest.raises(ValueError, match=re.escape("Update(w = 2): no solution, nothing changed; Expression.1 (h = sqrt(w - 3)): sqrt of a "
+    with pytest.raises(ValueError, match=re.escape("Expression 'ht = sqrt(w - 10)': sqrt of a negative number (-6)")):
+        sk.Expression("ht = sqrt(w - 10)")
+    with pytest.raises(ValueError, match=re.escape("Expression 'ht = sqrt(w - 4)': sqrt of 0 has no derivative there")):
+        sk.Expression("ht = sqrt(w - 4)")
+    assert sk.expressions == {} and (sk["ht"], sk.dof) == (2, 0)
+    sk.Expression("ht = sqrt(w - 3)")
+    assert sk["ht"] == pytest.approx(1, abs=TOL)
+    with pytest.raises(ValueError, match=re.escape("Update(w = 2): no solution, nothing changed; Expression.1 (ht = sqrt(w - 3)): sqrt of a "
                                                    "negative number (-1) there")):
         sk.Update({"w": 2})
-    assert (sk["w"], sk["h"]) == (4, pytest.approx(1, abs=TOL))
+    assert (sk["w"], sk["ht"]) == (4, pytest.approx(1, abs=TOL))
 
 
 @pytest.mark.constraints
 def test_strict_mode_and_sweeps():
     sk = plate("strict")
-    sk.Expression("h = w/4")
+    sk.Expression("ht = w/4")
     sk.Face()
     for w in (5, 6, 7):
         sk.Update({"w": w}, steps=2)
         assert length(sk, "left") == pytest.approx(w / 4, abs=TOL)
     with pytest.warns(px.PlanexWarning, match="redundant"):
-        sk.Expression("w = 4*h")
+        sk.Expression("w = 4*ht")
     with pytest.raises(ValueError, match="mode='strict' and the sketch is not fully constrained"):
         sk.Face()
 
@@ -516,29 +516,29 @@ def test_strict_mode_and_sweeps():
 @pytest.mark.constraints
 def test_copy_keeps_the_expressions():
     sk = plate()
-    sk.Expression("h = bottom.length/4")
+    sk.Expression("ht = bottom.length/4")
     copy = sk.Copy()
     assert copy.expressions == sk.expressions
     copy.Update({"w": 10})
-    assert (copy["h"], sk["h"]) == (pytest.approx(2.5, abs=TOL), pytest.approx(1, abs=TOL))
+    assert (copy["ht"], sk["ht"]) == (pytest.approx(2.5, abs=TOL), pytest.approx(1, abs=TOL))
 
 
 @pytest.mark.constraints
 def test_removing_what_an_expression_uses_removes_it():
     sk = plate()
-    sk.Expression("h = w/4")
-    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('w'): removed Expression.1 (h = w/4), it used w")):
+    sk.Expression("ht = w/4")
+    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('w'): removed Expression.1 (ht = w/4), it used w")):
         sk.Remove("w")
-    assert sk.expressions == {} and sk["h"] == pytest.approx(1, abs=TOL) and sk.dof == 1
+    assert sk.expressions == {} and sk["ht"] == pytest.approx(1, abs=TOL) and sk.dof == 1
     sk = plate()
-    sk.Expression("h = bottom.length/4")
+    sk.Expression("ht = bottom.length/4")
     sk.Expression("Reference.1 = 4")
-    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('Reference.1'): removed Expression.1 (h = bottom.length/4), it used Reference.1")):
+    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('Reference.1'): removed Expression.1 (ht = bottom.length/4), it used Reference.1")):
         sk.Remove("Reference.1")
     assert sk.expressions == {}
     sk = plate()
-    sk.Expression("h = bottom.length/4")
-    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('bottom'): removed Expression.1 (h = bottom.length/4), it used Reference.1")):
+    sk.Expression("ht = bottom.length/4")
+    with pytest.warns(px.PlanexWarning, match=re.escape("Remove('bottom'): removed Expression.1 (ht = bottom.length/4), it used Reference.1")):
         sk.Remove("bottom")
     assert sk.expressions == {} and "Reference.1" not in sk.dimensions
 
@@ -558,14 +558,14 @@ def test_trim_and_split_take_their_expressions_along():
 @pytest.mark.constraints
 def test_scale_and_set_origin_with_expressions():
     sk = plate()
-    sk.Expression("h = w/4")
+    sk.Expression("ht = w/4")
     sk.Scale((0, 0), 2)
-    assert (sk["w"], sk["h"]) == (pytest.approx(8, abs=TOL), pytest.approx(2, abs=TOL))
+    assert (sk["w"], sk["ht"]) == (pytest.approx(8, abs=TOL), pytest.approx(2, abs=TOL))
     sk = plate()
-    sk.Expression("h = w - 3")
+    sk.Expression("ht = w - 3")
     sk.Scale((0, 0), 2)
-    # the 3 does not scale: h = 8 - 3
-    assert sk["h"] == pytest.approx(5, abs=TOL) and length(sk, "left") == pytest.approx(5, abs=TOL)
+    # the 3 does not scale: ht = 8 - 3
+    assert sk["ht"] == pytest.approx(5, abs=TOL) and length(sk, "left") == pytest.approx(5, abs=TOL)
     sk = plate()
     sk.Vertex("P", (1, 1))
     sk.Expression("P.h = 1.5")
@@ -587,17 +587,18 @@ def test_a_driven_pattern_angle_stays_when_the_count_changes():
 @pytest.mark.constraints
 def test_the_parse_timer():
     px.debug.ResetTimers()
-    plate().Expression("h = w/4")
+    plate().Expression("ht = w/4")
     timer = {t["name"]: t for t in px.debug.Timers()}["planex Expression tree"]
     assert timer["counts"] == 1 and timer["time"] > 0
 
 
 @pytest.mark.constraints
 def test_the_plot_shows_driven_values_and_references_in_brackets():
+    pytest.importorskip("plotly")
     sk = plate()
-    sk.Expression("h = bottom.length/4")
+    sk.Expression("ht = bottom.length/4")
     sk.Constrain("top", px.Distance, id="L", reference=True)
     svg = sk.ToSVG(show_constraints=True)
-    assert ">h = 1<" in svg and ">(L = 4)<" in svg and ">(4)<" in svg and "Reference.1" not in svg.replace("<title>Reference.1", "")
+    assert ">ht = 1<" in svg and ">(L = 4)<" in svg and ">(4)<" in svg and "Reference.1" not in svg.replace("<title>Reference.1", "")
     texts = [a.text for a in sk.Plot(show_constraints=True, backend="plotly").layout.annotations]
-    assert any("(L = 4)" in t for t in texts) and any("h = 1" in t for t in texts)
+    assert any("(L = 4)" in t for t in texts) and any("ht = 1" in t for t in texts)

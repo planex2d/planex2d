@@ -33,20 +33,11 @@
 
 #include "integrations/netgenocc/convert.hpp"
 #include "integrations/netgenocc/occprops.hpp"
+#include "integrations/netgenocc/occspline.hpp"
 #include "boolean/boolean.hpp"
+#include "sketch/projection.hpp"
 
 namespace planex2d {
-
-    // a point of a projection: an edge seen end-on, or a vertex on its own
-    struct ProjectedPoint {
-        Vertex p;
-        std::string name;
-        std::optional<std::string> id;
-    };
-    struct Projection {
-        Wire wire;
-        std::vector<ProjectedPoint> points;
-    };
 
     // a name read in: "|" joins names in a selection, so it becomes "_"
     inline std::optional<std::string> ReadName(std::optional<std::string> name) {
@@ -128,7 +119,7 @@ namespace planex2d {
         const Properties firstProps = endProps(first), lastProps = endProps(last);
         auto add = [&](Edge e) {
             SetProps(e, props);
-            if ((firstProps || lastProps) && !std::holds_alternative<Circle>(e)) {
+            if ((firstProps || lastProps) && !IsClosedEdge(e)) {
                 const Vertex s = uv(BRep_Tool::Pnt(first.IsNull() ? last : first));
                 const Vertex t = uv(BRep_Tool::Pnt(last.IsNull() ? first : last));
                 std::visit([&](auto &x) {
@@ -195,7 +186,7 @@ namespace planex2d {
                 bs->IsRational() ? new Geom2d_BSplineCurve(poles, *bs->Weights(), bs->Knots(), bs->Multiplicities(),
                                                            bs->Degree(), bs->IsPeriodic())
                                  : new Geom2d_BSplineCurve(poles, bs->Knots(), bs->Multiplicities(), bs->Degree(), bs->IsPeriodic());
-            std::vector<Spline> pieces = Spline::FromCurve(flat);
+            std::vector<Spline> pieces = Spline::FromCurve(CurveOf(flat));
             // an OCC edge's curve misses its vertices by the edge's tolerance (5e-6 for a section curve), far above
             // the snap: the ends go onto the vertices so that neighbouring edges meet exactly (a closed curve has no neighbours)
             if (!closed) {

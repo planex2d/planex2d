@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "curves/blend.hpp"
 #include "curves/corner.hpp"
 #include "wire/chain.hpp"
 
@@ -49,6 +50,17 @@ namespace planex2d {
         double Size() const { return r; }
         std::string Text(double size) const { return "radius " + SizeText(size); }
         std::optional<CornerCut> Cutting(const Arm &a, const Arm &b, double size) const { return RoundingOf(a, b, size); }
+        Edge Joining(const Arm &, const Arm &, const CornerCut &made) const { return made.Joining(); }
+    };
+
+    // the rounding of corners by a curvature-continuous blend: from where the circle of radius r touches the first edge
+    // to where it touches the second, the quintic of G2Blend
+    struct CurvatureFilletRule : FilletRule {
+        Edge Joining(const Arm &first, const Arm &second, const CornerCut &made) const {
+            const Curve<double, Vertex> c = G2Blend<double, Vertex>(made.first, first.TangentAt(made.first) * -1.0, -first.CurvatureAt(made.first),
+                                                                    made.second, second.TangentAt(made.second), second.CurvatureAt(made.second));
+            return Spline::FromCurve(c).front();
+        }
     };
 
     // the cutting of corners by a line: d on the first edge, then d2 on the second or the angle (degrees) to the first
@@ -75,6 +87,7 @@ namespace planex2d {
         std::optional<CornerCut> Cutting(const Arm &a, const Arm &b, double size) const {
             return ChamferingOf(a, b, size, d2.value_or(d) * size / d, angle);
         }
+        Edge Joining(const Arm &, const Arm &, const CornerCut &made) const { return made.Joining(); }
     };
 
     struct CornerRun {
@@ -93,6 +106,23 @@ namespace planex2d {
     inline Properties CornerProperties(const Arm &first, const Arm &second, const std::string &id) {
         const Properties merged = MergedWithoutPartition(PropsOf(first.edge), PropsOf(second.edge));
         return ChangedProperties(merged, [&](ShapeProperties &q) { q.id = id; });
+    }
+
+    // a corner point on no vertex with all its digits (rounded it may read as the vertex it missed), the nearest of the
+    // vertices and how far, and the call that selects it
+    inline std::string OffVertex(const Vertex &p, const std::vector<Vertex> &vertices, const std::string &select) {
+        char at[96];
+        std::snprintf(at, sizeof at, "(%.17g, %.17g)", p.x, p.y);
+        std::string text = std::string("the corner at ") + at + " is on no vertex";
+        if (vertices.empty())
+            return text;
+        Vertex nearest = vertices.front();
+        for (const Vertex &v : vertices)
+            if (Dot(v - p, v - p) < Dot(nearest - p, nearest - p))
+                nearest = v;
+        char away[32];
+        std::snprintf(away, sizeof away, "%.3g", Norm(nearest - p));
+        return text + " (the nearest, " + PointText(nearest) + ", is " + away + " away" + (select.empty() ? "" : "; " + select) + ")";
     }
 
     // why a point with this many edge ends is no corner, empty for exactly two
@@ -139,6 +169,8 @@ namespace planex2d {
     std::string CutCorner(Wire &w, const Vertex &p, const Rule &rule, CornerRun &run) {
         const std::string where = "the corner at " + PointText(p);
         const std::vector<size_t> ends = w.EndpointsAt(p);
+        if (ends.empty())
+            return OffVertex(p, w.Endpoints(), "select it with vertices(near=...)");
         if (std::string why = CornerEndsProblem(where, ends.size()); !why.empty())
             return why;
         size_t i = ends[0] / 2, j = ends[1] / 2;
@@ -159,7 +191,7 @@ namespace planex2d {
         CornerCut made = cut;
         made.first = usedFirst ? first.Far() : first.Shortened(cut.first).Corner();
         made.second = usedSecond ? second.Far() : second.Shortened(cut.second).Corner();
-        Edge added = made.Joining();
+        Edge added = rule.Joining(first, second, made);
         SetProps(added, CornerProperties(first, second, std::string(Rule::kind) + "." + std::to_string(++run.number)));
         const uint32_t owner = w.Owner(i);
         if (!usedFirst)

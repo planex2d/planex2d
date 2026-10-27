@@ -26,6 +26,9 @@ namespace planex2d {
             Ends ends;
             bool fromSpline = false;
 
+        friend class PlanexWriter;
+        friend class PlanexReader;
+
         private:
             bool ccw;
             Vertex start;

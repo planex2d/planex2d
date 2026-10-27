@@ -51,7 +51,7 @@ def test_arcs_around_a_center_or_concentric():
     assert point(s.Copy().Move((4, 0)).Arc("base", center="o").pen.position) == pytest.approx((0, 0))
     # the current position projected onto the circle of radius 1
     t = s.Copy().Move((5, 0)).Arc(1, center="o", sweep=180, id="f")
-    assert sum(ends_of(t.Edge("f").edges[0]), ()) == pytest.approx((3, 0, 1, 0))
+    assert sum(ends_of(t.Wire("f").edges[0]), ()) == pytest.approx((3, 0, 1, 0))
     with pytest.raises(ValueError, match="no element 'q'"):
         s.Copy().Arc(center="q", sweep=10)
 
@@ -63,41 +63,41 @@ def ends_of(edge):
 def test_concentric_with_an_arc():
     s = px.Move((1, 0)).Arc(1, 180, id="half")
     s.Move((3, 0)).Arc(concentric="half", sweep=90, id="q")
-    a = s.Edge("q").edges[0]
-    assert point(a.center) == pytest.approx(point(s.Edge("half").edges[0].center))
+    a = s.Wire("q").edges[0]
+    assert point(a.center) == pytest.approx(point(s.Wire("half").edges[0].center))
     assert a.edge.radius == pytest.approx(math.sqrt(5))
     with pytest.raises(ValueError, match="concentric needs an arc, a circle or a point"):
         px.Move((0, 0)).Line((1, 0), id="l").Arc(concentric="l", sweep=10)
 
 
 def test_congruent_from_and_to_pick_the_side():
-    s = px.QuickSketch().Circle(0, 0, 2, id="c", construction=True)
+    s = px.QuickSketch().Circle((0, 0), 2, id="c", construction=True)
     s.Move((-3, 1)).Line((3, 1), id="top", construction=True).Move((-3, -1)).Line((3, -1), id="bottom", construction=True)
-    up = s.Copy().Arc(("bottom", (3, 0)), ("top", (3, 0)), congruent="c")
+    up = s.Copy().Arc(("bottom", (3, 0)), ("top", (3, 0)), coincident="c")
     a = last_arc(up)
     assert a.edge.ccw and a.midpoint.x == pytest.approx(2)
-    down = s.Copy().Arc(("top", (3, 0)), ("bottom", (3, 0)), congruent="c")
+    down = s.Copy().Arc(("top", (3, 0)), ("bottom", (3, 0)), coincident="c")
     assert last_arc(down).midpoint.x == pytest.approx(-2)
 
 
 def test_fillet_between_two_lines():
     s = px.Move((0, 0)).Line((2, 0), id="a").Line((2, 2), id="b")
     s.Arc("a", "b", 0.5, tangent=("a", "b"), id="f")
-    f = s.Edge("f").edges[0]
+    f = s.Wire("f").edges[0]
     assert sum(ends_of(f), ()) == pytest.approx((1.5, 0, 2, 0.5))
     assert point(f.center) == pytest.approx((1.5, 0.5))
     assert f.edge.radius == pytest.approx(0.5)
     # touching the extensions of a and b
-    big = px.Move((0, 0)).Line((2, 0), id="a").Line((2, 2), id="b").Arc("a", "b", 5, tangent=("a", "b"), id="f").Edge("f").edges[0]
+    big = px.Move((0, 0)).Line((2, 0), id="a").Line((2, 2), id="b").Arc("a", "b", 5, tangent=("a", "b"), id="f").Wire("f").edges[0]
     assert sum(ends_of(big), ()) == pytest.approx((-3, 0, 2, 5))
     with pytest.raises(ValueError, match="an arc touching two elements goes from the one to the other"):
         s.Arc("a", "b", tangent=("a", "b"))
 
 
 def test_fillet_between_a_line_and_a_circle():
-    s = px.Move((-4, 0)).Line((4, 0), id="floor").Circle(0, 1.2, 1, id="ball")
+    s = px.Move((-4, 0)).Line((4, 0), id="floor").Circle((0, 1.2), 1, id="ball")
     s.Arc("floor", "ball", 0.5, tangent=(("floor", (1.5, 0.5)), ("ball", (1.5, 0.5))), id="f")
-    f = s.Edge("f").edges[0]
+    f = s.Wire("f").edges[0]
     c = f.center
     assert point(c) == pytest.approx((math.sqrt(1.5 ** 2 - 0.7 ** 2), 0.5))
     assert point(f.start) == pytest.approx((c.x, 0))
@@ -111,7 +111,7 @@ def test_blend_into_a_line_and_into_a_circle():
     assert point(s.pen.position) == pytest.approx((3, 5))
     assert a.edge.radius == pytest.approx(3)
     assert point(s.pen.direction) == pytest.approx((0, 1))
-    s = px.QuickSketch().Circle(5, 0, 1, id="c", construction=True).Move((0, 0))
+    s = px.QuickSketch().Circle((5, 0), 1, id="c", construction=True).Move((0, 0))
     s.Arc("c", tangent="c")
     a = last_arc(s)
     t = s.pen.position
@@ -130,13 +130,13 @@ def test_arc_errors_and_construction():
     with pytest.raises(ValueError, match="give a radius, center"):
         walls().Arc(until="wall")
     with pytest.raises(ValueError, match=r"Arc\('wall'\): an element as an end needs the circle: center=, concentric= or "
-                                         r"congruent=; Arc\(r, until=<target>\)"):
+                                         r"coincident=; Arc\(r, until=<target>\)"):
         walls().Arc("wall")
-    with pytest.raises(ValueError, match="congruent takes the radius"):
-        px.Move((1, 0)).Arc(1, 90, id="q").Arc(2, congruent="q", sweep=10)
+    with pytest.raises(ValueError, match="coincident takes the radius"):
+        px.Move((1, 0)).Arc(1, 90, id="q").Arc(2, coincident="q", sweep=10)
     with pytest.raises(TypeError, match=r"Arc\(ccw=...\): ccw is gone"):
         px.Move((0, 0)).Arc(1, 90, ccw=False)
-    with pytest.raises(TypeError, match=r"Arc\(r, sweep, ...\): on a circle given by center=, concentric= or congruent= the "
+    with pytest.raises(TypeError, match=r"Arc\(r, sweep, ...\): on a circle given by center=, concentric= or coincident= the "
                                         r"sweep is sweep="):
         px.Move((0, 0)).Arc(1, 90, center=(0, 1))
     s = walls().Arc(10, construction=True, until="wall")
@@ -149,13 +149,13 @@ def test_near_picks_a_fillet_among_all_positions():
     round the corners outside the circle, a point with each target reaches every one, also the small fillet inside the
     circle"""
     def fillet(at=None, **kw):
-        s = px.QuickSketch().Circle(0, 0, 62, id="out", construction=True)
+        s = px.QuickSketch().Circle((0, 0), 62, id="out", construction=True)
         b = (70 * math.cos(math.radians(-20)), 70 * math.sin(math.radians(-20)))
         s.Move(tuple(b)).Line(14, angle=30, id="nB", construction=True)
-        t = s.Edge("nB").edges[0].end
+        t = s.Wire("nB").edges[0].end
         s.Move((t.x, t.y)).Line(200, angle=120, id="rightc", construction=True)
         s.Arc("rightc", "out", 6, tangent=("rightc", "out") if at is None else (("rightc", at), ("out", at)), id="f", **kw)
-        c = s.Edge("f").edges[0].center
+        c = s.Wire("f").edges[0].center
         return round(c.x, 3), round(c.y, 3), round(math.hypot(c.x, c.y), 9)
 
     assert fillet() == (67.2, -10.403, 68)
@@ -173,7 +173,7 @@ def full_turn(sketch, r, ang):
 
 
 def circle_of(sketch, id="Circle.1"):
-    [edge] = sketch.Edge(id).edges
+    [edge] = sketch.Wire(id).edges
     assert isinstance(edge.edge, px.CircleEdge)
     return edge
 
@@ -194,7 +194,7 @@ def test_a_full_turn_after_a_line_continues_the_chain():
     s.Line(1)
     c = circle_of(s)
     assert point(c.edge.center) == (4, 3.5) and point(c.start) == (4, 3)
-    assert ends(s.Edge("Line.2").edges[0]) == ((4, 3), (5, 3))
+    assert ends(s.Wire("Line.2").edges[0]) == ((4, 3), (5, 3))
 
 
 def test_a_negative_full_turn_goes_clockwise():
@@ -223,7 +223,7 @@ def test_a_full_turn_around_a_given_center_is_a_circle_through_the_pen(make):
 
 
 def test_a_circle_element_has_no_start_end_or_mid():
-    s = px.Sketch().Circle(0, 0, 1, id="ring")
+    s = px.Sketch().Circle((0, 0), 1, id="ring")
     for part in ("start", "end", "mid"):
         with pytest.raises(ValueError, match=r"a circle has no start, end or mid point; its point is 'ring.center'"):
             s.Location("ring." + part)
@@ -242,12 +242,12 @@ def test_a_full_turn_on_a_workplane():
 def floor_and_ring(cy, R):
     """the construction line y = 0 and a circle "ring" around (0, cy), the pen far left"""
     s = px.Move((-10, 0)).Line((10, 0), id="floor", construction=True)
-    return s.Circle(0, cy, R, id="ring", construction=True).Move((-8, 0))
+    return s.Circle((0, cy), R, id="ring", construction=True).Move((-8, 0))
 
 
 def fillet_center(s, r, hint, pen=(-8, 0)):
     s.Move(tuple(pen)).Arc("floor", "ring", r, tangent=(("floor", (0, 1)), ("ring", hint)), id="f")
-    return point(s.Edge("f").edges[0].center)
+    return point(s.Wire("f").edges[0].center)
 
 
 def test_a_point_inside_a_larger_circle_gives_the_nested_fillet_and_outside_the_outer_one():
@@ -280,7 +280,7 @@ def test_the_touch_point_nearest_the_point_picks_the_mirror_whatever_the_pen():
 def test_a_constraint_sketch_fillet_takes_its_kind_from_the_point(auto):
     sk = px.Sketch(auto_constraint=auto)
     sk.Move((-10, 0)).Line(20, 0, id="floor")
-    sk.Circle(0, 1, 2, id="ring")
+    sk.Circle((0, 1), 2, id="ring")
     sk.Arc("floor", "ring", 0.5, tangent=(("floor", (0, 1)), ("ring", (1, 1.5))), id="nested")
     sk.Arc("floor", "ring", 0.5, tangent=(("floor", (0, 1)), ("ring", (-3, 3))), id="outer")
     assert sk._Geometry("nested")["center"] == pytest.approx((math.sqrt(2), 0.5), abs=1e-12)

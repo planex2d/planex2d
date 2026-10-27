@@ -121,6 +121,7 @@ def test_trim_removes_the_sweep_with_the_old_ends():
 
 
 def test_the_plot_and_the_svg_label_the_sweep():
+    pytest.importorskip("plotly")
     sk = bend()
     sk.Constrain("bend", px.Angle, 120, id="sw")
     assert "sw = 120°" in sk.ToSVG(show_constraints=True)

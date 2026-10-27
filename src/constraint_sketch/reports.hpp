@@ -9,7 +9,11 @@
 #include <utility>
 #include <vector>
 
-// what the constraint sketch reports to Python: its constraints, the names an expression may use, the solver's Jacobian
+#include "core/vertex.hpp"
+#include "sketch/geometry.hpp"
+
+// what the constraint sketch reports to Python: its constraints, the names an expression may use, the solver's
+// Jacobian, its free motions
 
 namespace planex2d::cs {
 
@@ -58,6 +62,24 @@ namespace planex2d::cs {
         std::vector<std::pair<std::string, std::string>> columns;
         std::vector<double> scale, row_scale, data;
         std::vector<size_t> indices, indptr;
+    };
+
+    // one way the geometry can still move: drag, the value that leads it ("Line.2.end.h", "Circle.1.r"); moves, the
+    // elements it moves; per unit of the drag, how far every point (h, v) and other value (an angle in degrees) moves
+    struct FreeMotion {
+        std::string drag;
+        std::vector<std::string> moves;
+        std::vector<std::pair<std::string, Vertex>> points;
+        std::vector<std::pair<std::string, double>> values;
+    };
+
+    // a constraint to add: its kind, the names it relates (an axis by "H" or "V"), its value if a dimension, the
+    // arguments of its Constrain call; removes: the drag of the free motion a dimension removes
+    struct Suggestion {
+        sketch::Kind kind;
+        std::vector<std::string> refs;
+        std::optional<double> value;
+        std::string text, removes;
     };
 
 }

@@ -20,29 +20,24 @@
 #include <numbers>
 #include <numeric>
 #include <string>
+#include <typeindex>
+#include <unordered_map>
 #include <vector>
-
-#include <BRep_Builder.hxx>
-#include <TopoDS_Compound.hxx>
-#include <gp_Ax1.hxx>
-#include <gp_Vec.hxx>
 
 #include "shape/shape.hpp"
 #include "shape/measure.hpp"
+#include "shape/relate.hpp"
 #include "shape/split.hpp"
 #include "shape/deformable.hpp"
-#include "integrations/netgenocc/project.hpp"
-#include "integrations/netgenocc/shapecheck.hpp"
 #include "sketch/arcconstruction.hpp"
 #include "sketch/circleconstruction.hpp"
+#include "sketch/geometry.hpp"
 #include "sketch/lineconstruction.hpp"
+#include "sketch/projection.hpp"
 #include "sketch/symmetryaxis.hpp"
 #include "core/axissystem.hpp"
-#include "integrations/netgenocc/convert.hpp"
-#include "integrations/netgenocc/measure.hpp"
-#include "integrations/netgenocc/plane.hpp"
-#include "integrations/netgenocc/shapeexport.hpp"
-#include "integrations/netgenocc/stack.hpp"
+#include "core/parallel.hpp"
+#include "core/timer.hpp"
 #include "shape/thickness.hpp"
 #include "wire/chain.hpp"
 #include "shape/fillet.hpp"
@@ -66,6 +61,45 @@ inline const char *Doc(std::string text) {
 }
 inline std::string NameOf(const py::handle &cls) { return py::str(cls.attr("__name__")).cast<std::string>(); }
 
+// The OCC bindings are built with netgen's pybind11, the core with its own (any 3.x), whose type registry can be another
+// one. There the core's classes are those its module holds (CoreTypes, filled by Shadow in the OCC bindings, empty in
+// the core): IsA checks against them; a cast reads the core's object through pybind11's conduit, which needs a class of
+// the C++ type in the OCC bindings' own registry (the bare shadow); and what the OCC bindings make goes back through the
+// core's _adopt (ToCore)
+inline std::unordered_map<std::type_index, py::handle> &CoreTypes() {
+    static std::unordered_map<std::type_index, py::handle> types;
+    return types;
+}
+
+template <class T>
+bool IsA(const py::handle &h) {
+    if (const auto c = CoreTypes().find(typeid(T)); c != CoreTypes().end())
+        return py::isinstance(h, c->second);
+    return py::isinstance<T>(h);
+}
+
+// the core's class name of T, and a shadow of it when the OCC bindings keep another registry; true if it made one
+template <class T>
+bool Shadow(py::module_ &m, const py::module_ &core, const char *name) {
+    CoreTypes()[typeid(T)] = py::object(core.attr(name)).release();
+    if (py::detail::get_type_info(typeid(T)))
+        return false;
+    py::class_<T>(m, Doc("_" + std::string(name)));
+    return true;
+}
+
+// the Face h is, or a face view's copy kept in copy: the core converts a view to a Face implicitly, which pybind11
+// cannot do for the core's objects when the OCC bindings keep another registry (defined after FaceView)
+inline const Face &AsFace(const py::handle &h, std::optional<Face> &copy);
+
+// what the OCC bindings made as the core's own object: kind names it for the core's _adopt
+template <class T>
+py::object ToCore(const char *kind, T made) {
+    return py::module_::import("planex._planex").attr("_adopt")(kind, py::capsule(new T(std::move(made)), [](void *p) {
+        delete static_cast<T *>(p);
+    }));
+}
+
 inline Shape WireShape(const Wire &w) { return Shape(w.Axes(), {}, {w}); }
 
 // the edges of every face, one between two faces or through one twice: the ray parity is that of the union of the faces
@@ -81,11 +115,11 @@ inline constexpr const char *NoCompoundBooleans = "a Compound has no booleans, m
 
 // a Face, Shape or Wire as a shape; a Python Compound gives its parts where allowed
 inline void AddShapes(const py::handle &h, ShapeList &out, bool compounds = true) {
-    if (py::isinstance<Shape>(h))
+    if (IsA<Shape>(h))
         out.push_back(h.cast<Shape>());
-    else if (py::isinstance<Face>(h))
-        out.emplace_back(h.cast<const Face &>());
-    else if (py::isinstance<Wire>(h))
+    else if (std::optional<Face> copy; IsA<Face>(h))
+        out.emplace_back(AsFace(h, copy));
+    else if (IsA<Wire>(h))
         out.push_back(WireShape(h.cast<const Wire &>()));
     else if (py::hasattr(h, "parts")) {
         if (!compounds)
@@ -128,52 +162,55 @@ inline Shape Combined(ShapeList parts, Shape (*f)(const ShapeList &, bool), bool
     return Fresh(std::move(r));
 }
 
-// the faces with the band of width |d| along their boundaries added (d > 0) or taken away (d < 0)
-inline Shape OffsetFaces(const Shape &s, double d) {
+// the forms of an offset's ends and corners as Python names them (px.Round, px.Flat, ...), one enum for both
+enum class OffsetForm { Round, Flat, Square, Sharp, Chamfer };
+inline const char *OffsetFormName(OffsetForm f) {
+    constexpr const char *names[] = {"Round", "Flat", "Square", "Sharp", "Chamfer"};
+    return names[(size_t)f];
+}
+inline OffsetEnd EndsOf(OffsetForm f) {
+    if (f == OffsetForm::Sharp || f == OffsetForm::Chamfer)
+        throw py::value_error(std::string("Offset: ends= is px.Round, px.Flat or px.Square, not px.") + OffsetFormName(f) +
+                              "; px.Sharp and px.Chamfer are corners=");
+    return f == OffsetForm::Round ? OffsetEnd::Round : f == OffsetForm::Flat ? OffsetEnd::Flat : OffsetEnd::Square;
+}
+inline OffsetCorner CornersOf(OffsetForm f) {
+    if (f == OffsetForm::Flat || f == OffsetForm::Square)
+        throw py::value_error(std::string("Offset: corners= is px.Round, px.Sharp or px.Chamfer, not px.") + OffsetFormName(f) +
+                              "; px.Flat and px.Square are ends=");
+    return f == OffsetForm::Round ? OffsetCorner::Round : f == OffsetForm::Sharp ? OffsetCorner::Sharp : OffsetCorner::Chamfer;
+}
+
+// the faces with the band of width |d| along their boundaries added (d > 0) or taken away (d < 0), its corners as given
+inline Shape OffsetFaces(const Shape &s, double d, OffsetCorner corners) {
     if (s.HasSharedFaces())
         throw py::value_error("Offset: the faces of the shape share edges (glued); px.Unify(shape) merges them first");
     if (d == 0.0)
         return s;
-    ShapeList parts{s, Shape(s.FaceEdges().Offset(std::abs(d)), nullptr)};
+    ShapeList parts{s, Shape(s.FaceEdges().Offset(std::abs(d), OffsetEnd::Round, corners), nullptr)};
     if (d > 0.0)
         return Combined(std::move(parts), &Unify, false);
     return Combined(std::move(parts), &Subtract, false);
 }
 
 inline const char *OffsetDoc(const std::string &cls, const std::string &returns, const std::string &raises, const std::string &x) {
-    return Doc("Offset(d: float, inplace: bool = True) -> " + returns + "\n\n"
+    return Doc("Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round) -> " + returns + "\n\n"
                "Grows the faces by d: the band of width |d| along their boundaries added for d > 0, taken away for d < 0.\n\n"
-               "The band is Wire.Offset of their edges, round around convex corners; the faces keep their properties, the "
-               "new edges those of the edges they come from.\n\n"
+               "The band is Wire.Offset of their edges; the faces keep their properties, the new edges those of the edges they "
+               "come from. A corner that the offset goes round on its outside (a convex one growing, a reflex one shrinking) "
+               "becomes an arc of radius |d| about it (px.Round), the two offsets extended along their end tangents until they "
+               "meet (px.Sharp, without a limit: a corner of angle theta between its edges reaches |d| / sin(theta / 2) out from "
+               "it), or the line between their ends (px.Chamfer).\n\n"
                "Args:\n"
                "    d: the width of the band, a length; d > 0 grows, d < 0 shrinks, 0 changes nothing.\n"
                "    inplace: True changes this " + cls + " and returns it; False returns the offset as a new Shape and "
-               "leaves this one.\n\n"
+               "leaves this one.\n"
+               "    corners: px.Round, px.Sharp or px.Chamfer.\n\n"
                "Raises:\n"
-               "    ValueError: " + raises + "\n\n"
+               "    ValueError: " + raises + " corners is px.Flat or px.Square.\n\n"
                "Examples:\n"
                "    " + x + ".Offset(0.5)\n"
-               "    band = " + x + ".Offset(0.5, inplace=False)");
-}
-
-inline TopoDS_Compound CompoundOf(const Handle(TopTools_HSequenceOfShape) &wires) {
-    BRep_Builder builder;
-    TopoDS_Compound compound;
-    builder.MakeCompound(compound);
-    for (int i = 1; i <= wires->Length(); ++i)
-        builder.Add(compound, wires->Value(i));
-    return compound;
-}
-
-// the shape as netgen's class of its type (Face, Solid, Compound)
-inline py::object TypedShape(const TopoDS_Shape &s) {
-    if (s.ShapeType() == TopAbs_FACE)
-        return py::cast(TopoDS::Face(s));
-    if (s.ShapeType() == TopAbs_SOLID)
-        return py::cast(TopoDS::Solid(s));
-    if (s.ShapeType() == TopAbs_COMPOUND)
-        return py::cast(TopoDS::Compound(s));
-    return py::cast(s);
+               "    band = " + x + ".Offset(0.5, inplace=False, corners=px.Sharp)");
 }
 
 template <class A, class B>
@@ -294,21 +331,11 @@ inline const char *FieldDoc(const std::string &field, const std::string &whose) 
         {"minh", "The smallest mesh size (netgen's minh)"},
         {"hpref", "Netgen's hpref"},
         {"layer", "Netgen's layer number"},
-        {"col", "The colour (r, g, b, a), set as (r, g, b) or (r, g, b, a)"},
+        {"col", "The color (r, g, b, a), set as (r, g, b) or (r, g, b, a)"},
         {"partition", "The partition (the mesh points along an edge as increasing fractions of its length in (0, 1))"},
         {"quad_dominated", "The quad_dominated flag (True: netgen meshes with mostly quadrilaterals)"}};
     return Doc(field + ": " + type.at(field) + "\n\n" + what.at(field) + whose);
 }
-
-inline Wire ProjectedWire(const TopoDS_Shape &shape, const AxisSystem &axes) {
-    Projection p = Project(shape, axes);
-    if (!p.points.empty())
-        Warning() << "Project: " << p.points.size() << " point" << (p.points.size() > 1 ? "s" : "")
-                  << " left out (edges seen end-on, lone vertices); Sketch.Project keeps them as construction points";
-    return p.wire;
-}
-
-inline WireList ProjectedWires(const TopoDS_Shape &shape, const AxisSystem &axes) { return ProjectedWire(shape, axes).OrderedChains(); }
 
 inline Wire SingleEdge(Edge e, const AxisSystem &axes) {
     Wire w(axes);
@@ -505,6 +532,12 @@ struct FaceView {
     }
 };
 
+inline const Face &AsFace(const py::handle &h, std::optional<Face> &copy) {
+    if (IsA<FaceView>(h))
+        return copy.emplace(h.cast<const FaceView &>().Copy());
+    return h.cast<const Face &>();
+}
+
 // the faces of a shape; it follows the shape
 struct FacesView {
     Shape *shape;
@@ -681,16 +714,62 @@ inline Axis AxisOf(const std::array<double, 3> &p, const std::array<double, 3> &
         throw std::invalid_argument("axis direction must not be zero");
     return {Pnt3(p), Normalized(Vec3(d))};
 }
+// the nearest points in 3d, a on the measured thing and b on the target
+struct Pair3 {
+    double d;
+    Vector3 a, b;
+};
+
+[[noreturn]] inline void NeedsOCC(const std::string &what) {
+    throw py::import_error(what + " needs planex's OCC integration (netgen and OCC), which is not loaded; pip install planex2d[occ] "
+                                  "(planex2d-occ, with netgen)");
+}
+
+// what the OCC module adds when it loads: netgen's OCC objects as arguments (gp_Pnt a point, gp_Vec and gp_Dir a
+// direction, gp_Ax3 and a planar shape a plane, a TopoDS_Shape a target projected into the plane) and what is measured
+// or projected between planes; without it nothing is an OCC object and the rest raises
+struct OCCHooks {
+    std::optional<Vector3> (*point)(const py::handle &) = [](const py::handle &) -> std::optional<Vector3> { return std::nullopt; };
+    std::optional<Vector3> (*direction)(const py::handle &) = [](const py::handle &) -> std::optional<Vector3> { return std::nullopt; };
+    std::optional<AxisSystem> (*axes)(const py::handle &, const std::string &) =
+        [](const py::handle &, const std::string &) -> std::optional<AxisSystem> { return std::nullopt; };
+    bool (*isShape)(const py::handle &) = [](const py::handle &) { return false; };
+    bool (*isAxes)(const py::handle &) = [](const py::handle &) { return false; };
+    std::optional<Projection> (*projected)(const py::handle &, const AxisSystem &, bool) =
+        [](const py::handle &, const AxisSystem &, bool) -> std::optional<Projection> { return std::nullopt; };
+    Wire (*across)(const Planar &, const AxisSystem &, const AxisSystem &) =
+        [](const Planar &, const AxisSystem &, const AxisSystem &) -> Wire { NeedsOCC("a projection into another plane"); };
+    Pair3 (*nearest)(const Planar &, const std::optional<Vertex> &, const AxisSystem &, const py::handle &) =
+        [](const Planar &, const std::optional<Vertex> &, const AxisSystem &, const py::handle &) -> Pair3 {
+            NeedsOCC("a distance to something in another plane");
+        };
+};
+// as config::state: the OCC module points occ at the core module's hooks, which it fills
+inline OCCHooks moduleHooks;
+inline OCCHooks *occ = &moduleHooks;
+
+// the core's own thread pool and profiler for the OCC bindings, whose statics are their own (capsule _services)
+struct CoreServices {
+    tf::Executor &(*executor)();
+    Profiler &(*profiler)();
+};
+inline const CoreServices coreServices{OwnExecutor, Profiler::Own};
+
+// the sizes of what the core and the OCC bindings both read: equal when both are built from the same sources (with the
+// same version, a development build of other sources still differs here)
+inline py::tuple Layout() {
+    return py::make_tuple(sizeof(config::State), sizeof(OCCHooks), sizeof(CoreServices), sizeof(Vertex), sizeof(AxisSystem),
+                          sizeof(Wire), sizeof(Face), sizeof(Shape), sizeof(FaceView), sizeof(EdgeView), sizeof(VertexView));
+}
+
 // a 3d point or direction: a tuple, or netgen's Pnt, Vec or Dir; none for None
 inline std::optional<Vector3> XYZArg(const py::handle &h, const std::string &call) {
     if (h.is_none())
         return std::nullopt;
-    if (py::isinstance<gp_Pnt>(h))
-        return Vector3Of(h.cast<gp_Pnt>().XYZ());
-    if (py::isinstance<gp_Vec>(h))
-        return Vector3Of(h.cast<gp_Vec>().XYZ());
-    if (py::isinstance<gp_Dir>(h))
-        return Vector3Of(h.cast<gp_Dir>().XYZ());
+    if (std::optional<Vector3> p = occ->point(h))
+        return p;
+    if (std::optional<Vector3> d = occ->direction(h))
+        return d;
     try {
         const std::array<double, 3> a = h.cast<std::array<double, 3>>();
         return Vector3{a[0], a[1], a[2]};
@@ -702,12 +781,31 @@ inline std::optional<Vector3> XYZArg(const py::handle &h, const std::string &cal
 inline bool IsNumber(const py::handle &h) {
     return (py::isinstance<py::float_>(h) || py::isinstance<py::int_>(h)) && !py::isinstance<py::bool_>(h);
 }
+
+// one 3d point (three numbers, or netgen's Pnt, Vec or Dir), not a list of them
+inline bool IsOneXYZ(const py::handle &h) {
+    if (occ->point(h) || occ->direction(h))
+        return true;
+    if (!py::isinstance<py::sequence>(h) || py::isinstance<py::str>(h) || py::len(h) != 3)
+        return false;
+    for (const py::handle x : h)
+        if (py::isinstance<py::sequence>(x) || occ->point(x) || occ->direction(x))
+            return false;
+    return true;
+}
+// the plane coordinates of a 3d point in every form XYZArg takes, or a list of them for a list
+inline py::object ToHVOf(const AxisSystem &axes, const py::object &p) {
+    if (IsOneXYZ(p))
+        return Tuple2(axes.ToHV(*XYZArg(p, "ToHV")));
+    py::list out;
+    for (const py::handle q : p)
+        out.append(Tuple2(axes.ToHV(*XYZArg(q, "ToHV"))));
+    return out;
+}
 // a 3d point (x, y, z) as the plane's (h, v); anything else as it is
 inline py::object InPlane(const AxisSystem &axes, const py::handle &h, const std::string &call) {
-    std::optional<Vector3> p;
-    if (py::isinstance<gp_Pnt>(h))
-        p = Vector3Of(h.cast<gp_Pnt>().XYZ());
-    else if ((py::isinstance<py::tuple>(h) || py::isinstance<py::list>(h)) && py::len(h) == 3 && IsNumber(h[py::int_(0)]) &&
+    std::optional<Vector3> p = occ->point(h);
+    if (!p && (py::isinstance<py::tuple>(h) || py::isinstance<py::list>(h)) && py::len(h) == 3 && IsNumber(h[py::int_(0)]) &&
              IsNumber(h[py::int_(1)]) && IsNumber(h[py::int_(2)]))
         p = Vector3{h[py::int_(0)].cast<double>(), h[py::int_(1)].cast<double>(), h[py::int_(2)].cast<double>()};
     if (!p)
@@ -728,18 +826,20 @@ inline Vertex HVArg(const AxisSystem &axes, const py::handle &h, const std::stri
     }
 }
 
-// style= of a spline: "px" or "occ", None the config's
+// style= of a spline: "averaged" or "clamped", None the config's; the old names raise naming the new
 inline SplineStyle StyleArg(const py::handle &h, const std::string &call) {
     if (h.is_none())
-        return config::spline_style;
+        return config::state->spline_style;
     const std::string v = py::isinstance<py::str>(h) ? h.cast<std::string>() : "";
-    if (v == "px")
-        return SplineStyle::Px;
-    if (v == "occ")
-        return SplineStyle::Occ;
-    throw py::value_error(call + ": style " + py::repr(h).cast<std::string>() + "; it is 'px' or 'occ'");
+    if (v == "averaged")
+        return SplineStyle::Averaged;
+    if (v == "clamped")
+        return SplineStyle::Clamped;
+    if (v == "px" || v == "occ")
+        throw py::value_error(call + ": style '" + v + "' is now '" + (v == "px" ? "averaged" : "clamped") + "'");
+    throw py::value_error(call + ": style " + py::repr(h).cast<std::string>() + "; it is 'averaged' or 'clamped'");
 }
-inline const char *StyleName(SplineStyle s) { return s == SplineStyle::Occ ? "occ" : "px"; }
+inline const char *StyleName(SplineStyle s) { return s == SplineStyle::Clamped ? "clamped" : "averaged"; }
 
 inline AxisSystem AxesArg(const py::handle &h, const std::string &call);
 
@@ -763,18 +863,16 @@ inline AxisSystem SharedAxes(const py::iterable &items, const std::string &call,
 inline AxisSystem AxesArg(const py::handle &h, const std::string &call) {
     if (h.is_none())
         return AxisSystem();
-    if (py::isinstance<AxisSystem>(h))
+    if (IsA<AxisSystem>(h))
         return h.cast<AxisSystem>();
-    if (py::isinstance<gp_Ax3>(h))
-        return AxisSystemOf(h.cast<gp_Ax3>());
-    if (py::isinstance<Shape>(h))
+    if (std::optional<AxisSystem> a = occ->axes(h, call))
+        return *a;
+    if (IsA<Shape>(h))
         return h.cast<const Shape &>().Axes();
-    if (py::isinstance<Face>(h))
-        return h.cast<const Face &>().Axes();
-    if (py::isinstance<Wire>(h))
+    if (std::optional<Face> copy; IsA<Face>(h))
+        return AsFace(h, copy).Axes();
+    if (IsA<Wire>(h))
         return h.cast<const Wire &>().Axes();
-    if (py::isinstance<TopoDS_Shape>(h))
-        return SketchAxes(h.cast<const TopoDS_Shape &>(), std::nullopt, std::nullopt, call);
     // a sketch
     if (py::hasattr(h, "_axes"))
         return h.attr("_axes").cast<AxisSystem>();
@@ -783,13 +881,6 @@ inline AxisSystem AxesArg(const py::handle &h, const std::string &call) {
     if (py::isinstance<py::list>(h) || py::isinstance<py::tuple>(h))
         return SharedAxes(py::reinterpret_borrow<py::iterable>(h), call, "list", "items");
     throw py::type_error(call + ": plane is a Plane, netgen Axes, a Sketch, Shape, Face, Wire or Compound, a planar OCC shape, or a list of these");
-}
-
-// the dim of netgen's OCCGeometry of faces in the plane: a dim=2 mesh keeps only x and y, so faces elsewhere than in
-// the plane z = 0 get a surface mesh in 3d
-inline int FaceDim(const AxisSystem &a) {
-    const Vector3 &n = a.Normal();
-    return n.x == 0.0 && n.y == 0.0 && a.Origin().z == 0.0 ? 2 : 3;
 }
 
 // the mirror plane through p with normal n (only its origin and normal count)
@@ -937,7 +1028,7 @@ inline MotionDoc RotateDoc() {
     return {"Rotate", "Rotated", "Rotates", "rotated",
             "by angle around center in its plane, or around the axis through point along dir in 3d",
             "In 3d only its plane moves; its coordinates in the plane stay.\n\n",
-            "    center: the centre of the rotation in the plane, (h, v).\n"
+            "    center: the center of the rotation in the plane, (h, v).\n"
             "    angle: the angle in degrees.\n"
             "    point: a point of the axis in 3d, (x, y, z).\n"
             "    dir: the direction of the axis in 3d, (dx, dy, dz).\n",
@@ -978,8 +1069,8 @@ inline MotionDoc ScaleDoc() {
     return {"Scale", "Scaled", "Scales", "scaled",
             "by factor around center in its plane, or around point in 3d",
             "The mesh sizes maxh and minh stay unless asked for.\n\n",
-            "    center: the centre of the scaling in the plane, (h, v).\n"
-            "    point: the centre of the scaling in 3d, (x, y, z).\n"
+            "    center: the center of the scaling in the plane, (h, v).\n"
+            "    point: the center of the scaling in 3d, (x, y, z).\n"
             "    factor: the scale factor, > 0.\n"
             "    scale_maxh: True also scales maxh.\n"
             "    scale_minh: True also scales minh.\n",
@@ -1077,23 +1168,16 @@ inline void BindMotion(C &cls) {
                 out.append(Tuple3(t.Axes().ToXYZ(p)));
             return out;
         }, py::arg("points"), py::pos_only(), "")
-        .def("ToHV", [](const T &t, const std::array<double, 3> &p) { return Tuple2(t.Axes().ToHV({p[0], p[1], p[2]})); },
-             py::arg("point"), py::pos_only(),
+        .def("ToHV", [](const T &t, const py::object &p) { return ToHVOf(t.Axes(), p); }, py::arg("point"), py::pos_only(),
              Doc("ToHV(point: Point3, /) -> tuple[float, float]\n"
                  "ToHV(points: list[Point3], /) -> list[tuple[float, float]]\n\n"
                  "The plane coordinates (h, v) of the projection of a 3d point onto its plane, or of a list of points.\n\n"
                  "Args:\n"
-                 "    point: (x, y, z).\n"
-                 "    points: a list of (x, y, z).\n\n"
+                 "    point: (x, y, z), or netgen's Pnt (a face's center).\n"
+                 "    points: a list of them.\n\n"
                  "Examples:\n"
                  "    " + x + ".ToHV((1, 2, 0))\n"
-                 "    " + x + ".ToHV([(0, 0, 0), (1, 2, 0)])"))
-        .def("ToHV", [](const T &t, const std::vector<std::array<double, 3>> &xyz) {
-            py::list out;
-            for (const auto &p : xyz)
-                out.append(Tuple2(t.Axes().ToHV({p[0], p[1], p[2]})));
-            return out;
-        }, py::arg("points"), py::pos_only(), "");
+                 "    " + x + ".ToHV([(0, 0, 0), (1, 2, 0)])"));
 }
 
 #define DRAW_PARAMS const Name &n, const Size &mh, const Col &c, const Size &mi, const Size &hp, const Layer &la, const Partition &pa, bool construction
@@ -1110,8 +1194,8 @@ inline void CheckPlane(const S &s, const Wire &w, const std::string &call) {
 }
 
 inline bool IsTarget(const py::handle &t) {
-    return py::isinstance<py::str>(t) || py::isinstance<EdgeView>(t) || py::isinstance<Wire>(t) || py::isinstance<Face>(t) || py::isinstance<Shape>(t) ||
-           py::isinstance<TopoDS_Shape>(t);
+    return py::isinstance<py::str>(t) || IsA<EdgeView>(t) || IsA<Wire>(t) || IsA<Face>(t) || IsA<Shape>(t) ||
+           occ->isShape(t);
 }
 inline bool IsPoint(const py::handle &t) {
     if (IsTarget(t))
@@ -1134,18 +1218,18 @@ inline EdgeList TargetEdges(S &s, const py::handle &t, const std::string &call) 
         edges = s.NamedEdges(name);
         if (edges.empty())
             throw py::value_error(call + ": no edge named '" + name + "'");
-    } else if (py::isinstance<EdgeView>(t)) {
+    } else if (IsA<EdgeView>(t)) {
         const EdgeView &r = t.cast<const EdgeView &>();
         CheckPlane(s, *r.wire, call);
         edges.push_back(r.Get());
-    } else if (py::isinstance<Wire>(t) || py::isinstance<Face>(t) || py::isinstance<Shape>(t)) {
-        const Wire &w = py::isinstance<Wire>(t) ? t.cast<const Wire &>()
-                        : py::isinstance<Face>(t) ? t.cast<const Face &>().Edges() : t.cast<const Shape &>().Edges();
+    } else if (IsA<Wire>(t) || IsA<Face>(t) || IsA<Shape>(t)) {
+        std::optional<Face> copy;
+        const Wire &w = IsA<Wire>(t) ? t.cast<const Wire &>()
+                        : IsA<Face>(t) ? AsFace(t, copy).Edges() : t.cast<const Shape &>().Edges();
         CheckPlane(s, w, call);
         edges.assign(w.begin(), w.end());
-    } else if (py::isinstance<TopoDS_Shape>(t)) {
-        Wire w = s.ProjectReference(t.cast<TopoDS_Shape>());
-        edges.assign(w.begin(), w.end());
+    } else if (std::optional<Projection> p = occ->projected(t, s.Axes(), false)) {
+        edges.assign(p->wire.begin(), p->wire.end());
         if (edges.empty())
             throw py::value_error(call + ": the shape projects to points only");
     } else {
@@ -1213,7 +1297,7 @@ template <class S>
 inline Until UntilArg(S &s, const py::handle &t, std::optional<sketch::Target> &target, const std::string &call) {
     if (t.is_none())
         return Until::No;
-    if (py::isinstance<Until>(t))
+    if (IsA<Until>(t))
         return t.cast<Until>();
     if (py::isinstance<py::str>(t) && (t.cast<std::string>() == "first" || t.cast<std::string>() == "last") &&
         s.NamedEdges(t.cast<std::string>()).empty())
@@ -1290,7 +1374,7 @@ inline std::string CallText(const std::string &function, const std::vector<std::
             continue;
         bool plain = py::isinstance<py::str>(value) || py::isinstance<py::int_>(value) || py::isinstance<py::float_>(value) ||
                      py::isinstance<py::tuple>(value) || py::isinstance<py::list>(value);
-        const std::string shown = py::isinstance<Until>(value) ? std::string(value.cast<Until>() == Until::Last ? "px.last" : "px.first")
+        const std::string shown = IsA<Until>(value) ? std::string(value.cast<Until>() == Until::Last ? "px.last" : "px.first")
                                   : plain ? py::repr(value).cast<std::string>()
                                           : "<" + py::type::of(value).attr("__name__").cast<std::string>() + ">";
         text += (first ? "" : ", ") + (name ? std::string(name) + "=" : std::string()) + shown;
@@ -1399,7 +1483,7 @@ inline sketch::CircleRefs CircleRefsOf(S &wp, std::optional<double> r, const py:
                                const py::object &near, bool reverse) {
     sketch::CircleRefs refs;
     refs.call = CallText("Circle", {{"r", r ? py::object(py::float_(*r)) : py::object(py::none())}, {"center", center},
-                                 {"concentric", concentric}, {"congruent", congruent}, {"through", through},
+                                 {"concentric", concentric}, {"coincident", congruent}, {"through", through},
                                  {"tangent", tangent}, {"near", near},
                                  {"reverse", reverse ? py::object(py::bool_(true)) : py::object(py::none())}});
     refs.radius = r;
@@ -1432,8 +1516,8 @@ inline void CheckJoinTol(OptDouble tol, const std::string &call) {
 }
 
 inline bool IsEdgeLike(const py::handle &h) {
-    return py::isinstance<planex2d::Line>(h) || py::isinstance<planex2d::Arc>(h) || py::isinstance<planex2d::Spline>(h) ||
-           py::isinstance<EdgeView>(h) || py::isinstance<Wire>(h);
+    return IsA<planex2d::Line>(h) || IsA<planex2d::Arc>(h) || IsA<planex2d::Spline>(h) ||
+           IsA<EdgeView>(h) || IsA<Wire>(h);
 }
 
 // the edges of an edge, edge view or wire into out; a view's or non-empty wire's axes into axes, which must agree
@@ -1443,17 +1527,17 @@ inline void CollectEdges(const py::handle &h, const std::string &call, EdgeList 
             throw py::value_error(call + ": the edges lie on different planes; move them onto one plane first");
         axes = a;
     };
-    if (py::isinstance<planex2d::Line>(h))
+    if (IsA<planex2d::Line>(h))
         out.push_back(h.cast<planex2d::Line>());
-    else if (py::isinstance<planex2d::Arc>(h))
+    else if (IsA<planex2d::Arc>(h))
         out.push_back(h.cast<planex2d::Arc>());
-    else if (py::isinstance<planex2d::Spline>(h))
+    else if (IsA<planex2d::Spline>(h))
         out.push_back(h.cast<planex2d::Spline>());
-    else if (py::isinstance<EdgeView>(h)) {
+    else if (IsA<EdgeView>(h)) {
         const EdgeView &v = h.cast<const EdgeView &>();
         out.push_back(v.Get());
         plane(v.wire->Axes());
-    } else if (py::isinstance<Wire>(h)) {
+    } else if (IsA<Wire>(h)) {
         const Wire &w = h.cast<const Wire &>();
         if (w.Empty())
             return;
@@ -1509,8 +1593,8 @@ inline T Or(const std::optional<T> &v, T fallback) {
 }
 
 inline ArcFit Arcs(OptBool on, OptDouble length, OptDouble angle, OptDouble tol, OptDouble ignore) {
-    const ArcFit &d = config::arc_fit;
-    return {Or(on, d.enabled), Or(length, d.max_edge_length), Or(angle, d.max_edge_angle), Or(tol, d.tol),
+    const ArcFit &d = config::state->arc_fit;
+    return {Or(on, d.enabled), length ? length : d.max_edge_length, Or(angle, d.max_edge_angle), Or(tol, d.tol),
             Or(ignore, d.ignore_edges_smaller)};
 }
 // fit_arcs= / fit_splines=: None the config's, True or False on or off, a dict of FitArcs' keywords (on)
@@ -1528,11 +1612,13 @@ inline Fit FitOf(const py::object &o, Fit f, const std::string &key) {
     f.enabled = true;
     for (const auto &[k, v] : o.cast<py::dict>()) {
         const std::string name = py::str(k);
+        if (name == "max_edge_length") {
+            f.max_edge_length = v.is_none() ? std::nullopt : std::optional<double>(v.cast<double>());
+            continue;
+        }
         const double x = v.cast<double>();
         if (name == "tol")
             f.tol = x;
-        else if (name == "max_edge_length")
-            f.max_edge_length = x;
         else if (name == "max_edge_angle")
             f.max_edge_angle = x;
         else if (name == "ignore_edges_smaller")
@@ -1542,8 +1628,95 @@ inline Fit FitOf(const py::object &o, Fit f, const std::string &key) {
     }
     return f;
 }
+inline py::dict AutoConstraintDict(const AutoConstraint &o) {
+    py::dict out;
+    for (const auto &[name, on] : autoConstraintKeys)
+        out[name] = o.*on;
+    return out;
+}
+// the relations a dict switches, the others as in base
+inline AutoConstraint AutoConstraintOptions(const py::dict &d, AutoConstraint base, const std::string &key) {
+    std::string names;
+    for (const auto &[name, on] : autoConstraintKeys)
+        names += (names.empty() ? "" : ", ") + std::string(name);
+    for (const auto &[k, v] : d) {
+        const std::string name = py::str(k);
+        const auto it = std::find_if(std::begin(autoConstraintKeys), std::end(autoConstraintKeys),
+                                     [&](const auto &entry) { return name == entry.first; });
+        if (it == std::end(autoConstraintKeys))
+            throw py::type_error(key + ": no relation '" + name + "' (" + names + ")");
+        if (!py::isinstance<py::bool_>(v))
+            throw py::type_error(key + ": '" + name + "' is True or False, not " + py::repr(v).cast<std::string>());
+        base.*(it->second) = v.cast<bool>();
+    }
+    return base;
+}
+// auto_constraint=: None the config's, True the config's relations, False none, a dict the config's relations with
+// the ones it names switched
+inline std::optional<AutoConstraint> AutoConstraintOf(const py::object &o, const std::string &call) {
+    const config::State &c = *config::state;
+    if (o.is_none())
+        return c.auto_constraint ? std::optional(c.auto_constraint_options) : std::nullopt;
+    if (py::isinstance<py::bool_>(o))
+        return o.cast<bool>() ? std::optional(c.auto_constraint_options) : std::nullopt;
+    if (!py::isinstance<py::dict>(o))
+        throw py::type_error(call + "(auto_constraint=): True, False or a dict of relations, not " + py::repr(o).cast<std::string>());
+    return AutoConstraintOptions(o.cast<py::dict>(), c.auto_constraint_options, call + "(auto_constraint=)");
+}
+// a QuickSketch's auto_constraint=: whether it asks for constraints (True or a dict)
+inline bool AsksAutoConstraint(const py::object &o) { return !o.is_none() && !(py::isinstance<py::bool_>(o) && !o.cast<bool>()); }
+
+// px.Auto: a value worked out from the situation; px.Auto({...}) carries the auto-constraint relations it switches
+struct AutoValue {
+    std::vector<std::pair<std::string, bool>> switched;
+};
+inline bool IsAuto(const py::handle &h) { return IsA<AutoValue>(h); }
+// the module's one px.Auto: a sentinel is compared with `is`
+inline py::object PlainAuto() { return py::module_::import("planex._planex").attr("Auto"); }
+// the config's relations with the ones px.Auto({...}) names switched
+inline AutoConstraint AutoRelationsOf(const AutoValue &a) {
+    AutoConstraint o = config::state->auto_constraint_options;
+    for (const auto &[name, on] : a.switched)
+        for (const auto &[key, member] : autoConstraintKeys)
+            if (name == key)
+                o.*member = on;
+    return o;
+}
+// an argument whose default is px.Auto: true for px.Auto; None and px.Auto({...}) raise
+inline bool IsPlainAuto(const py::handle &h, const std::string &call, const std::string &name) {
+    if (h.is_none())
+        throw py::type_error(call + "(" + name + "=None): None is no value here; the default px.Auto works it out");
+    if (!IsAuto(h))
+        return false;
+    if (!h.cast<const AutoValue &>().switched.empty())
+        throw py::type_error(call + "(" + name + "=px.Auto({...})): there is nothing to switch here; px.Auto alone works it out");
+    return true;
+}
+// a number, or px.Auto (none)
+inline std::optional<double> NumberOrAuto(const py::handle &h, const std::string &call, const std::string &name) {
+    if (IsPlainAuto(h, call, name))
+        return std::nullopt;
+    if (!IsNumber(h))
+        throw py::type_error(call + "(" + name + "=): a number or px.Auto, not " + py::repr(h).cast<std::string>());
+    return h.cast<double>();
+}
+// True, False or px.Auto (none)
+inline std::optional<bool> BoolOrAuto(const py::handle &h, const std::string &call, const std::string &name) {
+    if (IsPlainAuto(h, call, name))
+        return std::nullopt;
+    if (!py::isinstance<py::bool_>(h))
+        throw py::type_error(call + "(" + name + "=): True, False or px.Auto, not " + py::repr(h).cast<std::string>());
+    return h.cast<bool>();
+}
+// a copy tool's auto_constraint= or internal_constraints=: True or False
+inline bool TieArg(const py::handle &h, const std::string &call, const std::string &name) {
+    if (py::isinstance<py::bool_>(h))
+        return h.cast<bool>();
+    throw py::type_error(call + "(" + name + "=" + py::repr(h).cast<std::string>() + "): True or False" +
+                         (py::isinstance<py::dict>(h) ? "; a tie has no relations to switch" : ""));
+}
 inline Cleanup Cleaning(OptDouble edges, OptDouble gaps, OptBool free, OptDouble collinear, OptDouble faces = {}, OptBool merge = {}) {
-    const Cleanup &d = config::cleanup;
+    const Cleanup &d = config::state->cleanup;
     return {Or(edges, d.remove_edges_smaller), Or(gaps, d.close_gaps_smaller), Or(free, d.remove_free_edges),
             Or(collinear, d.merge_collinear_closer), Or(faces, d.remove_faces_smaller), Or(merge, d.merge_small_faces_instead)};
 }
@@ -1562,10 +1735,11 @@ inline Cleanup Cleaning(OptDouble edges, OptDouble gaps, OptBool free, OptDouble
     const py::object &fs, OptDouble re, OptDouble cg, OptBool rf, OptDouble mc, OptDouble rfs, OptBool msf,             \
         const py::object &fa
 #define EXPORT_OPTIONS                                                                                                 \
-    FitOf(fa, config::arc_fit, "fit_arcs"), FitOf(fs, config::spline_fit, "fit_splines"), Cleaning(re, cg, rf, mc, rfs, msf)
+    FitOf(fa, config::state->arc_fit, "fit_arcs"), FitOf(fs, config::state->spline_fit, "fit_splines"),                \
+        Cleaning(re, cg, rf, mc, rfs, msf)
 // a wire's open ends are legitimate: free edges stay unless asked
 #define WIRE_EXPORT_OPTIONS                                                                                            \
-    FitOf(fa, config::arc_fit, "fit_arcs"), FitOf(fs, config::spline_fit, "fit_splines"),                             \
+    FitOf(fa, config::state->arc_fit, "fit_arcs"), FitOf(fs, config::state->spline_fit, "fit_splines"),                \
         Cleaning(re, cg, rf ? rf : OptBool(false), mc, rfs, msf)
 #define EXPORT_ARGS FIT_ARGS, CLEANUP_ARGS, ARC_ARGS
 
@@ -1619,8 +1793,9 @@ inline const char *FitArcsDoc(const std::string &cls, const std::string &text, c
                "ignore_edges_smaller: float | None = None) -> " + cls + "\n\n" + text + "\n\n"
                "Args:\n"
                "    tol: the largest distance of the arc from the chain" + config + "tol\"].\n"
-               "    max_edge_length: only edges shorter than this form a chain" + config + "max_edge_length\"].\n"
-               "    max_edge_angle: the largest turn between neighbouring edges of a chain, in degrees" + config +
+               "    max_edge_length: only edges shorter than this form a chain" + config + "max_edge_length\"], whose "
+               "default None takes 1/20 of the length of the loop or open wire an edge lies in.\n"
+               "    max_edge_angle: the largest turn between neighboring edges of a chain, in degrees" + config +
                "max_edge_angle\"].\n"
                "    ignore_edges_smaller: edges shorter than this do not end a chain by their direction" + config +
                "ignore_edges_smaller\"].\n\n"
@@ -1658,7 +1833,7 @@ inline const char *RemoveSmallEdgesDoc(const std::string &cls, const std::string
 inline const char *MergeCollinearEdgesDoc(const std::string &cls, const std::string &lines, const std::string &x) {
     return Doc("MergeCollinearEdges(tol: float | None = None) -> " + cls + "\n\n"
                "Merges lines" + lines + " that meet alone at their vertices into fewer lines, in place: a vertex goes while "
-               "every vertex removed between its neighbours stays within tol of the line through them.\n\n"
+               "every vertex removed between its neighbors stays within tol of the line through them.\n\n"
                "The result stays within tol of the edges the call was given; a second call may merge more. The edges of a "
                "spline stay.\n\n"
                "Args:\n"
@@ -1694,15 +1869,6 @@ inline const char *SmallEdgesDoc(const std::string &x) {
                "    " + x + ".SmallEdges(1e-3)");
 }
 
-inline const char *ProjectDoc(const std::string &x) {
-    return Doc("Project(shape: TopoDS_Shape, /) -> list[Wire]\n\n"
-               "The edges of the OCC shape projected straight onto this plane, as a list of wires, as px.Project.\n\n"
-               "Args:\n"
-               "    shape: an OCC shape.\n\n"
-               "Examples:\n"
-               "    " + x + ".Project(box)");
-}
-
 inline const char *IntersectionsDoc(const std::string &x, const std::string &whose) {
     return Doc("Intersections(other: Wire, /) -> list[Vertex]\n\n"
                "The points where " + whose + " meet the edges of other, each once, in the plane.\n\n"
@@ -1715,18 +1881,22 @@ inline const char *IntersectionsDoc(const std::string &x, const std::string &who
 }
 
 inline const char *ContainsDoc(const std::string &x, const std::string &where) {
-    return Doc("Contains(point: Point | Point3 | np.ndarray, /, boundary: bool = True) -> bool | np.ndarray\n\n"
-               "True if the point lies inside " + where + ".\n\n"
+    return Doc("Contains(other: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, boundary: bool = True) -> "
+               "np.ndarray\n"
+               "Contains(other: Point | Point3 | Face | Shape | Wire, /, boundary: bool = True) -> bool\n\n"
+               "True if the point lies inside " + where + "; for a Face, Shape or Wire, True if it lies in " + where +
+               " and their interiors meet (DE-9IM, see Relate).\n\n"
                "A point (x, y, z) off the plane is not inside.\n\n"
                "Args:\n"
-               "    point: (h, v) in the plane or (x, y, z); many points as an (n, 2) or (n, 3) array give a bool array "
-               "(n,).\n"
-               "    boundary: the answer for a point on the boundary.\n\n"
+               "    other: (h, v) in the plane or (x, y, z); many points as an (n, 2) or (n, 3) array give a bool array "
+               "(n,); or a Face, Shape or Wire.\n"
+               "    boundary: the answer for a point on the boundary (points only).\n\n"
                "Raises:\n"
-               "    TypeError: point is not a point.\n\n"
+               "    TypeError: other is not a point, Face, Shape or Wire.\n\n"
                "Examples:\n"
                "    " + x + ".Contains((1, 2))\n"
-               "    " + x + ".Contains([(0, 0), (1, 2)], boundary=False)");
+               "    " + x + ".Contains([(0, 0), (1, 2)], boundary=False)\n"
+               "    " + x + ".Contains(hole)");
 }
 
 // what a measure looks at: faces, edges or a named point, on a plane
@@ -1751,17 +1921,17 @@ inline Thing ThingOf(const Wire &w) { return {w.Axes(), {}, w, {}}; }
 inline Thing ThingOf(const VertexView &v) { return {v.wire->Axes(), {}, Wire(v.wire->Axes()), v.Point()}; }
 
 inline std::optional<Thing> AsThing(const py::handle &h) {
-    if (py::isinstance<Face>(h))
-        return ThingOf(h.cast<const Face &>());
-    if (py::isinstance<Shape>(h))
+    if (std::optional<Face> copy; IsA<Face>(h))
+        return ThingOf(AsFace(h, copy));
+    if (IsA<Shape>(h))
         return ThingOf(h.cast<const Shape &>());
-    if (py::isinstance<Wire>(h))
+    if (IsA<Wire>(h))
         return ThingOf(h.cast<const Wire &>());
-    if (py::isinstance<EdgeView>(h))
+    if (IsA<EdgeView>(h))
         return ThingOf(h.cast<const EdgeView &>().AsWire());
-    if (py::isinstance<FaceView>(h))
+    if (IsA<FaceView>(h))
         return ThingOf(h.cast<const FaceView &>().Copy());
-    if (py::isinstance<VertexView>(h))
+    if (IsA<VertexView>(h))
         return ThingOf(h.cast<const VertexView &>());
     return std::nullopt;
 }
@@ -1769,7 +1939,7 @@ inline std::optional<Thing> AsThing(const py::handle &h) {
 // a point: two plane coordinates or three in 3d; a point of a sketch or shape where it is in 3d, a vertex view as a
 // thing of its plane
 inline std::optional<std::vector<double>> AsPoint(const py::handle &h) {
-    if (!py::isinstance<py::sequence>(h) || py::isinstance<py::str>(h) || py::isinstance<VertexView>(h))
+    if (!py::isinstance<py::sequence>(h) || py::isinstance<py::str>(h) || IsA<VertexView>(h))
         return std::nullopt;
     if (py::hasattr(h, "_xyz"))
         return h.attr("_xyz")().cast<std::vector<double>>();
@@ -1782,10 +1952,6 @@ inline std::optional<std::vector<double>> AsPoint(const py::handle &h) {
     } catch (const py::cast_error &) {
     }
     return std::nullopt;
-}
-
-inline gp_Pnt Point3D(const AxisSystem &axes, const Vertex &uv) {
-    return gp_Pnt(ToOCC(axes.ToXYZ(uv)));
 }
 
 using PointRows = py::array_t<double, py::array::c_style | py::array::forcecast>;
@@ -1868,7 +2034,7 @@ inline void AddCorners(const Wire &w, const py::handle &at, const std::string &c
         if (named.empty())
             throw py::value_error(call + ": no vertex is named '" + name + "'; name it (vertex.name = ...) or give its point");
         out.insert(out.end(), named.begin(), named.end());
-    } else if (py::isinstance<VertexView>(at)) {
+    } else if (IsA<VertexView>(at)) {
         const VertexView &v = at.cast<const VertexView &>();
         if (v.wire != &w)
             throw py::value_error(call + ": a vertex belongs to another object; take the corners from the object that is cut");
@@ -1903,7 +2069,7 @@ inline std::vector<Vertex> CornerPoints(const Wire &w, const py::handle &at, con
 inline const char *CornerDoc(bool chamfer, bool copy, const std::string &cls) {
     const std::string kind = chamfer ? "Chamfer" : "Fillet", call = kind + (copy ? "ed" : ""), x = VariableOf(cls),
                       sizes = chamfer ? "d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False"
-                                      : "r: float, /";
+                                      : "r: float, continuity: Constraint = px.Tangent, /";
     const std::string at = "VertexView | Point | str | list[VertexView | Point | str]";
     const std::string result = chamfer ? "new line" : "arc of radius r";
     std::string text = call + "(at: " + at + ", " + sizes + ") -> " + cls + "\n\n";
@@ -1921,8 +2087,12 @@ inline const char *CornerDoc(bool chamfer, bool copy, const std::string &cls) {
                 "properties, shortened to the " + (chamfer ? "cut" : "touch") + " points; the corner vertex and its properties are "
                 "gone. Lines and arcs are cut exactly; on a spline the point is found on its exact curve to rounding and the "
                 "spline is cut there.\n\n" +
-                (chamfer ? "A length on a curved edge is the straight distance from the corner to the cut point.\n\n" : "") +
-                "A size that does not fit (the point on or beyond the far end of an edge, or past a neighbouring cut of the "
+                (chamfer ? "A length on a curved edge is the straight distance from the corner to the cut point.\n\n"
+                         : "With px.Curvature a curvature-continuous blend takes the arc's place between the same touch points: a "
+                           "quintic spline whose curvature runs from the first edge's to the second's without a jump. It bends "
+                           "tighter than the arc inside (its smallest radius about 0.67 r to 0.71 r for corners turning 60 to "
+                           "120 degrees) and passes closer to the corner (0.33 r instead of the arc's 0.41 r at a right angle).\n\n") +
+                "A size that does not fit (the point on or beyond the far end of an edge, or past a neighboring cut of the "
                 "same call) makes that corner not viable: it is skipped with a PlanexWarning that names the largest size that "
                 "fits. If no corner is viable the call raises.\n\n";
     text += "Args:\n"
@@ -1935,19 +2105,33 @@ inline const char *CornerDoc(bool chamfer, bool copy, const std::string &cls) {
                 "towards the corner, between 0 and 180; None: not given. d2 and angle exclude each other.\n"
                 "    reverse: True makes the second edge the first.\n";
     else
-        text += "    r: the radius, a length > 0.\n";
+        text += "    r: the radius, a length > 0.\n"
+                "    continuity: px.Tangent the arc, px.Curvature the curvature-continuous blend.\n";
     text += "\nReturns:\n    " + std::string(copy ? "the copy." : "this " + cls + ", so calls chain.") + "\n\n"
             "Raises:\n"
             "    TypeError: at is none of the forms above.\n"
             "    ValueError: a size is not positive and finite" + std::string(chamfer ? ", the angle is not between 0 and 180 or d2 and "
-            "angle are both given" : "") + ", no corner is given, a name is no vertex's name, a vertex belongs to another "
+            "angle are both given" : ", continuity is neither px.Tangent nor px.Curvature") + ", no corner is given, a name is no vertex's name, a vertex belongs to another "
             "object, or no corner can be cut (the message names each corner and why); nothing changes then.\n\n"
             "Examples:\n";
     if (chamfer)
         text += "    " + x + "." + call + "((4, 0), 1)\n    " + x + "." + call + "([(4, 0), (4, 4)], 1, d2=2)";
     else
-        text += "    " + x + "." + call + "((4, 0), 0.5)\n    " + x + "." + call + "(" + x + ".vertices[0], 0.5)";
+        text += "    " + x + "." + call + "((4, 0), 0.5)\n    " + x + "." + call + "(" + x + ".vertices[0], 0.5, px.Curvature)";
     return Doc(text);
+}
+
+// Fillet's continuity: px.Tangent (the arc) or px.Curvature (the blend in its place); true for px.Curvature
+inline bool CurvatureOf(sketch::Kind continuity, const std::string &call) {
+    if (continuity != sketch::Kind::Tangent && continuity != sketch::Kind::Curvature)
+        throw py::value_error(call + ": continuity is px.Tangent or px.Curvature, not px." + sketch::KindName(continuity));
+    return continuity == sketch::Kind::Curvature;
+}
+inline void FilletCorners(Wire &w, const std::vector<Vertex> &corners, double r, bool curvature, const std::string &call) {
+    if (curvature)
+        w.CutCorners(corners, CurvatureFilletRule{{r}}, call);
+    else
+        w.CutCorners(corners, FilletRule{r}, call);
 }
 
 // the four calls of a class: Fillet and Chamfer in place, Filleted and Chamfered on a copy; wireOf gives the wire whose
@@ -1956,17 +2140,19 @@ template <class T, class C, class W>
 inline void BindCorners(C &cls, W wireOf) {
     auto ref = py::return_value_policy::reference_internal;
     const std::string name = NameOf(cls);
-    cls.def("Fillet", [wireOf](T &t, const py::object &at, double r) -> T & {
+    cls.def("Fillet", [wireOf](T &t, const py::object &at, double r, sketch::Kind continuity) -> T & {
+            const bool curvature = CurvatureOf(continuity, "Fillet");
             Wire &w = wireOf(t);
-            w.CutCorners(CornerPoints(w, at, "Fillet"), FilletRule{r}, "Fillet");
+            FilletCorners(w, CornerPoints(w, at, "Fillet"), r, curvature, "Fillet");
             return t;
-        }, py::arg("at"), py::arg("r"), py::pos_only(), ref, CornerDoc(false, false, name))
-        .def("Filleted", [wireOf](T &t, const py::object &at, double r) {
+        }, py::arg("at"), py::arg("r"), py::arg("continuity") = sketch::Kind::Tangent, py::pos_only(), ref, CornerDoc(false, false, name))
+        .def("Filleted", [wireOf](T &t, const py::object &at, double r, sketch::Kind continuity) {
+            const bool curvature = CurvatureOf(continuity, "Filleted");
             const std::vector<Vertex> corners = CornerPoints(wireOf(t), at, "Filleted");
             T copy = CopyOf(t, "Fillet");
-            wireOf(copy).CutCorners(corners, FilletRule{r}, "Filleted");
+            FilletCorners(wireOf(copy), corners, r, curvature, "Filleted");
             return copy;
-        }, py::arg("at"), py::arg("r"), py::pos_only(), CornerDoc(false, true, name))
+        }, py::arg("at"), py::arg("r"), py::arg("continuity") = sketch::Kind::Tangent, py::pos_only(), CornerDoc(false, true, name))
         .def("Chamfer", [wireOf](T &t, const py::object &at, double d, OptDouble d2, OptDouble angle, bool reverse) -> T & {
             Wire &w = wireOf(t);
             w.CutCorners(CornerPoints(w, at, "Chamfer"), ChamferRule{d, d2, angle, reverse}, "Chamfer");
@@ -2008,13 +2194,7 @@ inline void ForRows(size_t n, S &state, F f) {
     executor.run(flow).get();
 }
 
-// the nearest points in 3d, a on the measured thing and b on the target
-struct Pair3 {
-    double d;
-    gp_Pnt a, b;
-};
-
-inline Pair3 Pair3Of(const AxisSystem &axes, const Nearest &n) { return {n.d, Point3D(axes, n.a), Point3D(axes, n.b)}; }
+inline Pair3 Pair3Of(const AxisSystem &axes, const Nearest &n) { return {n.d, axes.ToXYZ(n.a), axes.ToXYZ(n.b)}; }
 
 // a target in the plane: a point, a thing on the same plane, or an OCC shape or thing elsewhere projected into it
 inline std::optional<Planar> TargetInPlane(const AxisSystem &axes, const py::handle &target, bool project, std::optional<Vertex> &point) {
@@ -2028,29 +2208,16 @@ inline std::optional<Planar> TargetInPlane(const AxisSystem &axes, const py::han
         if (t->axes.IsClose(axes))
             return t->AsPlanar();
         if (project)
-            return Planar{Wire(axes), Project(OCCOf(t->AsPlanar(), t->axes), axes).wire};
+            return Planar{Wire(axes), occ->across(t->AsPlanar(), t->axes, axes)};
         return std::nullopt;
     }
-    if (py::isinstance<TopoDS_Shape>(target) && project) {
-        Projection p = Project(target.cast<TopoDS_Shape>(), axes);
-        if (p.wire.Empty() && p.points.size() == 1)
-            point = p.points.front().p;
-        return Planar{Wire(axes), p.wire};
-    }
+    if (project)
+        if (std::optional<Projection> p = occ->projected(target, axes, false)) {
+            if (p->wire.Empty() && p->points.size() == 1)
+                point = p->points.front().p;
+            return Planar{Wire(axes), p->wire};
+        }
     return std::nullopt;
-}
-
-inline TopoDS_Shape TargetOCC(const py::handle &target) {
-    if (std::optional<std::vector<double>> p = AsPoint(target)) {
-        if (p->size() != 3)
-            throw py::value_error("a point in another plane needs three coordinates");
-        return OCCPoint(gp_Pnt((*p)[0], (*p)[1], (*p)[2]));
-    }
-    if (std::optional<Thing> t = AsThing(target))
-        return OCCOf(t->AsPlanar(), t->axes);
-    if (py::isinstance<TopoDS_Shape>(target))
-        return target.cast<TopoDS_Shape>();
-    throw py::type_error("a target is a point, a Face, Shape, Wire, Edge, Vertex or an OCC shape");
 }
 
 inline Pair3 NearestPair(const Thing &self, const py::handle &target, bool project) {
@@ -2059,10 +2226,9 @@ inline Pair3 NearestPair(const Thing &self, const py::handle &target, bool proje
         throw py::value_error("Distance: nothing to measure from");
     // a 3d point off the plane: the nearest point of the plane set to its projection (project: measured in the plane)
     if (std::optional<std::vector<double>> p = AsPoint(target); p && p->size() == 3 && !project) {
-        gp_Pnt q((*p)[0], (*p)[1], (*p)[2]);
-        Vertex uv = self.axes.ToHV({q.X(), q.Y(), q.Z()});
-        gp_Pnt a = Point3D(self.axes, self.point ? *self.point : NearestTo(s, uv).a);
-        return {a.Distance(q), a, q};
+        const Vector3 q{(*p)[0], (*p)[1], (*p)[2]};
+        const Vector3 a = self.axes.ToXYZ(self.point ? *self.point : NearestTo(s, self.axes.ToHV(q)).a);
+        return {Norm(a - q), a, q};
     }
     std::optional<Vertex> point;
     if (std::optional<Planar> t = TargetInPlane(self.axes, target, project, point)) {
@@ -2074,9 +2240,7 @@ inline Pair3 NearestPair(const Thing &self, const py::handle &target, bool proje
             return Pair3Of(self.axes, NearestTo(s, *point));
         return Pair3Of(self.axes, NearestBetween(s, *t));
     }
-    TopoDS_Shape mine = self.point ? OCCPoint(Point3D(self.axes, *self.point)) : OCCOf(s, self.axes);
-    Nearest3 n = NearestOCC(mine, TargetOCC(target));
-    return {n.d, n.a, n.b};
+    return occ->nearest(s, self.point, self.axes, target);
 }
 
 inline void CheckComponents(const std::string &components) {
@@ -2085,20 +2249,20 @@ inline void CheckComponents(const std::string &components) {
 }
 
 // the component of d: h and v in the plane, x, y and z in 3d
-inline double ComponentOf(const AxisSystem &axes, const gp_XYZ &d, char c) {
+inline double ComponentOf(const AxisSystem &axes, const Vector3 &d, char c) {
     switch (c) {
-        case 'h': return d.Dot(ToOCC(axes.XDirection()));
-        case 'v': return d.Dot(ToOCC(axes.YDirection()));
-        case 'x': return d.X();
-        case 'y': return d.Y();
-        default: return d.Z();
+        case 'h': return Dot(d, axes.XDirection());
+        case 'v': return Dot(d, axes.YDirection());
+        case 'x': return d.x;
+        case 'y': return d.y;
+        default: return d.z;
     }
 }
 
 // the components of b - a; one value for one letter
 inline py::object Components(const AxisSystem &axes, const Pair3 &p, const std::string &components) {
     CheckComponents(components);
-    const gp_XYZ d = p.b.XYZ() - p.a.XYZ();
+    const Vector3 d = p.b - p.a;
     py::list out;
     for (char c : components)
         out.append(ComponentOf(axes, d, c));
@@ -2121,10 +2285,9 @@ struct Prepared {
 // NearestPair of the thing and the point in row r of c coordinates (project: a 3d point is measured in the plane)
 inline Pair3 PairAt(const Thing &self, PlanarIndex &q, const double *r, size_t c, bool project) {
     if (c == 3 && !project) {
-        const gp_Pnt t(r[0], r[1], r[2]);
-        const Vertex uv = self.axes.ToHV({r[0], r[1], r[2]});
-        const gp_Pnt a = Point3D(self.axes, self.point ? *self.point : q.NearestTo(uv).a);
-        return {a.Distance(t), a, t};
+        const Vector3 t{r[0], r[1], r[2]};
+        const Vector3 a = self.axes.ToXYZ(self.point ? *self.point : q.NearestTo(self.axes.ToHV(t)).a);
+        return {Norm(a - t), a, t};
     }
     const Vertex p = c == 3 ? self.axes.ToHV({r[0], r[1], r[2]}) : Vertex{r[0], r[1]};
     const Nearest n = self.point ? Nearest{Norm(p - *self.point), *self.point, p} : q.NearestTo(p);
@@ -2150,7 +2313,7 @@ inline py::array_t<double> DistancesOf(const Thing &self, const PointRows &pts, 
             o[i] = p.d;
             return;
         }
-        const gp_XYZ d = p.b.XYZ() - p.a.XYZ();
+        const Vector3 d = p.b - p.a;
         for (size_t j = 0; j < k; ++j)
             o[k * i + j] = ComponentOf(self.axes, d, (*components)[j]);
     });
@@ -2250,8 +2413,6 @@ inline Thing CarrierOf(const EdgeView &r, const PointRows &pts) {
     return CarrierOver(r, box);
 }
 
-inline py::tuple Tuple3(const gp_Pnt &p) { return py::make_tuple(p.X(), p.Y(), p.Z()); }
-
 // ClosestPoint of every row: (n, 2) or (n, 3)
 inline py::array_t<double> ClosestPointsOf(const Thing &self, const PointRows &pts) {
     Prepared set(self.AsPlanar());
@@ -2270,10 +2431,10 @@ inline py::array_t<double> ClosestPointsOf(const Thing &self, const PointRows &p
             w[1] = a.y;
             return;
         }
-        const gp_Pnt a = Point3D(self.axes, q.NearestTo(self.axes.ToHV({r[0], r[1], r[2]})).a);
-        w[0] = a.X();
-        w[1] = a.Y();
-        w[2] = a.Z();
+        const Vector3 a = self.axes.ToXYZ(q.NearestTo(self.axes.ToHV({r[0], r[1], r[2]})).a);
+        w[0] = a.x;
+        w[1] = a.y;
+        w[2] = a.z;
     });
     return out;
 }
@@ -2290,7 +2451,7 @@ inline py::object ClosestPointOf(const Thing &self, const py::handle &point) {
     if (p->size() == 2)
         return Tuple2(NearestTo(s, {(*p)[0], (*p)[1]}).a);
     Vertex uv = self.axes.ToHV({(*p)[0], (*p)[1], (*p)[2]});
-    return Tuple3(Point3D(self.axes, NearestTo(s, uv).a));
+    return Tuple3(self.axes.ToXYZ(NearestTo(s, uv).a));
 }
 
 // Contains of every row: (n,) of bool
@@ -2306,7 +2467,7 @@ inline py::array_t<bool> ContainsMany(const Planar &s, const AxisSystem &axes, c
         Vertex uv{r[0], r[1]};
         if (c == 3) {
             uv = axes.ToHV({r[0], r[1], r[2]});
-            if (Point3D(axes, uv).Distance(gp_Pnt(r[0], r[1], r[2])) > std::max(tol, Tol(NormInf(uv)))) {
+            if (Norm(axes.ToXYZ(uv) - Vector3{r[0], r[1], r[2]}) > std::max(tol, Tol(NormInf(uv)))) {
                 o[i] = false;
                 return;
             }
@@ -2326,11 +2487,140 @@ inline py::object ContainsOf(const Planar &s, const AxisSystem &axes, const py::
     Vertex uv{(*p)[0], (*p)[1]};
     if (p->size() == 3) {
         uv = axes.ToHV({(*p)[0], (*p)[1], (*p)[2]});
-        if (Point3D(axes, uv).Distance(gp_Pnt((*p)[0], (*p)[1], (*p)[2])) > std::max(s.Tolerance(), Tol(NormInf(uv))))
+        if (Norm(axes.ToXYZ(uv) - Vector3{(*p)[0], (*p)[1], (*p)[2]}) > std::max(s.Tolerance(), Tol(NormInf(uv))))
             return py::bool_(false);
     }
     Where w = Locate(s, uv);
     return py::bool_(w == Where::Inside || (w == Where::Boundary && boundary));
+}
+
+inline RelateOperand ShapeOperand(const Shape &s, const std::string &call) {
+    if (s.HasFaces() && s.WireCount() > 0)
+        throw py::value_error(call + ": a shape of faces and wires has no relation, as it has no boolean; compare "
+                                     "shape.faces or shape.wires");
+    return s.HasFaces() ? RelateOperand{2, s.Outline(), {}} : RelateOperand{1, s.WireEdges(), {}};
+}
+
+// what the DE-9IM relations compare: a Face or a Shape of faces as a region, a Wire or a Shape of wires as lines, a
+// point (h, v) or (x, y, z) on the plane
+inline RelateOperand RelateOperandOf(const py::handle &h, const AxisSystem &axes, const std::string &call) {
+    auto onPlane = [&](const AxisSystem &other) {
+        if (!other.IsClose(axes))
+            throw py::value_error(call + ": the two lie on different planes; move them onto one plane first");
+    };
+    if (std::optional<Face> copy; IsA<Face>(h)) {
+        const Face &f = AsFace(h, copy);
+        onPlane(f.Axes());
+        return {2, f.Edges(), {}};
+    }
+    if (IsA<Shape>(h)) {
+        const Shape &s = h.cast<const Shape &>();
+        onPlane(s.Axes());
+        return ShapeOperand(s, call);
+    }
+    if (IsA<Wire>(h)) {
+        const Wire &w = h.cast<const Wire &>();
+        onPlane(w.Axes());
+        return {1, w, {}};
+    }
+    if (py::hasattr(h, "parts"))
+        throw py::type_error(call + ": a Compound has no relations, merge it first with px.Unify(comp)");
+    std::optional<std::vector<double>> p = AsPoint(h);
+    if (!p)
+        throw py::type_error(call + ": other is a Face, Shape, Wire or a point");
+    Vertex uv{(*p)[0], (*p)[1]};
+    if (p->size() == 3) {
+        uv = axes.ToHV({(*p)[0], (*p)[1], (*p)[2]});
+        const Vector3 q = axes.ToXYZ(uv);
+        const double off = std::max({std::abs(q.x - (*p)[0]), std::abs(q.y - (*p)[1]), std::abs(q.z - (*p)[2])});
+        if (off > Tol(NormInf(uv)))
+            throw py::value_error(call + ": the point lies off the plane");
+    }
+    return {0, Wire(axes), uv};
+}
+
+inline bool IsGeometry(const py::handle &h) { return IsA<Face>(h) || IsA<Shape>(h) || IsA<Wire>(h); }
+
+inline RelateMatrix RelationOf(const RelateOperand &a, const py::handle &other, const std::string &call) {
+    const RelateOperand b = RelateOperandOf(other, a.edges.Axes(), call);
+    py::gil_scoped_release release;
+    return Relate(a, b);
+}
+
+// Relate and the named relations on a class whose objects give their operand by operandOf
+template <class T, class C, class F>
+inline void BindRelations(C &cls, F operandOf) {
+    const std::string x = VariableOf(NameOf(cls));
+    cls.def("Relate", [operandOf](const T &self, const py::object &other, const std::optional<std::string> &pattern) -> py::object {
+        if (pattern)
+            CheckRelatePattern(*pattern);
+        const RelateMatrix m = RelationOf(operandOf(self), other, "Relate");
+        return pattern ? py::object(py::bool_(m.Matches(*pattern))) : py::object(py::str(m.Text()));
+    }, py::arg("other"), py::pos_only(), py::arg("pattern") = py::none(),
+       // asterisks after a space as reST literals: Sphinx reads them as emphasis
+       Doc("Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool\n\n"
+           "The DE-9IM matrix of this and other: nine characters for the intersections of the interiors, boundaries "
+           "and exteriors (rows this, columns other), each the dimension 0, 1, 2 or F for none. A face is a region, a "
+           "wire lines (the ends of its open chains the boundary), a point a point.\n\n"
+           "Args:\n"
+           "    other: a Face, Shape (of faces or of wires), Wire, or a point (h, v) or (x, y, z) on the plane.\n"
+           "    pattern: nine characters of ``F``, ``T``, ``*``, ``0``, ``1``, ``2``: True if the matrix matches it.\n\n"
+           "Raises:\n"
+           "    TypeError: other is none of these.\n"
+           "    ValueError: other lies on another plane; a shape has faces and wires; a pattern is not nine of ``F``, ``T``, ``*``, ``0``, ``1``, ``2``.\n\n"
+           "Examples:\n"
+           "    " + x + ".Relate(other)\n"
+           "    " + x + ".Relate(other, 'T*F**F***')"));
+    struct Named {
+        const char *name, *text;
+        bool (*test)(const RelateMatrix &, int, int);
+    };
+    static const Named named[] = {
+        {"Intersects", "True if this and other have a point in common.",
+         [](const RelateMatrix &m, int, int) { return !m.Matches("FF*FF****"); }},
+        {"IsDisjoint", "True if this and other have no point in common.",
+         [](const RelateMatrix &m, int, int) { return m.Matches("FF*FF****"); }},
+        {"Touches", "True if this and other meet only on their boundaries.",
+         [](const RelateMatrix &m, int, int) { return Touches(m); }},
+        {"Crosses", "True if this and other cross: their interiors meet in a lower dimension than the larger of the two "
+                    "has, and each has a part outside the other (lines crossing at points, a line through a face).",
+         [](const RelateMatrix &m, int da, int db) { return Crosses(m, da, db); }},
+        {"Overlaps", "True if this and other, of one dimension, share a part of that dimension and each has a part "
+                     "outside the other.",
+         [](const RelateMatrix &m, int da, int db) { return Overlaps(m, da, db); }},
+        {"Covers", "True if no point of other lies outside this.",
+         [](const RelateMatrix &m, int, int) { return Covers(m); }},
+        {"IsCoveredBy", "True if no point of this lies outside other.",
+         [](const RelateMatrix &m, int, int) { return Covers(m.Transposed()); }},
+        {"IsWithin", "True if this lies in other and their interiors meet.",
+         [](const RelateMatrix &m, int, int) { return m.Matches("T*F**F***"); }},
+        {"Equals", "True if this and other are the same point set.",
+         [](const RelateMatrix &m, int, int) { return m.Matches("T*F**FFF*"); }},
+    };
+    for (const Named &n : named)
+        cls.def(n.name, [operandOf, test = n.test, name = std::string(n.name)](const T &self, const py::object &other) {
+            const RelateOperand a = operandOf(self);
+            const RelateOperand b = RelateOperandOf(other, a.edges.Axes(), name);
+            py::gil_scoped_release release;
+            return test(Relate(a, b), a.dim, b.dim);
+        }, py::arg("other"), py::pos_only(),
+           Doc(std::string(n.name) + "(other: Face | Shape | Wire | Point, /) -> bool\n\n" + n.text +
+               " By the DE-9IM matrix, see Relate.\n\n"
+               "Args:\n"
+               "    other: a Face, Shape (of faces or of wires), Wire, or a point (h, v) or (x, y, z) on the plane.\n\n"
+               "Raises:\n"
+               "    TypeError: other is not a Face, Shape, Wire or point.\n"
+               "    ValueError: other lies on another plane.\n\n"
+               "Examples:\n"
+               "    " + x + "." + n.name + "(other)"));
+}
+
+// Contains of a point (and arrays of points) as before; of a Face, Shape or Wire by the DE-9IM matrix
+template <class F>
+inline py::object ContainsAny(const Planar &s, const AxisSystem &axes, const py::handle &other, bool boundary, F operand) {
+    if (IsGeometry(other))
+        return py::bool_(RelationOf(operand(), other, "Contains").Matches("T*****FF*"));
+    return ContainsOf(s, axes, other, boundary);
 }
 
 inline py::tuple MatrixTuple(const Matrix3 &m) {
@@ -2347,7 +2637,7 @@ inline py::object CenterOf(const Thing &t) {
     MassProps p = MassOfThing(t);
     if (p.mass == 0.0)
         return py::none();
-    return Tuple3(Point3D(t.axes, p.center));
+    return Tuple3(t.axes.ToXYZ(p.center));
 }
 
 // a single circle the edges lie on, with the swept angle over all of them
@@ -2388,7 +2678,7 @@ inline py::dict MeasureDict(const Thing &t) {
     d["length"] = t.edges.Length();
     if (t.point) {
         d["type"] = "point";
-        d["center"] = Tuple3(Point3D(t.axes, *t.point));
+        d["center"] = Tuple3(t.axes.ToXYZ(*t.point));
         d["bounding_box"] = BoxTuple(BBox::Of(*t.point, *t.point));
         return d;
     }
@@ -2412,7 +2702,7 @@ inline py::dict MeasureDict(const Thing &t) {
     MassProps p = MassOf(s.region, s.curves);
     if (p.mass == 0.0)
         return d;
-    d["center"] = Tuple3(Point3D(t.axes, p.center));
+    d["center"] = Tuple3(t.axes.ToXYZ(p.center));
     d["inertia"] = MatrixTuple(Inertia(p, t.axes));
     Section sec = SectionOf(p);
     d["Ih"] = sec.iu;
@@ -2422,22 +2712,21 @@ inline py::dict MeasureDict(const Thing &t) {
     d["I2"] = sec.i2;
     d["principal_angle"] = sec.angle;
     if (circle) {
-        d["center"] = Tuple3(Point3D(t.axes, circle->center));
+        d["center"] = Tuple3(t.axes.ToXYZ(circle->center));
         d["radius"] = circle->radius;
         d["angle"] = Degrees(std::min(circle->sweep, 2.0 * std::numbers::pi));
     }
     return d;
 }
 
-// the direction of a thing that is a single line, in 3d
-inline std::optional<gp_Dir> LineDirection(const Thing &t) {
+// the direction of a thing that is a single line, in 3d, not normalized
+inline std::optional<Vector3> LineDirection(const Thing &t) {
     if (!t.faces.empty() || t.point || t.edges.Size() != 1)
         return std::nullopt;
     const Line *l = std::get_if<Line>(&t.edges[0]);
     if (!l)
         return std::nullopt;
-    gp_Vec v(Point3D(t.axes, l->Start()), Point3D(t.axes, l->End()));
-    return gp_Dir(v);
+    return t.axes.ToXYZ(l->End()) - t.axes.ToXYZ(l->Start());
 }
 
 // two things: their distance, its components and, for two lines, the angle between them in [0, 90] degrees
@@ -2446,16 +2735,16 @@ inline py::dict MeasureBetween(const Thing &a, const py::handle &target, const s
     py::dict d;
     d["type"] = "between";
     d["distance"] = p.d;
-    const gp_XYZ v = p.b.XYZ() - p.a.XYZ();
-    d["du"] = v.Dot(ToOCC(a.axes.XDirection()));
-    d["dv"] = v.Dot(ToOCC(a.axes.YDirection()));
-    d["dx"] = v.X();
-    d["dy"] = v.Y();
-    d["dz"] = v.Z();
+    const Vector3 v = p.b - p.a;
+    d["du"] = Dot(v, a.axes.XDirection());
+    d["dv"] = Dot(v, a.axes.YDirection());
+    d["dx"] = v.x;
+    d["dy"] = v.y;
+    d["dz"] = v.z;
     d["points"] = py::make_tuple(Tuple3(p.a), Tuple3(p.b));
     if (b)
-        if (std::optional<gp_Dir> da = LineDirection(a), db = LineDirection(*b); da && db) {
-            double angle = Degrees(da->Angle(*db));
+        if (std::optional<Vector3> da = LineDirection(a), db = LineDirection(*b); da && db) {
+            double angle = Degrees(AngleBetween(*da, *db));
             d["angle"] = std::min(angle, 180.0 - angle);
         }
     return d;
@@ -2490,9 +2779,14 @@ inline py::dict MeasureWith(const Thing &a, const py::object &to, bool project, 
 }
 
 inline const char *DistanceDoc(const std::string &x) {
-    return Doc("Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape | "
-               "np.ndarray, /, project: bool = False, components: str | None = None, signed: bool = False) -> float | "
-               "tuple[float, ...] | np.ndarray\n\n"
+    // one signature line per form of the target, so a type checker knows the return (an @overload each in the stub)
+    // the many points' form first: an OCC shape is Any to a type checker (netgen has no stubs) and would take them
+    return Doc("Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, "
+               "components: str | None = None, signed: bool = False) -> np.ndarray\n"
+               "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, "
+               "project: bool = False, components: None = None, signed: bool = False) -> float\n"
+               "Distance(target: Point | Point3 | Face | Shape | Wire | EdgeView | VertexView | FaceView | TopoDS_Shape, /, "
+               "project: bool = False, *, components: str) -> float | tuple[float, ...]\n\n"
                "The smallest distance to the target; 0 inside a face.\n\n"
                "A target in another plane is measured in 3d, or projected into this plane with project.\n\n"
                "Args:\n"
@@ -2516,7 +2810,8 @@ inline const char *DistanceDoc(const std::string &x) {
 }
 
 inline const char *ClosestPointDoc(const std::string &x) {
-    return Doc(std::string("ClosestPoint(point: Point | Point3 | np.ndarray, /) -> tuple[float, ...] | np.ndarray\n\n"
+    return Doc(std::string("ClosestPoint(point: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /) -> np.ndarray\n"
+               "ClosestPoint(point: Point | Point3, /) -> tuple[float, ...]\n\n"
                "The nearest point to point, in the plane for (h, v), in 3d for (x, y, z)") +
                (x == "face" || x == "shape" ? "; inside a face the point itself" : "") + ".\n\n"
                "Args:\n"
@@ -2532,7 +2827,7 @@ inline const char *ClosestPointDoc(const std::string &x) {
 inline const char *MeasureDoc(const std::string &x) {
     return Doc("Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict\n\n"
                "The measures of the faces and edges named name, or of the one with that id or selected, as a dict.\n\n"
-               "Its keys: type, faces, area, edges, length, center (in 3d; of an arc or circle its centre, with radius and "
+               "Its keys: type, faces, area, edges, length, center (in 3d; of an arc or circle its center, with radius and "
                "angle), inertia, Ih, Iv, Ihv, I1, I2, principal_angle, bounding_box; with to also distance, du, dv, dx, "
                "dy, dz, points and the angle between two lines.\n\n"
                "Args:\n"
@@ -2551,14 +2846,14 @@ template <class T, class C, class F, class N>
 inline void BindMeasures(C &cls, F thingOf, N named) {
     const std::string var = VariableOf(NameOf(cls));
     cls.def_property_readonly("center", [thingOf](const T &x) { return CenterOf(thingOf(x)); },
-                              "center: tuple[float, float, float] | None\n\nThe centre of mass in 3d, (x, y, z): of the area for faces, of the length for wires; None if it is empty.")
+                              "center: tuple[float, float, float] | None\n\nThe center of mass in 3d, (x, y, z): of the area for faces, of the length for wires; None if it is empty.")
         .def_property_readonly("inertia", [thingOf](const T &x) -> py::object {
             Thing t = thingOf(x);
             MassProps p = MassOfThing(t);
             if (p.mass == 0.0)
                 return py::none();
             return MatrixTuple(Inertia(p, t.axes));
-        }, "inertia: tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]] | None\n\nThe inertia tensor about the centre in 3d for unit density (per area for faces, per length for wires), three rows "
+        }, "inertia: tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]] | None\n\nThe inertia tensor about the center in 3d for unit density (per area for faces, per length for wires), three rows "
            "of three; None if it is empty.")
         .def("Distance", [thingOf](const T &x, const py::object &target, bool project, const std::optional<std::string> &components,
                                    bool sign) {
@@ -2592,13 +2887,13 @@ inline void BindMeasures(C &cls, F thingOf, N named) {
 // the edges of a cutter in the plane: a Wire, Edge, Face, Shape or Sketch on it, or anything else projected onto it
 inline Wire CutterIn(const AxisSystem &axes, const py::handle &h) {
     std::optional<Wire> w;
-    if (py::isinstance<Wire>(h))
+    if (IsA<Wire>(h))
         w = h.cast<Wire>();
-    else if (py::isinstance<EdgeView>(h))
+    else if (IsA<EdgeView>(h))
         w = h.cast<const EdgeView &>().AsWire();
-    else if (py::isinstance<Face>(h))
-        w = h.cast<const Face &>().Edges();
-    else if (py::isinstance<Shape>(h))
+    else if (std::optional<Face> copy; IsA<Face>(h))
+        w = AsFace(h, copy).Edges();
+    else if (IsA<Shape>(h))
         w = h.cast<const Shape &>().Edges();
     else if (py::hasattr(h, "_axes")) {
         w = Wire(h.attr("_axes").cast<AxisSystem>());
@@ -2606,13 +2901,13 @@ inline Wire CutterIn(const AxisSystem &axes, const py::handle &h) {
             for (const Edge &e : part.cast<const Wire &>())
                 w->Add(e);
     }
-    else if (py::isinstance<TopoDS_Shape>(h))
-        return Project(h.cast<TopoDS_Shape>(), axes).wire;
+    else if (std::optional<Projection> p = occ->projected(h, axes, false))
+        return p->wire;
     else
         throw py::type_error("a cutter is a Wire, Edge, Face, Shape, Sketch or an OCC shape");
     if (w->Axes().IsClose(axes))
         return *w;
-    return Project(OCCOf(Planar{Wire(w->Axes()), *w}, w->Axes()), axes).wire;
+    return occ->across(Planar{Wire(w->Axes()), *w}, w->Axes(), axes);
 }
 
 struct TrimRule {
@@ -2761,7 +3056,7 @@ inline const char *TrimDoc(const std::string &x) {
                "Cuts every face and wire by the cutter and keeps the pieces the one option given chooses.\n\n"
                "What the cutter does not separate stays as it is.\n\n"
                "Args:\n" + cutterArg +
-               "    keep_closest_to: keeps the piece closest to this point (a face piece by its centre, a wire piece by "
+               "    keep_closest_to: keeps the piece closest to this point (a face piece by its center, a wire piece by "
                "itself), (h, v) or (x, y, z).\n"
                "    remove_closest_to: removes the piece closest to this point and keeps the others.\n"
                "    keep_largest: keeps the piece of the largest area (faces) or length (wires).\n"
@@ -2843,6 +3138,12 @@ inline void WarnPython(const std::string &text) {
     PyErr_Clear();
 }
 
+// a class bound in another file or module, to add methods to
+template <class T>
+inline py::class_<T> CoreClass(const py::module_ &core, const char *name) {
+    return py::reinterpret_borrow<py::class_<T>>(core.attr(name));
+}
+
 // a method on a class that is bound in another file
 template <class F, class... Extra>
 inline void AddMethod(py::module_ &m, const char *cls, const char *name, F f, const Extra &...extra) {
@@ -2860,9 +3161,10 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
                py::class_<FacesView> &facesView);
 void BindDeformable(py::module_ &m);
 void BindPlane(py::module_ &m);
-void BindOCC(py::module_ &m);
+void BindConstraintKinds(py::module_ &m);
+void BindOffsetForms(py::module_ &m);
 void BindSketch(py::module_ &m);
 void BindSolver(py::module_ &m);
 void BindConstraintSketch(py::module_ &m);
-void BindSection(py::module_ &m);
 void BindIdentify(py::module_ &m);
+void BindStep(py::module_ &m);

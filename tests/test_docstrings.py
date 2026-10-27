@@ -28,11 +28,16 @@ def _public():
                 if attr.startswith("_") or isinstance(value, obj) or hasattr(obj, "__members__") and attr in ("name", "value"):
                     continue
                 inner = value.fget if isinstance(value, property) else inspect.unwrap(value) if callable(value) else value
+                # the stand-ins of a planex without its OCC module have no docstring of their own
+                if getattr(inner, "__module__", None) == "planex._occ":
+                    continue
                 # a call a Python module attaches belongs to that module
                 owner = inner.__module__ if inspect.isfunction(inner) and inner.__module__ != obj.__module__ else name
                 out.append((owner, attr, value, isinstance(value, property) or type(value).__name__ == "property", True))
-        elif callable(obj):
+        # px.Auto is a value; its call, px.Auto({...}), has its docstring on its type
+        elif callable(obj) and obj.__module__ != "planex._occ" and obj is not px.Auto:
             out.append((obj.__module__, name, obj, False, False))
+    out.append(("planex._planex", "__call__", type(px.Auto).__call__, False, True))
     return out
 
 

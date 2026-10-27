@@ -23,7 +23,7 @@ def near(value, expected, tol, what):
 
 
 def circle(x, y, r):
-    return px.QuickSketch().Circle(x, y, r).Face()
+    return px.QuickSketch().Circle((x, y), r).Face()
 
 
 def square(x, y, s):

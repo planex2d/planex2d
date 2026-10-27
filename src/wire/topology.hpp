@@ -152,19 +152,24 @@ namespace planex2d {
         return nested;
     }
 
-    inline double Wire::LoopArea(const std::vector<std::pair<size_t, bool>> &loop) const {
+    template <bool exact>
+    double Wire::LoopArea(const std::vector<std::pair<size_t, bool>> &loop) const {
         if (loop.empty())
             return 0.0;
         const Vertex o = StartOf(edges[loop.front().first]);
         double a = 0.0;
-        for (auto [i, forward] : loop)
-            a += (forward ? 1.0 : -1.0) * SignedArea(edges[i], o);
+        for (auto [i, forward] : loop) {
+            if constexpr (exact)
+                a += (forward ? 1.0 : -1.0) * ExactSignedArea(edges[i], o);
+            else
+                a += (forward ? 1.0 : -1.0) * SignedArea(edges[i], o);
+        }
         return a;
     }
     inline double Wire::Area() const {
         double area = 0.0;
         for (const NestedLoop &n : Nesting())
-            area += (n.depth % 2 == 0 ? 1.0 : -1.0) * std::abs(LoopArea(n.loop.edges));
+            area += (n.depth % 2 == 0 ? 1.0 : -1.0) * std::abs(LoopArea<true>(n.loop.edges));
         return area;
     }
 
@@ -294,20 +299,10 @@ namespace planex2d {
         Region reg(t);
         if (edges.empty())
             return Grid(BBox::Of({}, {}), 1.0);
-        BBox all;
-        std::vector<double> extent;
-        for (const Edge &e : edges) {
-            const BBox &b = BoxOf(e);
-            all.Grow(b);
-            extent.push_back(NormInf(b.Size()));
-        }
-        const size_t n = edges.size();
-        std::nth_element(extent.begin(), extent.begin() + (long)(n / 2), extent.end());
-        double cell = std::max(extent[n / 2], std::sqrt((all.x1 - all.x0) * (all.y1 - all.y0) / (double)n));
-        Grid grid(all, cell > 0.0 ? cell : 1.0);
-        for (size_t k = 0; k < n; ++k)
-            grid.Insert(k, BoxOf(edges[k]));
-        return grid;
+        std::vector<BBox> boxes;
+        for (const Edge &e : edges)
+            boxes.push_back(BoxOf(e));
+        return Grid::OfBoxes(boxes);
     }
 
 }

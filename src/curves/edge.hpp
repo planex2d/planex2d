@@ -130,6 +130,18 @@ namespace planex2d {
     std::variant<T...> ReversedOf(const std::variant<T...> &e) {
         return std::visit([](const auto &x) -> std::variant<T...> { return x.Reversed(); }, e);
     }
+    // a circle, or a spline that is the whole of a closed curve: its start and end are one point, no vertex there
+    template <class... T>
+    bool IsClosedEdge(const std::variant<T...> &e) {
+        return std::visit([](const auto &x) {
+            if constexpr (IsCircle<decltype(x)>)
+                return true;
+            else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                return x.IsClosed();
+            else
+                return false;
+        }, e);
+    }
     template <class... T>
     double LengthOf(const std::variant<T...> &e) {
         return std::visit([](const auto &x) { return x.Length(); }, e);
@@ -145,6 +157,25 @@ namespace planex2d {
     template <class... T>
     double SignedArea(const std::variant<T...> &e, const Vertex &o) {
         return std::visit([&](const auto &x) { return x.SignedArea(o); }, e);
+    }
+    // as measured: a spline's on its exact curve
+    template <class... T>
+    double ExactSignedArea(const std::variant<T...> &e, const Vertex &o) {
+        return std::visit([&](const auto &x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                return x.ExactSignedArea(o);
+            else
+                return x.SignedArea(o);
+        }, e);
+    }
+    template <class... T>
+    double ExactLengthOf(const std::variant<T...> &e) {
+        return std::visit([](const auto &x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                return x.ExactLength();
+            else
+                return x.Length();
+        }, e);
     }
     template <class... T>
     double LengthFraction(const std::variant<T...> &e, const Vertex &p) {

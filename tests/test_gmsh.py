@@ -22,7 +22,7 @@ def commands(path, kind):
 
 
 def test_a_plate_with_a_hole(tmp_path):
-    hole = px.QuickSketch().Circle(1, 0.5, 0.2).Face()
+    hole = px.QuickSketch().Circle((1, 0.5), 0.2).Face()
     for e in hole.edges:
         e.name, e.maxh = "hole", 0.05
     (plate() - hole).WriteGeo(tmp_path / "p.geo")
@@ -58,7 +58,7 @@ def test_identifications_become_periodic_curves(tmp_path):
 
 
 def test_circles_split_at_half_a_circle_and_splines_are_bsplines(tmp_path):
-    px.QuickSketch().Circle(0, 0, 1).Face().WriteGeo(tmp_path / "c.geo")
+    px.QuickSketch().Circle((0, 0), 1).Face().WriteGeo(tmp_path / "c.geo")
     assert len(commands(tmp_path / "c.geo", "Circle")) == 4
     blob = px.Move((0, 0)).Spline([(1, 0.5), (2, 0), (1, -1)]).Close().Face()
     blob.WriteGeo(tmp_path / "s.geo")
@@ -104,7 +104,7 @@ def test_gmsh_meshes_what_is_written(tmp_path):
         pytest.skip("gmsh does not run here")
     f = plate()
     f.Identify("left", "right")
-    hole = px.QuickSketch().Circle(1, 0.5, 0.2).Face()
+    hole = px.QuickSketch().Circle((1, 0.5), 0.2).Face()
     (f - hole).WriteGeo(tmp_path / "f.geo")
     out = subprocess.run([sys.executable, "-c", GMSH, str(tmp_path / "f.geo")], capture_output=True, text=True, check=True)
     result = json.loads(out.stdout)

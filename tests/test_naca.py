@@ -6,7 +6,7 @@ import math
 import pytest
 
 import planex as px
-from planex._naca import _sides
+from planex._naca import _mean_line
 
 
 def thickness_area(a4, t=0.12):
@@ -14,18 +14,23 @@ def thickness_area(a4, t=0.12):
 
 
 def max_camber(code):
-    upper, lower, _ = _sides(code, 801, True)
-    camber = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) for a, b in zip(upper, lower)]
-    return max(camber, key=lambda p: p[1])
+    """the highest point of the code's camber line, its pieces' expressions evaluated at 400 stations each"""
+    points, start = [], 0.0
+    for end, camber, _ in _mean_line(code)[0]:
+        for i in range(401):
+            x = start + (end - start) * i / 400
+            points.append((x, eval(camber.replace("^", "**"), {"X": x})))
+        start = end
+    return max(points, key=lambda p: p[1])
 
 
 def test_symmetric_airfoils_have_the_exact_area_and_thickness():
     sharp = px.FromNACA("0012")
     assert isinstance(sharp, px.Face) and len(sharp.edges) == 2
-    assert sharp.mass == pytest.approx(thickness_area(-0.1036), rel=1e-5)
+    assert sharp.mass == pytest.approx(thickness_area(-0.1036), rel=1e-11)
     assert sharp.bounding_box[1][1] == pytest.approx(0.0600, abs=1e-4)
-    blunt = px.FromNACA("0012", trailing_edge="blunt")
-    assert len(blunt.edges) == 3 and blunt.mass == pytest.approx(thickness_area(-0.1015), rel=1e-5)
+    blunt = px.FromNACA("0012", trailing_edge=px.Flat)
+    assert len(blunt.edges) == 3 and blunt.mass == pytest.approx(thickness_area(-0.1015), rel=1e-11)
     gap = min(e.mass for e in blunt.edges)
     assert gap == pytest.approx(2 * 5 * 0.12 * (0.2969 - 0.1260 - 0.3516 + 0.2843 - 0.1015), rel=1e-6)
     assert px.FromNACA("0012", chord=3).mass == pytest.approx(9 * sharp.mass, rel=1e-9)
@@ -37,10 +42,12 @@ def test_camber_lines_of_4_and_5_digit_airfoils():
     assert (x, y) == (pytest.approx(0.4, abs=2e-3), pytest.approx(0.02, abs=1e-6))
     x, y = max_camber("23012")
     assert (x, y) == (pytest.approx(0.15, abs=2e-3), pytest.approx(0.0184, abs=1e-4))
-    upper, lower, _ = _sides("23112", 101, True)
-    assert upper[-1] == lower[-1] == (1.0, 0.0) and upper[0] == lower[0] == (0.0, 0.0)
+    reflex = px.FromNACA("23112")
+    assert len(reflex.edges) == 4
+    corners = sorted((v.h, v.v) for v in reflex.vertices)
+    assert corners[0] == pytest.approx((0.0, 0.0), abs=1e-15) and corners[-1] == pytest.approx((1.0, 0.0), abs=1e-15)
     cambered = px.FromNACA("4415")
-    assert cambered.bounding_box[1][1] > -cambered.bounding_box[0][1]
+    assert len(cambered.edges) == 4 and cambered.bounding_box[1][1] > -cambered.bounding_box[0][1]
 
 
 def test_placement_angle_and_plane():
@@ -60,7 +67,8 @@ def test_errors():
         px.FromNACA("2012")
     with pytest.raises(ValueError, match="mean line"):
         px.FromNACA("21112")
-    with pytest.raises(ValueError, match="trailing_edge"):
-        px.FromNACA("0012", trailing_edge="round")
-    with pytest.raises(ValueError, match="samples"):
-        px.FromNACA("0012", samples=2)
+    for wrong in ("sharp", "blunt", px.Round):
+        with pytest.raises(ValueError, match="trailing_edge is px.Sharp or px.Flat"):
+            px.FromNACA("0012", trailing_edge=wrong)
+    with pytest.raises(TypeError, match="samples"):
+        px.FromNACA("0012", samples=100)

@@ -22,7 +22,7 @@ def test_planes():
     assert px.Plane(normal=(0, 0, 1), axis=(1, 1, 5)).h == pytest.approx((2**-0.5, 2**-0.5, 0))
     assert px.Plane(block().faces.Max(occ.Z)).origin == pytest.approx((0, 0, 4))
     assert px.Plane(px.XY, origin=(3, 3, 3)).origin == pytest.approx((3, 3, 0))
-    assert px.XY.Offset(2).origin == (0, 0, 2) and px.XY.origin == (0, 0, 0)
+    assert px.Plane(px.XY, 2).origin == (0, 0, 2) and px.XY.origin == (0, 0, 0)
     assert px.XY.Translated((1, 0, 0)).origin == (1, 0, 0)
     assert px.XY.Rotated((0, 0, 0), (1, 0, 0), 90).normal == pytest.approx((0, -1, 0))
     m = px.XY.Mirrored((0, 0, 1), (0, 0, 1))
@@ -59,7 +59,7 @@ def test_plot3d_draws_planes_as_squares():
     from planex._plot3d import _plot3d_compound
 
     f = px.Move((0, 0)).Rectangle(4, 2).Face()
-    pmin, pmax = _plot3d_compound([f, px.XY.Offset(1), px.YZ]).bounding_box
+    pmin, pmax = _plot3d_compound([f, px.Plane(px.XY, 1), px.YZ]).bounding_box
     assert pmax[2] == pytest.approx(2, abs=0.05) and pmin[1] == pytest.approx(-2, abs=0.05)
     assert _plot3d_compound(px.XY, plane_size=3).bounding_box[1][0] == pytest.approx(1.5, abs=0.05)
 

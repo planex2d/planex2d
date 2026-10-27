@@ -65,7 +65,7 @@ def test_a_pad_up_to_a_plane():
 def block():
     box = occ.Box((0, 0, 0), (10, 10, 4))
     box.solids[0].name = "block"
-    bore = px.QuickSketch(px.Plane(origin=(0, 0, 4))).Circle(5, 5, 1, name="bore").Face()
+    bore = px.QuickSketch(px.Plane(origin=(0, 0, 4))).Circle((5, 5), 1, name="bore").Face()
     bore.col = (0, 0, 1)
     return box, bore
 
@@ -105,7 +105,40 @@ def test_a_wire_is_no_profile():
         px.Pad(px.FromPolyline([(0, 0), (1, 0), (1, 1)], closed=True), 3)
 
 
-def test_a_profile_that_does_not_land_fully_raises():
+def test_until_ends_on_the_plane_of_a_face_wherever_the_profile_lies():
     small = px.QuickSketch(px.Plane(origin=(0, 0, 5))).Move((0, 0)).Rectangle(1, 1).Face()
-    with pytest.raises(ValueError, match=r"^Pad\(until=\): the profile does not land fully"):
-        px.Pad(plate(), until=small)
+    assert px.Pad(plate(), until=small).mass == pytest.approx(10, rel=TOL)
+
+
+def l_block():
+    """an upright x 0..10, z 0..30 on a foot x 0..40, z 0..10; a 10 x 10 profile on the upright's top, half over the foot"""
+    foot = occ.Box((0, 0, 0), (40, 20, 10))
+    foot.faces.Max(occ.Z).name = "foot_top"
+    target = occ.Box((0, 0, 0), (10, 20, 30)) + foot
+    sk = px.Sketch(target.faces.Max(occ.Z))
+    sk.Move((5, 5)).Rectangle(10, 10)
+    return target, sk
+
+
+@pytest.mark.parametrize("until, removed", [
+    (lambda t: px.first, 1000), (lambda t: t.faces["foot_top"], 1000), (lambda t: t.faces["foot_top"][0], 1000),
+    (lambda t: px.last, 2000)])
+def test_a_pocket_over_a_step_ends_at_the_face_it_is_given_or_reaches(until, removed):
+    """px.first passes the upright's side wall, which runs along dir, and stops at the foot's top; px.last goes to the
+    bottom"""
+    target, sk = l_block()
+    assert target.mass - px.Pocket(target, sk, until=until(target)).mass == pytest.approx(removed, rel=TOL)
+
+
+def test_until_takes_a_selection_of_one_face_only():
+    target, sk = l_block()
+    with pytest.raises(TypeError, match=r"a flat OCC face or a selection of one"):
+        px.Pocket(target, sk, until=[target.faces[0], target.faces[1]])
+
+
+def test_a_pocket_off_the_edge_ends_where_its_length_would():
+    """the docs' case: half of the profile beyond the box's edge"""
+    box = occ.Box((0, 0, 0), (40, 20, 10))
+    sk = px.Sketch(box.faces.Max(occ.Z))
+    sk.Move((30, 5)).Rectangle(20, 10)
+    assert px.Pocket(box, sk, until=px.last).mass == pytest.approx(px.Pocket(box, sk, length=10).mass, rel=TOL)

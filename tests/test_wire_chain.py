@@ -254,16 +254,16 @@ def test_sketch_edge_of_a_pattern_id_raises():
     sk = px.Sketch((0, 0))
     sk.Line(1, 0, id="a")
     sk.LinearPattern("a", px.H, 3, 2.0, id="p")
-    with pytest.raises(ValueError, match=r"Edge\('p'\): no line, arc, circle or spline"):
-        sk.Edge("p")
+    with pytest.raises(ValueError, match=r"Wire\('p'\): 'p' is no line, arc, circle or spline"):
+        sk.Wire("p")
 
 
 @pytest.mark.constraints
-def test_sketch_edge_of_an_offset_on_both_sides_raises_and_its_loops_are_wires():
+def test_sketch_wire_of_an_offset_on_both_sides_raises_and_its_loops_are_wires():
     sk = px.Sketch((0, 0))
     sk.Rectangle(10, 5, id="r")
     sk.Offset("r", 1, both_sides=True, id="w")
-    with pytest.raises(ValueError, match=r"Edge\('w'\): the edges form 2 chains.*sk.Wires\(\) gives the chains"):
-        sk.Edge("w")
-    outer = sk.Edge("w.right")
+    with pytest.raises(ValueError, match=r"Wire\('w'\): the edges form 2 chains.*sk.Wires\(\) gives the chains"):
+        sk.Wire("w")
+    outer = sk.Wire("w.right")
     assert outer.IsClosed() and px.Face([outer]).mass == pytest.approx(12 * 7 - 4 + math.pi, rel=1e-12)

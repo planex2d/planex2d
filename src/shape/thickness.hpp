@@ -74,11 +74,13 @@ namespace planex2d {
                 }
                 return best;
             }
+            // inside to rounding: the edge it touches at its sample is r away up to that (a relative slack let the largest
+            // disc grow past the boundary by about 1e-9 of its radius)
             bool IsDiscInside(const Vertex &c, double r) {
                 near.clear();
                 grid.InBox(BBox::Of(c, c).Grown(r), near);
                 for (uint32_t j : near)
-                    if (NearestOnEdge(region[j], c).d < r * (1.0 - 1e-9) - tol)
+                    if (NearestOnEdge(region[j], c).d < r - tol)
                         return false;
                 return true;
             }
@@ -145,7 +147,7 @@ namespace planex2d {
         double bestT = 0.0, step = 0.0;
         auto better = [&](double a, double b) { return refine < 0 ? a < b : a > b; };
         for (size_t i = 0; i < region.Size(); ++i) {
-            const size_t count = std::max<size_t>(1, (size_t)std::lround((double)samples * LengthOf(region[i]) / total));
+            const size_t count = std::max<size_t>(1, (size_t)std::lround((double)samples * ExactLengthOf(region[i]) / total));
             for (size_t k = 0; k < count; ++k) {
                 const double t = ((double)k + 0.5) / (double)count;
                 const std::optional<ThicknessSample> s = probe.At(i, t);

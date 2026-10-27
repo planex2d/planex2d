@@ -148,14 +148,22 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
              "    TypeError: other is not a Face, Shape or Wire.\n\n"
              "Examples:\n"
              "    shape * face")
-        .def("Offset", [](const py::object &self, double d, bool inplace) -> py::object {
+        .def("__xor__", [](const Shape &a, const py::object &b) { return Combined(Operands(a, b), &SymmetricDifference, false); },
+             "__xor__(other: Face | Shape) -> Shape\n\n"
+             "The symmetric difference: the regions in exactly one of the two, each keeping its part's properties.\n\n"
+             "Raises:\n"
+             "    TypeError: other is not a Face or Shape.\n\n"
+             "Examples:\n"
+             "    shape ^ face")
+        .def("Offset", [](const py::object &self, double d, bool inplace, OffsetForm corners) -> py::object {
             Shape &s = self.cast<Shape &>();
-            Shape r = OffsetFaces(s, d);
+            Shape r = OffsetFaces(s, d, CornersOf(corners));
             if (!inplace)
                 return py::cast(std::move(r));
             ReplaceKeepingId(s, std::move(r));
             return self;
-        }, py::arg("d"), py::arg("inplace") = true, OffsetDoc("Shape", "Shape", "the faces share edges (glued); px.Unify merges them first.", "shape"))
+        }, py::arg("d"), py::arg("inplace") = true, py::arg("corners") = OffsetForm::Round,
+           OffsetDoc("Shape", "Shape", "the faces share edges (glued); px.Unify merges them first;", "shape"))
         // sum() starts with 0 + shape
         .def("__radd__", [](const Shape &s, int zero) {
             if (zero != 0)
@@ -165,7 +173,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         .def("CloseGaps", &Shape::RemoveSmallGaps, py::arg("tol"), ref, CloseGapsDoc("Shape", "shape", ""))
         .def("RemoveSmallEdges", &Shape::RemoveSmallEdges, py::arg("tol"), ref, RemoveSmallEdgesDoc("Shape", "shape"))
         .def("MergeCollinearEdges", [](Shape &s, OptDouble tol) -> Shape & {
-            return s.MergeCollinearEdges(Or(tol, config::cleanup.merge_collinear_closer));
+            return s.MergeCollinearEdges(Or(tol, config::state->cleanup.merge_collinear_closer));
         }, py::arg("tol") = py::none(), ref, MergeCollinearEdgesDoc("Shape", " of one part", "shape"))
         .def("FitArcs", [](Shape &s, OptDouble tol, OptDouble l, OptDouble a, OptDouble ig) -> Shape & {
             return s.FitArcs(Arcs(true, l, a, tol, ig));
@@ -178,34 +186,24 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
                        "arcs and splines fitted, small edges removed, as enabled.\n\n"
                        "Free edges are removed from the faces only.", "shape", false))
         .def("Simplified", [](const Shape &s, EXPORT_PARAMS) { return Shape(s).Simplify(EXPORT_OPTIONS); }, EXPORT_ARGS,
-             ExportDoc("Simplified", "Shape", "A copy defeatured as Simplify does it; this shape is not changed.", "shape", false))
-        .def("ToOCCShape", [](const Shape &s, EXPORT_PARAMS) { return TypedShape(ToOCCShape(s, EXPORT_OPTIONS)); }, EXPORT_ARGS,
-             ExportDoc("ToOCCShape", "TopoDS_Shape",
-                       "The faces and wires as OCC shapes sharing their vertices: a single face as itself, else a compound.",
-                       "shape", false))
-        .def("ToOCCFace", [](const Shape &s, EXPORT_PARAMS) {
-            return TypedShape(ToOCCShape(s, EXPORT_OPTIONS, false));
-        }, EXPORT_ARGS,
-           ExportDoc("ToOCCFace", "TopoDS_Shape", "The faces as OCC faces: a single face as itself, else a compound.", "shape", false))
-        .def("ToOCCWires", [](const Shape &s, bool approximation, EXPORT_PARAMS) {
-            return CompoundOf(ToOCCWires(s.Edges(), approximation, EXPORT_OPTIONS));
-        }, py::arg("approximation") = false, EXPORT_ARGS,
-           ExportDoc("ToOCCWires", "TopoDS_Shape", "The connected wires of all edges as an OCC compound.", "shape", false, true));
-    for (auto [op, symbol] : {std::pair{"__add__", "+"}, std::pair{"__sub__", "-"}, std::pair{"__mul__", "*"}})
+             ExportDoc("Simplified", "Shape", "A copy defeatured as Simplify does it; this shape is not changed.", "shape", false));
+    for (auto [op, symbol] : {std::pair{"__add__", "+"}, std::pair{"__sub__", "-"}, std::pair{"__mul__", "*"}, std::pair{"__xor__", "^"}})
         face.def(op, [op, symbol](const Face &f, const py::object &other) {
             if (py::isinstance<Wire>(other) && std::string(op) != "__mul__")
                 throw py::type_error(std::string("face ") + symbol + " wire is not supported");
             std::string o = op;
-            return Combined(Operands(Shape(f), other), o == "__add__" ? &Unify : o == "__sub__" ? &Subtract : &Intersect, false);
+            return Combined(Operands(Shape(f), other),
+                            o == "__add__" ? &Unify : o == "__sub__" ? &Subtract : o == "__mul__" ? &Intersect : &SymmetricDifference, false);
         });
     face.def("__radd__", [](const Face &f, int zero) {
         if (zero != 0)
             throw py::type_error("can only add faces, shapes and wires");
         return Shape(f);
     });
-    shape.def("Contains", [](const Shape &s, const py::object &point, bool boundary) {
-        return ContainsOf(Planar{FaceRegion(s), Wire(s.Axes())}, s.Axes(), point, boundary);
-    }, py::arg("point"), py::pos_only(), py::arg("boundary") = true,
+    shape.def("Contains", [](const Shape &s, const py::object &other, bool boundary) {
+        return ContainsAny(Planar{FaceRegion(s), Wire(s.Axes())}, s.Axes(), other, boundary,
+                           [&] { return ShapeOperand(s, "Contains"); });
+    }, py::arg("other"), py::pos_only(), py::arg("boundary") = true,
               ContainsDoc("shape", "a face"));
     shape.def("Polylines", [](const Shape &s, double tol) {
         CheckSampleTol("Polylines", tol);
@@ -221,6 +219,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         .def("Trim", [](const Shape &s, TRIM_PARAMS) {
             return TrimShape(s, CutterIn(s.Axes(), cutter), RuleOf(s.Axes(), kc, rc, kl, ks, kleft, kright));
         }, TRIM_ARGS, TrimDoc("shape"));
+    BindRelations<Shape>(shape, [](const Shape &s) { return ShapeOperand(s, "Relate"); });
     BindMeasures<Shape>(shape, [](const Shape &s) { return ThingOf(s); },
                         [](const Shape &s, const std::optional<std::string> &n) { return NamedIn(s.Axes(), s.Faces(), s.Edges(), n); });
     BindMotion<Shape>(shape);
@@ -232,8 +231,6 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
                            [set](Shape &s, const V &v) { SetOnGroups(s, [&](ShapeProperties &q) { set(q, v); }); },
                            FieldDoc(name, " all faces share, None if they differ; set on all faces."));
     });
-    shape.def("Project", [](const Shape &x, const TopoDS_Shape &shp) { return ProjectedWires(shp, x.Axes()); }, py::arg("shape"), py::pos_only(),
-              ProjectDoc("shape"));
 
     m.def("Glue", [](const py::iterable &parts) {
         ShapeList shapes = ShapesArg(parts);
@@ -281,7 +278,9 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
             out.append(py::make_tuple(s.at.x, s.at.y, s.other.x, s.other.y, s.thickness, s.centre.x, s.centre.y));
         return out;
     }, py::arg("obj"), py::arg("samples"), py::arg("ball"), py::arg("corner"), py::arg("refine") = 0,
-          "for px.measurements: (h, v, h, v of the other side, thickness, h, v of the centre) at samples along each face's boundary");
+          "for px.measurements: (h, v, h, v of the other side, thickness, h, v of the center) at samples along each face's boundary");
+    m.def("_EmptyShape", [](const py::object &plane) { return Shape(AxesArg(plane, "Intersect3d")); }, py::arg("plane"),
+          "the empty shape on a plane, for the cut of a mesh that misses it");
     m.def("ResetIdCounters", [] { IdCounters().clear(); },
           "ResetIdCounters() -> None\n\n"
           "Starts every kind of auto id at 1 again (Sketch.1, Shape.1, ...), so a script run from the top gets the same "
@@ -290,12 +289,12 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
           "    px.ResetIdCounters()");
     m.def("Unify", [](const py::iterable &parts, bool multithreaded) { return Combined(ShapesArg(parts), &Unify, multithreaded); },
           py::arg("parts"), py::pos_only(), py::arg("multithreaded") = true,
-          "Unify(parts: list[Face | Shape | Wire | Compound], /, multithreaded: bool = True) -> Shape\n\n"
+          "Unify(parts: list[Face | Shape | Wire | Compound] | Compound, /, multithreaded: bool = True) -> Shape\n\n"
           "The union of all faces and shapes, or of all wires (their connected chains), as a balanced tree of pairwise "
           "unions.\n\n"
           "A region has the properties of the faces it holds, merged in list order; compounds give their parts.\n\n"
           "Args:\n"
-          "    parts: faces, shapes, wires and compounds.\n"
+          "    parts: faces, shapes, wires and compounds, or one compound (its parts).\n"
           "    multithreaded: True runs the pairwise unions in parallel.\n\n"
           "Raises:\n"
           "    TypeError: an item is not a Face, Shape, Wire or Compound.\n\n"
@@ -327,4 +326,19 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
           "Examples:\n"
           "    px.Subtract([plate, hole])\n"
           "    px.Subtract([plate, *holes], multithreaded=False)");
+    m.def("SymmetricDifference", [](const py::iterable &parts, bool multithreaded) {
+        return Combined(ShapesArg(parts, false), &SymmetricDifference, multithreaded);
+    }, py::arg("parts"), py::pos_only(), py::arg("multithreaded") = true,
+          "SymmetricDifference(parts: list[Face | Shape], /, multithreaded: bool = True) -> Shape\n\n"
+          "The regions covered by an odd number of the parts, as a ^ b ^ c from left to right; every region keeps the "
+          "properties of the part it comes from.\n\n"
+          "Args:\n"
+          "    parts: faces and shapes.\n"
+          "    multithreaded: True runs the pairwise operations in parallel.\n\n"
+          "Raises:\n"
+          "    TypeError: an item is not a Face or Shape (a Compound: px.Unify merges it first).\n"
+          "    ValueError: a part has wires.\n\n"
+          "Examples:\n"
+          "    px.SymmetricDifference([a, b])\n"
+          "    px.SymmetricDifference([layer1, layer2, layer3])");
 }

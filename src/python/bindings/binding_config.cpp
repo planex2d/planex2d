@@ -42,27 +42,70 @@ class ConfigMeta(base):
             raise AttributeError("config." + name + ": no such setting; the settings are " + settings)
         base.__setattr__(cls, name, value)
 )", scope);
+    py::class_<AutoValue>(m, "AutoType",
+                          "The type of px.Auto, the value that is worked out automatically: a default computed from the situation, or "
+                          "among a drawing call's flags its auto constraints.")
+        .def("__call__", [](const AutoValue &, const py::dict &relations) {
+            AutoConstraintOptions(relations, AutoConstraint{}, "px.Auto({...})");
+            AutoValue a;
+            for (const auto &[k, v] : relations)
+                a.switched.push_back({py::str(k), v.cast<bool>()});
+            return a;
+        }, py::arg("relations"),
+             "__call__(relations: dict) -> AutoType\n\n"
+             "The px.Auto that switches these auto-constraint relations over px.config.auto_constraint_options, a drawing "
+             "call's flag.\n\n"
+             "Args:\n"
+             "    relations: True or False per relation (coincident, tangent, concentric, point_on_curve, horizontal, "
+             "vertical, perpendicular, parallel, equal_radius, equal_length, collinear, named_helpers).\n\n"
+             "Raises:\n"
+             "    TypeError: an unknown relation, or a value other than True or False.\n\n"
+             "Examples:\n"
+             "    sk.Line(10, px.Auto({\"horizontal\": True}))")
+        .def_property_readonly("relations", [](const AutoValue &a) {
+            py::dict out;
+            for (const auto &[k, v] : a.switched)
+                out[py::str(k)] = v;
+            return out;
+        }, "relations: dict\n\nThe relations px.Auto({...}) switches; empty for px.Auto.")
+        .def("__repr__", [](const AutoValue &a) {
+            if (a.switched.empty())
+                return std::string("px.Auto");
+            std::string text = "px.Auto({";
+            for (size_t k = 0; k < a.switched.size(); ++k)
+                text += (k ? ", '" : "'") + a.switched[k].first + "': " + (a.switched[k].second ? "True" : "False");
+            return text + "})";
+        })
+        .def("__eq__", [](const AutoValue &a, const py::object &b) {
+            return IsAuto(b) && b.cast<const AutoValue &>().switched == a.switched;
+        })
+        .def("__hash__", [](const AutoValue &a) { return py::hash(py::str(std::to_string(a.switched.size()))); })
+        .def("__bool__", [](const AutoValue &) -> bool {
+            throw py::type_error("px.Auto has no truth value: it stands for a value worked out automatically");
+        });
+    m.attr("Auto") = AutoValue{};
     auto cfg = py::class_<Config>(m, "config", py::metaclass(scope["ConfigMeta"]),
                                   "The defaults of planex: the absolute tolerance k * eps * S (S the largest coordinate "
                                   "magnitude involved), and the fit and cleanup values the OCC exports take by default.");
     // the tolerance k * eps * S is positive and finite
-    for (auto [name, value, doc] : {std::tuple{"eps", &config::eps, "eps: float\n\nThe relative rounding eps of the tolerance k * eps * S, "
-                                                                     "positive and finite."},
-                                    std::tuple{"k", &config::k, "k: float\n\nThe factor k of the tolerance k * eps * S, positive and finite."}})
+    for (auto [name, value, doc] : {std::tuple{"eps", &config::state->eps, "eps: float\n\nThe relative rounding eps of the tolerance k * eps * "
+                                                                            "S, positive and finite."},
+                                    std::tuple{"k", &config::state->k, "k: float\n\nThe factor k of the tolerance k * eps * S, positive and finite."}})
         cfg.def_property_static(name, [value](py::object) { return *value; }, [name, value](py::object, double v) {
             if (!(v > 0.0) || !std::isfinite(v))
                 throw py::value_error(std::string("config.") + name + " = " + std::to_string(v) + ": it is positive and finite");
             *value = v;
         }, doc);
-    ConfigValue(cfg, "spline_tol", config::spline_tol,
+    ConfigValue(cfg, "spline_tol", config::state->spline_tol,
                 "spline_tol: float\n\nThe largest deviation of a spline's arc approximation, relative to the diagonal of its points' bounding box.");
-    cfg.def_property_static("spline_style", [](py::object) { return std::string(StyleName(config::spline_style)); },
+    cfg.def_property_static("spline_style", [](py::object) { return std::string(StyleName(config::state->spline_style)); },
                             [](py::object, const py::object &v) {
                                 if (v.is_none())
-                                    throw py::value_error("config.spline_style = None: it is 'px' or 'occ'");
-                                config::spline_style = StyleArg(v, "config.spline_style");
+                                    throw py::value_error("config.spline_style = None: it is 'averaged' or 'clamped'");
+                                config::state->spline_style = StyleArg(v, "config.spline_style");
                             },
-                            "spline_style: str\n\nThe style of a spline drawn without style=: 'px' (planex's) or 'occ' (OCC's, netgen's splines).");
+                            "spline_style: str\n\nThe style of a spline drawn without style=: 'averaged' (planex's) or 'clamped' (netgen's "
+                            "splines).");
     cfg.def_property_static("default_sketch_type", [m](py::object) { return m.attr(quickSketchDefault ? "QuickSketch" : "Sketch"); },
                             [m](py::object, const py::object &v) {
                                 if (v.is(m.attr("QuickSketch")))
@@ -76,28 +119,43 @@ class ConfigMeta(base):
                                                           "without px.Sketch (PLANEX_CONSTRAINTS=OFF)");
                             },
                             "default_sketch_type: type\n\nWhat px.Move makes: px.QuickSketch (the default, without constraints) or px.Sketch.");
-    ConfigValue(cfg, "max_preview_edges", config::max_preview_edges,
+    ConfigValue(cfg, "max_preview_edges", config::state->max_preview_edges,
                 "max_preview_edges: int\n\nThe most edges a notebook picture of an object draws; above it the object shows its text repr.");
-    ConfigFit(cfg, "fit_splines", config::spline_fit);
-    ConfigFit(cfg, "fit_arcs", config::arc_fit);
-    ConfigValue(cfg, "remove_edges_smaller", config::cleanup.remove_edges_smaller,
+    ConfigFit(cfg, "fit_splines", config::state->spline_fit);
+    ConfigFit(cfg, "fit_arcs", config::state->arc_fit);
+    ConfigValue(cfg, "remove_edges_smaller", config::state->cleanup.remove_edges_smaller,
                 "remove_edges_smaller: float\n\nThe export default of remove_edges_smaller=: lines and arcs no longer than this are removed.");
-    ConfigValue(cfg, "close_gaps_smaller", config::cleanup.close_gaps_smaller,
+    ConfigValue(cfg, "close_gaps_smaller", config::state->cleanup.close_gaps_smaller,
                 "close_gaps_smaller: float\n\nThe export default of close_gaps_smaller=: gaps between ends up to this are closed.");
-    ConfigValue(cfg, "remove_free_edges", config::cleanup.remove_free_edges,
+    ConfigValue(cfg, "remove_free_edges", config::state->cleanup.remove_free_edges,
                 "remove_free_edges: bool\n\nThe export default of remove_free_edges=: True removes the edges that touch no other edge at either end.");
-    ConfigValue(cfg, "merge_collinear_closer", config::cleanup.merge_collinear_closer,
+    ConfigValue(cfg, "merge_collinear_closer", config::state->cleanup.merge_collinear_closer,
                 "merge_collinear_closer: float\n\nThe export default of merge_collinear_closer=: two lines whose common vertex is this close to the line "
                 "through their far ends become one.");
-    ConfigValue(cfg, "remove_faces_smaller", config::cleanup.remove_faces_smaller,
+    ConfigValue(cfg, "remove_faces_smaller", config::state->cleanup.remove_faces_smaller,
                 "remove_faces_smaller: float\n\nThe export default of remove_faces_smaller=: faces of less area than this are removed (0: none).");
-    ConfigValue(cfg, "merge_small_faces_instead", config::cleanup.merge_small_faces_instead,
+    ConfigValue(cfg, "merge_small_faces_instead", config::state->cleanup.merge_small_faces_instead,
                 "merge_small_faces_instead: bool\n\nThe export default of merge_small_faces_instead=: True unites such a face with the face it shares the "
                 "longest boundary with instead.");
-    ConfigValue(cfg, "sensitivity_warning", config::sensitivity_warning,
+    ConfigValue(cfg, "sensitivity_warning", config::state->sensitivity_warning,
                 "sensitivity_warning: float\n\nA constraint sketch warns when a small change of its dimensions can move its geometry more than this many "
                 "times as much.");
-    ConfigValue(cfg, "branch_check_min_length", config::branch_check_min_length,
+    ConfigValue(cfg, "auto_constraint", config::state->auto_constraint,
+                "auto_constraint: bool\n\nThe auto_constraint= of a new px.Sketch (and px.Move making one) when it is not given: True finds the "
+                "relations of auto_constraint_options.");
+    cfg.def_property_static("auto_constraint_options", [](py::object) { return AutoConstraintDict(config::state->auto_constraint_options); },
+                            [](py::object, const py::object &v) {
+                                if (!py::isinstance<py::dict>(v))
+                                    throw py::type_error("config.auto_constraint_options: a dict of relations, True or False each, not " +
+                                                         py::repr(v).cast<std::string>());
+                                config::state->auto_constraint_options =
+                                    AutoConstraintOptions(v.cast<py::dict>(), config::state->auto_constraint_options, "config.auto_constraint_options");
+                            },
+                            "auto_constraint_options: dict\n\nThe relations auto_constraint=True finds where they hold to rounding, each True or False: "
+                            "coincident, tangent, concentric, point_on_curve (on by default), horizontal, vertical, perpendicular, parallel, "
+                            "equal_radius, equal_length, collinear (off), and named_helpers (on: the helpers a call names become their "
+                            "constraints). Set as a dict, which changes only the relations it names.");
+    ConfigValue(cfg, "branch_check_min_length", config::state->branch_check_min_length,
                 "branch_check_min_length: float\n\nA line of a constraint sketch shorter than this times the sketch's size has no direction for the branch "
                 "check (the check that no line or arc turns round in a solve).");
 

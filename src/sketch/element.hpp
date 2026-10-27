@@ -47,6 +47,9 @@ namespace planex2d::sketch {
         size_t AxisDistance() const { return p[1]; }
         size_t Step() const { return p[0]; }
         bool IsLinear() const { return p[1] != 0; }
+        // a pattern's step along its second direction, none for a pattern of one direction
+        size_t Step2() const { return p[2]; }
+        bool HasStep2() const { return p[2] != none; }
         size_t Distance() const { return p[0]; }
         size_t SplineIndex() const { return p[0]; }
         // 0: the whole spline, else 1 + its index among the pieces
@@ -59,6 +62,9 @@ namespace planex2d::sketch {
         void SetPieceIndex(size_t piece) { p[1] = piece; }
 
         size_t Spline(const Geometry &g) const;
+        // its kind as the ids and sk.elements name it: a fitted spline is a Curve
+        std::string KindName(const Geometry &g) const;
+        bool IsFitted(const Geometry &g) const;
         const SplinePiece *Piece(const Geometry &g) const;
         bool IsPiece(const Geometry &g) const { return Piece(g) != nullptr; }
         std::array<size_t, 2> Ends(const Geometry &g) const;
@@ -77,8 +83,10 @@ namespace planex2d::sketch {
         // where x lies along a line (0 at its start, 1 at its end), an arc (in its direction) or a circle (a turn from h)
         double Param(const Geometry &g, const Vertex &x) const;
         Vertex At(const Geometry &g, double t) const;
-        // a line's direction, an arc's or circle's radius at the point turned left
+        // a line's direction, an arc's or circle's radius at the point turned left, a spline's derivative there
         Vertex DirectionAt(const Geometry &g, size_t point) const;
+        // signed along DirectionAt, a left turn positive
+        double CurvatureAt(const Geometry &g, size_t point) const;
         Vertex Origin(const Geometry &g) const;
 
         // a spline's interpolation; an offset curve's is that of its spline
@@ -105,6 +113,8 @@ namespace planex2d::sketch {
         std::vector<PrimitiveEdge> OffsetCurveArcs(const Geometry &g, double *tolerance = nullptr) const;
 
     private:
+        // where one of a spline's points lies along its spline f: a piece's end, or a point it runs through
+        double SplineParamAt(const Geometry &g, const planex2d::Curve<double, Vertex> &f, size_t point) const;
         static void AddPointValues(const Geometry &g, size_t point, std::vector<size_t> &out);
         static void AddUsed(std::array<size_t, 2> ends, std::vector<size_t> &out);
         template <ElementKind K> void AddValues(const Geometry &g, std::vector<size_t> &out) const;

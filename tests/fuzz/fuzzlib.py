@@ -92,7 +92,7 @@ def build(spec):
     kind, star, extra = spec
     cx, cy, rot, radii, gaps, scale = star
     if kind == "disc":
-        return px.QuickSketch().Circle(cx, cy, scale * (0.3 + extra)).Face()
+        return px.QuickSketch().Circle((cx, cy), scale * (0.3 + extra)).Face()
     if kind == "spline":
         smooth = (cx, cy, rot, tuple(0.75 + 0.25 * r for r in radii), tuple(0.6 + 0.4 * g for g in gaps), scale)
         points = star_points(smooth)
@@ -468,8 +468,8 @@ def sketch_of(family):
         sk.Line(0.2, 2, px.Perpendicular, id="right").Line(-4, 0.1, px.Perpendicular, id="top")
         sk.Close(px.Perpendicular, id="left")
         sk.Constrain("bottom", px.Distance, 4, id="w")
-        sk.Constrain("bottom.start", "top", px.Distance, 2, id="h")
-        return sk, ("w", "h")
+        sk.Constrain("bottom.start", "top", px.Distance, 2, id="ht")
+        return sk, ("w", "ht")
     if family == "bend":
         sk.Move((0, 0), px.Fix).Line(2, 0, px.Horizontal, id="a").Arc(1, 90, px.Tangent, id="b") \
             .Line(1.5, px.Tangent, id="c")
@@ -539,7 +539,7 @@ def check_sketch(spec):
     if family == "rectangle":
         near(length("bottom"), value["w"], tol, "w")
         (px0, py0), (tx, ty), (dx, dy) = sk.Location("bottom.start"), sk.Location("top.start"), direction("top")
-        near(abs(dx * (py0 - ty) - dy * (px0 - tx)) / math.hypot(dx, dy), value["h"], tol, "h")
+        near(abs(dx * (py0 - ty) - dy * (px0 - tx)) / math.hypot(dx, dy), value["ht"], tol, "ht")
         off = turn((1, 0), direction("bottom")) % 180
         near(min(off, 180 - off), 0, turn_tol, "horizontal")
         for p, q in (("bottom", "right"), ("right", "top"), ("top", "left"), ("left", "bottom")):

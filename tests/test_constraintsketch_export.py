@@ -39,7 +39,7 @@ def test_wires_are_the_chains_that_hang_together():
     sk = px.Sketch()
     sk.Move((0, 0)).Line(1, 0).Line(0, 1)
     sk.Move((3, 0)).Line(1, 0)
-    sk.Circle(5, 5, 1)
+    sk.Circle((5, 5), 1)
     assert [len(w.edges) for w in sk.Wires()] == [2, 1, 1]
     with pytest.raises(ValueError, match=r"Wire\(\): the drawn edges form 3 wires; sk.Wires\(\) returns them as a list"):
         sk.Wire()
@@ -49,13 +49,13 @@ def test_wires_are_the_chains_that_hang_together():
 
 def link():
     sk = px.Sketch()
-    sk.Circle(0, 0, 1.5, id="boss1", construction=True)
-    sk.Circle(6, 0, 1.0, id="boss2", construction=True)
+    sk.Circle((0, 0), 1.5, id="boss1", construction=True)
+    sk.Circle((6, 0), 1.0, id="boss2", construction=True)
     sk.Line(tangent=("boss1", "boss2"), id="upper")
     sk.Line(tangent=("boss1", "boss2"), reverse=True, id="lower")
-    sk.Arc("lower", "upper", congruent="boss2", id="end2")
-    sk.Arc("upper", "lower", congruent="boss1", id="end1")
-    sk.Circle(0, 0, 0.6, id="hole1").Circle(6, 0, 0.4, id="hole2")
+    sk.Arc("lower", "upper", coincident="boss2", id="end2")
+    sk.Arc("upper", "lower", coincident="boss1", id="end1")
+    sk.Circle((0, 0), 0.6, id="hole1").Circle((6, 0), 0.4, id="hole2")
     return sk
 
 

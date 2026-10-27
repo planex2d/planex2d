@@ -284,3 +284,46 @@ def test_a_nearly_dependent_constraint_counts_by_rank_tol(delta, rank):
     result = analyze([0.1, 0.2, 0.3], constraints)
     assert result["rank"] == rank
     assert result["redundant"] == [rank == 2] * 3
+
+
+@pytest.mark.constraints
+def test_a_coincidence_given_twice_is_redundant():
+    sk = px.Sketch()
+    sk.Move((0, 0)).Line((10, 0), id="a")
+    sk.Constrain("a.start", "origin", px.Coincident)
+    with pytest.warns(px.PlanexWarning, match=r"Coincident\.2 .* is redundant \(consistent\)"):
+        sk.Constrain("a.start", "origin", px.Coincident)
+    assert sk.redundant == ["Coincident.2"]
+
+
+@pytest.mark.constraints
+def test_a_rough_outline_moved_far_by_its_constraints_does_not_fold():
+    front = px.Plane(normal=(0, -1, 0))
+    sk = px.Sketch(front)
+    sk.Line(140, id="bottom")
+    sk.Turn(90).Line(16, id="right_end")
+    sk.Turn(90).Line(40, id="right_shoulder")
+    sk.Turn(-90).Line(35, id="right_side")
+    sk.Arc(30, 180, id="crown")
+    sk.Line(35, id="left_side")
+    sk.Turn(-90).Line(40, id="left_shoulder")
+    sk.Close(id="left_end")
+    sk.Circle(20, concentric="crown", id="bore")
+    sk.Constrain("bottom.mid", "origin", px.Coincident)
+    sk.Constrain("bottom", px.Distance, 140, id="length")
+    sk.Constrain("right_end", px.Distance, 16, id="base")
+    sk.Constrain("bore.center", "bottom", px.Distance, 50, id="center_height")
+    sk.Constrain("bore", px.Diameter, 40, id="bore_d")
+    sk.Constrain("crown", px.Radius, 30, id="crown_r")
+    sk.Constrain("bore", "crown", px.Concentric)
+    sk.Constrain("crown", "right_side", px.Tangent)
+    sk.Constrain("crown", "left_side", px.Tangent)
+    sk.Constrain("left_side", "right_side", "V", px.SymmetricCarriers)
+    sk.Constrain("left_end", "right_end", "V", px.Symmetric)
+    sk.Constrain("right_side", px.Vertical)
+    sk.Constrain("right_end", px.Vertical)
+    sk.Constrain("right_shoulder", px.Horizontal)
+    sk.Constrain("left_shoulder", px.Horizontal)
+    assert sk.status == "full"
+    area = 140 * 16 + 60 * 34 + math.pi * 30**2 / 2 - math.pi * 20**2
+    assert sk.Face().mass == pytest.approx(area, abs=1e-6)

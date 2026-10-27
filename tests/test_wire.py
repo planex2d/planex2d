@@ -98,7 +98,7 @@ def test_edge_factories_return_one_edge_wires():
     assert all(v.p.z == pytest.approx(2) for v in a.ToOCCWire().vertices)
     s = px.Spline([(0, 0), (1, 1), (2, 0)])
     assert len(s.edges) == 1 and isinstance(s.edges[0].edge, px.SplineEdge)
-    assert len(px.Spline([(0, 0), (1, 1), (2, 0), (1, -1)], periodic=True).edges) == 2
+    assert len(px.Spline([(0, 0), (1, 1), (2, 0), (1, -1)], periodic=True).edges) == 1
     assert px.LineEdge((0, 0), (1, 0)).start == px.Vertex((0, 0))
 
 

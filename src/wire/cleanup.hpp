@@ -44,7 +44,7 @@ namespace planex2d {
                 continue;
             std::vector<size_t> near;
             grid.ForNear(pts[k], [&](size_t j) {
-                if (j / 2 != k / 2 && !std::holds_alternative<Circle>(edges[j / 2]) && pts[j].IsClose(pts[k], tol))
+                if (j / 2 != k / 2 && !IsClosedEdge(edges[j / 2]) && pts[j].IsClose(pts[k], tol))
                     near.push_back(j);
             });
             for (size_t j : near)
@@ -325,7 +325,7 @@ namespace planex2d {
             moveAll(b, m);
         }
         for (size_t i = 0; i < n; ++i)
-            if (!removed[i] && !std::holds_alternative<Circle>(edges[i]) && pts[2 * i] == pts[2 * i + 1]) {
+            if (!removed[i] && !IsClosedEdge(edges[i]) && pts[2 * i] == pts[2 * i + 1]) {
                 Warning() << "edge collapsed to a point at (" << pts[2 * i].x << ", " << pts[2 * i].y << ")";
                 removed[i] = true;
             }

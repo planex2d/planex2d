@@ -12,7 +12,7 @@ from helpers import point, square
 def references():
     """a construction wall at x = 5 and a construction circle around (5, 0) with radius 1"""
     s = px.Move((5, -1)).Line((5, 5), id="wall", construction=True)
-    return s.Circle(5, 0, 1, id="c", construction=True).Move((0, 0))
+    return s.Circle((5, 0), 1, id="c", construction=True).Move((0, 0))
 
 
 def ends(sketch):
@@ -99,11 +99,11 @@ def test_perpendicular_and_angle():
 
 def test_congruent_extends_an_edge():
     s = references().Line((2, 0), id="a")
-    s.Move(s.Edge("a").edges[0].end).Line("wall", congruent="a", id="ext")
+    s.Move(s.Wire("a").edges[0].end).Line("wall", coincident="a", id="ext")
     assert ends(s) == [((0, 0), (5, 0))]
-    e = s.Edge("ext").edges[0]
+    e = s.Wire("ext").edges[0]
     assert (point(e.start), point(e.end)) == ((2, 0), (5, 0))
-    s = references().Line((2, 0), id="a").Move((3, 2)).Line("wall", congruent="a")
+    s = references().Line((2, 0), id="a").Move((3, 2)).Line("wall", coincident="a")
     assert ends(s)[-1] == ((3, 0), (5, 0))
 
 
@@ -125,9 +125,10 @@ def test_tangent_to_a_circle():
 def test_tangent_to_a_spline():
     s = px.Move((0, 2)).Spline([(1, 1), (2, 0.8), (3, 1.2), (4, 2)], id="curve", construction=True).Move((2, -1))
     t = s.Line(tangent=("curve", (1.5, 0.8))).pen.position
-    curve = s.Edge("curve").edges[0].edge
+    curve = s.Wire("curve").edges[0].edge
     d = s.pen.direction
-    tangent = curve.Tangent(t)
+    # the line touches the spline's approximation: its tangent there, not the exact curve's
+    tangent = next(x for x in (q.Tangent(t) for q in curve.approximation) if (x.x, x.y) != (0, 0))
     assert abs(d[0] * tangent.y - d[1] * tangent.x) < 1e-5
 
 
@@ -135,12 +136,12 @@ def test_errors_name_the_call():
     s = references()
     with pytest.raises(ValueError, match=r"Line\(2.0, until='wall'\): give the end once: a length, a positional to or until="):
         s.Line(2, until="wall")
-    with pytest.raises(TypeError, match=r"Line\(to=...\): the ends are positional: Line\(from, to, ...\), or Line\(to, ...\)"):
+    with pytest.raises(TypeError, match=r"Line\(to=...\): the ends are positional: Line\(start, end, ...\), or Line\(to, ...\)"):
         s.Line(to="wall")
     with pytest.raises(TypeError, match="Line: Line"):
         s.Line("wall", 2)
     with pytest.raises(ValueError, match=r"Line\('wall'\): an element as an end needs what fixes the line: through=, "
-                                         r"parallel=, perpendicular=, angle=, congruent= or tangent=; until=<target>"):
+                                         r"parallel=, perpendicular=, angle=, coincident= or tangent=; until=<target>"):
         s.Line("wall")
     with pytest.raises(ValueError, match="until= picks among the intersections with an element as the end, a point has none; "
                                          "through="):

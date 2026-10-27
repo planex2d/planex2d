@@ -21,8 +21,10 @@
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRep_Builder.hxx>
+#include <BRep_Tool.hxx>
 #include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Precision.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
@@ -48,12 +50,10 @@
 
 namespace planex2d {
 
-    // where a prism ends instead of after a length: the first or last face of the target it crosses, or a plane, which
-    // holds the prism's end inside the faces (none: anywhere on the plane)
+    // where a prism ends instead of after a length: the first or last face of the target it crosses, or a plane
     struct PrismEnd {
         Until reach = Until::No;
         std::optional<gp_Pln> plane;
-        std::vector<TopoDS_Face> faces;
 
         bool IsGiven() const { return reach != Until::No || plane; }
     };
@@ -71,6 +71,8 @@ namespace planex2d {
         std::optional<double> length;
         double length2 = 0.0;
         PrismEnd until;
+        // with until: the end this far from the plane along its normal, past it if positive
+        double offset = 0.0;
         TopoDS_Shape target;
 
         gp_Vec Along(double d) const { return gp_Vec(dir).Multiplied(d); }
@@ -84,6 +86,11 @@ namespace planex2d {
                                             " and " + std::to_string(length2));
             if (!until.IsGiven() && first + length2 <= 0.0)
                 throw std::invalid_argument(call + ": give a length or until=, e.g. " + call + "(..., 3)");
+            if (!std::isfinite(offset))
+                throw std::invalid_argument(call + "(offset=): the offset is finite, got " + std::to_string(offset));
+            if (offset != 0.0 && !until.IsGiven())
+                throw std::invalid_argument(call + "(offset=): offset= moves the end given by until=; with a length, give the "
+                                                   "length it adds up to");
             if (target.IsNull() && until.reach != Until::No)
                 throw std::invalid_argument(call + "(until=px." + (until.reach == Until::First ? "first" : "last") +
                                             "): a Pad has no target to reach; until= is a px.Plane, a flat face or a planex object "
@@ -144,12 +151,6 @@ namespace planex2d {
         return box;
     }
 
-    inline double AreaOf(const TopoDS_Shape &s) {
-        GProp_GProps props;
-        BRepGProp::SurfaceProperties(s, props);
-        return props.Mass();
-    }
-
     inline double VolumeOf(const TopoDS_Shape &s) {
         GProp_GProps props;
         BRepGProp::VolumeProperties(s, props);
@@ -189,27 +190,6 @@ namespace planex2d {
         return solid;
     }
 
-    inline void CheckLanding(const std::vector<TopoDS_Shape> &landing, const std::vector<TopoDS_Face> &holding, const std::string &what,
-                             const std::string &call) {
-        if (holding.empty())
-            return;
-        TopTools_ListOfShape ends, faces;
-        double area = 0.0;
-        for (const TopoDS_Shape &s : landing) {
-            ends.Append(s);
-            area += AreaOf(s);
-        }
-        for (const TopoDS_Face &f : holding)
-            faces.Append(f);
-        BRepAlgoAPI_Common inside;
-        inside.SetArguments(ends);
-        inside.SetTools(faces);
-        inside.Build();
-        if (AreaOf(inside.Shape()) < area * (1.0 - 1e-6))
-            throw std::invalid_argument(call + "(until=): the profile does not land fully on " + what +
-                                        "; its end must lie inside it, give a larger face or a px.Plane");
-    }
-
     // a box on the far side of the plane, as wide as the prism's reach: it takes the prism's far end off
     struct FarSide {
         TopoDS_Shape box;
@@ -230,21 +210,17 @@ namespace planex2d {
     }
 
     // the prism cut at the plane; its end there is a cap
-    inline TopoDS_Solid CutAtPlane(const TopoDS_Solid &prism, const gp_Pln &plane, const std::vector<TopoDS_Face> &holding,
-                                   const std::string &what, const Profile &profile, const PrismCall &c) {
+    inline TopoDS_Solid CutAtPlane(const TopoDS_Solid &prism, const gp_Pln &plane, const Profile &profile, const PrismCall &c) {
         const gp_Dir n = plane.Axis().Direction();
         const FarSide far = BeyondPlane(prism, plane, c.dir.Dot(n) > 0.0 ? n : n.Reversed());
         BRepAlgoAPI_Cut cut(prism, far.box);
         if (!cut.IsDone() || cut.HasErrors())
             throw std::runtime_error(c.call + "(until=): OCC could not cut the prism at the plane");
         PropagateProperties(cut, prism);
-        std::vector<TopoDS_Shape> landing;
-        for (const TopoDS_Shape &s : cut.Modified(far.bottom))
-            landing.push_back(s);
-        if (landing.empty())
+        const TopTools_ListOfShape &end = cut.Modified(far.bottom);
+        if (end.IsEmpty())
             throw std::runtime_error(c.call + "(until=): OCC gave no end face at the plane");
-        CheckLanding(landing, holding, what, c.call);
-        for (const TopoDS_Shape &s : landing)
+        for (const TopoDS_Shape &s : end)
             netgen::OCCGeometry::GetProperties(s) = CapProperties(profile.props);
         return OneSolid(cut.Shape(), c.call);
     }
@@ -278,6 +254,21 @@ namespace planex2d {
 
     inline std::string Describe(int index) { return "face " + std::to_string(index) + " of the target"; }
 
+    // a face along dir (a side wall, a bore) is no end, the prism runs past it: its normal at the point nearest p is square
+    // to dir
+    inline bool RunsAlong(const TopoDS_Face &face, const gp_Pnt &p, const gp_Dir &dir) {
+        GeomAPI_ProjectPointOnSurf nearest(p, BRep_Tool::Surface(face));
+        if (nearest.NbPoints() == 0)
+            return false;
+        double u, v;
+        nearest.LowerDistanceParameters(u, v);
+        gp_Pnt at;
+        gp_Vec du, dv;
+        BRepAdaptor_Surface(face).D1(u, v, at, du, dv);
+        const gp_Vec n = du.Crossed(dv);
+        return n.Magnitude() > 0.0 && std::abs(n.Normalized().Dot(gp_Vec(dir))) <= 1e-9;
+    }
+
     // the face of the target the long prism crosses first or last ahead of the profile, by its height over the profile's plane
     inline int ReachedFace(const TopoDS_Solid &prism, const Profile &profile, const PrismCall &c, TopTools_IndexedMapOfShape &faces) {
         TopExp::MapShapes(c.target, TopAbs_FACE, faces);
@@ -291,7 +282,7 @@ namespace planex2d {
             BRepAlgoAPI_Common piece(faces(k), prism);
             GProp_GProps props;
             BRepGProp::SurfaceProperties(piece.Shape(), props);
-            if (props.Mass() <= 1e-9 * from.Mass())
+            if (props.Mass() <= 1e-9 * from.Mass() || RunsAlong(TopoDS::Face(faces(k)), props.CentreOfMass(), c.dir))
                 continue;
             const double height = sign * gp_Vec(from.CentreOfMass(), props.CentreOfMass()).Dot(gp_Vec(c.normal));
             if (height <= Precision::Confusion() || (found && (first ? height >= best : height <= best)))
@@ -305,10 +296,27 @@ namespace planex2d {
         return found;
     }
 
-    inline TopoDS_Solid EndedAtPlane(const Profile &profile, const PrismCall &c) {
-        const double travel = TravelTo(*c.until.plane, profile, c);
+    // the prism up to the plane moved by c.offset along its normal, away from the profile if positive
+    inline TopoDS_Solid EndedAt(const gp_Pln &plane, const Profile &profile, const PrismCall &c) {
+        gp_Dir beyond = plane.Axis().Direction();
+        if (c.dir.Dot(beyond) < 0.0)
+            beyond.Reverse();
+        const gp_Pln end = plane.Translated(gp_Vec(beyond).Multiplied(c.offset));
+        double travel;
+        try {
+            travel = TravelTo(end, profile, c);
+        } catch (const std::invalid_argument &) {
+            if (c.offset == 0.0)
+                throw;
+            throw std::invalid_argument(c.call + "(until=, offset=" + std::to_string(c.offset) + "): the end offset from the "
+                                                 "plane does not lie ahead of the whole profile along dir; give a smaller offset");
+        }
         const TopoDS_Solid prism = Swept(profile, c.Along(c.length2), c.Along(2.0 * travel));
-        return CutAtPlane(prism, *c.until.plane, c.until.faces, "the face or object it is given", profile, c);
+        return CutAtPlane(prism, end, profile, c);
+    }
+
+    inline TopoDS_Solid EndedAtPlane(const Profile &profile, const PrismCall &c) {
+        return EndedAt(*c.until.plane, profile, c);
     }
 
     inline TopoDS_Solid EndedAtReachedFace(const Profile &profile, const PrismCall &c) {
@@ -323,7 +331,7 @@ namespace planex2d {
                                         "a flat face instead");
         const gp_Pln plane = surface.Plane();
         TravelTo(plane, profile, c);
-        return CutAtPlane(prism, plane, {hit}, "the " + Describe(k), profile, c);
+        return EndedAt(plane, profile, c);
     }
 
     inline TopoDS_Solid PrismOf(const TopoDS_Face &face, const PrismCall &c) {

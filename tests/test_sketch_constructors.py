@@ -16,7 +16,7 @@ def top_of_box():
 
 
 def face_with_hole():
-    return px.QuickSketch().Rectangle(4, 3).Circle(2, 1.5, 0.5).Face()
+    return px.QuickSketch().Rectangle(4, 3).Circle((2, 1.5), 0.5).Face()
 
 
 @pytest.mark.parametrize("make", [px.QuickSketch, px.Sketch])
@@ -46,7 +46,7 @@ def test_copy_of_a_face_with_a_hole(make):
 
 
 def test_copy_of_a_face_with_auto_constraint():
-    drawn = px.QuickSketch().Rectangle(4, 3).Circle(2, 1.5, 0.5)
+    drawn = px.QuickSketch().Rectangle(4, 3).Circle((2, 1.5), 0.5)
     expected = px.Sketch(drawn, copy=True, auto_constraint=True)
     sk = px.Sketch(face_with_hole(), copy=True, auto_constraint=True)
     assert sk.redundant == []

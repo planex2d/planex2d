@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
-#include "integrations/netgenocc/identify.hpp"
+#include "shape/identification.hpp"
 
 static Affine2 AffineOf(const std::array<std::array<double, 2>, 2> &m, const std::array<double, 2> &v) {
     return {{m[0][0], m[0][1], m[1][0], m[1][1]}, {v[0], v[1]}};
 }
 
-// None, a Transformation (px.Translation, px.Rotation, ...), or (matrix 2x2, vector 2)
+// px.Auto (none: found at every export), a Transformation (px.Translation, px.Rotation, ...), or (matrix 2x2, vector 2)
 static std::optional<Affine2> TrafoArg(const py::object &t, const std::string &call) {
-    if (t.is_none())
+    if (IsPlainAuto(t, call, "trafo"))
         return std::nullopt;
     if (py::isinstance<Affine2>(t))
         return t.cast<Affine2>();
@@ -95,7 +95,7 @@ static py::dict IdsDict(const Identifications &ids) {
     const py::object types = py::module_::import("netgen.meshing").attr("IdentificationType");
     py::dict d;
     for (const Identification &i : ids)
-        d[py::str(i.name)] = py::make_tuple(i.from, i.to, i.trafo ? py::cast(*i.trafo) : py::none(), types(i.type));
+        d[py::str(i.name)] = py::make_tuple(i.from, i.to, i.trafo ? py::cast(*i.trafo) : PlainAuto(), types(i.type));
     return d;
 }
 
@@ -106,9 +106,9 @@ static void BindIdentifications(py::module_ &m, const char *cls) {
     AddMethod(m, cls, "Identify", [](T &x, const std::string &a, const std::string &b, const py::object &trafo,
                                      const std::optional<std::string> &name, const py::object &type) -> T & {
         return IdentifyOn(x, a, b, trafo, name, type);
-    }, py::arg("a"), py::arg("b"), py::pos_only(), py::arg("trafo") = py::none(), py::kw_only(), py::arg("name") = py::none(),
+    }, py::arg("a"), py::arg("b"), py::pos_only(), py::arg("trafo") = PlainAuto(), py::kw_only(), py::arg("name") = py::none(),
               py::arg("type") = py::none(), ref,
-              Doc("Identify(a: str, b: str, /, trafo: Transformation | tuple | None = None, *, name: str | None = None, "
+              Doc("Identify(a: str, b: str, /, trafo: Transformation | tuple | Auto = px.Auto, *, name: str | None = None, "
                   "type: IdentificationType | None = None) -> " + std::string(cls) + "\n\n"
                   "Identifies the edges named a with those named b for the mesh: b's mesh is copied from a's (netgen's "
                   "Identify).\n\n"
@@ -119,7 +119,7 @@ static void BindIdentifications(py::module_ &m, const char *cls) {
                   "    a: the name of the edges mapped onto b.\n"
                   "    b: the name of the edges that get a's mesh.\n"
                   "    trafo: the map of a onto b in the plane's coordinates: a Transformation (px.Translation, "
-                  "px.Rotation) or (matrix 2x2, vector 2); None finds it from the geometry at every export "
+                  "px.Rotation) or (matrix 2x2, vector 2); px.Auto finds it from the geometry at every export "
                   "(px.GetTransformation), so it follows later changes.\n"
                   "    name: the identification's name; default 'a-b'; an identification of the same name is replaced.\n"
                   "    type: a netgen.meshing.IdentificationType; None: PERIODIC.\n\n"
@@ -148,7 +148,7 @@ static void BindIdentifications(py::module_ &m, const char *cls) {
     py::setattr(c, "identifications",
                 py::module_::import("builtins").attr("property")(
                     py::cpp_function([](const T &x) { return IdsDict(x.Ids()); }, py::is_method(c)), py::none(), py::none(),
-                    "identifications: dict\n\nThe identifications as a dict {name: (a, b, trafo or None, type)}."));
+                    "identifications: dict\n\nThe identifications as a dict {name: (a, b, trafo or px.Auto, type)}."));
 }
 
 void BindIdentify(py::module_ &m) {
@@ -207,7 +207,7 @@ void BindIdentify(py::module_ &m) {
           "The turn by angle counterclockwise about center in the plane.\n\n"
           "Args:\n"
           "    angle: the angle in degrees.\n"
-          "    center: the centre (h, v).\n\n"
+          "    center: the center (h, v).\n\n"
           "Examples:\n"
           "    px.Rotation(90)\n"
           "    px.Rotation(45, center=(5, 0))");

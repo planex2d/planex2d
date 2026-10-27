@@ -21,6 +21,7 @@
 #include "curves/circle.hpp"
 #include "curves/line.hpp"
 #include "curves/spline.hpp"
+#include "integrations/netgenocc/occspline.hpp"
 
 namespace planex2d {
 
@@ -44,7 +45,7 @@ namespace planex2d {
     }
 
     inline TopoDS_Edge ToOCC(const Spline &s, const TopoDS_Vertex &vs, const TopoDS_Vertex &ve) {
-        return BRepBuilderAPI_MakeEdge(GeomAPI::To3d(s.Segment(), gp_Pln(gp::XOY())), vs, ve).Edge();
+        return BRepBuilderAPI_MakeEdge(GeomAPI::To3d(OccCurveOf(s.Segment()), gp_Pln(gp::XOY())), vs, ve).Edge();
     }
 
 }

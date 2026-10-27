@@ -33,7 +33,7 @@ def test_the_boundary_counts_as_inside():
 
 
 def test_an_arc_against_a_disc():
-    disc = px.QuickSketch().Circle(0, 0, 1).Face()
+    disc = px.QuickSketch().Circle((0, 0), 1).Face()
     assert len((px.Arc((-2, 0), (2, 0), (0, 0)) * disc).edges) == 0
     line = px.Line((-2, 0.5), (2, 0.5))
     assert sum(lengths(line * disc)) == pytest.approx(2 * math.sqrt(0.75), rel=1e-12)

@@ -10,6 +10,7 @@
 #include <initializer_list>
 #include <limits>
 #include <numbers>
+#include <span>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -17,6 +18,8 @@
 
 #include "core/config.hpp"
 #include "core/vertex.hpp"
+#include "core/grid.hpp"
+#include "core/bbox.hpp"
 #include "curves/edge.hpp"
 #include "curves/line.hpp"
 #include "curves/arc.hpp"
@@ -75,13 +78,17 @@ namespace planex2d {
     }
 
     // via the foot of the center: a quadratic in the line parameter loses precision with the line length
+    // the foot from the center: from a line's far start it rounds at the line's length, from the center at the arc's
+    // scale (exact where the line's direction is, as an axis-parallel line's)
     inline Points Candidates(const Line &a, const Arc &b, double tol) {
         Points c;
         Vertex r = a.End() - a.Start();
         Vertex u = r / Norm(r);
+        const Vertex n{-u.y, u.x};
         Vertex sc = b.Center() - a.Start();
-        Vertex f = a.Start() + u * Dot(sc, u);
-        double h = std::abs(Cross(sc, u));
+        const double side = Dot(sc, n);
+        Vertex f = b.Center() - n * side;
+        double h = std::abs(side);
         double R = b.Radius();
         AddEndpointsOn(b, a, tol, c);
         AddEndpointsOn(a, b, tol, c);
@@ -242,7 +249,7 @@ namespace planex2d {
     // of the angle they cross at
     template <class A, class B>
     double CrossingUncertainty(const A &a, const B &b, const Vertex &x, double tol) {
-        return tol / config::k / std::abs(Cross(a.template Tangent<false>(x), b.template Tangent<false>(x)));
+        return tol / config::state->k / std::abs(Cross(a.template Tangent<false>(x), b.template Tangent<false>(x)));
     }
 
     // one of the first n points lies within d of x
@@ -368,7 +375,7 @@ namespace planex2d {
         const Vertex f = a.Start() + u * Dot(sc, u);
         const double h = std::abs(Cross(sc, u));
         const double R = b.Radius();
-        if (h >= R - tol / config::k) {
+        if (h >= R - tol / config::state->k) {
             if (h - R <= tol)
                 AddMeeting(d, a, b, {b.Center() + (f - b.Center()) * (R / h)}, nullptr, PairKind::Touch, tol);
             return d;
@@ -401,7 +408,7 @@ namespace planex2d {
         const double inner = std::abs(ra - rb) - dd;
         // tangent where the distance equals the sum or difference of the radii within its own rounding (tol without k);
         // circles apart by up to tol touch on the arc of the smaller scale, the other takes the gap
-        const double rounding = tol / config::k;
+        const double rounding = tol / config::state->k;
         if (outer >= -rounding || inner >= -rounding) {
             if (std::max(outer, inner) > tol)
                 return d;
@@ -452,12 +459,15 @@ namespace planex2d {
         std::vector<Identified> identified;
     };
 
-    // a part's point on the whole edge: a spline's parts meet inside it
+    // a part's point on the whole edge: a spline's parts meet inside it, a closed spline's seam is inside it too (it has
+    // no vertex, as a circle)
     template <class E>
     Location OnEdge(const E &e, const Vertex &x, Location part, double tol) {
         if constexpr (std::is_same_v<E, Spline>) {
             if (part == Location::Off)
                 return Location::Off;
+            if (e.IsClosed())
+                return Location::Inside;
             if (x.IsClose(e.Start(), tol))
                 return Location::AtStart;
             if (x.IsClose(e.End(), tol))
@@ -477,6 +487,9 @@ namespace planex2d {
             return e.Param(e.End());
         if constexpr (std::is_same_v<E, Spline>) {
             splitTol = std::max(splitTol, 2.0 * part.CarrierDistance(x));
+            // a closed spline's seam: its end where the part is the last one, so that a stretch on it does not wrap round
+            if (e.IsClosed() && x.IsClose(e.Start(), splitTol))
+                return x.IsClose(part.End(), splitTol) && !x.IsClose(part.Start(), splitTol) ? (double)e.Approximation().size() : 0.0;
             return e.Param(x, splitTol);
         } else {
             return e.Param(x);
@@ -575,19 +588,19 @@ namespace planex2d {
             for (const PointOnCurve &x : pts) {
                 Vertex at = e.Start();
                 double nearest = Norm(e.Start() - x.p);
-                bool inner = false;
-                auto consider = [&](const Vertex &v, bool isInner) {
+                auto consider = [&](const Vertex &v) {
                     const double d = Norm(v - x.p);
                     if (d < nearest) {
                         nearest = d;
                         at = v;
-                        inner = isInner;
                     }
                 };
-                consider(e.End(), false);
+                consider(e.End());
                 for (size_t k = 0; k + 1 < pieces.size(); ++k)
-                    consider(pieces[k].End(), true);
-                if (inner && at != x.p)
+                    consider(pieces[k].End());
+                // Split takes a point onto a vertex it has within the spline's own tolerance, which can exceed the pair's:
+                // an end of the spline too (the seam of a closed one's halves), and the other edge's pieces end there
+                if (at != x.p)
                     rec.identified.push_back({at, x.p});
             }
         }
@@ -646,6 +659,29 @@ namespace planex2d {
         return CutResult::Congruent;
     }
 
+    // f(pa, pb) for the parts of a and b, in the order of a's parts, then b's; two splines pass only the pairs whose boxes
+    // may come within tol, found in a grid of b's pieces, not every pair
+    template <class A, class B, class F>
+    void ForPartPairs(const A &a, const B &b, double tol, F f) {
+        if constexpr (std::is_same_v<A, Spline> && std::is_same_v<B, Spline>) {
+            const std::span<const PrimitiveEdge> pb = b.Approximation();
+            std::vector<BBox> boxes;
+            for (const PrimitiveEdge &p : pb)
+                boxes.push_back(BoxOf(p));
+            Grid grid = Grid::OfBoxes(boxes);
+            std::vector<uint32_t> near;
+            for (const PrimitiveEdge &p : a.Approximation()) {
+                near.clear();
+                grid.InBox(BoxOf(p).Grown(2.0 * tol), near);
+                std::sort(near.begin(), near.end());
+                for (uint32_t j : near)
+                    std::visit([&](const auto &x, const auto &y) { f(x, y); }, p, pb[j]);
+            }
+        } else {
+            ForEachPart(a, [&](const auto &pa) { ForEachPart(b, [&](const auto &pb) { f(pa, pb); }); });
+        }
+    }
+
     // minTol: the tolerance the caller snaps with afterwards; what it will merge must already count as common here.
     // rec: collects the pair decisions (identified vertices, events) for the caller
     template <class A, class B>
@@ -701,7 +737,7 @@ namespace planex2d {
                 }
             }
         };
-        ForEachPart(a, [&](const auto &pa) { ForEachPart(b, [&](const auto &pb) { decided(pa, pb); }); });
+        ForPartPairs(a, b, tol, decided);
 
         if (oa.Empty()) {
             if (sa.IsEmpty() && sb.IsEmpty())

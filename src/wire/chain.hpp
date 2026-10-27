@@ -320,28 +320,33 @@ namespace planex2d {
     // that ends where it starts), ends within tol joined, then cut against each
     // other (crossings, T-junctions, an overlapping stretch kept once, ends within rounding snapped), then the chains;
     // nothing is merged
+    // e added to c; a spline crossing itself split there, a loop it closes in two (the core takes no edge that ends where
+    // it starts)
+    inline void AddUncrossed(Wire &c, const Edge &e) {
+        if (const Spline *s = std::get_if<Spline>(&e)) {
+            std::vector<std::pair<size_t, Vertex>> at = SelfCrossings(*s);
+            if (!at.empty()) {
+                for (Spline &piece : s->SplitAt(std::move(at), 0.0)) {
+                    if (!(piece.Start() == piece.End())) {
+                        c.Add(std::move(piece));
+                        continue;
+                    }
+                    const std::span<const PrimitiveEdge> ap = piece.Approximation();
+                    SplitPoints mid;
+                    mid.Add(0.0, ap[ap.size() / 2 - 1].End());
+                    for (Spline &half : piece.Split(mid, 0.0))
+                        c.Add(std::move(half));
+                }
+                return;
+            }
+        }
+        c.Add(e);
+    }
+
     inline WireList WiresOf(const EdgeList &edges, const AxisSystem &axes, std::optional<double> tol) {
         Wire c(axes);
-        for (const Edge &e : edges) {
-            if (const Spline *s = std::get_if<Spline>(&e)) {
-                std::vector<std::pair<size_t, Vertex>> at = SelfCrossings(*s);
-                if (!at.empty()) {
-                    for (Spline &piece : s->SplitAt(std::move(at), 0.0)) {
-                        if (!(piece.Start() == piece.End())) {
-                            c.Add(std::move(piece));
-                            continue;
-                        }
-                        const std::span<const PrimitiveEdge> ap = piece.Approximation();
-                        SplitPoints mid;
-                        mid.Add(0.0, ap[ap.size() / 2 - 1].End());
-                        for (Spline &half : piece.Split(mid, 0.0))
-                            c.Add(std::move(half));
-                    }
-                    continue;
-                }
-            }
-            c.Add(e);
-        }
+        for (const Edge &e : edges)
+            AddUncrossed(c, e);
         if (c.Empty())
             return {};
         if (tol)

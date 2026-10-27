@@ -18,7 +18,7 @@ def first_edge_ends(occ_wire):
 
 
 def rounded_rectangle(w, h, r, z):
-    sk = px.Sketch(px.XY.Offset(z))
+    sk = px.Sketch(px.Plane(px.XY, z))
     sk.Move((-w / 2 + r, -h / 2)).Line(w - 2 * r, 0, px.Horizontal, id="bottom")
     sk.Arc(r, 90, px.Tangent, id="a1")
     sk.Line(0, h - 2 * r, px.Vertical, px.Tangent, id="right")
@@ -33,7 +33,7 @@ def rounded_rectangle(w, h, r, z):
     for arc in ("a2", "a3", "a4"):
         sk.Constrain("a1", arc, px.Equal)
     sk.Constrain("left", "right", px.Distance, w, id="w")
-    sk.Constrain("bottom", "top", px.Distance, h, id="h")
+    sk.Constrain("bottom", "top", px.Distance, h, id="ht")
     sk.Constrain("bottom.mid", px.V, px.Coincident)
     sk.Constrain("left.mid", px.H, px.Coincident)
     return sk

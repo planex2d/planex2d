@@ -3,7 +3,7 @@
 
 """selecting elements: edges("Line.3"), edges(name="web")(kind="arc"), near=, Min/Max/Sorted, [(px.x > 5) & (px.h < 2)]
 
-An element's centre: of an arc or circle its circle's centre, of another edge its midpoint along it, of a face its
+An element's center: of an arc or circle its circle's center, of another edge its midpoint along it, of a face its
 centroid, of a vertex its point. h and v are coordinates in the object's plane, x, y and z in 3d.
 
 Points by id, as in the Sketch: Line.3.start and Line.3.end the vertices there, Line.3.mid (or .midpoint)
@@ -100,7 +100,7 @@ class SketchElement:
 
     @property
     def center(self) -> tuple[float, float, float]:
-        """The centre (x, y, z) the sketch's Measure gives for the element."""
+        """The center (x, y, z) the sketch's Measure gives for the element."""
         return tuple(self.sketch.Measure(self.local)["center"])
 
     def Measure(self, *args: Any, **kwargs: Any) -> dict:
@@ -131,15 +131,15 @@ class SketchElement:
         return as_target(self).Distance(target, *args, **kwargs)
 
     def Wire(self) -> Wire:
-        """The element's solved edges as a Wire of their own, as sk.Edge(id).
+        """The element's solved edges as a Wire of their own, as sk.Wire(id).
 
         Examples:
             sk("Line.3")[0].Wire()
         """
-        return self.sketch.Edge(self.local)
+        return self.sketch.Wire(self.local)
 
     def Copy(self) -> Wire:
-        """The element's solved edges as a Wire of their own, as sk.Edge(id).
+        """The element's solved edges as a Wire of their own, as sk.Wire(id).
 
         Examples:
             sk("Line.3")[0].Copy()
@@ -383,6 +383,11 @@ def _in_plane(c, plane):
 POINTS = ("start", "end", "mid", "midpoint", "center")
 
 
+def _closed(spline):
+    a, b = spline.start, spline.end
+    return (a.x, a.y) == (b.x, b.y)
+
+
 def _point_of(item, part):
     """the point part of an element names: a vertex at an edge's ends, else a Point; None where it names none"""
     id = item.id + "." + part
@@ -393,6 +398,9 @@ def _point_of(item, part):
         if part in ("start", "end"):
             if isinstance(item.edge, px.CircleEdge):
                 return item.edge.origin
+            # a closed spline is one edge without a vertex, as a circle
+            if isinstance(item.edge, px.SplineEdge) and _closed(item.edge):
+                return item.edge.start
             v = item._vertex(part == "end")
             if owner(item) is not None:
                 _OWNER[v] = owner(item)
@@ -449,7 +457,7 @@ def _plane(item):
 
 
 def _coords(item):
-    """the centre of an element as {h, v, x, y, z}"""
+    """the center of an element as {h, v, x, y, z}"""
     o, u, w = _plane(item)
     if isinstance(item, px.EdgeView):
         e = item.edge
@@ -476,10 +484,10 @@ def _kind(item):
 
 
 def _point(target):
-    """a point as (h, v) or (x, y, z): a point itself, else the centre of an element, selection or object"""
+    """a point as (h, v) or (x, y, z): a point itself, else the center of an element, selection or object"""
     if isinstance(target, Selection):
         if len(target) != 1:
-            raise ValueError("near=: a selection of %d elements has no single centre" % len(target))
+            raise ValueError("near=: a selection of %d elements has no single center" % len(target))
         target = target[0]
     if isinstance(target, (SketchPoint, Point)):
         return target._xyz()
@@ -492,7 +500,7 @@ def _point(target):
         return (target.x, target.y)
     c = target.center
     if c is None:
-        raise ValueError("near=: it is empty, it has no centre")
+        raise ValueError("near=: it is empty, it has no center")
     return tuple(c)
 
 
@@ -556,10 +564,10 @@ class Predicate:
 
 
 class Coordinate:
-    """A coordinate of an element's centre: px.x, px.y, px.z in 3d, px.h, px.v in its plane.
+    """A coordinate of an element's center: px.x, px.y, px.z in 3d, px.h, px.v in its plane.
 
     Compared with a number (<, <=, >, >=) it gives a Predicate; as the key of Min, Max and Sorted it orders by the
-    coordinate. The centre of an arc or circle is its circle's centre, of another edge its midpoint along it, of a
+    coordinate. The center of an arc or circle is its circle's center, of another edge its midpoint along it, of a
     face its centroid, of a vertex its point.
 
     Examples:
@@ -571,7 +579,7 @@ class Coordinate:
         self.name = name
 
     def of(self, item: Any) -> float:
-        """The coordinate of the element's centre.
+        """The coordinate of the element's center.
 
         Args:
             item: an element: an edge, face or vertex, or a sketch element.
@@ -723,7 +731,7 @@ class Selection:
             name: keeps the elements with this name; several joined by | ("web|flange").
             kind: keeps the elements of this kind: "line", "arc", "circle", "spline", "face", "vertex", "point";
                 several joined by | ("arc|circle").
-            near: near=point keeps the element whose centre is nearest to the point ((h, v), (x, y, z), an element or
+            near: near=point keeps the element whose center is nearest to the point ((h, v), (x, y, z), an element or
                 a one-element selection); nearh=, nearv=, nearx=, neary=, nearz= the one nearest to that coordinate.
                 Of an element and a point equally near, the element.
 
@@ -808,9 +816,9 @@ class Selection:
         """The elements sorted by key, smallest first.
 
         Args:
-            key: a measure ("length", "area", "radius", or another key of Measure()), a coordinate of the centre
+            key: a measure ("length", "area", "radius", or another key of Measure()), a coordinate of the center
                 ("h", "v", "x", "y", "z", px.x, px.h, ...), an axis (px.X, the sketch's H or V, netgen's X), or a
-                direction: the centre's component along (dh, dv) in the plane or (dx, dy, dz) in 3d.
+                direction: the center's component along (dh, dv) in the plane or (dx, dy, dz) in 3d.
             reverse: True sorts largest first.
 
         Raises:
@@ -945,7 +953,7 @@ class Selection:
 
     @property
     def center(self) -> tuple[float, ...]:
-        """The centre (x, y, z) of the one selected element."""
+        """The center (x, y, z) of the one selected element."""
         return _point(self)
 
     def _hv(self):
@@ -1054,6 +1062,10 @@ def add_selectors():
                     _OWNER[x] = o
             return item
 
+        # the forms for type checkers (tools/stubgen.py reads them): an index gives one item
+        item = {px.EdgesView: "EdgeView", px.FacesView: "FaceView", px.VerticesView: "VertexView"}[view]
+        __getitem__.__doc__ = ("__getitem__(k: int) -> %s\n__getitem__(k: slice) -> list[%s]\n__getitem__(k: Any) -> Selection\n\n"
+                               "The item at k, a list of them for a slice, a Selection for a condition or a list." % (item, item))
         view.__getitem__ = __getitem__
         view.__call__ = lambda self, *a, **k: Selection(list(self))(*a, **k)
         view.Min = lambda self, key: Selection(list(self)).Min(key)
@@ -1102,7 +1114,7 @@ def add_selectors():
             if items is not None:
                 return Selection(items)(**k)
         items = [SketchPoint(self, i) if kind == "Point" else SketchElement(self, i, kind)
-                 for kind, ids in self.elements.items() if kind in ("Point", "Line", "Arc", "Circle", "Spline")
+                 for kind, ids in self.elements.items() if kind in ("Point", "Line", "Arc", "Circle", "Spline", "Curve")
                  for i in ids if i not in ("origin", "px.origin")]
         a = [from_end(self, key) for key in a]
         # the points of a cut element (Line.3.end), which is the span of its pieces and no element of its own here

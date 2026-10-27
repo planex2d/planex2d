@@ -26,7 +26,7 @@ def rect(x0, y0, x1, y1):
 
 
 def disc(x, y, r):
-    return px.QuickSketch().Circle(x, y, r).Face()
+    return px.QuickSketch().Circle((x, y), r).Face()
 
 
 OUTLINE = rect(0, 0, 0.05, 0.03)

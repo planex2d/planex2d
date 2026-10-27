@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Tests every pull request, once per push to it: compiles planex2d as the installation page describes, with NGSolve and
-# the optional packages, and runs the whole test suite on the pull request merged into its target. Only pull requests:
-# main is protected, so every change reaches it through one, and a push to main would only repeat the test. The type
-# stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python tools/stubgen.py writes
-# it). Nothing is published here; releases go through publish.yml. A newer push to the same pull request cancels the
-# run still going.
+# Tests every pull request, once per push to it: compiles planex2d as the installation page describes, in the three
+# installs of publish.yml (with NGSolve and the optional packages, with netgen alone, without netgen) on the oldest and
+# the newest Python planex2d supports, and runs the whole test suite on the pull request merged into its target. Only
+# pull requests: main is protected, so every change reaches it through one, and a push to main would only repeat the
+# test. The type stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python
+# tools/stubgen.py writes it). Nothing is published here; releases go through publish.yml. A newer push to the same pull
+# request cancels the run still going.
 name: ci
 
 on:
@@ -22,18 +23,32 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        install: [full, netgen, core]
+        python: ["3.11", "3.14"]
+    name: test (${{ matrix.install }}, Python ${{ matrix.python }})
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python }}
       # NGSolve before planex2d: it pins netgen-mesher to its own version, which planex2d is then compiled against
-      - name: Install, as the installation page describes, with NGSolve
+      - name: Install, as the installation page describes
         run: |
-          python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core
-          python -m pip install --no-build-isolation .
+          case "${{ matrix.install }}" in
+            full) python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core "pybind11>=3.1,<3.2"
+                  python -m pip install --no-build-isolation . ;;
+            netgen) python -m pip install netgen-mesher netgen-occt-devel scikit-build-core "pybind11>=3.1,<3.2"
+                    python -m pip install --no-build-isolation . ;;
+            core) python -m pip install . ;;
+          esac
       # gmsh (its wheel needs X11) and dolfinx (no pip package) are not installed, and their tests skip
-      - name: The test suite, with the optional packages
+      - name: The test suite
         run: |
-          python -m pip install pytest hypothesis numpy scipy shapely ezdxf matplotlib plotly
+          python -m pip install pytest hypothesis
+          if [ "${{ matrix.install }}" = full ]; then
+            python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements
+          fi
           python -m pytest tests -q
