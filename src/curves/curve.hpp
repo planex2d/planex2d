@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/config.hpp"
 #include "core/vertex.hpp"
 
 namespace planex2d {
@@ -171,6 +172,23 @@ namespace planex2d {
             return (a[2] - c1 * (S(2.0) * w[1]) - c0 * w[2]) * inverse;
         }
         P Derivative(const S &u) const { return At(u, 1); }
+        // the unit tangent at u; at an end, where the parametrization may come to a stop (FromNACA's cosine spacing at
+        // the trailing edge: its derivative vanishes there), the tangent's limit, the direction of the first pole off
+        // the end pole by more than rounding
+        P Direction(const S &u) const {
+            if (u == First() || u == Last()) {
+                const bool atStart = u == First();
+                const P end = atStart ? poles.front() : poles.back();
+                const double tol = Tol(NormInf(end));
+                for (size_t k = 1; k < poles.size(); ++k) {
+                    const P d = atStart ? poles[k] - end : end - poles[poles.size() - 1 - k];
+                    if (NormInf(d) > tol)
+                        return d / Norm(d);
+                }
+            }
+            const P d = At(u, 1);
+            return d / Norm(d);
+        }
         // the parameter nearest p: the best of 32 samples per point (or guess), then Newton steps
         S Project(const P &p, std::optional<S> guess = std::nullopt) const {
             const S end = params.back();

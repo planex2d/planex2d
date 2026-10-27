@@ -89,7 +89,7 @@ namespace planex2d {
                 }
                 const Curve<double, Vertex> c = std::get<Spline>(edge).Segment();
                 const auto point = [&](double u) {
-                    const Vertex t = Normalized(c.At(u, 1));
+                    const Vertex t = c.Direction(u);
                     return c.At(u) + Vertex{-t.y, t.x} * s;
                 };
                 Curve<double, Vertex> f = SampledFit(point, c.First(), c.Last(), "Offset", config::state->spline_tol);

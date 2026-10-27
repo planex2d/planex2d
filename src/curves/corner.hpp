@@ -49,7 +49,7 @@ namespace planex2d {
                     return Normalized(l->End() - l->Start());
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return a->Tangent<false>(a->PointAt(u));
-                return Normalized(curve.Derivative(u));
+                return curve.Direction(u);
             }
             // signed along the edge's direction, a left turn positive
             double Curvature(double u) const {

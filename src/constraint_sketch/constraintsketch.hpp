@@ -472,28 +472,25 @@ namespace planex2d {
             return out;
         }
 
-        // a constraint the drawing helpers imply (auto_constraint): left out, with a warning (warn), when it follows from
-        // the others already (it takes no degree of freedom); the implied ones it makes redundant are removed
-        ConstraintSketch &ConstrainImplied(const std::vector<std::string> &refs, sketch::Kind kind, bool warn = true) {
+        // a constraint a drawing call implies (its helpers, auto_constraint): left out quietly when it follows from the
+        // others already (it takes no degree of freedom; the drawing is what the user drew); the implied ones it makes
+        // redundant are removed
+        ConstraintSketch &ConstrainImplied(const std::vector<std::string> &refs, sketch::Kind kind) {
             cs::Constraint c{kind};
             for (const std::string &r : refs)
                 c.refs.push_back(RefOf(r));
-            return ConstrainImplied(std::move(c), warn);
+            return ConstrainImplied(std::move(c));
         }
-        ConstraintSketch &ConstrainImplied(const cs::Constraint &c, bool warn = true) {
-            const std::string text = Text(c);
+        ConstraintSketch &ConstrainImplied(const cs::Constraint &c) {
             const size_t dof = Analysis(false).dof;
-            std::optional<std::string> with;
-            if (!AtomicIf([&] {
-                    with = AddConstraint(c, std::nullopt, dof);
-                    if (with)
-                        return false;
-                    const std::string added = constraintIds.back();
-                    DropRedundantImplied();
-                    impliedIds.insert(added);
-                    return true;
-                }) && warn)
-                Warning() << "auto_constraint: left out " << text << ", it follows from " << (with->empty() ? "the others" : *with);
+            AtomicIf([&] {
+                if (AddConstraint(c, std::nullopt, dof))
+                    return false;
+                const std::string added = constraintIds.back();
+                DropRedundantImplied();
+                impliedIds.insert(added);
+                return true;
+            });
             return *this;
         }
 
@@ -1500,7 +1497,7 @@ namespace planex2d {
             const std::set<std::string> have = ConstraintKeys();
             for (const sketch::FoundRelation &r : AutoRelations(*autoConstraint, std::move(isNew)))
                 if (!have.contains(KeyOf(r.kind, r.refs)))
-                    ConstrainImplied({r.kind, r.refs}, false);
+                    ConstrainImplied({r.kind, r.refs});
         }
         void SplineAdded(size_t e) override {
             const sketch::SplineData &d = s.splines[s.elements[e].SplineIndex()];

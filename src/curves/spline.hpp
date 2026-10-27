@@ -125,6 +125,11 @@ namespace planex2d {
                 SplineData d = *data;
                 size_t end = d.approx.size();
                 const size_t j = InsertVertex(d, 0, end, x, tol);
+                return Rebased(d, j, props);
+            }
+            // the closed curve of d taken round from its joint j: a point where the curve crosses itself is two joints, so
+            // a stretch that starts there names its joint, not the point
+            static Spline Rebased(const SplineData &d, size_t j, const Properties &props) {
                 const double u = d.params[j], begin = d.params.front(), period = d.params.back() - begin;
                 auto r = std::make_shared<SplineData>();
                 r->curve = d.curve.Segment(u, d.curve.Last()).Joined(d.curve.Segment(d.curve.First(), u).Shifted(period));
@@ -337,10 +342,7 @@ namespace planex2d {
             Vertex ExactNearestPoint(const Vertex &p) const { return ExactNearest(p).second; }
             // the unit tangent of the exact curve at its point nearest p; the core's decisions take Tangent, the
             // approximation's
-            Vertex ExactTangent(const Vertex &p) const {
-                const Vertex t = data->curve.At(ExactNearest(p).first, 1);
-                return t / Norm(t);
-            }
+            Vertex ExactTangent(const Vertex &p) const { return data->curve.Direction(ExactNearest(p).first); }
             // the point of the exact curve within this stretch where its tangent runs along d, from near p (Newton steps on
             // the cross product of the tangent and d); none where they run off the stretch
             std::optional<Vertex> ExactTangentAlong(const Vertex &d, const Vertex &p) const {
@@ -454,7 +456,7 @@ namespace planex2d {
                     s = Spline(data, first, next.last, props);
                 else if (last == n && next.first == 0 && first > 0 && next.last <= first &&
                          data->approx.front().Start() == data->approx.back().End()) {
-                    const Spline round = Spline(data, 0, n, props).Rebased(Start(), 0.0);
+                    const Spline round = Rebased(*data, first, props);
                     s = Spline(round.data, 0, (n - first) + next.last, props);
                 }
                 if (s)

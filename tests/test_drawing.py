@@ -477,6 +477,16 @@ def test_a_small_angle_s_arc_stays_near_the_shorter_leg():
     assert radius <= 10 + 10.0 + 1e-9
 
 
+def test_an_angle_between_legs_short_on_the_paper_stays_at_their_ends():
+    sk = px.Sketch()
+    sk.Move((0, 0), px.Fix).Line(0, -3, px.Vertical, id="back", construction=True)
+    sk.Move((0, 0)).Line(3 * math.sin(math.radians(15)), -3 * math.cos(math.radians(15)), id="arm")
+    sk.Constrain("arm", px.Distance, 3, id="a")
+    sk.Constrain("back", "arm", px.Angle, 15, id="steer")
+    radius = strokes(px.Drawing(sk, unit=px.mm))["steer"].entity["radius"]
+    assert radius <= 3 + 2.0 + 1e-9
+
+
 def test_a_box_check_finds_a_segment_through_it():
     from planex._svg import _meets_box
     segments = np.array([[[0.0, 0.0], [10.0, 0.0]], [[20.0, -5.0], [20.0, 5.0]]])

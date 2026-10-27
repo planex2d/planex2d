@@ -123,3 +123,11 @@ def test_hausdorff_takes_the_highest_of_several_peaks():
     # the curve's exact points, as Hausdorff samples them
     dense = max(math.dist(edge.ClosestPoint(tuple(edge.PointAt(k / 20000))[:2]), far) for k in range(20001))
     assert pm.Hausdorff(lambda o: curve, lambda o: px.Circle(far, 1e-9))(None) == pytest.approx(dense - 1e-9, abs=1e-6)
+
+
+def test_max_thickness_finds_a_disc_that_touches_reflex_corners_only():
+    # a V notch from the middle of each side, tips 30 from the center: the largest disc touches the four tips only
+    notched = px.Face([px.FromPolyline([(0, 0), (45, 0), (50, 20), (55, 0), (100, 0), (100, 45), (80, 50), (100, 55),
+                                       (100, 100), (55, 100), (50, 80), (45, 100), (0, 100), (0, 55), (20, 50), (0, 45)],
+                                      closed=True)])
+    assert notched.Measure(pm.MaxThickness()) == pytest.approx(60, rel=1e-9)

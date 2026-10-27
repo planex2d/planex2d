@@ -2058,7 +2058,12 @@ namespace planex2d {
             std::vector<bool> open;
             for (size_t e = 3; e < s.elements.size(); ++e)
                 if (IsDrawn(e)) {
-                    AddEdges(e, w, vertexProps);
+                    // a curve crossing itself split there, as Wires(unify=True) does: InitialClean cuts edges against
+                    // each other, not one against itself
+                    Wire drawn(axes);
+                    AddEdges(e, drawn, vertexProps);
+                    for (const Edge &x : drawn)
+                        AddUncrossed(w, x);
                     open.resize(w.Size(), openGroup[e]);
                 }
             return InitialClean(w, open);

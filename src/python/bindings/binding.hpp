@@ -195,11 +195,11 @@ inline Shape OffsetFaces(const Shape &s, double d, OffsetCorner corners) {
 
 inline const char *OffsetDoc(const std::string &cls, const std::string &returns, const std::string &raises, const std::string &x) {
     return Doc("Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round) -> " + returns + "\n\n"
-               "Grows the faces by d: the band of width |d| along their boundaries added for d > 0, taken away for d < 0.\n\n"
+               "Grows the faces by d: the band of width abs(d) along their boundaries added for d > 0, taken away for d < 0.\n\n"
                "The band is Wire.Offset of their edges; the faces keep their properties, the new edges those of the edges they "
                "come from. A corner that the offset goes round on its outside (a convex one growing, a reflex one shrinking) "
-               "becomes an arc of radius |d| about it (px.Round), the two offsets extended along their end tangents until they "
-               "meet (px.Sharp, without a limit: a corner of angle theta between its edges reaches |d| / sin(theta / 2) out from "
+               "becomes an arc of radius abs(d) about it (px.Round), the two offsets extended along their end tangents until they "
+               "meet (px.Sharp, without a limit: a corner of angle theta between its edges reaches abs(d) / sin(theta / 2) out from "
                "it), or the line between their ends (px.Chamfer).\n\n"
                "Args:\n"
                "    d: the width of the band, a length; d > 0 grows, d < 0 shrinks, 0 changes nothing.\n"

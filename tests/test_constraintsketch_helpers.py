@@ -128,11 +128,11 @@ def test_a_target_with_a_hint_is_one_tangent():
     assert [repr(c) for c in sk.constraints["Tangent"].values()] == ['"belt", "hub", px.Tangent']
 
 
-def test_a_helper_constraint_that_follows_from_the_others_is_left_out():
+def test_a_helper_constraint_that_follows_from_the_others_is_left_out_quietly():
     sk = px.Sketch(auto_constraint=True)
     sk.Move((0, 0)).Line(3, 0, px.Horizontal, id="base")
-    with pytest.warns(px.PlanexWarning, match=r'auto_constraint: left out "base", "top", px.Parallel, it follows from '
-                                              r'Horizontal.1, Horizontal.2'):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         sk.Move((0, 1)).Line(2, px.Horizontal, parallel="base", id="top")
     assert "Parallel" not in sk.constraints and sk.redundant == []
     assert sk.status == "under"

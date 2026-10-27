@@ -48,3 +48,20 @@ def test_the_types_module_docstring_is_clean_rst():
     core.publish_doctree(inspect.cleandoc(planex.types.__doc__),
                          settings_overrides={"warning_stream": warnings, "report_level": 1})
     assert warnings.getvalue() == ""
+
+
+def documented(namespace):
+    for name, obj in vars(namespace).items():
+        yield name, getattr(obj, "__doc__", None)
+        if isinstance(obj, type):
+            for key, member in vars(obj).items():
+                yield f"{name}.{key}", getattr(member, "__doc__", None)
+
+
+def test_no_docstring_has_a_substitution_reference():
+    # reStructuredText reads |word| as a substitution, which the API reference reports as undefined; a type union
+    # (Face | Shape) has spaces around the bar
+    substitution = re.compile(r"(?<![\w|`])\|[^\s|]([^|]*[^\s|])?\|(?![\w|`])")
+    found = [(name, m.group()) for namespace in (px, px._planex) for name, doc in documented(namespace)
+             if isinstance(doc, str) for m in substitution.finditer(doc)]
+    assert found == []
