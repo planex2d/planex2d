@@ -100,8 +100,13 @@ function(planex_module name kind)
         if(PLANEX_CORE_PYBIND11_INTERNALS)
             target_compile_definitions(${name} PRIVATE PYBIND11_INTERNALS_VERSION=${PLANEX_CORE_PYBIND11_INTERNALS})
         endif()
-        # the CPU flags netgen gives the OCC bindings, so that the core computes the same numbers
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT MSVC)
+        # the CPU flags netgen gives the OCC bindings, so that the core computes the same numbers; a macOS build for
+        # given architectures (universal2 on an arm64 machine) gives them to its x86-64 part only, as netgen does
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            if("x86_64" IN_LIST CMAKE_OSX_ARCHITECTURES)
+                target_compile_options(${name} PRIVATE "SHELL:-Xarch_x86_64 -march=core-avx2")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT MSVC)
             target_compile_options(${name} PRIVATE -march=core-avx2)
         endif()
     endif()
