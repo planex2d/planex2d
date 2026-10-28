@@ -252,7 +252,10 @@ def test_fixing_an_arc_keeps_it():
     drawn = sk.Geometry("a")
     sk.Constrain("a", px.Fix)
     assert sk.dof == 0
-    assert sk.Geometry("a") == pytest.approx(drawn, abs=TOL)
+    fixed = sk.Geometry("a")
+    assert fixed.keys() == drawn.keys()
+    for key in drawn:
+        assert fixed[key] == pytest.approx(drawn[key], abs=TOL)
 
 
 @pytest.mark.constraints

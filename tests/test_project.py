@@ -59,7 +59,9 @@ def test_a_spline_projects_through_the_projected_curve():
 def test_curves_seen_edge_on_and_end_on():
     [w] = px.Project(occ.Circle(occ.Pnt(0, 0, 0), occ.X, 1))
     assert kinds(w) == ["LineEdge"]
-    assert sorted([point(w.edges[0].start), point(w.edges[0].end)]) == pytest.approx([(0, -1), (0, 1)])
+    low, high = sorted([point(w.edges[0].start), point(w.edges[0].end)])
+    assert low == pytest.approx((0, -1))
+    assert high == pytest.approx((0, 1))
     with pytest.warns(px.PlanexWarning, match="1 point left out"):
         assert px.Project(occ.Segment(occ.Pnt(1, 1, 0), occ.Pnt(1, 1, 4))) == []
 
