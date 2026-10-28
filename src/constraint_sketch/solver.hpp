@@ -178,8 +178,9 @@ namespace planex2d {
         bool solved = true;
         size_t iterations = 0;
         double residual = 0.0;
-        // asked for: the largest change of an unknown (scaled to a length) the linear prediction makes, the undamped
-        // smallest step from where the solve started
+        // asked for: the largest change of an unknown of the geometry (scaled to a length; the unknowns that follow, if
+        // any do: not a ShapedSystem's slacks) the linear prediction makes, the undamped smallest step from where the
+        // solve started
         double predicted = 0.0;
     };
 
@@ -296,7 +297,10 @@ namespace planex2d {
                         continue;
                     z = wide ? r : g;
                     cholesky.Solve(z);
-                    result.predicted = wide ? (J.transpose() * z).cwiseAbs().maxCoeff() : z.cwiseAbs().maxCoeff();
+                    const Eigen::VectorXd gaussNewton = wide ? Eigen::VectorXd(J.transpose() * z) : z;
+                    for (size_t j = 0; j < n; ++j)
+                        if (x.follow.empty() || x.follow[eq.part.unknowns[j]])
+                            result.predicted = std::max(result.predicted, std::abs(gaussNewton[j]));
                     break;
                 }
                 // a small start: the values are a good guess, the drawing; solved already: nearly undamped

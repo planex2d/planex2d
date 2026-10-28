@@ -1808,8 +1808,10 @@ inline const char *FitArcsDoc(const std::string &cls, const std::string &text, c
 
 inline const char *CloseGapsDoc(const std::string &cls, const std::string &x, const std::string &more) {
     return Doc("CloseGaps(tol: float) -> " + cls + "\n\n"
-               "Joins every endpoint without an exact match on another edge with all endpoints of other edges within tol, "
-               "in place.\n\n" + more +
+               "Joins every endpoint without an exact match on another edge with all endpoints of other edges within tol "
+               "at their midpoint, in place.\n\n"
+               "The ends meet halfway between where they were, whatever the order of the edges; ends that already "
+               "coincide count once.\n\n" + more +
                "Args:\n"
                "    tol: the largest gap closed, a length.\n\n"
                "Returns:\n"

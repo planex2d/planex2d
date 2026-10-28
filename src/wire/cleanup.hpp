@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <optional>
@@ -32,6 +33,8 @@ namespace planex2d {
         return small;
     }
 
+    // an open end and the ends of other edges within tol meet at the midpoint of their places (ends that already
+    // coincide count once), whatever the order of the edges
     inline void Wire::RemoveSmallGaps(double tol) {
         static Timer t("planex RemoveSmallGaps");
         Region reg(t);
@@ -42,13 +45,23 @@ namespace planex2d {
         for (size_t k = 0; k < pts.size(); ++k) {
             if (Matched(pts, grid, k))
                 continue;
-            std::vector<size_t> near;
+            std::vector<size_t> near{k};
             grid.ForNear(pts[k], [&](size_t j) {
                 if (j / 2 != k / 2 && !IsClosedEdge(edges[j / 2]) && pts[j].IsClose(pts[k], tol))
                     near.push_back(j);
             });
+            if (near.size() == 1)
+                continue;
+            std::vector<Vertex> places;
             for (size_t j : near)
-                Move(pts, grid, j, pts[k]);
+                if (std::ranges::find(places, pts[j]) == places.end())
+                    places.push_back(pts[j]);
+            Vertex mid;
+            for (const Vertex &p : places)
+                mid = mid + p;
+            mid = mid / (double)places.size();
+            for (size_t j : near)
+                Move(pts, grid, j, mid);
         }
     }
 
