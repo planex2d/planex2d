@@ -149,8 +149,9 @@ jobs:
   # the wheels, built from the sdist by cibuildwheel without the OCC bindings (planex2d-occ brings them for the
   # installed netgen) and each tested with the sdist's suite, whose tests that need netgen or an optional package skip:
   # Linux x86_64 and aarch64 (manylinux_2_28), macOS universal2 for macOS 13.3 and newer (std::to_chars; Xcode 16 for
-  # C++20), Windows x86-64 (MSVC; delvewheel puts the C++ runtime msvcp140.dll into the wheel, as Python brings only the
-  # C runtime), Python 3.11 to 3.14, one job per platform and Python so that they run side by side.
+  # C++20), Windows x86-64 (MSVC; not repaired: Microsoft's C++ runtime stays out of the wheel, users install the
+  # Visual C++ Redistributable, which GitHub's runners have), Python 3.11 to 3.14, one job per platform and Python so
+  # that they run side by side.
   wheels:
     needs: sdist
     strategy:
@@ -181,8 +182,6 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           CIBW_CONFIG_SETTINGS: cmake.define.PLANEX_OCC=OFF
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=13.3
-          CIBW_BEFORE_BUILD_WINDOWS: pip install "delvewheel>=1.10,<2"
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair -w {dest_dir} {wheel}
           CIBW_TEST_REQUIRES: pytest hypothesis
           CIBW_TEST_COMMAND: python -m pytest {project}/tests -q -p no:cacheprovider
         # bash on Windows too, which expands the sdist's name
