@@ -26,7 +26,7 @@ else:
 sketch_types = (Sketch, QuickSketch)
 
 
-KINDS = ("Point", "Line", "Arc", "Circle", "Spline", "Axis", "Chain", "Rectangle", "Offset", "Mirrored", "LinearPattern",
+KINDS = ("Point", "Line", "Arc", "Circle", "Spline", "Curve", "Axis", "Chain", "Rectangle", "Offset", "Mirrored", "LinearPattern",
          "CircularPattern", "Projection", "Intersect3d")
 _IRREGULAR = {"Axis": "axes", "Mirrored": "mirrors", "Intersect3d": "intersections"}
 _ATTRIBUTES = {_IRREGULAR.get(k, re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower() + "s"): k for k in KINDS}
@@ -35,7 +35,7 @@ _ATTRIBUTES = {_IRREGULAR.get(k, re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower() + "s
 class Elements(dict):
     """The ids of a sketch by kind, in the order made.
 
-    The keys are the kinds of the elements ("Point", "Line", "Arc", "Circle", "Spline", "Axis") and of the groups by
+    The keys are the kinds of the elements ("Point", "Line", "Arc", "Circle", "Spline", "Curve", "Axis") and of the groups by
     the call that made them ("Chain", "Rectangle", "Offset", "Mirrored", "LinearPattern", "CircularPattern",
     "Projection", "Intersect3d"). The same lists are lowercase plural attributes (lines, linear_patterns, axes,
     mirrors, intersections, ...), empty when there is none; another attribute raises AttributeError.

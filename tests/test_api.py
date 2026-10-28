@@ -8,15 +8,15 @@ import pytest
 
 import planex as px
 
-ALL = ["Angle", "Arc", "ArcEdge", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint",
-       "DeformableShape", "Diameter", "Distance", "Edge", "EdgeView",
-       "EdgesView", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FromDXF", "FromKiCad", "FromLevelSet",
-       "FromNACA", "FromOCC", "FromPolyline", "FromShapely", "GetTransformation", "Glue", "H", "Horizontal", "Intersect", "Intersect3d",
-       "Line", "LineEdge", "Move", "OCCGeometry", "Pad", "Parallel", "Perpendicular", "Plane", "PlanexWarning", "Plot",
-       "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "ResetIdCounters", "RigidGroup", "Rotation",
-       "Selection", "Shape", "Sketch", "Spline", "SplineEdge", "Subtract", "Symmetric", "SymmetricCarriers", "Tangent",
+ALL = ["Angle", "Arc", "ArcEdge", "Auto", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "Curve",
+       "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
+       "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "Flat", "FromBrep", "FromDXF", "FromKiCad", "FromLevelSet",
+       "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "GetTransformation", "Glue", "H", "Horizontal", "Intersect", "Intersect3d",
+       "Line", "LineEdge", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane", "PlanexWarning", "Plot",
+       "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "ResetIdCounters", "RigidGroup", "Rotation", "Round",
+       "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricCarriers", "SymmetricDifference", "Tangent",
        "ToSVG", "ToShapely", "Translation", "Unify", "V", "Vertex", "VertexView", "Vertical", "VerticesView", "Wire",
-       "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad", "WriteStep", "XY", "YZ", "ZX", "cm", "inch", "m",
+       "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad", "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m",
        "mil", "mm", "origin", "um"]
 NOT_IN_ALL = ["BSpline", "X", "Y", "Z", "config", "first", "h", "last", "v", "x", "y", "z"]
 SUBPACKAGES = ["debug", "measurements", "stackups", "types"]

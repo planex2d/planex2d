@@ -8,6 +8,7 @@ from typing import Any
 from . import _planex as px
 from ._sketches import sketch_types
 from ._plot_style import _plottable
+from ._auto import Auto, is_auto
 
 
 def _occ_shapes(obj, out, planes):
@@ -47,7 +48,7 @@ def _plane_outline(plane, size):
 
 
 def _plot3d_compound(objects, plane_size=None):
-    """the one OCC compound Plot3d draws"""
+    """the one OCC compound Plot3d draws; plane_size None: worked out"""
     from netgen import occ
 
     shapes, planes = [], []
@@ -64,7 +65,7 @@ def _plot3d_compound(objects, plane_size=None):
     return occ.Compound(shapes)
 
 
-def Plot3d(objects: Any, /, plane_size: float | None = None, backend: str = "webgpu", **kwargs: Any) -> Any:
+def Plot3d(objects: Any, /, plane_size: float | Auto = Auto, backend: str = "webgpu", **kwargs: Any) -> Any:
     """Draws planex objects, planes and OCC shapes in one 3d view.
 
     Everything is exported to OCC, put into one compound and drawn; a sketch contributes its drawn edges. A plane is
@@ -75,7 +76,7 @@ def Plot3d(objects: Any, /, plane_size: float | None = None, backend: str = "web
 
     Args:
         objects: a Wire, Face, Shape, Compound, sketch, Plane or OCC shape, or a list of them.
-        plane_size: the side of a plane's square; None takes the largest extent of everything else, 1 without.
+        plane_size: the side of a plane's square; px.Auto takes the largest extent of everything else, 1 without.
         backend: 'webgpu' or 'webgui'.
         kwargs: go to the backend's Draw (width, height; settings, euler_angles only for webgui).
 
@@ -92,7 +93,7 @@ def Plot3d(objects: Any, /, plane_size: float | None = None, backend: str = "web
     """
     if backend not in ("webgpu", "webgui"):
         raise ValueError(f"Plot3d: unknown backend {backend!r}, use 'webgpu' or 'webgui'")
-    compound = _plot3d_compound(objects, plane_size)
+    compound = _plot3d_compound(objects, None if is_auto(plane_size, "Plot3d", "plane_size") else plane_size)
     if backend == "webgui":
         from netgen.webgui import Draw
 

@@ -3,13 +3,19 @@
 
 """The type names in planex's signatures: each stands for every kind a call takes there.
 
-    Point   (h, v) in the plane: a tuple or list of two numbers, px.Vertex, a vertex of a shape (VertexView), a
-            sketch point, or a point id ("A", "Line.3.end")
-    Point3  (x, y, z): a tuple or list of three numbers, a netgen or OCC point
-    Id      an id ("Line.3", "Sketch.1.Line.3"), a selected element, or a selection of one
-    Ids     one Id, a list of them, or a selection
-    Plane   px.Plane, a sketch (its plane), a placed face or shape, netgen or OCC axes, a planar OCC face
-    Color   a colour name ("red"), "#rrggbb", or (r, g, b) or (r, g, b, a) in 0..1
+    Point
+        (h, v) in the plane: a tuple or list of two numbers, px.Vertex, a vertex of a shape (VertexView), a sketch
+        point, or a point id ("A", "Line.3.end")
+    Point3
+        (x, y, z): a tuple or list of three numbers, a netgen or OCC point
+    Id
+        an id ("Line.3", "Sketch.1.Line.3"), a selected element, or a selection of one
+    Ids
+        one Id, a list of them, or a selection
+    Plane
+        px.Plane, a sketch (its plane), a placed face or shape, netgen or OCC axes, a planar OCC face
+    Color
+        a color name ("red"), "#rrggbb", or (r, g, b) or (r, g, b, a) in 0..1
 
 Example:
     sk.Distance("Line.3.end", (4, 0))   # an Id and a Point

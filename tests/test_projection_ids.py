@@ -66,3 +66,16 @@ def test_a_section_in_a_sketch_lives_under_intersect3d():
     sk = px.Sketch()
     sk.Intersect3d(box)
     assert len([i for i in sk.elements["Line"] if i.startswith("Intersect3d.1.")]) == 4
+
+
+@pytest.mark.constraints
+def test_constrain_projects_an_occ_edge_given_as_a_reference():
+    block = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(80, 50, 20))
+    front = [e for e in block.edges if abs(e.center.y) < 1e-9 and abs(e.center.z) < 1e-9][0]
+    sk = px.Sketch(block.faces.Max(occ.Z))
+    sk.Move((26, 13)).Rectangle(28, 24, id="pocket")
+    sk.Constrain("pocket.Point.1", front, px.Distance, 15, id="gap")
+    assert sk["gap"] == 15 and sk.status != "over"
+    projected = sorted({i for ids in sk.elements.values() for i in ids if ".Edge." in i})
+    assert len(projected) == 1
+    assert sk.Measure("pocket.Point.1", to=projected[0])["distance"] == pytest.approx(15, abs=1e-9)

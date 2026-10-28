@@ -16,12 +16,18 @@
 
 namespace planex2d::cs {
 
-    // the operations of an expression; the functions take and give angles in degrees
-    enum class Op : unsigned char { Number, Value, Add, Sub, Mul, Div, Pow, Neg, Sqrt, Abs, Min, Max, Sin, Cos, Tan, Asin, Acos, Atan2 };
+    // the operations of an expression; the trigonometric functions take and give angles in degrees, the hyperbolic ones
+    // plain numbers
+    enum class Op : unsigned char {
+        Number, Value, Add, Sub, Mul, Div, Pow, Neg, Sqrt, Abs, Min, Max, Sin, Cos, Tan, Asin, Acos, Atan2,
+        Exp, Log, Sinh, Cosh, Tanh, Asinh, Acosh, Atanh
+    };
+    constexpr Op lastOp = Op::Atanh;
 
     inline const char *OpName(Op op) {
-        constexpr const char *names[] = {"num", "val", "add", "sub", "mul", "div", "pow", "neg", "sqrt",
-                                         "abs", "min", "max", "sin", "cos", "tan", "asin", "acos", "atan2"};
+        constexpr const char *names[] = {"num", "val", "add", "sub", "mul", "div", "pow", "neg", "sqrt", "abs", "min", "max", "sin",
+                                         "cos", "tan", "asin", "acos", "atan2", "exp", "log", "sinh", "cosh", "tanh", "asinh",
+                                         "acosh", "atanh"};
         return names[(size_t)op];
     }
     // how many values an operation takes
@@ -174,6 +180,36 @@ namespace planex2d::cs {
             }
             case Op::Atan2:
                 r = x == 0.0 && y == 0.0 ? fail("atan2(0, 0) has no direction") : Atan2(a, b) * T(1.0 / degree);
+                break;
+            case Op::Exp:
+                r = Exp(a);
+                break;
+            case Op::Log:
+                r = x <= 0.0 ? fail("log of a number that is not positive (" + Shown(x) + ")") : Log(a);
+                break;
+            case Op::Sinh:
+                r = Sinh(a);
+                break;
+            case Op::Cosh:
+                r = Cosh(a);
+                break;
+            case Op::Tanh:
+                r = Tanh(a);
+                break;
+            case Op::Asinh:
+                r = Asinh(a);
+                break;
+            case Op::Acosh:
+                if (!(x >= 1.0))
+                    r = fail("acosh of " + Shown(x) + ", below 1");
+                else {
+                    if (x == 1.0 && steep(a))
+                        note("acosh of 1 has no derivative there, the solver cannot use it");
+                    r = Acosh(a);
+                }
+                break;
+            case Op::Atanh:
+                r = !(std::abs(x) < 1.0) ? fail("atanh of " + Shown(x) + ", outside (-1, 1)") : Atanh(a);
                 break;
             default:
                 break;

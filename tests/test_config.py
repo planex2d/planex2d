@@ -155,7 +155,7 @@ def test_occshape_and_bounding_box():
     assert px.Move((1, 2)).Rectangle(3, 3).bounding_box == ((1, 2), (4, 5))
     assert sorted(e.bounding_box for e in p.edges)[0] == ((1, 2), (1, 5))
     assert px.Compound([p, px.Line((-1, 3), (6, 3))]).bounding_box == ((-1, 2), (6, 5))
-    assert px.QuickSketch().Circle(0, 0, 2).Face().bounding_box == ((-2, -2), (2, 2))
+    assert px.QuickSketch().Circle((0, 0), 2).Face().bounding_box == ((-2, -2), (2, 2))
     assert px.Face().bounding_box is None and px.Shape().bounding_box is None
     assert px.Compound().bounding_box is None
 

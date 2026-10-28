@@ -7,11 +7,13 @@
 #include <cmath>
 #include <compare>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <BRepTools_ReShape.hxx>
 #include <BRep_Builder.hxx>
 #include <BRep_Tool.hxx>
@@ -55,6 +57,8 @@ namespace planex2d {
         std::vector<TopoDS_Face> caps;
         std::map<std::array<PointKey, 3>, TopoDS_Edge> edgeAt;
         std::map<PointKey, TopoDS_Vertex> vertexAt;
+        // every edge at both its ends
+        std::multimap<PointKey, TopoDS_Edge> edgesFrom;
     };
 
     inline Interface InterfaceAt(const Shape &shape, double z, double q, const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup) {
@@ -64,8 +68,14 @@ namespace planex2d {
         for (const TopoDS_Shape &part : ToOCCParts(s, arcs, fit, cleanup, false)) {
             for (TopExp_Explorer f(part, TopAbs_FACE); f.More(); f.Next())
                 in.caps.push_back(TopoDS::Face(f.Current()));
-            for (TopExp_Explorer e(part, TopAbs_EDGE); e.More(); e.Next())
-                in.edgeAt.emplace(EdgeKey(TopoDS::Edge(e.Current()), q), TopoDS::Edge(e.Current()));
+            for (TopExp_Explorer e(part, TopAbs_EDGE); e.More(); e.Next()) {
+                const TopoDS_Edge &edge = TopoDS::Edge(e.Current());
+                in.edgeAt.emplace(EdgeKey(edge, q), edge);
+                TopoDS_Vertex a, b;
+                TopExp::Vertices(edge, a, b);
+                in.edgesFrom.emplace(KeyOf(BRep_Tool::Pnt(a), q), edge);
+                in.edgesFrom.emplace(KeyOf(BRep_Tool::Pnt(b), q), edge);
+            }
             for (TopExp_Explorer v(part, TopAbs_VERTEX); v.More(); v.Next())
                 in.vertexAt.emplace(KeyOf(BRep_Tool::Pnt(TopoDS::Vertex(v.Current())), q), TopoDS::Vertex(v.Current()));
         }
@@ -94,7 +104,45 @@ namespace planex2d {
         return walls;
     }
 
-    // the walls' corners and horizontal edges swapped for those of the interface at their level (above or below)
+    // the interface's edges that run along e from its first vertex to its second, oriented as e runs: where the copper of
+    // an interface meets the outline, it splits the outline's edge there; none if they do not reach e's end
+    inline std::optional<TopoDS_Compound> ChainAlong(const TopoDS_Edge &e, const Interface &in, double q) {
+        TopoDS_Vertex a, b;
+        TopExp::Vertices(e, a, b);
+        double f, l;
+        Handle(Geom_Curve) c = BRep_Tool::Curve(e, f, l);
+        const PointKey end = KeyOf(BRep_Tool::Pnt(b), q);
+        PointKey at = KeyOf(BRep_Tool::Pnt(a), q);
+        double along = f;
+        BRep_Builder builder;
+        TopoDS_Compound chain;
+        builder.MakeCompound(chain);
+        for (size_t steps = 0; at != end; ++steps) {
+            std::optional<TopoDS_Edge> next;
+            const auto [lo, hi] = in.edgesFrom.equal_range(at);
+            for (auto it = lo; it != hi && !next; ++it) {
+                double xf, xl;
+                Handle(Geom_Curve) xc = BRep_Tool::Curve(it->second, xf, xl);
+                GeomAPI_ProjectPointOnCurve on(xc->Value(0.5 * (xf + xl)), c, f, l);
+                // a piece of e's curve, on from where the chain is
+                if (on.NbPoints() > 0 && on.LowerDistance() <= q && on.LowerDistanceParameter() > along) {
+                    next = it->second;
+                    along = on.LowerDistanceParameter();
+                }
+            }
+            if (!next || steps > in.edgesFrom.size())
+                return std::nullopt;
+            TopoDS_Vertex xa, xb;
+            TopExp::Vertices(*next, xa, xb);
+            const bool forward = KeyOf(BRep_Tool::Pnt(xa), q) == at;
+            builder.Add(chain, next->Oriented(forward ? TopAbs_FORWARD : TopAbs_REVERSED));
+            at = KeyOf(BRep_Tool::Pnt(forward ? xb : xa), q);
+        }
+        return chain;
+    }
+
+    // the walls' corners and horizontal edges swapped for those of the interface at their level (above or below); an
+    // edge the interface splits for the chain of its pieces (BRepTools_ReShape puts a compound's edges in its place)
     template <class Level>
     void SwapForInterfaces(BRepTools_ReShape &reshape, const std::vector<TopoDS_Face> &walls, const std::vector<Interface> &at,
                            Level level, double q) {
@@ -122,8 +170,13 @@ namespace planex2d {
                 continue;
             const auto &edgeAt = at[level(pa)].edgeAt;
             auto it = edgeAt.find(EdgeKey(e, q));
-            if (it == edgeAt.end())
-                throw std::runtime_error("StackedPrisms: an edge of the side walls is no edge of the interface");
+            if (it == edgeAt.end()) {
+                const std::optional<TopoDS_Compound> chain = ChainAlong(TopoDS::Edge(e.Oriented(TopAbs_FORWARD)), at[level(pa)], q);
+                if (!chain)
+                    throw std::runtime_error("StackedPrisms: an edge of the side walls is no edge of the interface");
+                reshape.Replace(TopoDS::Edge(e.Oriented(TopAbs_FORWARD)), *chain);
+                continue;
+            }
             TopoDS_Vertex c, d;
             TopExp::Vertices(it->second, c, d);
             const bool same = KeyOf(BRep_Tool::Pnt(c), q) == KeyOf(pa, q);
@@ -135,8 +188,8 @@ namespace planex2d {
     // z[k] from the top, prism i between z[i] and z[i + 1] is the region extruded. Every interface is exported once and is
     // the top of the prism below and the bottom of the one above; the walls' edges and corners are the interfaces' own
     inline TopoDS_Shape StackedPrisms(const ShapeList &interfaces, const Shape &region, const std::vector<double> &z,
-                                      const std::vector<std::string> &names, const ArcFit &arcs = config::arc_fit,
-                                      const SplineFit &fit = config::spline_fit, const Cleanup &cleanup = config::cleanup) {
+                                      const std::vector<std::string> &names, const ArcFit &arcs = config::state->arc_fit,
+                                      const SplineFit &fit = config::state->spline_fit, const Cleanup &cleanup = config::state->cleanup) {
         const size_t n = interfaces.size();
         if (n < 2 || z.size() != n || names.size() != n - 1)
             throw std::invalid_argument("StackedPrisms: n interfaces need n heights and n - 1 names");

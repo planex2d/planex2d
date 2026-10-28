@@ -8,9 +8,12 @@
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <type_traits>
+#include <variant>
 #include <vector>
 
 
+#include "curves/circlecarrier.hpp"
 #include "shape/shape.hpp"
 
 namespace planex2d {
@@ -88,9 +91,26 @@ namespace planex2d {
         const double t1 = t0 + (a.CCW() ? a.Sweep() : -a.Sweep());
         return forward ? BoundaryMoments(a.Center() - o, a.Radius(), t0, t1) : BoundaryMoments(a.Center() - o, a.Radius(), t1, t0);
     }
+    // on the exact curve in the same forms, closed to the spline's ends by lines as in Spline::ExactSignedArea
+    inline Moments BoundaryMoments(const Spline &s, bool forward, const Vertex &o) {
+        const auto [a, b] = s.ExactEnds();
+        Moments m = BoundaryMoments(s.Start() - o, a - o);
+        m += BoundaryMoments(b - o, s.End() - o);
+        s.ForEachGaussPoint([&](const Vertex &p, const Vertex &t, double w) {
+            const Vertex q = p - o;
+            const double c = w * Cross(q, t);
+            m += Moments{c / 2.0, q.x * c / 3.0, q.y * c / 3.0, q.x * q.x * c / 4.0, q.y * q.y * c / 4.0, q.x * q.y * c / 4.0};
+        });
+        return forward ? m : m * -1.0;
+    }
     inline Moments BoundaryMoments(const Edge &e, bool forward, const Vertex &o) {
         Moments m;
-        std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &p) { m += BoundaryMoments(p, forward, o); }); }, e);
+        std::visit([&](const auto &x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                m = BoundaryMoments(x, forward, o);
+            else
+                ForEachPart(x, [&](const auto &p) { m += BoundaryMoments(p, forward, o); });
+        }, e);
         return m;
     }
 
@@ -122,10 +142,24 @@ namespace planex2d {
                 r * (c.y * c.y * s + 2.0 * c.y * r * I(0, 1) + r * r * I(0, 2)),
                 r * (c.x * c.y * s + c.x * r * I(0, 1) + c.y * r * I(1, 0) + r * r * I(1, 1))};
     }
+    inline Moments CurveMoments(const Spline &s, const Vertex &o) {
+        Moments m;
+        s.ForEachGaussPoint([&](const Vertex &p, const Vertex &t, double w) {
+            const Vertex q = p - o;
+            const double l = w * Norm(t);
+            m += Moments{l, q.x * l, q.y * l, q.x * q.x * l, q.y * q.y * l, q.x * q.y * l};
+        });
+        return m;
+    }
     inline Moments CurveMoments(const Wire &w, const Vertex &o) {
         Moments m;
         for (const Edge &e : w)
-            std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &p) { m += CurveMoments(p, o); }); }, e);
+            std::visit([&](const auto &x) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                    m += CurveMoments(x, o);
+                else
+                    ForEachPart(x, [&](const auto &p) { m += CurveMoments(p, o); });
+            }, e);
         return m;
     }
 
@@ -243,6 +277,16 @@ namespace planex2d {
             return {0.0, common[0], common[0]};
         return NearestOf(x, y);
     }
+    // the point of e nearest p, a spline's on its exact curve
+    inline Vertex ExactNearestOn(const Edge &e, const Vertex &p) {
+        return std::visit([&](const auto &x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline>)
+                return x.ExactNearestPoint(p);
+            else
+                return x.NearestPoint(p);
+        }, e);
+    }
+    inline Nearest OnExactCurves(const Edge &a, const Edge &b, Nearest n);
     inline Nearest NearestEdges(const Edge &a, const Edge &b) {
         Nearest n;
         std::visit([&](const auto &x, const auto &y) {
@@ -254,11 +298,50 @@ namespace planex2d {
                 });
             });
         }, a, b);
+        if (n.d > 0.0 && (std::holds_alternative<Spline>(a) || std::holds_alternative<Spline>(b)))
+            n = OnExactCurves(a, b, n);
+        return n;
+    }
+    // a spline's pair from its pieces (n) onto the exact curves (a common point of the pieces stays): with a circle or
+    // arc the spline's point nearest the centre and the round's point towards it; with a line the spline's point whose
+    // tangent runs along the line and its foot; then, and else, each point the one nearest the other's, in turn, while
+    // that brings them closer (slow at a touch: 1 - curvature times gap per turn)
+    inline Nearest OnExactCurves(const Edge &a, const Edge &b, Nearest n) {
+        if (!std::holds_alternative<Spline>(a))
+            return OnExactCurves(b, a, n.Swapped()).Swapped();
+        const Spline &s = std::get<Spline>(a);
+        const auto take = [&](const Vertex &pa, const Vertex &pb) {
+            if (const double d = Norm(pb - pa); d < n.d)
+                n = {d, pa, pb};
+        };
+        if (const std::optional<CircleCarrier> k = std::holds_alternative<Spline>(b) || std::holds_alternative<Line>(b) ? std::nullopt : CarrierOf(b)) {
+            const Vertex pa = s.ExactNearestPoint(k->center), r = pa - k->center;
+            // within rounding inside the round: the touch itself
+            if (const double l = Norm(r); l > 0.0 && l >= k->radius - Tol(k->LengthScale())) {
+                const Vertex pb = k->center + r * (k->radius / l);
+                const Arc *arc = std::get_if<Arc>(&b);
+                if (!arc || arc->IsInSweep(pb))
+                    take(pa, pb);
+            }
+        } else if (const Line *line = std::get_if<Line>(&b)) {
+            if (const std::optional<Vertex> pa = s.ExactTangentAlong(line->End() - line->Start(), n.a))
+                take(*pa, line->NearestPoint(*pa));
+        }
+        for (int i = 0; i < 100; ++i) {
+            const Vertex pa = ExactNearestOn(a, n.b), pb = ExactNearestOn(b, pa);
+            const double d = Norm(pb - pa);
+            if (!(d < n.d))
+                break;
+            n = {d, pa, pb};
+        }
         return n;
     }
     inline Nearest NearestOnEdge(const Edge &e, const Vertex &p) {
         Nearest n;
-        std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &q) { n.Take(q.NearestPoint(p), p); }); }, e);
+        if (const Spline *s = std::get_if<Spline>(&e))
+            n.Take(s->ExactNearestPoint(p), p);
+        else
+            std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &q) { n.Take(q.NearestPoint(p), p); }); }, e);
         return n;
     }
     inline double BoxGap(const BBox &a, const BBox &b) {

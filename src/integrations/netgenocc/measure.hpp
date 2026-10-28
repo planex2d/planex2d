@@ -28,9 +28,9 @@ namespace planex2d {
         if (!region.Empty())
             builder.Add(all, ToOCCFace(region));
         if (!curves.Empty()) {
-            auto wires = ToOCCWires(curves, false, config::arc_fit, config::spline_fit,
-                                           Cleanup{config::cleanup.remove_edges_smaller, config::cleanup.close_gaps_smaller, false,
-                                                   config::cleanup.merge_collinear_closer});
+            const Cleanup &c = config::state->cleanup;
+            auto wires = ToOCCWires(curves, false, config::state->arc_fit, config::state->spline_fit,
+                                    Cleanup{c.remove_edges_smaller, c.close_gaps_smaller, false, c.merge_collinear_closer});
             for (int i = 1; i <= wires->Length(); ++i)
                 builder.Add(all, wires->Value(i));
         }

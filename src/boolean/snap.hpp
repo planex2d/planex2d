@@ -67,7 +67,7 @@ namespace planex2d {
     std::vector<bool> EpsEdges(const Wire &w, double tol, F snapped) {
         std::vector<bool> eps(w.Size());
         for (size_t k = 0; k < w.Size(); ++k)
-            eps[k] = std::visit([&](const auto &e) {
+            eps[k] = !IsClosedEdge(w[k]) && std::visit([&](const auto &e) {
                 if constexpr (IsCircle<decltype(e)>)
                     return false;
                 double l = Norm(e.End() - e.Start());

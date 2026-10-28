@@ -108,7 +108,7 @@ namespace planex2d {
         const size_t n = part.unknowns.size();
         // null vectors are accurate to about eps / rank_tol (the smallest gap to a kept singular value), a real motion
         // moves its unknowns by far more than this
-        const double zero = std::sqrt(config::rank_tol);
+        const double zero = std::sqrt(config::state->rank_tol);
         const Eigen::MatrixXd &N = qr.motions, &Y = qr.dependencies;
         const Eigen::Index d = N.cols(), q = Y.cols();
         const double h = 1e-6 * size, tol = zero / size;
@@ -144,7 +144,7 @@ namespace planex2d {
     template <class System>
     inline PartAnalysis AnalyzePart(const ComponentEquations<System> &eq, const Unknowns &x, const SparseMatrix &J, double size, bool complete) {
         const size_t m = eq.m, n = eq.part.unknowns.size();
-        const double zero = std::sqrt(config::rank_tol);
+        const double zero = std::sqrt(config::state->rank_tol);
         PartAnalysis out;
         out.determined.assign(n, 0);
         out.redundant.assign(eq.part.constraints.size(), 0);
@@ -157,7 +157,7 @@ namespace planex2d {
                 out.complete = false;
                 return out;
             }
-        SparseQR qr(J, config::rank_tol * largest);
+        SparseQR qr(J, config::state->rank_tol * largest);
         qr.Kernels();
         size_t rank = (size_t)qr.rank;
         if (rank > 0)
@@ -175,13 +175,60 @@ namespace planex2d {
         for (size_t c = 0; c < eq.part.constraints.size(); ++c) {
             const size_t rows = eq.system.Rows(eq.part.constraints[c]);
             size_t spanned = 0;
-            if (rows > 0 && qr.dependencies.cols() >= Eigen::Index(rows))
-                for (double v : Eigen::JacobiSVD<Eigen::MatrixXd>(qr.dependencies.middleRows(Eigen::Index(row), Eigen::Index(rows))).singularValues())
+            if (rows > 0 && qr.dependencies.cols() >= Eigen::Index(rows)) {
+                // a range-for over singularValues() of a temporary SVD reads it after it is destroyed (until C++23)
+                const Eigen::JacobiSVD<Eigen::MatrixXd> svd(qr.dependencies.middleRows(Eigen::Index(row), Eigen::Index(rows)));
+                for (double v : svd.singularValues())
                     spanned += v > zero;
+            }
             out.redundant[c] = rows > 0 && spanned == rows;
             row += rows;
         }
         return out;
+    }
+
+    // an orthonormal basis (columns) of every motion the constraints allow, in the solver's scaled unknowns (the real
+    // change is scale times it): each component's as AnalyzePart finds it, double roots included, and a unit motion for
+    // every free unknown no constraint holds; as many columns as the degrees of freedom
+    template <class System>
+    inline Eigen::MatrixXd MotionBasis(const System &system, const Unknowns &x, double size) {
+        const size_t n = x.value.size();
+        const ConstraintComponents<System> components(system, x);
+        std::vector<char> held(n, 0);
+        std::vector<Eigen::VectorXd> columns;
+        for (const ConstraintComponent &part : components.parts) {
+            const size_t k = part.unknowns.size();
+            for (size_t u : part.unknowns)
+                held[u] = 1;
+            const ComponentEquations<System> eq(system, part, n);
+            Eigen::MatrixXd motions = Eigen::MatrixXd::Identity(Eigen::Index(k), Eigen::Index(k));
+            if (eq.m > 0) {
+                Eigen::VectorXd r;
+                SparseMatrix J = eq.pattern;
+                eq.Evaluate(x, r, J);
+                SparseQR qr(J, config::state->rank_tol * LargestSingularValue(J));
+                qr.Kernels();
+                if ((size_t)qr.rank < k && (size_t)qr.rank < eq.m)
+                    BlockedMotions(eq, x, qr, size);
+                motions = qr.motions;
+            }
+            for (Eigen::Index c = 0; c < motions.cols(); ++c) {
+                Eigen::VectorXd v = Eigen::VectorXd::Zero(Eigen::Index(n));
+                for (size_t j = 0; j < k; ++j)
+                    v[Eigen::Index(part.unknowns[j])] = motions(Eigen::Index(j), c);
+                columns.push_back(std::move(v));
+            }
+        }
+        for (size_t u = 0; u < n; ++u)
+            if (!x.fixed[u] && !held[u]) {
+                Eigen::VectorXd v = Eigen::VectorXd::Zero(Eigen::Index(n));
+                v[Eigen::Index(u)] = 1.0;
+                columns.push_back(std::move(v));
+            }
+        Eigen::MatrixXd N(Eigen::Index(n), Eigen::Index(columns.size()));
+        for (size_t c = 0; c < columns.size(); ++c)
+            N.col(Eigen::Index(c)) = columns[c];
+        return N;
     }
 
     // size: the size of the geometry, the scale of the second derivatives at a double root; with complete false a

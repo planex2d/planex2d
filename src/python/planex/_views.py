@@ -11,7 +11,7 @@ from ._planex import ArcEdge, CircleEdge, EdgeView, Face, FaceView, LineEdge, Sp
 # these change a face in place; on a view they would change a copy
 IN_PLACE = ("Translate", "Rotate", "Mirror", "Scale", "Simplify", "FitArcs", "MergeCollinearEdges", "RemoveSmallGaps",
             "RemoveSmallEdges", "Identify", "RemoveIdentification", "Fillet", "Chamfer")
-SPECIAL = ("__add__", "__sub__", "__mul__", "__radd__", "__copy__", "__deepcopy__", "_repr_svg_")
+SPECIAL = ("__add__", "__sub__", "__mul__", "__xor__", "__radd__", "__copy__", "__deepcopy__", "_repr_svg_")
 
 
 class Edge(abc.ABC):
@@ -77,5 +77,7 @@ def complete_face_view():
         elif name not in SPECIAL and hasattr(FaceView, name):
             continue
         else:
-            setattr(FaceView, name, _on_copy(name, inspect.getattr_static(Face, name)))
+            attr = inspect.getattr_static(Face, name)
+            # a stand-in of a planex without its OCC module raises as it is
+            setattr(FaceView, name, attr if getattr(attr, "__module__", None) == "planex._occ" else _on_copy(name, attr))
     FaceView.faces = property(lambda self: [self], doc="faces: list[FaceView]\n\nA list of this face alone.")

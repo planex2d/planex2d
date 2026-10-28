@@ -13,8 +13,8 @@
 #include "boolean/cutloop.hpp"
 #include "core/vertex.hpp"
 #include "curves/circletouch.hpp"
+#include "curves/curve.hpp"
 #include "curves/edge.hpp"
-#include "curves/occspline.hpp"
 #include "wire/loops.hpp"
 #include "wire/wire.hpp"
 
@@ -24,39 +24,49 @@ namespace planex2d {
     class ExactCurve {
         private:
             const Edge &edge;
-            Handle(Geom2d_BSplineCurve) curve;
+            Curve<double, Vertex> curve;
 
         public:
             explicit ExactCurve(const Edge &e) : edge(e) {
                 if (const Spline *s = std::get_if<Spline>(&e))
                     curve = s->Segment();
             }
-            double First() const { return std::holds_alternative<Spline>(edge) ? curve->FirstParameter() : 0.0; }
+            double First() const { return std::holds_alternative<Spline>(edge) ? curve.First() : 0.0; }
             double Last() const {
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return a->Sweep();
-                return std::holds_alternative<Line>(edge) ? 1.0 : curve->LastParameter();
+                return std::holds_alternative<Line>(edge) ? 1.0 : curve.Last();
             }
             Vertex At(double u) const {
                 if (const Line *l = std::get_if<Line>(&edge))
                     return l->PointAtFraction(u);
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return a->PointAt(u);
-                return OccPoint(curve, u);
+                return curve.At(u);
             }
             Vertex Direction(double u) const {
                 if (const Line *l = std::get_if<Line>(&edge))
                     return Normalized(l->End() - l->Start());
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return a->Tangent<false>(a->PointAt(u));
-                return Normalized(OccDerivative(curve, u));
+                return curve.Direction(u);
+            }
+            // signed along the edge's direction, a left turn positive
+            double Curvature(double u) const {
+                if (std::holds_alternative<Line>(edge))
+                    return 0.0;
+                if (const Arc *a = std::get_if<Arc>(&edge))
+                    return (a->CCW() ? 1.0 : -1.0) / a->Radius();
+                const Vertex d1 = curve.At(u, 1), d2 = curve.At(u, 2);
+                const double speed = Norm(d1);
+                return Cross(d1, d2) / (speed * speed * speed);
             }
             double ParamOf(const Vertex &p) const {
                 if (const Line *l = std::get_if<Line>(&edge))
                     return l->LengthFraction(p);
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return a->Param(p);
-                return OccParam(curve, p, First(), Last());
+                return curve.Project(p, First(), Last());
             }
             // left of the direction by side (+1) or right of it (-1) times distance
             Vertex Offset(double u, double side, double distance) const {
@@ -118,6 +128,11 @@ namespace planex2d {
         Vertex TangentAt(const Vertex &p) const {
             const ExactCurve curve(edge);
             return curve.Direction(curve.ParamOf(p)) * (atEnd ? -1.0 : 1.0);
+        }
+        // signed along TangentAt, away from the corner
+        double CurvatureAt(const Vertex &p) const {
+            const ExactCurve curve(edge);
+            return curve.Curvature(curve.ParamOf(p)) * (atEnd ? -1.0 : 1.0);
         }
         // where the circle around x of radius r touches the piece of this arm, with its center on the given side
         std::optional<Vertex> TouchedBy(const PrimitiveEdge &piece, const Vertex &x, double r, double side) const {

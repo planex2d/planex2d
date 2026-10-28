@@ -13,14 +13,14 @@
 
 namespace planex2d {
 
-    // the number of other endpoints at every endpoint; a circle's start and end meet each other
+    // the number of other endpoints at every endpoint; a closed edge's start and end meet each other
     inline std::vector<size_t> EndDegrees(const Wire &w) {
         const std::vector<Vertex> pts = w.Endpoints();
         Grid grid = Grid::Of(pts, 0.0);
         std::vector<size_t> degree(pts.size(), 0);
         for (size_t k = 0; k < pts.size(); ++k) {
-            const bool circle = std::holds_alternative<Circle>(w[k / 2]);
-            grid.ForCell(pts[k], [&](size_t j) { degree[k] += j != k && (circle || j / 2 != k / 2) && pts[j] == pts[k]; });
+            const bool closed = IsClosedEdge(w[k / 2]);
+            grid.ForCell(pts[k], [&](size_t j) { degree[k] += j != k && (closed || j / 2 != k / 2) && pts[j] == pts[k]; });
         }
         return degree;
     }
@@ -131,6 +131,9 @@ namespace planex2d {
         }
     };
 
+    // the arrangement gives the wire's pieces and the cutter's the same vertex wherever they meet, so a point is on the
+    // cutter exactly when a cutter piece ends there (a distance would miss a spline's cut points, which lie on its
+    // approximation)
     inline WireSplit SplitWire(const Wire &w, const Wire &cutter) {
         Wire c = w;
         std::vector<CutState> state(c.Size(), CutState{1});
@@ -139,16 +142,23 @@ namespace planex2d {
             state.push_back({2});
         }
         Arrange(c, state);
+        const auto before = [](const Vertex &a, const Vertex &b) { return a.x < b.x || (a.x == b.x && a.y < b.y); };
+        std::vector<Vertex> onCutter;
         std::vector<bool> other(c.Size());
-        for (size_t k = 0; k < c.Size(); ++k)
+        for (size_t k = 0; k < c.Size(); ++k) {
             other[k] = !(state[k].mask & 1);
+            if (state[k].mask & 2) {
+                onCutter.push_back(StartOf(c[k]));
+                onCutter.push_back(EndOf(c[k]));
+            }
+        }
+        std::sort(onCutter.begin(), onCutter.end(), before);
         c.Erase(other);
-        const double tol = std::max(Planar{Wire(w.Axes()), cutter}.Tolerance(), Planar{Wire(w.Axes()), c}.Tolerance());
         const std::vector<Vertex> pts = c.Endpoints();
         DisjointSets run(c.Size());
         Grid grid = Grid::Of(pts, 0.0);
         for (size_t k = 0; k < pts.size(); ++k)
-            if (NearestTo(cutter, pts[k]).d > tol)
+            if (!std::binary_search(onCutter.begin(), onCutter.end(), pts[k], before))
                 grid.ForCell(pts[k], [&](size_t j) {
                     if (pts[j] == pts[k])
                         run.Join(j / 2, k / 2);

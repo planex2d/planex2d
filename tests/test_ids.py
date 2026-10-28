@@ -108,7 +108,7 @@ def test_find_by_id():
     assert px.Find("plate") is f
     assert px.Find("plate.Line.2").ids == ["plate.Line.2"]
     sk = px.Sketch()
-    sk.Circle(1, 1, 0.3, id="hole")
+    sk.Circle((1, 1), 0.3, id="hole")
     assert px.Find(sk.id) is sk and px.Find(sk.id + ".hole").ids == [sk.id + ".hole"]
     c = px.Compound([f], id="both")
     assert px.Find("both") is c

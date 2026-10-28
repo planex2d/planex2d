@@ -23,7 +23,7 @@ def half():
 
 def dimension(sk):
     sk.Constrain("bottom", px.Distance, 4, id="w")
-    sk.Constrain("bottom", "top", px.Distance, 3, id="h")
+    sk.Constrain("bottom", "top", px.Distance, 3, id="ht")
     sk.Constrain("notch", "top", px.Distance, 1)
     sk.Constrain("top", px.Distance, 1.5)
 
@@ -79,7 +79,7 @@ def test_mirrored_arcs_turn_the_other_way_and_circles_keep_their_radius():
         .Line(0, 2, px.Vertical, px.Tangent, id="side").Line(-4, 0, px.Horizontal, id="top")
     sk.Constrain("top.end", px.V, px.Coincident)
     profile = ["Chain.1"]
-    sk.Circle(1.5, 1.5, 0.4, id="hole")
+    sk.Circle((1.5, 1.5), 0.4, id="hole")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         sk.Mirrored(profile + ["hole"], px.V)
@@ -112,8 +112,8 @@ def test_a_symmetry_line_of_points_and_of_circles():
     sk = px.Sketch()
     sk.Move((1, 0)).Line(1, 1, id="l")
     sk.SymmetryLine("l.start", "l.end", id="bisector")
-    sk.Circle(5, 0, 1, id="c1")
-    sk.Circle(8, 2, 1, id="c2")
+    sk.Circle((5, 0), 1, id="c1")
+    sk.Circle((8, 2), 1, id="c2")
     sk.SymmetryLine("c1", "c2", id="between")
     assert repr(sk.constraints["Symmetric"]["Symmetric.2"]) == '"c1.center", "c2.center", "between", px.Symmetric'
     assert repr(sk.constraints["Equal"]["Equal.1"]) == '"c1", "c2", px.Equal'
@@ -129,6 +129,7 @@ def test_a_symmetry_line_of_points_and_of_circles():
 
 
 def test_symmetry_lines_in_the_plots():
+    pytest.importorskip("plotly")
     sk = px.Sketch()
     sk.Move((0, 0)).Line(4, 0, px.Fix, id="a").Move((0, 0)).Line(3, 3, id="b")
     sk.SymmetryLine("a", "b", id="axis")
@@ -141,7 +142,7 @@ def test_symmetry_lines_in_the_plots():
 
 def test_two_arcs_made_symmetric_are_not_over_constrained():
     sk = px.Sketch()
-    sk.Circle(0, 0, 1, px.Fix, id="hub")
+    sk.Circle((0, 0), 1, px.Fix, id="hub")
     sk.Move((1, 0.5)).Arc(0.8, 100, id="a")
     sk.Move((-1.1, 0.4)).Arc(0.7, -95, id="b")
     sk.Constrain("a", px.Fix)

@@ -40,7 +40,7 @@ def rectangle():
     sk.Move(sk.origin, px.Coincident).Line(4, 0.3, px.Horizontal, id="bottom").Line(0.2, 2, px.Perpendicular) \
         .Line(-4, 0.1, px.Perpendicular, id="top").Close(px.Perpendicular)
     sk.Constrain("bottom", px.Distance, 4, id="w")
-    sk.Constrain("bottom.start", "top", px.Distance, 2, id="h")
+    sk.Constrain("bottom.start", "top", px.Distance, 2, id="ht")
     sk.Constrain("top", px.Distance, 4, id="w2")
     sk.Update({"w": 5, "w2": 5})
     return sk
@@ -51,7 +51,7 @@ def bends():
     sk.Move((0, 0), px.Fix).Line(2, 0, px.Horizontal, id="a").Arc(1, 90, px.Tangent, id="b").Line(1.5, px.Tangent, id="c")
     sk.Constrain("b", px.Radius, 0.8, id="r")
     sk.Constrain("a", px.Distance, 2.5, id="la")
-    sk.Circle(4, 4, 0.5, id="hole")
+    sk.Circle((4, 4), 0.5, id="hole")
     sk.Constrain("hole", "c", px.Tangent)
     sk.Update({"r": 1.1})
     return sk

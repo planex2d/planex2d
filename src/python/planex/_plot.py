@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import math
-import warnings
 from typing import TYPE_CHECKING, Any
 
 from . import _planex as px
@@ -16,6 +15,8 @@ from ._plot_mesh import (_MeshRegion, _cut_lines, _field_mesh, _flat, _is_occ, _
                          _mesh_region, _on_xy, _plane_of, _region)
 from ._plot_style import (OVERLAY_COL, _arrowheads, _colormap, _colorscale, _contours_arg, _css, _density,
                           _levels, _limits, _offscreen, _overlays, _polylines, _separated, _title, _backend)
+from ._auto import Auto, is_auto
+from ._caller import warn
 
 if TYPE_CHECKING:
     from ._compound import Compound
@@ -47,12 +48,24 @@ def _free_edges(edges):
     return [i for i, e in enumerate(edges) if count[xy(e.start)] == 1 or count[xy(e.end)] == 1]
 
 
+def _sampling(views):
+    """how far a drawn chord may lie from its arc: 1e-4 of the bounding box's diagonal, below a pixel up to about 10x
+    zoom"""
+    boxes = [v.bounding_box for v in views]
+    if not boxes:
+        return None
+    lo = (min(b[0][0] for b in boxes), min(b[0][1] for b in boxes))
+    hi = (max(b[1][0] for b in boxes), max(b[1][1] for b in boxes))
+    return 1e-4 * math.dist(lo, hi) or None
+
+
 def _scene(obj, line_col, arc_col, spline_col, face_col, mark_edges_smaller, mark_free_edges, highlight):
     """polylines by (color, label), face loops, and marks as (points, color, label)"""
     all_parts = parts(obj)
     all_views = edge_views(obj)
     edges = [v.edge for v in all_views]
     eps = 1e-9 * scale(edges)
+    tol = _sampling(all_views)
 
     by_type, by_property = line_col == "type", line_col == "property"
     plain = LINE_COL if by_type or by_property else line_col
@@ -68,14 +81,14 @@ def _scene(obj, line_col, arc_col, spline_col, face_col, mark_edges_smaller, mar
             col, label = spline_col, "splines"
         if by_property and v.col is not None:
             col, label = tuple(v.col), None
-        polylines.setdefault((col, label), []).append(points(e))
+        polylines.setdefault((col, label), []).append(points(e, tol))
 
     # a wire inside a compound is a wire, a wire on its own may be meant as an outline
     faces = []
     if face_col is not None:
         for part in all_parts:
             if (part is obj and face_col != FACE_COL) or not isinstance(part, px.Wire):
-                faces.extend(pts for pts, depth in closed_loops(part, eps))
+                faces.extend(pts for pts, depth in closed_loops(part, eps, tol))
 
     marks = []
     if mark_edges_smaller is not None:
@@ -238,7 +251,7 @@ def _disc_raster(data, n=400):
 
 def _surface(obj, data, faces, clim, contours):
     """what both backends draw of a measurement or field: its kind ("contour" for a pixel grid, "tricontour" for a
-    triangulation, "points"), its arguments, the values, the colour range and the contour levels (None without)"""
+    triangulation, "points"), its arguments, the values, the color range and the contour levels (None without)"""
     import numpy as np
 
     if faces and ("raster" in data or "discs" in data):
@@ -395,7 +408,7 @@ def _region_of(obj, mesh, call):
 
 def _draw(obj, ax, backend, legend, line_col=LINE_COL, arc_col=ARC_COL, spline_col=SPLINE_COL, face_col=FACE_COL,
           small=None, free=False, highlight=None, mesh_lines=None, field=None, face_label=None):
-    """obj into ax with the backend: its edges and faces, the mesh's element edges, a field's colours (field: the
+    """obj into ax with the backend: its edges and faces, the mesh's element edges, a field's colors (field: the
     arguments of the backend's field drawer after ax and obj); face_label: the legend entry of a fill that is not the
     default"""
     draw_scene, draw_field = _DRAWERS[_backend(ax, backend)]
@@ -413,10 +426,12 @@ def Plot(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any,
          ax: Any = None, line_col: Color = LINE_COL, arc_col: Color = ARC_COL, spline_col: Color = SPLINE_COL,
          face_col: Color | None = FACE_COL, mark_edges_smaller: float | None = None, mark_free_edges: bool = False,
          highlight: Ids | Any = None, legend: bool = True, show_constraints: bool | None = None,
-         show_ends: bool = False, show_direction: bool = False, show_parent: bool | None = None, backend: str | None = None) -> Any:
+         show_ends: bool = False, show_direction: bool = False, show_diagnostics: bool | dict = False,
+         show_free_motions: bool | int = False, show_parent: bool | None = None, backend: str | None = None) -> Any:
     """Draws a planex object in its plane with matplotlib or plotly.
 
-    A sketch is drawn as sk.Plot draws it (show_constraints, show_ends, show_direction, show_parent); the other options
+    A sketch is drawn as sk.Plot draws it (show_constraints, show_ends, show_direction, show_diagnostics,
+    show_free_motions, show_parent); the other options
     are for the other objects, e.g. px.Plot(sk.Shape(), face_col="C0"). An OCC shape is cut at the plane
     (px.Intersect3d(plane, shape)), or without one drawn flat in its own plane as px.FromOCC gives it. Fields:
     px.PlotField; meshes: px.PlotMesh.
@@ -426,12 +441,12 @@ def Plot(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any,
             one ("Sketch.1", "Shape.2.Line.3").
         plane: the plane that cuts an OCC shape; None draws it flat in its own plane.
         ax: a matplotlib Axes or a plotly Figure to draw into, which also selects the backend.
-        line_col: the colour of every edge; "type" draws lines in black, arcs in arc_col and splines in spline_col,
+        line_col: the color of every edge; "type" draws lines in black, arcs in arc_col and splines in spline_col,
             with a legend entry each; "property" takes each edge's own col where it has one.
-        arc_col: the colour of arcs with line_col="type".
-        spline_col: the colour of splines with line_col="type".
+        arc_col: the color of arcs with line_col="type".
+        spline_col: the color of splines with line_col="type".
         face_col: fills the closed loops (faces and shapes; a wire on its own stays an outline unless face_col is
-            given); a fill other than the default gets a legend entry labelled with the object's id ('Face.3'), the
+            given); a fill other than the default gets a legend entry labeled with the object's id ('Face.3'), the
             default fill none; None draws the outlines only.
         mark_edges_smaller: marks the edges shorter than this at their midpoints.
         mark_free_edges: True marks the edges with an end no other edge shares.
@@ -442,6 +457,9 @@ def Plot(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any,
         show_constraints: for a sketch, as sk.Plot.
         show_ends: for a sketch, as sk.Plot.
         show_direction: for a sketch, as sk.Plot.
+        show_diagnostics: for a sketch, as sk.Plot: True or the dict of sk.Diagnose() marks its geometry faults.
+        show_free_motions: for a sketch, as sk.Plot: True draws an arrow per point each free motion moves, a number k
+            motion k only.
         show_parent: for a sketch, as sk.Plot.
         backend: "matplotlib" or "plotly" without ax; None is matplotlib.
 
@@ -465,14 +483,16 @@ def Plot(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any,
              ("mark_edges_smaller", mark_edges_smaller, None), ("mark_free_edges", mark_free_edges, False),
              ("highlight", highlight, None), ("legend", legend, True))
     marks = (("show_constraints", show_constraints, None), ("show_ends", show_ends, False),
-             ("show_direction", show_direction, False), ("show_parent", show_parent, None))
+             ("show_direction", show_direction, False), ("show_diagnostics", show_diagnostics, False),
+             ("show_free_motions", show_free_motions, False), ("show_parent", show_parent, None))
     if isinstance(obj, sketch_types):
         given = [name for name, value, default in style if _given(value, default)]
         if given:
             raise ValueError(f"Plot: a sketch is drawn in its own look, {', '.join(given)} draw other objects: "
                              f"px.Plot(sk.Shape(), ...) or px.Plot(sk.Wires(), ...)")
         return _plot_sketch.Plot(obj, ax=ax, show_constraints=show_constraints, show_ends=show_ends,
-                                 show_direction=show_direction, show_parent=show_parent, backend=backend)
+                                 show_direction=show_direction, show_diagnostics=show_diagnostics,
+                                 show_free_motions=show_free_motions, show_parent=show_parent, backend=backend)
     given = [name for name, value, default in marks if _given(value, default)]
     if given:
         raise ValueError(f"Plot: {', '.join(given)} draw a sketch, this is a {type(obj).__name__}")
@@ -489,17 +509,17 @@ def _given(value, default):
 
 
 def PlotField(field: Any, mesh: Any = None, obj: Any = None, /, on: str = "faces", ax: Any = None,
-              backend: str | None = None, samples: int | None = None, vectors: bool = False, min: float | None = None,
-              max: float | None = None, contours: int | list[float] | None = None, field_lines: bool | float = False,
+              backend: str | None = None, samples: int | None = None, vectors: bool = False, min: float | Auto = Auto,
+              max: float | Auto = Auto, contours: int | list[float] | None = None, field_lines: bool | float = False,
               colormap: str | Any = "default", legend: bool = True) -> Any:
     """Draws a field over a planex object with matplotlib or plotly.
 
-    An NGSolve or dolfinx field is evaluated at the centres of square pixels; pixels the mesh does not cover stay empty
+    An NGSolve or dolfinx field is evaluated at the centers of square pixels; pixels the mesh does not cover stay empty
     (NGSolve's 2d search still counts a point up to about 1e-6 of an element's size outside it); a vector or complex
     field shows its magnitude. A 2d mesh needs the object on the XY plane; on a 3d mesh (with volume elements) every
-    pixel is evaluated at its 3d point on the object's plane and a vector field is coloured by its full length. A
-    measurement is called on obj with plot=True and samples=samples; its values colour the faces (interpolated between
-    its points) or the edges, with a colour bar, its value in the title and its marks.
+    pixel is evaluated at its 3d point on the object's plane and a vector field is colored by its full length. A
+    measurement is called on obj with plot=True and samples=samples; its values color the faces (interpolated between
+    its points) or the edges, with a color bar, its value in the title and its marks.
 
     Args:
         field: an NGSolve GridFunction or CoefficientFunction, a dolfinx.fem.Function (scalar or vector, real or
@@ -509,22 +529,22 @@ def PlotField(field: Any, mesh: Any = None, obj: Any = None, /, on: str = "faces
             CoefficientFunction needs one; a dolfinx mesh must not be distributed over MPI processes. Left out, the
             second positional argument is obj.
         obj: the region: a 2d planex object (the pixels inside its faces are evaluated, its outlines drawn over the
-            colours), an OCC shape flat in its own plane, or a plane (px.Plane, netgen Axes) whose cut of the mesh's
+            colors), an OCC shape flat in its own plane, or a plane (px.Plane, netgen Axes) whose cut of the mesh's
             OCC geometry is the region; None: the XY cut of a 3d mesh's geometry, a 2d mesh's geometry itself, or a
             mesh without an OCC geometry (dolfinx, read from a file) with its boundary as the outline.
-        on: "faces" or "edges": what a measurement colours; NGSolve and dolfinx fields colour the faces.
+        on: "faces" or "edges": what a measurement colors; NGSolve and dolfinx fields color the faces.
         ax: as px.Plot.
         backend: as px.Plot.
         samples: the pixels along the longer side of the region's box (default 400); for a measurement its samples.
         vectors: True adds the arrows of a real vector field (its part in the plane) on a coarse grid.
-        min: the low end of the colour range; None takes it from the values.
-        max: the high end of the colour range; None takes it from the values.
-        contours: thin dark lines over the colours of the faces: a number n of levels evenly spaced inside the colour
+        min: the low end of the color range; px.Auto takes it from the values.
+        max: the high end of the color range; px.Auto takes it from the values.
+        contours: thin dark lines over the colors of the faces: a number n of levels evenly spaced inside the color
             range, or a list of levels.
         field_lines: True or a density (as matplotlib's streamplot: 2 is twice as dense) draws the field lines of a
             real vector field with small arrowheads.
         colormap: "default" (planex's map, low values red to high values blue; "default_r" the other way round), a
-            matplotlib colormap or its name ("viridis", "coolwarm_r"), or a list of colours.
+            matplotlib colormap or its name ("viridis", "coolwarm_r"), or a list of colors.
         legend: True shows the legend.
 
     Returns:
@@ -548,6 +568,8 @@ def PlotField(field: Any, mesh: Any = None, obj: Any = None, /, on: str = "faces
         mesh, obj = None, mesh
     if on not in ("faces", "edges"):
         raise ValueError(f"PlotField: on is 'faces' or 'edges', not {on!r}")
+    min = None if is_auto(min, "PlotField", "min") else min
+    max = None if is_auto(max, "PlotField", "max") else max
     if min is not None and max is not None and min > max:
         raise ValueError(f"PlotField: min {min} > max {max}")
     library = _field_library(field)
@@ -563,22 +585,22 @@ def PlotField(field: Any, mesh: Any = None, obj: Any = None, /, on: str = "faces
             raise ValueError("PlotField: vectors=True draws the arrows of an NGSolve vector field or a dolfinx vector "
                              "Function")
         if contours is not None and on == "edges":
-            warnings.warn("PlotField: contours are drawn over the colours of faces (on='faces'), there are none: no "
-                          "contours", px.PlanexWarning, stacklevel=2)
+            warn("PlotField: contours are drawn over the colors of faces (on='faces'), there are none: no "
+                          "contours", px.PlanexWarning)
             contours = None
         if density is not None:
-            warnings.warn("PlotField: field lines need a vector field (an NGSolve field or dolfinx Function of two or "
-                          "more components): no field lines", px.PlanexWarning, stacklevel=2)
+            warn("PlotField: field lines need a vector field (an NGSolve field or dolfinx Function of two or "
+                          "more components): no field lines", px.PlanexWarning)
             density = None
         obj = _subject(obj, None, "PlotField")
         data = _field(obj, field, samples)
         return _draw(obj, ax, backend, legend, field=(data, on == "faces", (min, max), contours, density, colormap))
     if on == "edges":
-        raise ValueError("PlotField: an NGSolve or dolfinx field colours the faces; on='edges' takes planex "
+        raise ValueError("PlotField: an NGSolve or dolfinx field colors the faces; on='edges' takes planex "
                          "measurements")
     if density is not None and library.size(field) <= 1:
-        warnings.warn("PlotField: field lines need a vector field (an NGSolve field or dolfinx Function of two or more "
-                      "components): no field lines", px.PlanexWarning, stacklevel=2)
+        warn("PlotField: field lines need a vector field (an NGSolve field or dolfinx Function of two or more "
+                      "components): no field lines", px.PlanexWarning)
         density = None
     where = _field_mesh(field, mesh)
     dim = _dim(where)

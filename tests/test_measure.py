@@ -121,7 +121,7 @@ def test_contains():
 
 def test_measure_named_parts():
     sk = px.Move((0, 0)).Line((4, 0), name="bottom").Line((4, 2)).Line((0, 2), name="top").Close()
-    sk.Circle(2, 1, 0.5, name="hole")
+    sk.Circle((2, 1), 0.5, name="hole")
     sk.Vertex("p", (1, 1))
     bottom = sk.Measure("bottom")
     assert bottom["type"] == "line" and bottom["length"] == pytest.approx(4)

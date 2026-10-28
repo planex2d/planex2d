@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+import importlib.util
+
 import pytest
 
 import planex as px
@@ -8,7 +10,8 @@ import planex as px
 
 @pytest.mark.parametrize("call", [
     lambda: px.FromNACA("0012", plane=1),
-    lambda: px.FromShapely(None, plane=1),
+    pytest.param(lambda: px.FromShapely(None, plane=1),
+                 marks=pytest.mark.skipif(importlib.util.find_spec("shapely") is None, reason="shapely is not installed")),
 ])
 def test_an_invalid_plane_names_the_public_call(call):
     with pytest.raises(TypeError, match=r"^From(NACA|Shapely): plane is a Plane"):

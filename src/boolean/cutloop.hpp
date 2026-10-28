@@ -43,6 +43,17 @@ namespace planex2d {
     // circle nothing meets stays one edge. Two congruent circles meet at no point: Cut shares them. The state of a
     // circle goes to its arcs
     inline void CutCircles(Wire &w, std::vector<CutState> &state) {
+        // a closed spline that may be cut goes in as its two halves, as the core cuts them; the merge of the pieces
+        // afterwards (MergeOnCarriers) makes it one edge again where nothing cut it
+        std::vector<bool> halve(w.Size());
+        for (size_t k = 0; k < w.Size(); ++k)
+            halve[k] = !state[k].excluded && state[k].needsCutting;
+        if (const std::vector<size_t> from = w.HalveClosedSplines(halve); !from.empty()) {
+            std::vector<CutState> split;
+            for (size_t k : from)
+                split.push_back(state[k]);
+            state = std::move(split);
+        }
         if (!w.Edges().HasCircle())
             return;
         double scale = 0.0;

@@ -27,6 +27,7 @@
 #include "curves/primitiveedge.hpp"
 #include "core/grid.hpp"
 #include "core/placement.hpp"
+#include "offset/offsetform.hpp"
 #include "wire/loops.hpp"
 
 namespace planex2d {
@@ -47,6 +48,9 @@ namespace planex2d {
     struct FaceList;
 
     class Wire {
+        friend class PlanexWriter;
+        friend class PlanexReader;
+
         private:
             EdgeList edges;
             AxisSystem axes;
@@ -62,6 +66,8 @@ namespace planex2d {
                 return std::visit([&](const auto &x) { return end ? x.End() : x.Start(); }, e);
             }
             static void MoveEnd(Edge &e, bool end, const Vertex &p) {
+                if (IsClosedEdge(e))
+                    return;
                 std::visit([&](auto &x) {
                     if constexpr (!IsCircle<decltype(x)>) {
                         if (end)
@@ -88,11 +94,11 @@ namespace planex2d {
                 grid.Insert(j, p);
                 MoveEnd(edges[j / 2], j % 2 == 1, p);
             }
-            // a circle's start and end are one point: they match each other
+            // a closed edge's start and end are one point: they match each other
             bool Matched(const std::vector<Vertex> &pts, const Grid &grid, size_t k) const {
-                const bool circle = std::holds_alternative<Circle>(edges[k / 2]);
+                const bool closed = IsClosedEdge(edges[k / 2]);
                 bool matched = false;
-                grid.ForCell(pts[k], [&](size_t j) { matched = matched || (j != k && (circle || j / 2 != k / 2) && pts[j] == pts[k]); });
+                grid.ForCell(pts[k], [&](size_t j) { matched = matched || (j != k && (closed || j / 2 != k / 2) && pts[j] == pts[k]); });
                 return matched;
             }
 
@@ -112,7 +118,7 @@ namespace planex2d {
             Ends ChainEnds(const Chains &c, const Chain &ch, size_t b, size_t e) const;
             static constexpr size_t none = (size_t)-1;
             size_t VertexIds(std::vector<size_t> &id) const;
-            Chains FindChains(double maxLength, double maxAngle, double ignore, bool fromSplineIsSmall, bool stopAtVertexProps) const;
+            Chains FindChains(std::optional<double> maxLength, double maxAngle, double ignore, bool fromSplineIsSmall, bool stopAtVertexProps) const;
             std::vector<PrimitiveEdge> Oriented(const Chain &ch, size_t b, size_t e, const Chains &c) const;
 
         public:
@@ -200,12 +206,12 @@ namespace planex2d {
                 (k % 2 == 1 ? t : s) = std::move(p);
                 SetEnds(e, MakeEnds(std::move(s), std::move(t)));
             }
-            // a circle has no vertex: its ends are left out
+            // a closed edge has no vertex: its ends are left out
             std::vector<std::vector<size_t>> VertexEndpoints() const {
                 std::vector<size_t> id;
                 std::vector<std::vector<size_t>> at(VertexIds(id));
                 for (size_t k = 0; k < id.size(); ++k)
-                    if (!std::holds_alternative<Circle>(edges[k / 2]))
+                    if (!IsClosedEdge(edges[k / 2]))
                         at[id[k]].push_back(k);
                 std::erase_if(at, [](const std::vector<size_t> &v) { return v.empty(); });
                 return at;
@@ -307,12 +313,13 @@ namespace planex2d {
             std::vector<Loop> Loops() const;
             WireList Wires() const;
             // the edges (index, true: start to end) of a loop, about its first vertex: that keeps the terms of large
-            // coordinates from cancelling; splines by their approximation
+            // coordinates from cancelling; splines by their approximation, exact: on their exact curve
+            template <bool exact = false>
             double LoopArea(const std::vector<std::pair<size_t, bool>> &loop) const;
             double Length() const {
                 double l = 0.0;
                 for (const Edge &e : edges)
-                    l += LengthOf(e);
+                    l += ExactLengthOf(e);
                 return l;
             }
             // per edge: true if it runs from start to end along its loop, counterclockwise for a closed loop, else
@@ -388,6 +395,32 @@ namespace planex2d {
                 ++changed.n;
                 return from;
             }
+            // the closed splines which marks as their two halves (Spline::Halves); per edge now, the index it had before
+            // (empty: none)
+            std::vector<size_t> HalveClosedSplines(const std::vector<bool> &which) {
+                bool any = false;
+                for (size_t i = 0; i < edges.size() && !any; ++i)
+                    any = which[i] && IsClosedEdge(edges[i]) && std::holds_alternative<Spline>(edges[i]);
+                if (!any)
+                    return {};
+                EdgeList split;
+                std::vector<uint32_t> splitOwners;
+                std::vector<size_t> from;
+                for (size_t i = 0; i < edges.size(); ++i) {
+                    const Spline *s = std::get_if<Spline>(&edges[i]);
+                    const bool halve = which[i] && s && s->IsClosed();
+                    for (size_t k = 0; k < (halve ? 2u : 1u); ++k) {
+                        split.push_back(halve ? Edge(s->Halves()[k]) : edges[i]);
+                        from.push_back(i);
+                        if (!owners.empty())
+                            splitOwners.push_back(owners[i]);
+                    }
+                }
+                edges = std::move(split);
+                owners = std::move(splitOwners);
+                ++changed.n;
+                return from;
+            }
             // owners below faceOwners are faces, the others wires
             void SetOwners(std::vector<uint32_t> o, uint32_t faces = 1) {
                 owners = std::move(o);
@@ -435,9 +468,9 @@ namespace planex2d {
             void FitSplines(const SplineFit &fit);
 
             Wire Cleaned(const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup) const;
-            Wire &Simplify(const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                           const Cleanup &cleanup = config::cleanup);
-            Wire Offset(double d) const;
+            Wire &Simplify(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                           const Cleanup &cleanup = config::state->cleanup);
+            Wire Offset(double d, OffsetEnd ends = OffsetEnd::Round, OffsetCorner corners = OffsetCorner::Round) const;
 
             // each corner of at cut by the rule (FilletRule, ChamferRule): the edges there shortened, the new edge between
             // them; the corners that cannot be cut are warned about, none raises. In shape/fillet.hpp

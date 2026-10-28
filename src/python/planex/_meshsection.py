@@ -5,12 +5,12 @@
 from __future__ import annotations
 
 import sys
-import warnings
 from typing import TYPE_CHECKING, Any
 
 from . import _planex as px
 from ._geom import read_name
 from ._plot_fields import _Dolfinx, _NGSolve
+from ._caller import warn
 
 # a mesh vertex this close to the plane, relative to the mesh's size, lies on it
 ON_PLANE = 1e-9
@@ -38,8 +38,8 @@ def Intersect3d(plane: Plane | None, shape: Any, /) -> Shape:
     Args:
         plane: the cutting plane: px.Plane, occ.Axes, a sketch, a planar face or shape, a compound on one plane; None
             is the xy plane.
-        shape: an OCC shape, an ngsolve.Mesh, a serial dolfinx.mesh.Mesh of tetrahedra or hexahedra, or the MeshData
-            of dolfinx.io.gmsh (read_from_msh, model_to_mesh).
+        shape: an OCC shape or a list of them (cut as one compound), an ngsolve.Mesh, a serial dolfinx.mesh.Mesh of
+            tetrahedra or hexahedra, or the MeshData of dolfinx.io.gmsh (read_from_msh, model_to_mesh).
 
     Raises:
         ValueError: the boundary of a region of the mesh is not watertight (an edge belongs to one boundary facet only),
@@ -48,7 +48,7 @@ def Intersect3d(plane: Plane | None, shape: Any, /) -> Shape:
 
     Examples:
         px.Intersect3d(px.XY, occ_shape)
-        px.Intersect3d(px.XY.Offset(0.5), mesh)
+        px.Intersect3d(px.Plane(px.XY, 0.5), mesh)
     """
     boundary = _boundary(shape)
     if boundary is None:
@@ -71,8 +71,8 @@ def Intersect3d(plane: Plane | None, shape: Any, /) -> Shape:
                 part.name = read_name(name)
             parts.append(part)
     if not parts:
-        warnings.warn("Intersect3d: the plane misses the shape or only touches it, the result is empty",
-                      px.PlanexWarning, stacklevel=2)
+        warn("Intersect3d: the plane misses the shape or only touches it, the result is empty",
+                      px.PlanexWarning)
         return px._EmptyShape(frame)
     return parts[0] if len(parts) == 1 else px.Glue(parts)
 

@@ -8,10 +8,12 @@
 #include <deque>
 #include <numbers>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
 #include "wire/wire.hpp"
+#include "core/disjointsets.hpp"
 #include "curves/curvefit.hpp"
 #include "core/timer.hpp"
 
@@ -28,7 +30,9 @@ namespace planex2d {
         return MakeEnds(PropsAtVertex(c, ch.edges[b], ch.vids[b]), PropsAtVertex(c, ch.edges[e - 1], ch.vids[e]));
     }
 
-    inline Wire::Chains Wire::FindChains(double maxLength, double maxAngle, double ignore, bool fromSplineIsSmall, bool stopAtVertexProps) const {
+    // maxLength none: an edge is short enough when shorter than 1/20 of the length of the loop or open wire it lies in
+    // (its connected edges), so a tessellation is fitted at any scale and a polygon of few sides stays
+    inline Wire::Chains Wire::FindChains(std::optional<double> maxLength, double maxAngle, double ignore, bool fromSplineIsSmall, bool stopAtVertexProps) const {
         Chains c;
         size_t n = edges.size();
         size_t nv = VertexIds(c.id);
@@ -37,12 +41,19 @@ namespace planex2d {
         c.tiny.assign(n, false);
         std::vector<bool> &small = c.small;
         std::vector<bool> used(n, false);
+        DisjointSets connected(nv);
+        for (size_t i = 0; i < n; ++i)
+            connected.Join(c.Start(i), c.End(i));
+        std::vector<double> runLength(nv, 0.0);
+        for (size_t i = 0; i < n; ++i)
+            runLength[connected.Find(c.Start(i))] += LengthOf(edges[i]);
         for (size_t i = 0; i < n; ++i) {
             c.inc[c.Start(i)].push_back(i);
             c.inc[c.End(i)].push_back(i);
+            const double limit = maxLength ? *maxLength : runLength[connected.Find(c.Start(i))] / 20.0;
             std::visit([&](const auto &x) {
                 if constexpr (!std::is_same_v<std::decay_t<decltype(x)>, Spline> && !IsCircle<decltype(x)>) {
-                    small[i] = ((fromSplineIsSmall && x.fromSpline) || x.Length() < maxLength) && !HasPartition(x.props);
+                    small[i] = ((fromSplineIsSmall && x.fromSpline) || x.Length() < limit) && !HasPartition(x.props);
                     c.tiny[i] = x.Length() < ignore;
                 }
             }, edges[i]);
@@ -199,8 +210,11 @@ namespace planex2d {
     inline void Wire::FitSplines(const SplineFit &fit) {
         static Timer t("planex FitSplines");
         Region reg(t);
-        // a spline runs through the chain's vertices: one over vertices with properties is split there, keeping
-        // the curve smooth and the vertices where they are
+        if (!config::state->spline_fitter)
+            throw std::runtime_error("fit_splines: fitting splines needs planex's OCC integration (netgen and OCC), which is not "
+                                     "loaded; pip install planex2d[occ] (planex2d-occ, with netgen)");
+        // a spline over vertices with properties is split at its points nearest them, keeping the curve smooth; the
+        // vertices move onto it (by at most tol)
         const Chains c = FindChains(fit.max_edge_length, fit.max_edge_angle, fit.ignore_edges_smaller, true, false);
         const std::vector<bool> &small = c.small, &tiny = c.tiny;
         const std::vector<std::vector<size_t>> &inc = c.inc;
@@ -284,10 +298,10 @@ namespace planex2d {
                 std::vector<Properties> markedProps;
                 for (size_t k = b + 1; k < e; ++k)
                     if (Properties p = MergedProperties(PropsAtVertex(c, chain[k - 1], vids[k]), PropsAtVertex(c, chain[k], vids[k]))) {
-                        marked.Add((double)k, oriented[k - b].Start());
+                        marked.Add((double)k, s->ExactNearestPoint(oriented[k - b].Start()));
                         markedProps.push_back(std::move(p));
                     }
-                std::vector<Spline> pieces = marked.IsEmpty() ? std::vector<Spline>{std::move(*s)} : s->Split(marked, 0.0);
+                std::vector<Spline> pieces = marked.IsEmpty() ? std::vector<Spline>{std::move(*s)} : s->Split(marked, s->ApproximationTol());
                 for (size_t j = 0; j < markedProps.size() && j + 1 < pieces.size(); ++j) {
                     pieces[j].ends = MakeEnds(PropsAtEnd(pieces[j].ends, false), markedProps[j]);
                     pieces[j + 1].ends = MakeEnds(markedProps[j], PropsAtEnd(pieces[j + 1].ends, true));

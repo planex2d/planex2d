@@ -31,7 +31,7 @@ namespace planex2d::sketch {
             if (tangent.size() == 2)
                 return TouchingBoth(pen, choices);
             if (radius.has_value() + through.has_value() + congruent.has_value() + !tangent.empty() != 1)
-                Fail("give exactly one of r, congruent, through and tangent");
+                Fail("give exactly one of r, coincident, through and tangent");
             const Vertex c = center.value_or(pen.pos);
             const double rho = RadiusAround(c, pen, choices);
             if (!(rho > 0.0))
@@ -59,7 +59,7 @@ namespace planex2d::sketch {
             if (congruent) {
                 const std::optional<CircleCarrier> k = CarrierOf(*congruent);
                 if (!k)
-                    Fail("congruent needs an arc or a circle");
+                    Fail("coincident needs an arc or a circle");
                 return k->radius;
             }
             if (through)

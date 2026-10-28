@@ -11,10 +11,10 @@ from helpers import square
 
 
 def flange():
-    sk = px.QuickSketch().Circle(0, 0, 3).Circle(0, 0, 1)
+    sk = px.QuickSketch().Circle((0, 0), 3).Circle((0, 0), 1)
     for k in range(6):
         a = math.pi * k / 3
-        sk.Circle(2 * math.cos(a), 2 * math.sin(a), 0.25)
+        sk.Circle((2 * math.cos(a), 2 * math.sin(a)), 0.25)
     return sk.Face()
 
 
@@ -255,7 +255,7 @@ def test_empty_compound():
 
 
 def test_signed_distance_of_a_disc():
-    disc = px.QuickSketch().Circle(1, 2, 2).Face()
+    disc = px.QuickSketch().Circle((1, 2), 2).Face()
     assert disc.Distance((1, 2), signed=True) == pytest.approx(-2)
     c = disc.center
     assert disc.Distance((c[0], c[1]), signed=True) < 0 and disc.Distance((6, 2), signed=True) == pytest.approx(3)
@@ -409,13 +409,13 @@ def test_polylines_of_chains_shapes_and_splines():
 
 @pytest.mark.constraints
 def test_polylines_of_sketches():
-    sk = px.QuickSketch().Circle(0, 0, 3).Circle(0, 0, 1)
+    sk = px.QuickSketch().Circle((0, 0), 3).Circle((0, 0), 1)
     assert [a.tolist() for a in sk.Polylines(1e-3)] == [a.tolist() for a in sk.Shape().Polylines(1e-3)]
     outer, bore = sk.Polylines(1e-3)
     assert shoelace(outer) > 0 > shoelace(bore)
     cs = px.Sketch()
     cs.Move((0, 0)).Line(2, 0).Line(0, 2).Line(-2, 0).Close()
-    cs.Circle(1, 1, 0.5)
+    cs.Circle((1, 1), 0.5)
     loops = cs.Polylines(1e-4)
     assert [a.tolist() for a in loops] == [a.tolist() for a in cs.Shape().Polylines(1e-4)]
     assert len(loops) == 2 and shoelace(loops[0]) == pytest.approx(4) and shoelace(loops[1]) == pytest.approx(-math.pi / 4, abs=1e-3)

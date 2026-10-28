@@ -16,7 +16,7 @@ def _plate():
     sk.Constrain("plate.Line.1.start", px.Fix)
     sk.Constrain("plate.Line.1", px.Horizontal)
     sk.Constrain("plate.Line.1", px.Distance, 40, id="w")
-    sk.Constrain("plate.Line.2", px.Distance, 20, id="h")
+    sk.Constrain("plate.Line.2", px.Distance, 20, id="ht")
     return sk
 
 
@@ -26,7 +26,7 @@ def _drawn(pen, **kw):
     sk.Line(10, 0, id="L1")
     sk.Move(*pen)
     sk.Line(4, parallel="L1", id="L2", **kw)
-    return sk.Edge("L2").edges[0]
+    return sk.Wire("L2").edges[0]
 
 
 @pytest.mark.parametrize("pen, d, y", [((5, 3), 2, 2), ((5, 3), -2, -2), ((5, -3), 2, -2), ((5, -3), -2, 2), ((5, 0), 2, 2), ((5, 0), -2, -2)])
@@ -55,7 +55,7 @@ def test_config_branch_check_min_length():
 def test_expression_contradiction_is_suspended():
     sk = _plate()
     with pytest.warns(px.PlanexWarning):
-        sk.Expression("w + h = 70")
+        sk.Expression("w + ht = 70")
     assert sk.status == "over"
 
 
@@ -84,6 +84,6 @@ def test_projected_hole_is_one_circle():
     assert len(sk.elements["Circle"]) == 1
     assert "Arc" not in sk.elements
     assert [p for p in sk.elements["Point"] if "Center" in p] == ["Projection.1.Center.1"]
-    c = sk.Edge(sk.elements["Circle"][0]).circles[0]
+    c = sk.Wire(sk.elements["Circle"][0]).circles[0]
     assert c.radius == pytest.approx(3, abs=1e-12)
     assert [c.center[0], c.center[1]] == pytest.approx([20, 10], abs=1e-12)

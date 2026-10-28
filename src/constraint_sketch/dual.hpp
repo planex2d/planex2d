@@ -113,6 +113,27 @@ namespace planex2d::cs {
             r.g[i] = s * a.g[i];
         return r;
     }
+    // f(a) by the chain rule, f1 the derivative of f at a's value
+    inline Dual Chained(const Dual &a, double f, double f1) {
+        Dual r(f);
+        for (size_t i = 0; i < active; ++i)
+            r.g[i] = f1 * a.g[i];
+        return r;
+    }
+    inline Dual Exp(const Dual &a) {
+        const double e = std::exp(a.v);
+        return Chained(a, e, e);
+    }
+    inline Dual Log(const Dual &a) { return Chained(a, std::log(a.v), 1.0 / a.v); }
+    inline Dual Sinh(const Dual &a) { return Chained(a, std::sinh(a.v), std::cosh(a.v)); }
+    inline Dual Cosh(const Dual &a) { return Chained(a, std::cosh(a.v), std::sinh(a.v)); }
+    inline Dual Tanh(const Dual &a) {
+        const double t = std::tanh(a.v);
+        return Chained(a, t, 1.0 - t * t);
+    }
+    inline Dual Asinh(const Dual &a) { return Chained(a, std::asinh(a.v), 1.0 / std::sqrt(1.0 + a.v * a.v)); }
+    inline Dual Acosh(const Dual &a) { return Chained(a, std::acosh(a.v), 1.0 / std::sqrt(a.v * a.v - 1.0)); }
+    inline Dual Atanh(const Dual &a) { return Chained(a, std::atanh(a.v), 1.0 / (1.0 - a.v * a.v)); }
     inline Dual Abs(const Dual &a) { return a.v < 0.0 ? -a : a; }
     inline Dual AbsOf(const Dual &a) { return Abs(a); }
     inline Dual Min(const Dual &a, const Dual &b) { return b.v < a.v ? b : a; }
@@ -174,5 +195,13 @@ namespace planex2d::cs {
     inline double Min(double a, double b) { return std::min(a, b); }
     inline double Max(double a, double b) { return std::max(a, b); }
     inline double Pow(double a, double b) { return std::pow(a, b); }
+    inline double Exp(double x) { return std::exp(x); }
+    inline double Log(double x) { return std::log(x); }
+    inline double Sinh(double x) { return std::sinh(x); }
+    inline double Cosh(double x) { return std::cosh(x); }
+    inline double Tanh(double x) { return std::tanh(x); }
+    inline double Asinh(double x) { return std::asinh(x); }
+    inline double Acosh(double x) { return std::acosh(x); }
+    inline double Atanh(double x) { return std::atanh(x); }
 
 }

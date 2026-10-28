@@ -26,13 +26,13 @@ def test_every_property_of_an_element_is_writable(make):
     line.col, line.partition = (1, 0, 0), [0.5, 0.25]
     expected = ("floor", 0.1, 0.01, 1, 2, [1, 0, 0, 1], [0.25, 0.5])
     assert (line.name, line.maxh, line.minh, line.hpref, line.layer, line.col, line.partition) == expected
-    e = sk.Edge("r.Line.1").edges[0]
+    e = sk.Wire("r.Line.1").edges[0]
     assert (e.name, e.maxh, e.minh, e.hpref, e.layer, e.col, e.partition) == expected
     element = sk("r.Line.1")[0]
     assert (element.name, element.maxh) == ("floor", 0.1)
     assert sk(name="floor").ids == sk("r.Line.1").ids
     element.name = None
-    assert line.name is None and sk.Edge("r.Line.1").edges[0].name is None
+    assert line.name is None and sk.Wire("r.Line.1").edges[0].name is None
 
 
 @pytest.mark.parametrize("make", KINDS)
@@ -52,12 +52,12 @@ def test_a_bad_value_changes_nothing(make):
 @pytest.mark.parametrize("make", KINDS)
 def test_a_selection_sets_all_and_reads_what_they_share(make):
     sk = plate(make)
-    sk.Circle(10, 1, 1, id="far")
+    sk.Circle((10, 1), 1, id="far")
     assert [i.local for i in sk("r") if ".Line." in i.local] == [f"r.Line.{k}" for k in range(1, 5)]
     assert [i.local for i in sk("r") if ".Point." in i.local] == [f"r.Point.{k}" for k in range(1, 5)]
     sk("r").col = (0, 0, 1)
     assert sk("r").col == [0, 0, 1, 1]
-    assert {tuple(e.col) for e in sk.Edge("r").edges} == {(0, 0, 1, 1)}
+    assert {tuple(e.col) for e in sk.Wire("r").edges} == {(0, 0, 1, 1)}
     sk("r.Line.2").col = (1, 0, 0)
     assert sk("r").col is None and sk("far").col is None
     sk("r", "far").maxh = 0.5
@@ -92,8 +92,8 @@ def test_the_properties_reach_the_export(make):
 @pytest.mark.parametrize("make", KINDS)
 def test_construction_takes_an_element_out_of_the_drawing(make):
     sk = plate(make)
-    sk.Circle(2, 1, 0.5, id="hole")
-    sk.Circle(10, 1, 1, id="far", construction=True)
+    sk.Circle((2, 1), 0.5, id="hole")
+    sk.Circle((10, 1), 1, id="far", construction=True)
     pens, wires = (sk.pen.position, sk.pen.direction), sk.wires
     dof, constraints = (sk.dof, repr(sk.constraints)) if make is px.Sketch else (None, None)
     assert sk.Face().mass == pytest.approx(8 - math.pi / 4, rel=TOL)
@@ -121,7 +121,7 @@ def test_an_offset_source_can_be_construction_and_its_parts_take_properties(make
     assert sk.Face().mass == pytest.approx(8 + 12 + math.pi, rel=TOL)
     if make is px.Sketch:
         sk["wall.d"] = 2
-        assert sk.Face().mass == pytest.approx(px.Face([sk.Edge("r")]).Offset(2).mass, rel=TOL)
+        assert sk.Face().mass == pytest.approx(px.Face([sk.Wire("r")]).Offset(2).mass, rel=TOL)
     sk("wall.r.Line.1").col = (1, 0, 0)
     assert sk("wall.r.Line.1").col == [1, 0, 0, 1]
     sk("wall").construction = True
@@ -131,7 +131,7 @@ def test_an_offset_source_can_be_construction_and_its_parts_take_properties(make
 @pytest.mark.constraints
 def test_a_pattern_copy_can_be_construction():
     sk = px.Sketch()
-    sk.Circle(2, 0, 0.3, id="bolt")
+    sk.Circle((2, 0), 0.3, id="bolt")
     sk.CircularPattern("bolt", sk.origin, 4)
     sk("CircularPattern.1.1.bolt").construction = True
     assert len(sk.Construction().edges) == 1

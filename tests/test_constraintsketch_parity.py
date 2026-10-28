@@ -6,6 +6,7 @@ import math
 import pytest
 
 import planex as px
+from helpers import stub_webgui
 
 pytestmark = pytest.mark.constraints
 
@@ -17,7 +18,7 @@ def plate():
     sk.Move(sk.origin, px.Coincident).Rectangle(4, 2)
     sk.Constrain("Rectangle.1.Line.1", px.Horizontal)
     sk.Constrain("Rectangle.1.Line.1", px.Distance, 4, id="w")
-    sk.Constrain("Rectangle.1.Line.2", px.Distance, 2, id="h")
+    sk.Constrain("Rectangle.1.Line.2", px.Distance, 2, id="ht")
     return sk
 
 
@@ -68,21 +69,21 @@ def test_named_points_and_their_vertex_properties():
 
 def test_an_element_as_a_wire_of_its_edges():
     sk = plate()
-    sk.Circle(2, 1, 0.5, id="bore")
+    sk.Circle((2, 1), 0.5, id="bore")
     sk.Move((0, 3)).Spline([(1, 3.5), (2, 3)], id="wave")
-    assert len(sk.Edge("Rectangle.1.Line.1").edges) == 1
-    bore = sk.Edge("bore")
+    assert len(sk.Wire("Rectangle.1.Line.1").edges) == 1
+    bore = sk.Wire("bore")
     assert len(bore.edges) == 1 and bore.Measure()["length"] == pytest.approx(math.pi, rel=1e-12)
-    assert len(sk.Edge("wave").splines) >= 1
+    assert len(sk.Wire("wave").splines) >= 1
     with pytest.raises(ValueError, match="no line, arc, circle or spline"):
-        sk.Edge("Point.1")
+        sk.Wire("Point.1")
 
 
 def test_measure_by_id_name_point_and_to_occ_shapes():
     from netgen import occ
 
     sk = plate()
-    sk.Circle(2, 1, 0.5, id="bore", name="bores")
+    sk.Circle((2, 1), 0.5, id="bore", name="bores")
     assert sk.Measure("Rectangle.1.Line.1")["length"] == pytest.approx(4)
     assert sk.Measure("bores")["length"] == pytest.approx(math.pi)
     assert sk.Measure()["area"] == pytest.approx(8 - math.pi * 0.25)
@@ -121,7 +122,7 @@ def test_scaling_scales_every_length_and_keeps_the_angles():
     sk.Constrain("arm", px.Distance, 1, id="reach")
     sk.Constrain(px.H, "arm", px.Angle, 30, id="tilt")
     big = sk.Scaled((1, 1), 2)
-    assert (big["w"], big["h"], big["reach"], big["tilt"]) == pytest.approx((8, 4, 2, 30))
+    assert (big["w"], big["ht"], big["reach"], big["tilt"]) == pytest.approx((8, 4, 2, 30))
     assert big.status == sk.status
     # (1, 1) keeps its place in 3d
     assert big.ToXYZ((2, 2)) == pytest.approx(sk.ToXYZ((1, 1)), abs=TOL)
@@ -135,11 +136,13 @@ def test_scaling_scales_every_length_and_keeps_the_angles():
 
 
 def test_writers_and_conversions(tmp_path, monkeypatch):
+    pytest.importorskip("ezdxf")
+    pytest.importorskip("shapely")
     sk = plate()
     sk.WriteStep(tmp_path / "p.step")
     sk.WriteBrep(tmp_path / "p.brep")
     sk.WriteDXF(tmp_path / "p.dxf")
     assert all((tmp_path / n).stat().st_size > 0 for n in ("p.step", "p.brep", "p.dxf"))
     assert sk.ToShapely().area == pytest.approx(8)
-    monkeypatch.setattr("netgen.webgui.Draw", lambda obj, **kwargs: obj)
+    stub_webgui(monkeypatch, lambda obj, **kwargs: obj)
     assert len(sk.Plot3d(backend="webgui").edges) == 4

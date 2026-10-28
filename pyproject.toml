@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 [build-system]
-requires = ["scikit-build-core>=0.10"]
+# pybind11 for the core, the version it is tested with (its overload resolution changed between 3.0 and 3.1); the OCC
+# bindings take netgen's own and reach the core's objects through pybind11's conduit
+requires = ["scikit-build-core>=0.10", "pybind11>=3.1,<3.2"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -26,12 +28,20 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = ["numpy"]
-# planex's own code is LGPL-2.1-or-later; the rest is the code compiled in: Eigen (MPL-2.0, one file Apache-2.0, one
-# BSD-3-Clause), pybind11 (BSD-3-Clause) and Taskflow (MIT), see THIRD_PARTY_NOTICES.md
-license = "LGPL-2.1-or-later AND MPL-2.0 AND Apache-2.0 AND BSD-3-Clause AND MIT"
+
+# planex's own code is LGPL-2.1-or-later; then the code compiled in: Eigen (MPL-2.0, one file Apache-2.0, one
+# BSD-3-Clause), pybind11 (BSD-3-Clause) and Taskflow (MIT); and the drawings' font osifont (LGPL-3.0 with the GPL font
+# exception), see THIRD_PARTY_NOTICES.md
+license = "LGPL-2.1-or-later AND MPL-2.0 AND Apache-2.0 AND BSD-3-Clause AND MIT AND LGPL-3.0-only WITH Font-exception-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "external_dependencies/eigen/COPYING.MPL2",
                  "external_dependencies/eigen/COPYING.APACHE", "external_dependencies/eigen/COPYING.BSD",
-                 "external_dependencies/taskflow/LICENSE"]
+                 "external_dependencies/taskflow/LICENSE", "src/python/planex/fonts/LICENSE-LGPL-3.0.txt",
+                 "src/python/planex/fonts/LICENSE-GPL-3.0.txt", "src/python/planex/fonts/NOTICE.txt"]
+
+[project.optional-dependencies]
+# the OCC integration for the installed netgen: every planex2d-occ release pins its planex2d exactly
+# and keeps an installed netgen within the versions it is built for, so pip finds the one that fits
+occ = ["planex2d-occ"]
 
 [project.urls]
 Homepage = "https://planex2d.org"

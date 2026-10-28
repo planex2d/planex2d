@@ -10,17 +10,17 @@ void BindDeformable(py::module_ &m) {
     py::class_<DeformableShape>(m, "DeformableShape",
                                 "A face as dense closed polylines whose vertices follow a deformation field; outer loops run "
                                 "counterclockwise, holes clockwise.")
-        .def(py::init([](const py::object &shp, double h, std::optional<double> minDistance, bool clean) {
+        .def(py::init([](const py::object &shp, double h, const py::object &minDistance, bool clean) {
             const Wire edges = py::isinstance<Face>(shp) ? shp.cast<const Face &>().Edges() : shp.cast<const Shape &>().FaceEdges();
-            return DeformableShape(edges, h, minDistance.value_or(h), clean);
-        }), py::arg("shape"), py::pos_only(), py::arg("h"), py::arg("min_distance") = py::none(), py::arg("clean") = false,
-           "DeformableShape(shape: Face | Shape, /, h: float, min_distance: float | None = None, clean: bool = False)\n\n"
+            return DeformableShape(edges, h, NumberOrAuto(minDistance, "DeformableShape", "min_distance").value_or(h), clean);
+        }), py::arg("shape"), py::pos_only(), py::arg("h"), py::arg("min_distance") = PlainAuto(), py::arg("clean") = false,
+           "DeformableShape(shape: Face | Shape, /, h: float, min_distance: float | Auto = px.Auto, clean: bool = False)\n\n"
            "The faces of the shape as polylines with every edge sampled at most h apart.\n\n"
            "Boundary parts that move closer than min_distance to each other are cut out.\n\n"
            "Args:\n"
            "    shape: a Face, or a Shape whose faces are taken.\n"
            "    h: the largest segment length.\n"
-           "    min_distance: the smallest distance between boundary parts; None: h.\n"
+           "    min_distance: the smallest distance between boundary parts; px.Auto: h.\n"
            "    clean: True cleans the given shape of parts closer than min_distance right away.\n\n"
            "Examples:\n"
            "    px.DeformableShape(face, 0.1)\n"

@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "offset/offsetform.hpp"
+
 // what the constraint sketch keeps of the calls whose results follow their source: patterns, offsets, chamfers, mirrors
 
 namespace planex2d::cs {
@@ -31,6 +33,12 @@ namespace planex2d::cs {
         std::vector<std::string> given;
         // the constraints among the originals shown on every copy (derived)
         bool internal = true;
+        // a pattern of two directions: the second's line, its count, and per copy its steps (along ref, along ref2)
+        std::string ref2;
+        size_t count = 0, count2 = 0;
+        std::vector<std::pair<size_t, size_t>> steps;
+
+        bool IsGrid() const { return !ref2.empty(); }
 
         bool HasOriginal(const std::string &id) const { return std::find(originals.begin(), originals.end(), id) != originals.end(); }
     };
@@ -51,6 +59,7 @@ namespace planex2d::cs {
         mutable std::vector<double> checked;
         // its offset curves, each with the spline it is the offset of
         std::vector<std::pair<std::string, std::string>> curves;
+        OffsetForms forms;
 
         bool HasSource(const std::string &id) const { return std::find(sources.begin(), sources.end(), id) != sources.end(); }
         // id is one of its elements or ties

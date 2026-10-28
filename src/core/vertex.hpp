@@ -4,12 +4,16 @@
 #pragma once
 
 #include <charconv>
+#include <clocale>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <initializer_list>
 #include <numbers>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace planex2d {
 
@@ -55,6 +59,26 @@ namespace planex2d {
         char buf[32];
         const auto r = std::to_chars(buf, buf + sizeof(buf), v);
         return std::string(buf, r.ptr);
+    }
+    // the number a whole text spells, what NumberText wrote bit for bit; none if it is no number
+    inline std::optional<double> NumberOf(std::string_view text) {
+        double x = 0.0;
+#if defined(__cpp_lib_to_chars)
+        const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), x);
+        if (error != std::errc() || end != text.data() + text.size())
+            return std::nullopt;
+#else
+        // libc++ without floating-point from_chars: strtod, its decimal point made the locale's
+        std::string local(text);
+        for (char &c : local)
+            if (c == '.')
+                c = *std::localeconv()->decimal_point;
+        char *end = nullptr;
+        x = std::strtod(local.c_str(), &end);
+        if (local.empty() || end != local.c_str() + local.size())
+            return std::nullopt;
+#endif
+        return x;
     }
 
     inline std::string PointText(const Vertex &p) {

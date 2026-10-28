@@ -1,16 +1,15 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-import matplotlib
-
-matplotlib.use("Agg")
-from matplotlib.collections import LineCollection
+import pytest
 from netgen import occ
 
 import planex as px
 
 
 def styles(ax):
+    from matplotlib.collections import LineCollection
+
     out = []
     for c in ax.collections:
         if isinstance(c, LineCollection):
@@ -20,6 +19,7 @@ def styles(ax):
 
 
 def test_a_projected_construction_edge_is_dashed_and_a_projected_drawn_edge_solid():
+    pytest.importorskip("matplotlib").use("Agg")
     box = occ.Box((0, 0, 0), (4, 2, 1))
     reference = px.Sketch()
     reference.Project(box, construction=True)
@@ -30,6 +30,7 @@ def test_a_projected_construction_edge_is_dashed_and_a_projected_drawn_edge_soli
 
 
 def test_plotly_dashes_a_projected_construction_edge():
+    pytest.importorskip("plotly")
     sk = px.Sketch()
     sk.Project(occ.Box((0, 0, 0), (4, 2, 1)), construction=True)
     dashes = {t.line.dash for t in sk.Plot(backend="plotly").data if t.mode == "lines" and t.line.dash}

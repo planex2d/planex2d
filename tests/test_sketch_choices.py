@@ -12,11 +12,11 @@ from helpers import point
 def references():
     """a construction wall at x = 5 and a construction circle around (5, 0) with radius 1"""
     s = px.Move((5, -1)).Line((5, 5), id="wall", construction=True)
-    return s.Circle(5, 0, 1, id="c", construction=True).Move((0, 0))
+    return s.Circle((5, 0), 1, id="c", construction=True).Move((0, 0))
 
 
 def two_circles():
-    s = px.QuickSketch().Circle(0, 0, 1, id="c1", construction=True).Circle(5, 0, 1, id="c2", construction=True)
+    s = px.QuickSketch().Circle((0, 0), 1, id="c1", construction=True).Circle((5, 0), 1, id="c2", construction=True)
     return s.Move((8, -3)).Line((8, 3), id="far", construction=True).Move((2, 3))
 
 
@@ -70,11 +70,11 @@ def test_solutions_on_the_edge_come_before_the_carrier():
 def test_fillet_sides_reverse_and_points():
     def corner():
         return px.Move((0, 0)).Line((2, 0), id="a").Line((2, 2), id="b")
-    f = corner().Arc("a", "b", 0.5, tangent=("a", "b"), id="f").Edge("f").edges[0]
+    f = corner().Arc("a", "b", 0.5, tangent=("a", "b"), id="f").Wire("f").edges[0]
     assert point(f.center) == pytest.approx((1.5, 0.5))
-    f = corner().Arc("a", "b", 0.5, tangent=("a", "b"), reverse=True, id="f").Edge("f").edges[0]
+    f = corner().Arc("a", "b", 0.5, tangent=("a", "b"), reverse=True, id="f").Wire("f").edges[0]
     assert point(f.center) == pytest.approx((2.5, -0.5))
-    f = corner().Arc("a", "b", 0.5, tangent=(("a", (1, 1)), "b"), reverse=True, id="f").Edge("f").edges[0]
+    f = corner().Arc("a", "b", 0.5, tangent=(("a", (1, 1)), "b"), reverse=True, id="f").Wire("f").edges[0]
     assert point(f.center) == pytest.approx((2.5, 0.5))
     assert point(f.start) == pytest.approx((2.5, 0))
 
@@ -91,7 +91,7 @@ def test_arc_reverse():
 def test_construction_leaves_the_drawing_pen_alone():
     s = px.Move((0, 0)).Line((1, 0)).Line(5, id="ref", construction=True).Line((1, 1))
     assert len(s.Wire().edges) == 2
-    assert point(s.Edge("ref").edges[0].end) == (6, 0)
-    s = px.Move((0, 0)).Line((1, 0)).Circle(3, 3, 1, construction=True).Rectangle(1, 1, construction=True).Line((1, 1))
+    assert point(s.Wire("ref").edges[0].end) == (6, 0)
+    s = px.Move((0, 0)).Line((1, 0)).Circle((3, 3), 1, construction=True).Rectangle(1, 1, construction=True).Line((1, 1))
     assert len(s.Wire().edges) == 2
     assert len(s.Construction().edges) == 5

@@ -52,7 +52,7 @@ namespace planex2d {
         };
         std::vector<PrimitiveEdge> items;
         std::vector<size_t> itemSource;
-        std::vector<const Spline *> curves;
+        std::vector<Spline> curves;
         std::vector<size_t> curveSource;
         std::vector<const Circle *> circles;
         std::vector<size_t> circleSource;
@@ -73,8 +73,14 @@ namespace planex2d {
                     items.push_back(a);
                     itemSource.push_back(i);
                 }
+            } else if (const Spline &s = std::get<Spline>(e); s.IsClosed()) {
+                // as two edges: OCC got a single closed one wrong
+                for (const Spline &half : s.Halves()) {
+                    curves.push_back(half);
+                    curveSource.push_back(i);
+                }
             } else {
-                curves.push_back(&std::get<Spline>(e));
+                curves.push_back(s);
                 curveSource.push_back(i);
             }
         }
@@ -83,9 +89,9 @@ namespace planex2d {
             vs.push_back(vid(e.Start()));
             ve.push_back(vid(e.End()));
         }
-        for (const Spline *s : curves) {
-            curvevertices.push_back(vid(s->Start()));
-            curvevertices.push_back(vid(s->End()));
+        for (const Spline &s : curves) {
+            curvevertices.push_back(vid(s.Start()));
+            curvevertices.push_back(vid(s.End()));
         }
         for (const Circle *c : circles)
             seams.push_back(vid(c->Origin()));
@@ -113,12 +119,12 @@ namespace planex2d {
         }
         for (size_t k = 0; k < curves.size(); ++k) {
             size_t v0 = curvevertices[2 * k], v1 = curvevertices[2 * k + 1];
-            const auto &a = curves[k]->Approximation();
-            TopoDS_Edge edge = ToOCC(*curves[k], verts[v0], verts[v1]);
+            const auto &a = curves[k].Approximation();
+            TopoDS_Edge edge = ToOCC(curves[k], verts[v0], verts[v1]);
             const bool back = reversed(curveSource[k]);
             if (back)
                 edge = ReversedCurve(edge, verts[v1], verts[v0]);
-            SetProperties(edge, curves[k]->props);
+            SetProperties(edge, curves[k].props);
             ExportPartition(edge, edges[curveSource[k]]);
             out.push_back(back ? MakeExportEdge(edge, v1, v0, PiecesOf(a, true), curveSource[k])
                                : MakeExportEdge(edge, v0, v1, PiecesOf(a, false), curveSource[k]));
@@ -161,8 +167,9 @@ namespace planex2d {
         return loop;
     }
 
-    inline Handle(TopTools_HSequenceOfShape) ToOCCWires(const Wire &w, bool approximation = false, const ArcFit &arcs = config::arc_fit,
-                                                        const SplineFit &fit = config::spline_fit, const Cleanup &cleanup = config::cleanup) {
+    inline Handle(TopTools_HSequenceOfShape) ToOCCWires(const Wire &w, bool approximation = false,
+                                                        const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                                                        const Cleanup &cleanup = config::state->cleanup) {
         size_t nverts;
         std::vector<ExportEdge> out = ExportEdges(w.Cleaned(arcs, fit, cleanup), approximation, nverts);
         Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape;
@@ -172,16 +179,16 @@ namespace planex2d {
         return wires;
     }
 
-    inline TopoDS_Shape ToOCCFace(const Wire &w, const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                                  const Cleanup &cleanup = config::cleanup, const Properties &faceProps = nullptr) {
+    inline TopoDS_Shape ToOCCFace(const Wire &w, const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                                  const Cleanup &cleanup = config::state->cleanup, const Properties &faceProps = nullptr) {
         size_t nverts;
         const Wire c = w.Cleaned(arcs, fit, cleanup);
         std::vector<ExportEdge> out = ExportEdges(c, false, nverts, c.FaceOrientation());
         return Placed(BuildFaces(out, BuildLoops(out, nverts), faceProps), w.Axes());
     }
 
-    inline TopoDS_Wire ToOCCWire(const Wire &w, bool approximation = false, const ArcFit &arcs = config::arc_fit,
-                                 const SplineFit &fit = config::spline_fit, const Cleanup &cleanup = config::cleanup) {
+    inline TopoDS_Wire ToOCCWire(const Wire &w, bool approximation = false, const ArcFit &arcs = config::state->arc_fit,
+                                 const SplineFit &fit = config::state->spline_fit, const Cleanup &cleanup = config::state->cleanup) {
         auto wires = ToOCCWires(w, approximation, arcs, fit, cleanup);
         if (wires->Length() != 1)
             throw std::runtime_error("edges do not form a single wire");

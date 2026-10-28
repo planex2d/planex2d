@@ -14,6 +14,7 @@ from pathlib import Path
 
 import planex
 import planex._planex as module
+from planex import _ids
 
 OUT = Path(__file__).resolve().parents[1] / "src" / "python" / "planex" / "_planex.pyi"
 SIGNATURE = re.compile(r"^(\w+)\((.*)\)(?: -> (.+))?$")
@@ -70,6 +71,8 @@ def Parameter(p):
         return p
     name, _, default = p.partition("=")
     name = re.sub(r"\bPlane\b", "PlaneLike", name.strip())
+    # px.Auto is the value; its type is AutoType
+    name = re.sub(r"\bAuto\b", "AutoType", name)
     # a list parameter takes any sequence (pybind11 converts one); list[A | B] would not take a list[A]
     name = re.sub(r"\blist\[", "Sequence[", name)
     return f"{name} = ..." if default else name
@@ -93,6 +96,8 @@ def StubDef(name, params, ret, method, static, indent):
 def Annotation(f, ann):
     """an annotation as text; the names it uses that the stub does not know imported from where f finds them"""
     text = ann if isinstance(ann, str) else inspect.formatannotation(ann)
+    # px.Auto is the value; its type is AutoType
+    text = re.sub(r"\bAuto\b", "AutoType", text)
     for n in NAME.findall(re.sub(r"'[^']*'|\"[^\"]*\"", "", text)):
         head = n.split(".")[0]
         if head in KNOWN or hasattr(module, head):
@@ -211,7 +216,10 @@ def Class(name, cls):
             lines += Routine(key, value, True, "    ", name)
     # a view iterates by __getitem__ and __len__; type checkers want __iter__
     if "__getitem__" in vars(cls) and "__len__" in vars(cls) and "__iter__" not in vars(cls):
-        lines.append("    def __iter__(self) -> Iterator[Any]: ...")
+        # the item type of the index form, when __getitem__'s signature lines name one
+        forms = SignatureLines(getattr(vars(cls)["__getitem__"], "__doc__", ""), "__getitem__")
+        item = next((ret for params, ret in forms if params.startswith("k: int") and ret), "Any")
+        lines.append(f"    def __iter__(self) -> Iterator[{item}]: ...")
     return lines if len(lines) > 1 else lines + ["    ..."]
 
 
@@ -233,10 +241,15 @@ def Stub():
             lines += Class(name, value) + [""]
     for name in names:
         value = getattr(module, name)
-        if inspect.isclass(value):
+        # the capsules the OCC module takes the core's settings and hooks from are no API
+        if inspect.isclass(value) or type(value).__name__ == "PyCapsule":
             continue
-        if callable(value):
-            lines += Routine(name, value, False, "") + [""]
+        if type(value).__name__ == "AutoType":
+            lines.append(f"{name}: AutoType")
+        elif callable(value):
+            # the planex module wraps these for id= (_ids.FUNCTIONS): their signature lines are the wrapper's
+            wrapped = getattr(planex, name, None) if name in _ids.FUNCTIONS else None
+            lines += Routine(name, wrapped if wrapped is not None else value, False, "") + [""]
         elif isinstance(getattr(type(value), "__members__", None), dict):
             lines.append(f"{name}: {type(value).__name__}")
         else:

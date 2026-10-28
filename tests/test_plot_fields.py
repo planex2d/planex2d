@@ -18,11 +18,11 @@ def ngs():
 
 
 def holed_disc():
-    return px.QuickSketch().Circle(0, 0, 1).Face() - px.QuickSketch().Circle(0.3, 0, 0.3).Face()
+    return px.QuickSketch().Circle((0, 0), 1).Face() - px.QuickSketch().Circle((0.3, 0), 0.3).Face()
 
 
 def ring():
-    return px.QuickSketch().Circle(0, 0, 2).Face() - px.QuickSketch().Circle(0, 0, 1).Face()
+    return px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0, 0), 1).Face()
 
 
 @pytest.fixture(scope="module")
@@ -223,10 +223,15 @@ def test_complex_field_shows_its_modulus(ngs, disc, backend):
     assert np.nanmin(z) >= 0
 
 
+def given(end):
+    """an end of the colour range, px.Auto for None"""
+    return px.Auto if end is None else end
+
+
 @pytest.mark.parametrize("lo, hi", [(-0.5, 0.5), (-0.5, None), (None, 0.5), (None, None)])
 def test_min_max_set_the_colour_range_of_a_field(disc, scalar, backend, lo, hi):
     shape, _ = disc
-    z, clim = raster(px.PlotField(scalar, shape, backend=backend, min=lo, max=hi), backend)
+    z, clim = raster(px.PlotField(scalar, shape, backend=backend, min=given(lo), max=given(hi)), backend)
     if backend == "plotly" and lo is None and hi is None:
         assert clim == (None, None)
     else:
@@ -238,16 +243,16 @@ def test_one_end_alone_beyond_the_values_never_passes_it(disc, scalar, backend, 
     shape, _ = disc
     from planex._plot_style import _limits
 
-    given = lo if lo is not None else hi
-    z, clim = raster(px.PlotField(scalar, shape, backend=backend, min=lo, max=hi), backend)
-    assert np.nanmax(np.abs(z)) < 2 and _limits(z, (lo, hi)) == (given, given)
+    end = lo if lo is not None else hi
+    z, clim = raster(px.PlotField(scalar, shape, backend=backend, min=given(lo), max=given(hi)), backend)
+    assert np.nanmax(np.abs(z)) < 2 and _limits(z, (lo, hi)) == (end, end)
     if backend == "plotly":
-        assert clim == (given, given)
+        assert clim == (end, end)
     else:
         import matplotlib.pyplot as plt
 
         plt.gcf().canvas.draw()
-        assert clim[0] <= given <= clim[1]
+        assert clim[0] <= end <= clim[1]
 
 
 @pytest.mark.parametrize("method", ["ball", "ray"])
@@ -319,7 +324,7 @@ def test_mesh_alone_draws_its_curved_element_edges_on_top(ngs, disc, backend):
 
 @pytest.mark.parametrize("quads", [False, True])
 def test_curved_boundary_edges_lie_on_the_circle(ngs, backend, quads):
-    disc = px.QuickSketch().Circle(0, 0, 1).Face()
+    disc = px.QuickSketch().Circle((0, 0), 1).Face()
     mesh = ngs.Mesh(px.OCCGeometry(disc).GenerateMesh(maxh=0.3, quad_dominated=quads))
     mesh.Curve(3)
     kinds = {str(el.type) for el in mesh.Elements(ngs.VOL)}
@@ -402,13 +407,13 @@ def test_fields_and_meshes_only_on_the_xy_plane(ngs, disc, scalar, mpl):
     shape, mesh = disc
     for plane in (px.Plane(origin=(0, 0, 1), normal=(0, 0, 1)), px.Plane(origin=(2, 3, 0), normal=(0, 0, 1)),
                   px.Plane(origin=(0, 0, 0), normal=(0, 0, 1), axis=(1, 1, 0)), px.YZ):
-        placed = px.QuickSketch(plane).Circle(0, 0, 1).Face()
+        placed = px.QuickSketch(plane).Circle((0, 0), 1).Face()
         with pytest.raises(ValueError, match="XY plane only for now"):
             px.PlotField(scalar, placed)
         with pytest.raises(ValueError, match="XY plane only for now"):
             px.PlotMesh(mesh, placed)
         assert px.Plot(placed) is not None
-    on_xy = px.QuickSketch(px.XY).Circle(0, 0, 1).Face() - px.QuickSketch().Circle(0.3, 0, 0.3).Face()
+    on_xy = px.QuickSketch(px.XY).Circle((0, 0), 1).Face() - px.QuickSketch().Circle((0.3, 0), 0.3).Face()
     np.testing.assert_array_equal(raster(px.PlotField(scalar, on_xy), "matplotlib")[0],
                                   expected(shape, mesh, scalar, *pixels(shape)[:2]))
 
@@ -468,12 +473,12 @@ def test_only_points_inside_the_shape_reach_the_mesh(ngs, straight, monkeypatch,
 
 
 def eccentric_ring():
-    return px.QuickSketch().Circle(0, 0, 2).Face() - px.QuickSketch().Circle(0.5, 0, 1).Face()
+    return px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0.5, 0), 1).Face()
 
 
 @pytest.fixture(scope="module")
 def round_disc(ngs):
-    shape = px.QuickSketch().Circle(0, 0, 1).Face()
+    shape = px.QuickSketch().Circle((0, 0), 1).Face()
     mesh = ngs.Mesh(px.OCCGeometry(shape).GenerateMesh(maxh=0.25))
     mesh.Curve(3)
     return shape, mesh
@@ -579,7 +584,7 @@ def test_contours_on_measurements(method, mpl, plotly):
         expected = np.linspace(np.nanmin(values) if lo is None else lo, np.nanmax(values) if hi is None else hi, 5)[1:-1]
         drawn = {}
         for backend in ("matplotlib", "plotly"):
-            shown = px.PlotField(measure, shape, samples=80, contours=3, min=lo, max=hi, backend=backend)
+            shown = px.PlotField(measure, shape, samples=80, contours=3, min=given(lo), max=given(hi), backend=backend)
             levels, drawn[backend] = drawn_contours(shown, backend)
             if backend == "matplotlib":
                 np.testing.assert_array_equal(levels, expected)
@@ -686,7 +691,7 @@ def test_plot_without_a_field_does_not_import_ngsolve():
         "import planex as px",
         "import planex.measurements as pm",
         "assert 'ngsolve' not in sys.modules, 'import planex imports ngsolve'",
-        "f = px.QuickSketch().Circle(0, 0, 2).Face() - px.QuickSketch().Circle(0, 0, 1).Face()",
+        "f = px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0, 0), 1).Face()",
         "px.Plot(f, face_col='C0')",
         "px.PlotField(pm.MinThickness(), f, samples=60, min=0.5)",
         "px.PlotField(pm.MinThickness(method='ray'), f, on='edges', samples=60, max=1.5)",

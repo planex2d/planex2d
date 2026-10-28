@@ -26,12 +26,12 @@ def test_symmetry_line_of_points_lines_and_circles():
     v = px.Move((0, 0)).Line((2, 2), id="a").Move((0, 0)).Line((2, -2), id="b")
     assert on_axis(v.Copy().SymmetryLine("a", "b", id="m"), "m", (0, 0), (2, 0))
     assert on_axis(v.Copy().SymmetryLine("a", "b", id="m", reverse=True), "m", (0, -2), (0, 2))
-    c = px.QuickSketch().Circle(0, 0, 1, id="c1").Circle(4, 0, 1, id="c2").SymmetryLine("c1", "c2", id="m")
+    c = px.QuickSketch().Circle((0, 0), 1, id="c1").Circle((4, 0), 1, id="c2").SymmetryLine("c1", "c2", id="m")
     assert on_axis(c, "m", (2, -1), (2, 1))
 
 
 def test_symmetry_line_errors():
-    s = px.QuickSketch().Circle(0, 0, 1, id="c1").Circle(4, 0, 2, id="c2").Move((0, 0)).Line((1, 0), id="l")
+    s = px.QuickSketch().Circle((0, 0), 1, id="c1").Circle((4, 0), 2, id="c2").Move((0, 0)).Line((1, 0), id="l")
     with pytest.raises(ValueError, match="two points, two lines"):
         s.SymmetryLine("l", "c1")
     with pytest.warns(px.PlanexWarning, match="only one solution"):

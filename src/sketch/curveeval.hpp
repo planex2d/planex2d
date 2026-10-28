@@ -57,7 +57,7 @@ namespace planex2d::sketch {
             const double sense = tb > ta ? 1.0 : -1.0;
             return {At(ta, 1) * (sense / Norm(At(ta, 1))), At(tb, 1) * (sense / Norm(At(tb, 1)))};
         }
-        // the chord lengths from ta (its point a) to tb (b) an ordinary spline ('px') through its points there, with its
+        // the chord lengths from ta (its point a) to tb (b) an ordinary spline ('averaged') through its points there, with its
         // directions at the ends (closed, a == b: periodic), passes to stay within spline_tol of it: first the places
         // over the spline's points, then the spans halved where it is not yet within spline_tol
         std::vector<double> FitParams(double ta, double tb, const Vertex &a, const Vertex &b, bool closed) const {
@@ -78,8 +78,8 @@ namespace planex2d::sketch {
                     box.Grow(points.back());
                 }
                 const Curve<double, Vertex> spline = Interpolate(points, closed ? std::vector<size_t>{} : std::vector<size_t>{0, points.size() - 1},
-                                                                 closed ? std::vector<Vertex>{} : std::vector<Vertex>{ends[0], ends[1]}, closed, SplineStyle::Px);
-                const double atol = config::spline_tol * Norm(box.Size());
+                                                                 closed ? std::vector<Vertex>{} : std::vector<Vertex>{ends[0], ends[1]}, closed, SplineStyle::Averaged);
+                const double atol = config::state->spline_tol * Norm(box.Size());
                 std::vector<double> more;
                 for (size_t i = 0; i + 1 < t.size(); ++i)
                     if (MaxDeviation(spline, {t[i], t[i + 1]}, {spline.params[i], spline.params[i + 1]}) > atol)

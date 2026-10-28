@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 import math
-import warnings
 from typing import TYPE_CHECKING
 
 from . import _planex as px
 from ._sketches import sketch_types
+from ._caller import warn
 
 ARC_POINTS_PER_CIRCLE = 64
 
@@ -19,7 +19,7 @@ def read_name(name):
     if name is None or "|" not in name:
         return name
     renamed = name.replace("|", "_")
-    warnings.warn(f"name {name!r} read as {renamed!r}: '|' joins names in a selection", px.PlanexWarning, stacklevel=3)
+    warn(f"name {name!r} read as {renamed!r}: '|' joins names in a selection", px.PlanexWarning)
     return renamed
 
 if TYPE_CHECKING:

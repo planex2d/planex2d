@@ -3,12 +3,21 @@
 
 import collections
 import math
+import sys
+import types
 
 import planex as px
 
 
 def point(v):
     return tuple(v)
+
+
+def stub_webgui(monkeypatch, draw):
+    """netgen.webgui with draw as its Draw, without importing netgen's (which imports anywidget in older netgens)"""
+    webgui = types.ModuleType("netgen.webgui")
+    webgui.Draw = draw
+    monkeypatch.setitem(sys.modules, "netgen.webgui", webgui)
 
 
 def vertex(p):
@@ -68,7 +77,7 @@ def rect(x, y, w, h):
 
 
 def circle(x, y, r):
-    return px.QuickSketch().Circle(x, y, r).Face()
+    return px.QuickSketch().Circle((x, y), r).Face()
 
 
 def stadium_area(length, d):

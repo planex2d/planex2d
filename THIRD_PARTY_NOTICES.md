@@ -15,12 +15,15 @@ See the GNU Lesser General Public License (the file LICENSE) for more details.
 Every source file of planex's own carries the short form of this notice:
 `SPDX-FileCopyrightText: 2026 Sebastian Hirnschall` and `SPDX-License-Identifier: LGPL-2.1-or-later`.
 
-Its compiled extension module (`planex/_planex`) contains code from the third-party libraries Eigen,
-pybind11 and Taskflow (header-only, compiled in), and it is linked to the libraries Netgen and Open CASCADE Technology,
-which are not part of planex and are installed separately (the section after them).
+Its compiled extension module `planex/_planex` contains code from the third-party libraries Eigen, pybind11 and
+Taskflow (header-only, compiled in); it is not linked to Netgen or Open CASCADE Technology. planex's OCC bindings,
+`planex/_planex_occ`, are compiled only when planex is built from source with netgen installed; they contain the same
+third-party code and are linked to the libraries Netgen and Open CASCADE Technology, which are not part of planex and
+are installed separately (the section after them). The prebuilt OCC bindings are the separate package planex2d-occ
+(`pip install planex2d[occ]`), with its own notices.
 
-The compiled module also contains one file under the Apache License 2.0, Eigen's `BFloat16.h`. The Apache License 2.0
-is compatible with version 3 of the GNU LGPL but not with version 2.1, so the compiled module as a whole can be passed
+The compiled modules also contain one file under the Apache License 2.0, Eigen's `BFloat16.h`. The Apache License 2.0
+is compatible with version 3 of the GNU LGPL but not with version 2.1, so the compiled modules as a whole can be passed
 on under version 3 or later of the LGPL, which the "or any later version" of planex's license allows.
 
 ## Eigen 3.4.0
@@ -293,8 +296,9 @@ the Mozilla Public License v. 2.0, as stated at the top of this file.
 ## pybind11
 
 - Project: pybind11, https://github.com/pybind/pybind11
-- Version: the one bundled in the include directory of the netgen-mesher package planex is built against (3.1.0a0 with
-  netgen-mesher 6.2.2607); header-only, compiled in. It is not part of planex's source.
+- Version: for `planex/_planex`, pybind11 3.1 from the pybind11 package on PyPI, which the build installs
+  (`pybind11>=3.1,<3.2`); for the OCC bindings, the copy bundled in the include directory of the netgen-mesher package
+  they are built against (3.1.0a0 with netgen-mesher 6.2.2608). Header-only, compiled in; not part of planex's source.
 - License: BSD 3-clause, quoted verbatim from its `LICENSE` file:
 
 ```
@@ -361,9 +365,9 @@ Its header `pybind11/detail/function_ref.h` (included by `pybind11/pybind11.h`) 
 
 ## Libraries planex uses but does not include
 
-`planex/_planex` is linked dynamically to these libraries and compiles material from their header files (inline
-functions and templates). They are not part of planex's wheel: they are installed separately, as the netgen-mesher
-and netgen-occt packages on PyPI.
+planex's OCC bindings (`planex/_planex_occ`) are linked dynamically to these libraries and compile material from
+their header files (inline functions and templates); `planex/_planex` is not. They are not part of planex: they are
+installed separately, as the netgen-mesher and netgen-occt packages on PyPI.
 
 - Netgen, including ngcore, by Joachim Schöberl and contributors, https://github.com/NGSolve/netgen: planex uses the
   Netgen library; Netgen and its use are covered by the GNU Lesser General Public License version 2.1, whose text is
@@ -399,14 +403,33 @@ not installed with it; of them, only numpy is a dependency of the planex2d packa
 | NGSolve, https://ngsolve.org | `FromLevelSet`, `DeformableShape`, `planex.measurements`, field plots on NGSolve meshes | LGPL-2.1 |
 | ngsolve-webgpu with webgpu, https://github.com/CERBSim/ngsolve_webgpu | `Plot3d` | LGPL-2.1-or-later |
 | DOLFINx and Basix, https://fenicsproject.org | `Intersect3d` and field plots on DOLFINx meshes | LGPL-3.0-or-later (DOLFINx), MIT (Basix) |
-| matplotlib, https://matplotlib.org | `Plot` and the field and mesh plots | the matplotlib license (based on the PSF license) |
+| matplotlib, https://matplotlib.org | `Plot`, the field and mesh plots, `Drawing` and `Sheet` | the matplotlib license (based on the PSF license) |
 | plotly, https://plotly.com/python | `Plot(..., backend="plotly")` | MIT |
 | shapely, https://shapely.readthedocs.io | `FromShapely`, `ToShapely` | BSD-3-Clause |
 | ezdxf, https://ezdxf.mozman.at | `FromDXF`, `WriteDXF` | MIT |
 
+## The lettering font osifont
+
+- Project: osifont, a font after ISO 3098, by Zefram Cochrane and the osifont contributors,
+  https://github.com/hikikomori82/osifont
+- Version: 0.1.20221020, the file `osifont-lgpl3fe.ttf` of commit `2e9aa86a8a09` (2026-04-16), unmodified.
+- Where: `planex/fonts/osifont-lgpl3fe.ttf` in planex's wheel and source; `Drawing` and `Sheet` write their lettering in
+  it, and `Sheet(..., font=...)` takes another TrueType file in its place. The SVG and PDF files they write embed the
+  letters used.
+- License: GNU Lesser General Public License version 3 with the GPL font exception. The full texts are
+  `planex/fonts/LICENSE-LGPL-3.0.txt` and `planex/fonts/LICENSE-GPL-3.0.txt` (the LGPL version 3 is a set of additional
+  permissions to the GPL version 3), with `planex/fonts/NOTICE.txt`. The font's license notice and exception, quoted
+  verbatim from its copyright string:
+
+```
+Distributed under GNU LGPL version 3 with GPL font exception:
+
+As a special exception, if you create a document which uses this font, and embed this font or unaltered portions of this font into the document, this font does not by itself cause the resulting document to be covered by the GNU General Public License. This exception does not however invalidate any other reasons why the document might be covered by the GNU General Public License. If you modify this font, you may extend this exception to your version of the font, but you are not obligated to do so. If you do not wish to do so, delete this exception statement from your version.
+```
+
 ## Data files under other licenses
 
 The test board `tests/data/kicad/pic_programmer.kicad_pcb` (part of planex's source and sdist, not of its wheel) and the
-documentation's copy `docs/integrations/pic_programmer.kicad_pcb` (in the repository only) are KiCad's demo board
+documentation's copy `docs/integrations/pcb/pic_programmer.kicad_pcb` (in the repository only) are KiCad's demo board
 `demos/pic_programmer`, https://gitlab.com/kicad/code/kicad, Copyright the KiCad developers, licensed under CC BY-SA 4.0
 (https://creativecommons.org/licenses/by-sa/4.0/), unmodified; see `tests/data/kicad/NOTICE`.

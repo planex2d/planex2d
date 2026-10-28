@@ -145,3 +145,10 @@ def test_the_largest_size_is_named_as_it_fits():
         plate().Fillet((4, 4), 5)
     with pytest.warns(px.PlanexWarning, match=r"the largest that fits is radius 1\b"):
         plate().Fillet([(4, 0), (4, 4)], 3)
+
+
+def test_a_corner_just_off_a_vertex_names_the_nearest_and_how_to_select_it():
+    face = px.QuickSketch().Rectangle(40, 20).Face()
+    with pytest.raises(ValueError, match=r"the corner at \(40\.0000000000\d+, 0\) is on no vertex \(the nearest, \(40, 0\), "
+                                         r"is 1e-12 away; select it with vertices\(near=\.\.\.\)\)"):
+        face.Fillet([(40 + 1e-12, 0)], 4)

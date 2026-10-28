@@ -76,7 +76,7 @@ def test_translations_and_offsets_match_occ():
         compare(p.Translated(d), [t(v) for v in frame(p)])
         s = rng.uniform(-5, 5)
         t = occ.gp_Trsf.Translation(occ.Vec(*(s * c for c in p.normal)))
-        compare(p.Offset(s), [t(v) for v in frame(p)])
+        compare(px.Plane(p, s), [t(v) for v in frame(p)])
 
 
 def test_mirrors_match_occ_with_v_reversed():

@@ -14,17 +14,22 @@ import shutil
 import subprocess
 import tempfile
 import warnings
-from typing import TYPE_CHECKING, Any
+import zipfile
+from typing import TYPE_CHECKING, Any, overload
 
 from . import _planex as px
 from . import stackups
 from ._geom import read_name
+from ._caller import warn
 
 if TYPE_CHECKING:
     from ._planex import Shape
 
 # KiCad works in millimetres, the results are in metres
 MM = 1e-3
+# an end touches an edge within planex's rounding tolerance for coordinates below 1 m, as the outline's
+# cleaning takes it
+TOUCH = 1e-14
 _PTH, _NPTH = "pth", "npth"
 # the file versions of KiCad 9.0 (the oldest read) and of KiCad 10 (the newest tested); KiCad 10's first (its sources'
 # pcb_io_kicad_sexpr.h, "Start of 10.0 development")
@@ -40,10 +45,11 @@ _TEXTS = ("gr_text", "gr_text_box", "fp_text", "fp_text_box", "property")
 _LEFT_OUT = (("text", "text", "texts"), ("dimension", "dimension", "dimensions"), ("table", "table", "tables"),
              ("barcode", "barcode", "barcodes"), ("hatch", "hatched fill", "hatched fills"))
 
-# the formats kicad-cli pcb import reads (KiCad 10's importers), by extension, for the messages
+# the programs kicad-cli pcb import reads (KiCad 10's importers), by extension, for the messages; .brd and .pcb by
+# their first bytes (_program)
 _IMPORTED = {".pcbdoc": "Altium Designer", ".cspcbdoc": "Altium CircuitStudio", ".cmpcbdoc": "Altium CircuitMaker",
-             ".swpcbdoc": "SolidWorks PCB", ".brd": "Eagle", ".asc": "PADS", ".cpa": "CADSTAR", ".txt": "Fabmaster",
-             ".fab": "Fabmaster", ".pcb": "P-CAD"}
+             ".swpcbdoc": "SolidWorks PCB", ".asc": "PADS", ".cpa": "CADSTAR", ".txt": "Fabmaster", ".fab": "Fabmaster",
+             ".json": "EasyEDA Standard", ".epro": "EasyEDA Pro", ".zip": "EasyEDA"}
 # where KiCad installs kicad-cli, after $PLANEX_KICAD_CLI and the PATH (on Windows one folder per version)
 _MAC_KICAD_CLI = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
 _WINDOWS_KICAD_CLI = ntpath.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "KiCad", "*", "bin", "kicad-cli.exe")
@@ -137,7 +143,7 @@ def _tented(node, inherit):
 
 
 class _Frame:
-    """KiCad's coordinates (millimetres, y down, angles counterclockwise on screen) to planex's (metres, y up): a
+    """KiCad's coordinates (millimeters, y down, angles counterclockwise on screen) to planex's (meters, y up): a
     footprint's local point is rotated by its angle and moved to its position"""
 
     def __init__(self, at=(0.0, 0.0), angle=0.0):
@@ -169,7 +175,7 @@ def _arc(a, m, b):
 
 
 def _disc(c, r):
-    return px.QuickSketch().Circle(c[0], c[1], r).Face()
+    return px.QuickSketch().Circle((c[0], c[1]), r).Face()
 
 
 def _stroke(a, b, w):
@@ -209,7 +215,7 @@ RESOLUTION = 1e-6 * MM
 
 
 def _round_copper(shape):
-    """(centre, radius) of a copper part that is one full circle (a via, a round pad), else None"""
+    """(center, radius) of a copper part that is one full circle (a via, a round pad), else None"""
     edges = list(shape.edges)
     if len(edges) != 1 or not isinstance(edges[0].edge, px.CircleEdge):
         return None
@@ -218,7 +224,7 @@ def _round_copper(shape):
 
 
 def _on_circles(edge, circles):
-    """the arc edge as an arc around the centre of the circle among circles (a grid {cell: [(centre, radius)]}) that
+    """the arc edge as an arc around the center of the circle among circles (a grid {cell: [(center, radius)]}) that
     its start, middle and end lie on within the file's resolution, else edge: an arc in the file has its circle from
     a mid point rounded to the nanometre, and the same copper as a via's or pad's exact circle would not meet it"""
     if not isinstance(edge.edges[0].edge, px.ArcEdge):
@@ -302,17 +308,84 @@ def _kicad_cli(path, what):
     return found
 
 
-def _converted(path, folder):
-    """a non-KiCad board converted by kicad-cli (KiCad 10's pcb import) into a .kicad_pcb in folder"""
-    what = _IMPORTED.get(os.path.splitext(os.fspath(path))[1].lower(), "non-KiCad")
+def _program(path, start):
+    """the program a board file of another program comes from, by its extension; an Eagle .brd is XML, an Allegro one
+    binary; a P-CAD .pcb starts ACCEL_ASCII, a gEDA one is text without it"""
+    extension = os.path.splitext(os.fspath(path))[1].lower()
+    if extension == ".brd":
+        return "Eagle" if b"<eagle" in start else "Allegro"
+    if extension == ".pcb":
+        return "P-CAD" if start.startswith(b"ACCEL_ASCII") else "gEDA PCB"
+    return _IMPORTED.get(extension, "non-KiCad")
+
+
+def _without_undefined(text):
+    """the board text without the items on layers KiCad does not know ((layer "UNDEFINED"): Eagle layers the importer
+    does not map), which KiCad refuses to load; FromKiCad skips them anyway. A footprint on such a layer stays"""
+    starts, heads, undefined, spans = [], [], [], []
+    for m in _TOKEN.finditer(text):
+        t = m.group()
+        if t == "(":
+            starts.append(m.start())
+            heads.append(None)
+            undefined.append(False)
+        elif t == ")":
+            start, head = starts.pop(), heads.pop()
+            if undefined.pop() and head not in ("footprint", "kicad_pcb"):
+                spans.append((start, m.end()))
+        elif heads[-1] is None:
+            heads[-1] = t
+        elif t in ('"UNDEFINED"', "UNDEFINED") and heads[-1] == "layer" and len(undefined) > 1:
+            undefined[-2] = True
+    kept, at = [], 0
+    for start, end in sorted(spans):
+        if start >= at:
+            kept.append(text[at:start])
+            at = end
+    return "".join(kept) + text[at:]
+
+
+def _refilled(cli, board, folder):
+    """fills the zones of the converted board in place (kicad-cli pcb drc --refill-zones: KiCad's importers write them
+    unfilled): None, or kicad-cli's message when it cannot"""
+    with open(board, encoding="utf-8") as f:
+        text = f.read()
+    known = _without_undefined(text)
+    if known != text:
+        with open(board, "w", encoding="utf-8") as f:
+            f.write(known)
+    run = subprocess.run([cli, "pcb", "drc", "--refill-zones", "--save-board", "-o", os.path.join(folder, "drc.rpt"),
+                          board], capture_output=True, text=True, errors="replace")
+    return None if run.returncode == 0 else (run.stderr or run.stdout).strip() or "exit code %d" % run.returncode
+
+
+def _easyeda_boards(path):
+    """the number of boards (PCB/*.epcb) in an EasyEDA Pro project, 0 for any other file"""
+    if not zipfile.is_zipfile(path):
+        return 0
+    with zipfile.ZipFile(path) as z:
+        return sum(1 for n in z.namelist() if n.startswith("PCB/") and n.endswith(".epcb"))
+
+
+def _converted(path, folder, start):
+    """a board of another program converted by kicad-cli (KiCad 10's pcb import) into a .kicad_pcb in folder, its zones
+    filled by KiCad, and kicad-cli's message when it could not fill them"""
+    what = _program(path, start)
     cli = _kicad_cli(path, what)
     out = os.path.join(folder, "board.kicad_pcb")
     run = subprocess.run([cli, "pcb", "import", "--format", "auto", "-o", out, os.fspath(path)], capture_output=True,
                          text=True, errors="replace")
     if run.returncode != 0 or not os.path.isfile(out):
+        message = (run.stderr or run.stdout).strip()
+        boards = _easyeda_boards(path)
+        if boards > 1:
+            raise ValueError("FromKiCad(%r): kicad-cli could not convert the EasyEDA Pro project, which holds %d boards; "
+                             "export one board on its own from EasyEDA Pro (kicad-cli: %s)" % (path, boards, message))
+        # kicad-cli names the importer it chose: "Importing 'board.brd' using Allegro format..."
+        reported = re.search(r"using (.+?) format", run.stdout)
         raise ValueError("FromKiCad(%r): kicad-cli could not convert the %s board: %s" %
-                         (path, what, (run.stderr or run.stdout).strip()))
-    return out
+                         (path, reported.group(1) if reported else what, message))
+    return out, _refilled(cli, out, folder)
 
 
 class _Board:
@@ -328,8 +401,8 @@ class _Board:
             raise ValueError("FromKiCad(%r): KiCad file version %s is older than KiCad 9 (%d); open the board in "
                              "KiCad 9 or later and save it" % (path, version, _OLDEST))
         if int(version) > _NEWEST:
-            warnings.warn("FromKiCad(%r): file version %s is newer than the newest tested (%d)" %
-                          (path, version, _NEWEST), px.PlanexWarning, stacklevel=3)
+            warn("FromKiCad(%r): file version %s is newer than the newest tested (%d)" %
+                          (path, version, _NEWEST), px.PlanexWarning)
         self.order = [c[1] for c in _first(root, "layers")[1:] if isinstance(c, list) and len(c) > 1]
         names = [n for n in self.order if n.endswith(".Cu")]
         inner = sorted((n for n in names if re.fullmatch(r"In\d+\.Cu", n)), key=lambda n: int(n[2:-3]))
@@ -479,7 +552,9 @@ class _Board:
     def _zone(self, node):
         net = self._net(node) or (_unescaped(_value(node, "net_name")) if _value(node, "net_name") else None)
         filled = _all(node, "filled_polygon")
-        if not filled and _first(node, "keepout") is None and _first(node, "rule_area") is None:
+        # (fill yes ...): KiCad filled it, an empty fill too
+        if (not filled and _value(node, "fill") != "yes" and _first(node, "keepout") is None
+                and _first(node, "rule_area") is None):
             self.unfilled += 1
         for poly in filled:
             layer = _value(poly, "layer") or _value(node, "layer")
@@ -642,13 +717,44 @@ class _Board:
         layers a hole must join to count, default all of them"""
         if not self.outline:
             raise ValueError("FromKiCad(%r): the board has no outline on Edge.Cuts" % (self.path,))
-        shape = px._RegionOfEdges(self.outline, chains=False)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            shape = px._RegionOfEdges(self.outline, chains=False)
+        for w in caught:
+            opened = re.match(r"open wire with (\d+) open ends", str(w.message))
+            stubs = _stubs(self.outline) if opened else []
+            if opened and len(stubs) == int(opened.group(1)):
+                warn("FromKiCad: %d line ends on Edge.Cuts run past the outline (%s) and are left out"
+                              % (len(stubs), _span_mm(stubs)), px.PlanexWarning)
+            else:
+                warn(w.message, w.category)
         shape.edges.col = BOARD_COL
         shape.name = "profile"
         shape.col = BOARD_COL
         needed = between or (self.copper[0], self.copper[-1])
         holes = [h for h, span in self.holes if all(n in span for n in needed)]
         return shape - px.Unify(holes) if holes else shape
+
+
+def _stubs(outline):
+    """the lengths of the outline's stubs: from an end that touches no other edge back along its edge to the nearest end
+    of another edge on it (an outline line drawn on past the arc that ends on it)"""
+    ends = [(k, tuple(p)) for k, w in enumerate(outline) for p in (w.edges[0].start, w.edges[0].end)]
+    lengths = []
+    for k, p in ends:
+        if any(j != k and w.Distance(p) <= TOUCH for j, w in enumerate(outline)):
+            continue
+        on = [math.dist(p, q) for j, q in ends if j != k and outline[k].Distance(q) <= TOUCH]
+        if not on:
+            return []
+        lengths.append(min(on))
+    return lengths
+
+
+def _span_mm(lengths):
+    """'0.25 mm', or '0.25 to 0.51 mm'"""
+    a, b = min(lengths) / MM, max(lengths) / MM
+    return "%.2f mm" % a if round(a, 2) == round(b, 2) else "%.2f to %.2f mm" % (a, b)
 
 
 def _outline(node, kind, frame):
@@ -739,7 +845,7 @@ def _chamfered(w, h, c, corners):
 
 
 def _pad_shape(node, shape, size):
-    """the copper of a pad around the origin, unrotated, in metres (KiCad's y down turned up)"""
+    """the copper of a pad around the origin, unrotated, in meters (KiCad's y down turned up)"""
     w, h = size[0] * MM, size[1] * MM
     if shape == "circle":
         return _disc((0.0, 0.0), w / 2)
@@ -847,16 +953,32 @@ def _placed(shape, angle, center, shift=(0.0, 0.0)):
     return shape.Translated(center)
 
 
+# one form per kind of layer, so that a type checker knows the result: every layer a dict, one layer a Shape, a stackup
+# the board in 3d (an OCC shape); id= is the id wrapper's (_ids.with_id), declared for type checkers
+@overload
+def FromKiCad(path: str | os.PathLike, /, layer: None = None, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+              remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
+              merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape]: ...
+@overload
+def FromKiCad(path: str | os.PathLike, /, layer: str, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+              remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
+              merge_collinear_closer: float | None = None, *, id: str | None = None) -> Shape: ...
+@overload
+def FromKiCad(path: str | os.PathLike, /, layer: list[float] | dict | Any, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+              remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
+              merge_collinear_closer: float | None = None, *, id: str | None = None) -> Any: ...
 def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any | None = None,
               remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None,
               remove_free_edges: bool | None = None,
-              merge_collinear_closer: float | None = None) -> dict[str, Shape] | Shape | Any:
-    """Reads a KiCad board (.kicad_pcb, KiCad 9 and later) in metres, y up: its layers as Shapes, or the board in 3d.
+              merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any:
+    """Reads a KiCad board (.kicad_pcb, KiCad 9 and later) in meters, y up: its layers as Shapes, or the board in 3d.
 
-    A board of another program (Altium, Eagle, PADS, CADSTAR, Fabmaster, P-CAD, SolidWorks PCB: a file that is no
-    .kicad_pcb) is converted first with KiCad 10's kicad-cli (pcb import), found as $PLANEX_KICAD_CLI, on the PATH or
-    where KiCad installs it.
+    A board of another program (a file that is no .kicad_pcb) is converted first with KiCad 10's kicad-cli (pcb
+    import), found as $PLANEX_KICAD_CLI, on the PATH or where KiCad installs it, and its zones are filled by kicad-cli
+    (pcb drc --refill-zones): Altium Designer, CircuitStudio and CircuitMaker (.PcbDoc, .CSPcbDoc, .CMPcbDoc), Cadence
+    Allegro (.brd), CADSTAR (.cpa), EasyEDA Standard (.json, .zip) and Pro (.epro, .zip), Eagle (.brd), Fabmaster
+    (.txt, .fab), gEDA PCB and Lepton EDA (.pcb), PADS (.asc), P-CAD (.pcb), SolidWorks PCB (.SWPcbDoc).
 
     A copper layer is every track, arc, via, pad, filled zone and copper drawing on it, united per net with the faces
     named by the net; the drill holes through it are cut out, the edges of plated holes (vias and plated pads) named
@@ -868,9 +990,9 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
     KiCad 9 file, grows exactly in a KiCad 10 one), what is drawn there, the vias the board's (or the via's own) tenting
     leaves open and the tracks and copper drawings marked for an opening; with the setup's solder mask minimum width,
     openings closer than it are joined as KiCad joins them. Text, dimensions, tables, barcodes and hatched fills are
-    left out, with one warning giving their counts; zones need to be filled in KiCad (a warning says when they are
-    not). Copper and drill holes are coloured gold (col), the board solder mask green, in 2d and in 3d. Files newer
-    than the newest tested (KiCad 10, version 20260206) warn.
+    left out, with one warning giving their counts; the zones of a .kicad_pcb need to be filled in KiCad (a warning
+    says when they are not). Copper and drill holes are colored gold (col), the board solder mask green, in 2d and
+    in 3d. Files newer than the newest tested (KiCad 10, version 20260206) warn.
 
     In 3d every dielectric is the outline extruded between its two copper layers (solids named dielectric_1, ... from
     the top), drilled where a hole joins both, so the hole walls are faces named "pth" or "npth"; the copper layers are
@@ -884,11 +1006,11 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
         layer: None: a dict {KiCad layer name: Shape}: the copper layers from the top (F.Cu, In1.Cu, ..., B.Cu), each
             even when empty, then the board outline "Edge.Cuts", then every other layer of the board's layer table
             that holds something, in the table's order. A layer name ("F.Cu", "F.SilkS", ...): that layer's Shape
-            alone. A stackup: the board in 3d as one glued OCC shape: a list of dielectric thicknesses in millimetres
+            alone. A stackup: the board in 3d as one glued OCC shape: a list of dielectric thicknesses in millimeters
             from the top, as the manufacturer gives it (e.g. [0.2, 1.3, 0.2] for four copper layers), a stackup of
             px.stackups (a dict {number of copper layers: such a list}, e.g. px.stackups.jlc7628), or
             px.stackups.kicad (the stackup in the board file).
-        remove_faces_smaller: faces of less area than this (m^2) are united with the neighbour they share the longest
+        remove_faces_smaller: faces of less area than this (m^2) are united with the neighbor they share the longest
             edge with, such as the slivers a zone fill's polygon leaves next to an exact drill circle (merged, the
             hole keeps its exact circle); None takes px.config.remove_faces_smaller.
         merge_small_faces_instead: False throws such faces away instead; None takes
@@ -923,14 +1045,19 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
     if start.startswith(b"PCBNEW-BOARD"):
         raise ValueError("FromKiCad(%r): a legacy KiCad board (before KiCad 6); open it in KiCad 9 or later and save it"
                          % (path,))
+    fill = "fill the zones in KiCad (B) and save"
     if start.startswith(b"(kicad_pcb"):
         board = _Board(path)
     else:
         with tempfile.TemporaryDirectory() as folder:
-            board = _Board(_converted(path, folder), path)
+            converted, refill = _converted(path, folder, start)
+            board = _Board(converted, path)
+        if refill:
+            fill = ("kicad-cli could not fill them (%s); open the board in KiCad, fill the zones (B) and save it as "
+                    "a .kicad_pcb" % refill)
     if board.unfilled:
-        warnings.warn("FromKiCad: %d zone%s not filled: fill the zones in KiCad (B) and save" %
-                      (board.unfilled, "s" if board.unfilled > 1 else ""), px.PlanexWarning, stacklevel=2)
+        warn("FromKiCad: %d zone%s not filled: %s" % (board.unfilled, "s" if board.unfilled > 1 else "", fill),
+                      px.PlanexWarning)
     if isinstance(layer, str) and layer not in board.order and layer != "Edge.Cuts":
         raise ValueError("FromKiCad(%r, layer=%r): the board's layers are %s" % (path, layer, ", ".join(board.order)))
     where = None if layer is None else [layer] if isinstance(layer, str) else board.copper
@@ -942,7 +1069,7 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
     listed = ["%d %s" % (counts[kind], one if counts[kind] == 1 else many) for kind, one, many in _LEFT_OUT
               if counts.get(kind)]
     if listed:
-        warnings.warn("FromKiCad: %s left out (not supported yet)" % ", ".join(listed), px.PlanexWarning, stacklevel=2)
+        warn("FromKiCad: %s left out (not supported yet)" % ", ".join(listed), px.PlanexWarning)
 
     def cleaned(name):
         shape = board.shape(name)
@@ -981,7 +1108,10 @@ def _stackup(board, thicknesses, cleanup):
         region.name = None
         interfaces = []
         for name in board.copper:
+            # the copper within the outline: a converted board's edge pads run past it, where no dielectric is
             copper = board.layer(name)
+            if copper.faces:
+                copper = copper * region
             interfaces.append(px.Glue([copper, region]) if copper.faces else region)
         return px._StackedPrisms(interfaces, region, z, names, **cleanup)
     return _glued_stackup(board, thicknesses, z, names, cleanup)

@@ -19,7 +19,7 @@ def rectangle():
     sk.Move(sk.origin, px.Coincident).Line(4, 0.3, px.Horizontal, id="bottom").Line(0.2, 2, px.Perpendicular) \
         .Line(-4, 0.1, px.Perpendicular, id="top").Close(px.Perpendicular)
     sk.Constrain("bottom", px.Distance, 4, id="w")
-    sk.Constrain("bottom.start", "top", px.Distance, 2, id="h")
+    sk.Constrain("bottom.start", "top", px.Distance, 2, id="ht")
     return sk
 
 
@@ -40,7 +40,7 @@ def test_constraints_print_like_the_call_that_made_them():
     c = rectangle().constraints
     assert list(c) == ["Coincident", "Horizontal", "Perpendicular", "Distance"]
     assert repr(c["Distance"]["w"]) == '"bottom", px.Distance, 4'
-    assert repr(c["Distance"]["h"]) == '"bottom.start", "top", px.Distance, 2'
+    assert repr(c["Distance"]["ht"]) == '"bottom.start", "top", px.Distance, 2'
     assert repr(c["Perpendicular"]["Perpendicular.3"]) == '"top", "Line.2", px.Perpendicular'
     assert repr(c["Coincident"]["Coincident.1"]) == '"Point.1", "origin", px.Coincident'
 
@@ -48,9 +48,9 @@ def test_constraints_print_like_the_call_that_made_them():
 def test_dimensions_change_with_update():
     sk = rectangle()
     sk["w"] = 6
-    sk.Update({"h": 3})
+    sk.Update({"ht": 3})
     assert corners(sk) == pytest.approx([0, 0, 6, 0, 6, 3, 0, 3], abs=TOL)
-    assert (sk["w"], sk["h"]) == (6, 3)
+    assert (sk["w"], sk["ht"]) == (6, 3)
 
 
 def test_set_values_take_effect_before_the_sketch_is_read():
@@ -159,7 +159,7 @@ def test_a_point_on_the_v_axis():
 
 def test_a_line_tangent_to_a_circle_and_ending_on_it():
     sk = px.Sketch()
-    sk.Circle(0, 0, 1, px.Fix)
+    sk.Circle((0, 0), 1, px.Fix)
     sk.Move((0.1, 1.2)).Line(3, -0.1)
     sk.Constrain("Line.1.start", "Circle.1", px.Coincident)
     sk.Constrain("Line.1", "Circle.1", px.Tangent)
@@ -190,7 +190,7 @@ def test_removing_an_element_takes_its_constraints_and_unused_ends():
     assert sk.elements["Point"] == ["origin", "Point.1", "Point.2", "Point.3", "Point.4"]
     assert list(sk.constraints["Horizontal"]) == ["Horizontal.1"]
     sk.Remove("top")
-    assert "h" not in sk.constraints["Distance"]
+    assert "ht" not in sk.constraints["Distance"]
     assert "Perpendicular.2" not in sk.constraints["Perpendicular"]
     assert sk.elements["Point"] == ["origin", "Point.1", "Point.2", "Point.3", "Point.4"]
     with pytest.raises(ValueError, match="ends there, remove it first"):
@@ -278,13 +278,14 @@ def test_a_negative_radius_starts_the_arc_backwards_as_in_the_turtle_sketch():
 
 
 def test_strict_mode_exports_only_fully_constrained_sketches():
+    pytest.importorskip("shapely")
     sk = px.Sketch(mode="strict")
     assert sk.mode == "strict" and sk.error_on_branch_change
     sk.Move(sk.origin, px.Coincident).Line(4, 0.3, px.Horizontal, id="bottom").Line(0.2, 2, px.Perpendicular) \
         .Line(-4, 0.1, px.Perpendicular, id="top").Close(px.Perpendicular, id="left")
     sk.Vertex("P", (1, 1))
     for export in (sk.Face, sk.Shape, sk.Wire, sk.Wires, sk.Construction, sk.ToOCCFace, sk.ToOCCShape, sk.ToOCCWire, sk.ToOCCWires,
-                   lambda: sk.Edge("top"), sk.ToShapely):
+                   lambda: sk.Wire("top"), sk.ToShapely):
         with pytest.raises(ValueError, match=r"mode='strict' and the sketch is not fully constrained \(4 degrees of freedom; "
                                              r"free: bottom, Line.1, top, left, P\)"):
             export()
@@ -356,7 +357,7 @@ def test_the_circle_of_a_full_turn_starts_where_its_pen_point_is_solved():
     sk.Constrain("Circle.1", px.Radius, 1)
     assert sk.dof == 0
     assert sk._Geometry("Circle.1")["center"] == pytest.approx((5, 1), abs=TOL)
-    [edge] = sk.Edge("Circle.1").edges
+    [edge] = sk.Wire("Circle.1").edges
     assert tuple(edge.start) == pytest.approx((5, 0), abs=TOL)
 
 

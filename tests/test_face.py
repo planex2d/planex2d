@@ -280,10 +280,9 @@ def test_a_wire_has_no_fold_backs_or_junctions_to_merge():
 
 def test_merge_collinear_edges_ignores_the_edges_of_a_spline():
     trace = px.Move((0, 0)).Spline([(1, 0), (2, 0)]).Wire().Offset(0.1)
-    assert len(trace.lines) == 4
-    assert all(l.from_spline for l in trace.lines)
+    assert len(trace.splines) == 2
     trace.MergeCollinearEdges()
-    assert len(trace.lines) == 4
+    assert len(trace.splines) == 2
 
 
 def test_export_merges_collinear_edges_on_a_copy():
@@ -356,7 +355,7 @@ def test_mesh_normals_point_out_of_the_material_however_the_edges_were_drawn():
     assert _normal_flux(cw, "b") == pytest.approx(2, abs=1e-9)
     box = px.QuickSketch((-5, -2)).Rectangle(10, 4).Face()
     naca = px.FromNACA("2412", chord=3).Translated((-1.5, 0))
-    for hole in (px.QuickSketch().Circle(0, 0, 1).Face(), naca, naca.Mirrored((0, 0), (1, 0)),
+    for hole in (px.QuickSketch().Circle((0, 0), 1).Face(), naca, naca.Mirrored((0, 0), (1, 0)),
                  px.QuickSketch().Move((-1, -0.5)).Line((1, -0.3)).Line((0.2, 0.8)).Close().Face().Mirrored((0, 0), (1, 0))):
         for e in hole.edges:
             e.name = "hole"

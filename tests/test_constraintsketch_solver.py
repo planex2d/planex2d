@@ -161,7 +161,7 @@ def test_reference_dimensions_measure():
 def test_reading_the_solved_geometry():
     sk = px.Sketch()
     sk.Move((0, 0)).Line(4, 0, id="base").Arc(1, 90, id="bend")
-    sk.Circle(1, 2, 0.5, id="bore")
+    sk.Circle((1, 2), 0.5, id="bore")
     sk.Move((0, 3)).Spline([(1, 3.5), (2, 3)], id="wave")
     sk.Constrain("base", px.Distance, 4, id="w")
     where = sk.locations
@@ -225,7 +225,7 @@ def test_a_constraint_that_turns_a_line_round_warns_or_is_refused():
 def test_a_growing_ring_keeps_its_bus_outside():
     """big steps of the radius would put the bus waveguide inside the ring: the steps are halved instead"""
     sk = px.Sketch(error_on_branch_change=True)
-    sk.Circle(0, 0, 10.25, id="ro")
+    sk.Circle((0, 0), 10.25, id="ro")
     sk.Constrain("ro.center", "origin", px.Coincident)
     sk.Constrain("ro", px.Radius, 10.25, id="Ro")
     sk.Move((-15, -11.25)).Rectangle(30, 0.5)
@@ -252,7 +252,10 @@ def test_fixing_an_arc_keeps_it():
     drawn = sk.Geometry("a")
     sk.Constrain("a", px.Fix)
     assert sk.dof == 0
-    assert sk.Geometry("a") == pytest.approx(drawn, abs=TOL)
+    fixed = sk.Geometry("a")
+    assert fixed.keys() == drawn.keys()
+    for key in drawn:
+        assert fixed[key] == pytest.approx(drawn[key], abs=TOL)
 
 
 @pytest.mark.constraints
@@ -273,7 +276,7 @@ def test_fixes_that_hold_geometry_are_not_redundant():
     sk = px.Sketch()
     sk.Move((0, 0)).Line(10, 0, px.Fix, id="a")
     sk.Move((0, 2)).Line(10, 0, px.Fix, id="b")
-    sk.Circle(5, 1.1, 0.9, id="c")
+    sk.Circle((5, 1.1), 0.9, id="c")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         sk.Constrain("c", "a", px.Tangent)
@@ -357,11 +360,11 @@ def test_building_a_32_gon_constraint_by_constraint_is_fast():
 def test_short_lines_far_from_the_origin_take_parallel_and_angle(x0):
     s = 1e-4
     sk = px.Sketch()
-    sk.Move((x0, 0)).Line(s, 0, px.Horizontal, id="a").Line(0.1 * s, s, id="r").Line(s, 0.2 * s, id="t")
-    sk.Constrain("a", "t", px.Parallel)
+    sk.Move((x0, 0)).Line(s, 0, px.Horizontal, id="a").Line(0.1 * s, s, id="r").Line(s, 0.2 * s, id="tail")
+    sk.Constrain("a", "tail", px.Parallel)
     sk.Constrain("a", "r", px.Angle, 60)
-    g = {k: sk.Geometry(k)["angle"] for k in ("a", "r", "t")}
-    assert math.sin(math.radians(g["t"] - g["a"])) == pytest.approx(0, abs=1e-9)
+    g = {k: sk.Geometry(k)["angle"] for k in ("a", "r", "tail")}
+    assert math.sin(math.radians(g["tail"] - g["a"])) == pytest.approx(0, abs=1e-9)
     assert math.cos(math.radians(g["r"] - g["a"])) == pytest.approx(0.5, abs=1e-9)
 
 

@@ -28,26 +28,22 @@ namespace planex2d {
 
     enum class BooleanOp { Union, Intersection, Difference };
 
-    // a and b are clean regions: their edges meet only at shared endpoints
-    inline Wire Boolean(const Wire &a, const Wire &b, BooleanOp op) {
-        static Timer t("planex Boolean");
-        Region reg(t);
-        if (!a.Axes().IsClose(b.Axes()))
-            throw std::invalid_argument("the operands lie on different planes; move them onto one plane first");
-        const BBox boxa = a.Box(), boxb = b.Box();
-        const double tol = Tol(std::max(boxa.NormInf(), boxb.NormInf()));
-        if (a.Empty() || b.Empty() || !boxa.Overlaps(boxb, tol)) {
-            Wire r(a.Axes());
-            if (op != BooleanOp::Intersection)
-                r = a;
-            if (op == BooleanOp::Union)
-                for (const Edge &e : b)
-                    r.Add(e);
-            return r;
-        }
+    // where a piece of the cut lies against the other operand; Shared: both have it, the regions on its one side
+    // (SharedSame) or on opposite sides (SharedOpposite)
+    enum class PieceSide : unsigned char { Inside, Outside, SharedSame, SharedOpposite };
 
-        Wire c(a.Axes());
+    // a and b cut against each other: the pieces (state mask 1 of a, 2 of b, 3 of both) and, with sides, where each
+    // lies against the other operand (a region's; a piece of a set of lines has no inside)
+    struct Arrangement {
+        Wire c;
         std::vector<CutState> state;
+        std::vector<PieceSide> side;
+    };
+
+    inline Arrangement Arranged(const Wire &a, const Wire &b, const BBox &boxa, const BBox &boxb, double tol, bool sides) {
+        Arrangement r{Wire(a.Axes()), {}, {}};
+        Wire &c = r.c;
+        std::vector<CutState> &state = r.state;
         auto add = [&](const Wire &w, unsigned char mask, const BBox &other) {
             for (const Edge &e : w) {
                 c.Add(e);
@@ -80,49 +76,79 @@ namespace planex2d {
                     grid.Insert(k, BoxOf(c[k]));
             snapTol = Tol(s);
         }
+        r.side.assign(c.Size(), PieceSide::Outside);
+        if (!sides)
+            return r;
 
-        {
-            static Timer tclassify("planex Boolean classify");
-            Region regclassify(tclassify);
-            auto inside = [&](size_t k) {
-                const bool froma = state[k].mask == 1;
-                const unsigned char other = froma ? 2 : 1;
-                const Vertex m = MidPointOf(c[k]);
-                return state[k].needsCutting && (froma ? boxb : boxa).IsInside(m) &&
-                       (CrossingParity<false, false>(grid, c, state, m, other) & other) != 0;
-            };
-            const std::vector<signed char> side = SidesByRuns(c, state, rec, ids, snapTol, inside);
-            auto keep = [&](const auto &x, size_t k) {
-                const CutState &s = state[k];
-                if (s.excluded)
-                    return false;
-                if (s.mask == 3) {
+        static Timer tclassify("planex Boolean classify");
+        Region regclassify(tclassify);
+        auto inside = [&](size_t k) {
+            const bool froma = state[k].mask == 1;
+            const unsigned char other = froma ? 2 : 1;
+            const Vertex m = MidPointOf(c[k]);
+            return state[k].needsCutting && (froma ? boxb : boxa).IsInside(m) &&
+                   (CrossingParity<false, false>(grid, c, state, m, other) & other) != 0;
+        };
+        const std::vector<signed char> side = SidesByRuns(c, state, rec, ids, snapTol, inside);
+        for (size_t k = 0; k < c.Size(); ++k) {
+            const CutState &s = state[k];
+            if (s.excluded)
+                continue;
+            if (s.mask == 3) {
+                const bool same = std::visit([&](const auto &x) {
                     Vertex m = x.MidPoint();
                     Vertex t = x.Tangent(m);
                     bool vertical = std::abs(t.x) >= std::abs(t.y);
                     unsigned char odd = vertical ? CrossingParity<true, true>(grid, c, state, m, 3)
                                                  : CrossingParity<false, true>(grid, c, state, m, 3);
-                    bool same = ((odd & 1) != 0) == ((odd & 2) != 0);
-                    return op == BooleanOp::Difference ? !same : same;
-                }
-                const bool froma = s.mask == 1;
-                const bool in = side[k] < 0 ? inside(k) : side[k] != 0;
-                switch (op) {
-                    case BooleanOp::Union: return !in;
-                    case BooleanOp::Intersection: return in;
-                    case BooleanOp::Difference: return froma ? !in : in;
-                }
-                return false;
-            };
-            std::vector<bool> removed(c.Size());
-            for (size_t k = 0; k < c.Size(); ++k)
-                removed[k] = !std::visit([&](const auto &x) { return keep(x, k); }, c[k]);
-            c.Erase(removed);
-            Erase(state, removed);
+                    return ((odd & 1) != 0) == ((odd & 2) != 0);
+                }, c[k]);
+                r.side[k] = same ? PieceSide::SharedSame : PieceSide::SharedOpposite;
+                continue;
+            }
+            r.side[k] = (side[k] < 0 ? inside(k) : side[k] != 0) ? PieceSide::Inside : PieceSide::Outside;
         }
+        return r;
+    }
+
+    inline bool Keeps(BooleanOp op, bool froma, PieceSide side) {
+        if (side == PieceSide::SharedSame || side == PieceSide::SharedOpposite)
+            return (op == BooleanOp::Difference) != (side == PieceSide::SharedSame);
+        const bool in = side == PieceSide::Inside;
+        switch (op) {
+            case BooleanOp::Union: return !in;
+            case BooleanOp::Intersection: return in;
+            case BooleanOp::Difference: return froma ? !in : in;
+        }
+        return false;
+    }
+
+    // a and b are clean regions: their edges meet only at shared endpoints
+    inline Wire Boolean(const Wire &a, const Wire &b, BooleanOp op) {
+        static Timer t("planex Boolean");
+        Region reg(t);
+        if (!a.Axes().IsClose(b.Axes()))
+            throw std::invalid_argument("the operands lie on different planes; move them onto one plane first");
+        const BBox boxa = a.Box(), boxb = b.Box();
+        const double tol = Tol(std::max(boxa.NormInf(), boxb.NormInf()));
+        if (a.Empty() || b.Empty() || !boxa.Overlaps(boxb, tol)) {
+            Wire r(a.Axes());
+            if (op != BooleanOp::Intersection)
+                r = a;
+            if (op == BooleanOp::Union)
+                for (const Edge &e : b)
+                    r.Add(e);
+            return r;
+        }
+        Arrangement r = Arranged(a, b, boxa, boxb, tol, true);
+        std::vector<bool> removed(r.c.Size());
+        for (size_t k = 0; k < r.c.Size(); ++k)
+            removed[k] = r.state[k].excluded || !Keeps(op, r.state[k].mask == 1, r.side[k]);
+        r.c.Erase(removed);
+        Erase(r.state, removed);
         // the cut changed vertices only near the other operand
-        c.MergeOnCarriers([&](size_t k) { return state[k].needsCutting; });
-        return c;
+        r.c.MergeOnCarriers([&](size_t k) { return r.state[k].needsCutting; });
+        return r.c;
     }
 
     // bit i of v moves to bit 2i
@@ -222,7 +248,7 @@ namespace planex2d {
         auto insideOverlap = [&](const Edge &e, const Vertex &p) {
             constexpr double step = 1e-4;
             const double t = LengthFraction(e, p);
-            const bool inner = std::holds_alternative<Circle>(e) || (t > step && t < 1.0 - step);
+            const bool inner = IsClosedEdge(e) || (t > step && t < 1.0 - step);
             return inner && alongB(PointAtFraction(e, t - step)) && alongB(PointAtFraction(e, t + step));
         };
         for (const Edge &ea : a) {

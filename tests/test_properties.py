@@ -23,7 +23,7 @@ def test_workplane_properties_reach_the_occ_edges():
 
 
 def test_properties_of_arcs_circles_rectangles_and_splines():
-    assert {e.name for e in px.QuickSketch().Circle(0, 0, 1, name="circle").ToOCCFace().edges} == {"circle"}
+    assert {e.name for e in px.QuickSketch().Circle((0, 0), 1, name="circle").ToOCCFace().edges} == {"circle"}
     assert {e.name for e in px.Move((0, 0)).Rectangle(2, 1, name="rect").ToOCCFace().edges} == {"rect"}
     arc = px.Move((0, 0)).Arc(1, 180, name="arc", maxh=0.05).Close(name="chord").ToOCCFace()
     assert edge_at(arc, 1, 1).name == "arc"

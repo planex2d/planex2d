@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import math
 import os
-import warnings
 from typing import TYPE_CHECKING
 
 from . import _planex as px
 from ._sketches import sketch_types
 from ._geom import oriented, xy
 from ._compound import Compound
+from ._caller import warn
 
 PERIODIC = 2
 
@@ -146,11 +146,11 @@ def _write_shape(geo, shape, faces, names, unnamed):
 def _periodic(geo, shape, edges, pieces):
     for name, (a, b, trafo, kind) in getattr(shape, "identifications", {}).items():
         if int(kind) != PERIODIC:
-            warnings.warn(f"WriteGeo: identification '{name}' is not periodic; gmsh's .geo writes periodic curves only",
-                          px.PlanexWarning, stacklevel=3)
+            warn(f"WriteGeo: identification '{name}' is not periodic; gmsh's .geo writes periodic curves only",
+                          px.PlanexWarning)
             continue
         side = {s: [i for i, v in enumerate(edges) if v.name == s] for s in (a, b)}
-        if trafo is None:
+        if trafo == px.Auto:
             trafo = px.GetTransformation([edges[i] for i in side[a]], [edges[i] for i in side[b]])
         slaves, masters = [], []
         size = max([1.0] + [abs(c) for v in edges for c in xy(v.midpoint)])

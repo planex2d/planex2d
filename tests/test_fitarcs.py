@@ -106,3 +106,15 @@ def test_export_fits_arcs_on_a_copy():
     assert len(face.edges) == 2
     assert len(p.lines) == 400
     assert area(face) == pytest.approx(math.pi, rel=1e-9)
+
+
+@pytest.mark.parametrize("radius", [0.05, 1.0, 10.0])
+def test_the_default_fit_length_is_relative_to_the_loop(radius):
+    pts = [(radius * math.cos(2 * math.pi * k / 64), radius * math.sin(2 * math.pi * k / 64)) for k in range(64)]
+    gon = px.FromPolyline(pts, closed=True).FitArcs(tol=1e-2 * radius)
+    assert len(gon.edges) < 8
+    octagon = px.FromPolyline([(radius * math.cos(math.pi * k / 4), radius * math.sin(math.pi * k / 4)) for k in range(8)],
+                              closed=True).FitArcs(tol=1e-2 * radius)
+    assert len(octagon.edges) == 8 and all(isinstance(e.edge, px.LineEdge) for e in octagon.edges)
+    absolute = px.FromPolyline(pts, closed=True).FitArcs(tol=1e-2 * radius, max_edge_length=1e-9)
+    assert len(absolute.edges) == 64

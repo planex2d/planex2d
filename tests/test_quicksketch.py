@@ -196,7 +196,7 @@ def test_a_helper_call_costs_the_same_on_a_large_sketch():
         for _ in range(n):
             sk.Line(1, 0)
         sk.Move((0, 10)).Line(100, 0, id="ref")
-        sk.Circle(0, 20, 1, id="hub")
+        sk.Circle((0, 20), 1, id="hub")
         best = math.inf
         for _ in range(5):
             t = time.perf_counter()
@@ -250,7 +250,7 @@ def test_construction_helpers_and_failures_keep_both_pens():
     lambda sk: sk.Line((math.nan, 1)),
     lambda sk: sk.Arc(math.nan, 90),
     lambda sk: sk.Arc((1, math.nan), tangent=(0, 1)),
-    lambda sk: sk.Circle(0, 0, math.nan),
+    lambda sk: sk.Circle((0, 0), math.nan),
     lambda sk: sk.Rectangle(math.nan, 1),
     lambda sk: sk.Spline([(2, 1), (math.nan, 2)]),
     lambda sk: sk.Spline([(2, 1), (3, 2)], tangents={0: (math.nan, 1)}),
@@ -305,7 +305,7 @@ def test_a_sketch_cuts_faces_and_wires():
 
 def test_until_meets_lines_arcs_circles_and_splines_not_axes_or_points():
     sk = px.QuickSketch((-3, 0)).Vertex("p", (-1, 0)).Vertex("q", (0, 1)).SymmetryLine("p", "q")
-    sk.Circle(4, 0, 1, construction=True).Move((-3, 0))
+    sk.Circle((4, 0), 1, construction=True).Move((-3, 0))
     assert sk.Line(until=px.first).pen.position == pytest.approx((3, 0), abs=1e-12)
     with pytest.raises(ValueError, match=r"^Arc\(1.0, until=px.first\): nothing ahead$"):
         px.QuickSketch((0, 0)).Line(1, 0).Arc(1, until=px.first)
@@ -329,7 +329,7 @@ def test_an_unknown_id_names_the_call():
             call()
     for call, text in [(lambda: sk.Vertex("a"), "Vertex('a'): id 'a' is taken"),
                        (lambda: sk.Move("zz"), "Move('zz'): no element 'zz'"),
-                       (lambda: sk.Edge("zz"), "Edge('zz'): no element 'zz'")]:
+                       (lambda: sk.Wire("zz"), "Wire('zz'): no element 'zz'")]:
         with pytest.raises(ValueError, match="^" + re.escape(text) + "$"):
             call()
 

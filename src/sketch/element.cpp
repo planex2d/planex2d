@@ -16,6 +16,8 @@
 namespace planex2d::sketch {
 
     inline size_t Element::Spline(const Geometry &g) const { return kind == ElementKind::OffsetCurve ? g.offsetCurves[OffsetCurveIndex()].spline : SplineIndex(); }
+    inline std::string Element::KindName(const Geometry &g) const { return IsFitted(g) ? "Curve" : ElementKindName(kind); }
+    inline bool Element::IsFitted(const Geometry &g) const { return kind == ElementKind::Spline && g.splines[SplineIndex()].fitted.has_value(); }
     inline const SplinePiece *Element::Piece(const Geometry &g) const {
         return kind == ElementKind::Spline && PieceIndex() ? &g.pieces[PieceIndex() - 1] : nullptr;
     }
@@ -115,8 +117,36 @@ namespace planex2d::sketch {
     inline Vertex Element::DirectionAt(const Geometry &g, size_t point) const {
         if (kind == ElementKind::Line)
             return g.Coords(End()) - g.Coords(Start());
+        if (kind == ElementKind::Spline) {
+            const planex2d::Curve<double, Vertex> f = Curve(g);
+            return f.At(SplineParamAt(g, f, point), 1);
+        }
         const Vertex r = g.Coords(point) - g.Coords(Center());
         return {-r.y, r.x};
+    }
+    inline double Element::CurvatureAt(const Geometry &g, size_t point) const {
+        if (kind == ElementKind::Line)
+            return 0.0;
+        if (kind == ElementKind::Arc || kind == ElementKind::Circle)
+            return 1.0 / g.values[Radius()];
+        const planex2d::Curve<double, Vertex> f = Curve(g);
+        const double u = SplineParamAt(g, f, point);
+        const Vertex d1 = f.At(u, 1), d2 = f.At(u, 2);
+        const double speed = Norm(d1);
+        return Cross(d1, d2) / (speed * speed * speed);
+    }
+    inline double Element::SplineParamAt(const Geometry &g, const planex2d::Curve<double, Vertex> &f, size_t point) const {
+        if (const SplinePiece *piece = Piece(g)) {
+            if (piece->fromPoint != none && g.coordsOf[piece->fromPoint] == g.coordsOf[point])
+                return g.values[piece->from];
+            if (piece->toPoint != none && g.coordsOf[piece->toPoint] == g.coordsOf[point])
+                return g.values[piece->to];
+        }
+        const SplineData &d = g.splines[SplineIndex()];
+        for (size_t k = 0; k < d.points.size(); ++k)
+            if (g.coordsOf[d.points[k]] == g.coordsOf[point])
+                return d.fitted ? (k == 0 ? f.params.front() : f.params.back()) : f.params[k];
+        return f.params.back();
     }
     inline Vertex Element::Origin(const Geometry &g) const {
         if (OriginPoint() != none)
@@ -225,7 +255,7 @@ namespace planex2d::sketch {
             nodes.push_back(p);
             box.Grow(p);
         }
-        const double atol = config::spline_tol * Norm(box.Size());
+        const double atol = config::state->spline_tol * Norm(box.Size());
         if (tolerance)
             *tolerance = atol;
         return planex2d::Approximated(run, u, nodes, atol);
@@ -269,13 +299,27 @@ namespace planex2d::sketch {
     template <> inline void Element::AddValues<ElementKind::Axis>(const Geometry &, std::vector<size_t> &out) const {
         out.insert(out.end(), {AxisAngle(), AxisDistance()});
     }
-    template <> inline void Element::AddValues<ElementKind::Pattern>(const Geometry &, std::vector<size_t> &out) const { out.push_back(Step()); }
+    template <> inline void Element::AddValues<ElementKind::Pattern>(const Geometry &, std::vector<size_t> &out) const {
+        out.push_back(Step());
+        if (HasStep2())
+            out.push_back(Step2());
+    }
     template <> inline void Element::AddValues<ElementKind::Offset>(const Geometry &, std::vector<size_t> &out) const { out.push_back(Distance()); }
     template <> inline void Element::AddValues<ElementKind::Spline>(const Geometry &g, std::vector<size_t> &out) const {
         const SplineData &d = g.splines[SplineIndex()];
         for (size_t point : d.points)
             AddPointValues(g, point, out);
         out.insert(out.end(), d.tangent.begin(), d.tangent.end());
+        if (d.fitted) {
+            AddPointValues(g, d.fitted->origin, out);
+            out.push_back(d.fitted->angle);
+        }
+        // a blend's curve follows the elements it joins
+        if (d.blend)
+            for (size_t arm : d.blend->arms) {
+                const std::vector<size_t> theirs = g.elements[arm].Values(g);
+                out.insert(out.end(), theirs.begin(), theirs.end());
+            }
         if (const SplinePiece *piece = Piece(g))
             AddUsed({piece->from, piece->to}, out);
     }
@@ -304,12 +348,25 @@ namespace planex2d::sketch {
     template <> inline void Element::AddValueNames<ElementKind::Axis>(const Geometry &, Names &out) const {
         out.insert(out.end(), {{"", "angle"}, {"", "d"}});
     }
-    template <> inline void Element::AddValueNames<ElementKind::Pattern>(const Geometry &, Names &out) const { out.push_back({"", "step"}); }
+    template <> inline void Element::AddValueNames<ElementKind::Pattern>(const Geometry &, Names &out) const {
+        out.push_back({"", "step"});
+        if (HasStep2())
+            out.push_back({"", "step2"});
+    }
     template <> inline void Element::AddValueNames<ElementKind::Offset>(const Geometry &, Names &out) const { out.push_back({"", "d"}); }
     template <> inline void Element::AddValueNames<ElementKind::Spline>(const Geometry &g, Names &out) const {
         const SplineData &d = g.splines[SplineIndex()];
+        // a fitted spline's points are its ends; its frame's place and turn follow
         for (size_t k = 0; k < d.points.size(); ++k)
-            AddPointNames(".p" + std::to_string(k), out);
+            AddPointNames(!d.fitted && !d.blend ? ".p" + std::to_string(k) : k == 0 ? ".start" : ".end", out);
+        if (d.fitted) {
+            AddPointNames(".origin", out);
+            out.push_back({"", "angle"});
+        }
+        if (d.blend)
+            for (size_t i = 0; i < 2; ++i)
+                for (const auto &[part, coordinate] : g.elements[d.blend->arms[i]].ValueNames(g))
+                    out.push_back({".arm" + std::to_string(i + 1) + part, coordinate});
         for (size_t k : d.tangentAt)
             out.push_back({".p" + std::to_string(k), "angle"});
         if (const SplinePiece *piece = Piece(g))

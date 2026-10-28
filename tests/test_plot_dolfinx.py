@@ -301,7 +301,7 @@ def test_3d_cut_lines_of_tets_join_where_the_plane_crosses_their_edges(occ_box, 
 def test_pixels_between_a_coarse_disc_mesh_and_the_true_circle_are_nan(backend):
     msh = polygon_disc(12)
     u = function(msh, ("Lagrange", 1), lambda x: 1.0 + x[0])
-    shape = px.QuickSketch().Circle(0, 0, 1).Face()
+    shape = px.QuickSketch().Circle((0, 0), 1).Face()
     z = raster(px.PlotField(u, shape, samples=200, backend=backend), backend).ravel()
     _, _, uv = pixels(shape, 200)
     mid = 2 * np.pi * (np.arange(12) + 0.5) / 12

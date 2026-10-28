@@ -13,6 +13,7 @@
 
 #include "constraint_sketch/dual.hpp"
 #include "core/vertex.hpp"
+#include "curves/blend.hpp"
 #include "curves/interpolate.hpp"
 #include "sketch/geometry.hpp"
 
@@ -98,6 +99,10 @@ namespace planex2d::cs {
                 if (spline == of)
                     return curve;
             const SplineData &d = s.splines[of];
+            if (d.fitted)
+                return Store(of, Placed(*d.fitted));
+            if (d.blend)
+                return Store(of, Blended(d));
             if (std::all_of(d.points.begin(), d.points.end(), [&](size_t p) { return s.held[s.coordsOf[p]] && s.held[s.coordsOf[p] + 1]; }) &&
                 std::all_of(d.tangent.begin(), d.tangent.end(), [&](size_t a) { return bool(s.held[a]); })) {
                 // held for good (projected): its values, no derivatives
@@ -107,6 +112,38 @@ namespace planex2d::cs {
                 return Store(of, Interpolated(d));
             const SharedCurves::Shared &k = shared.Of(s, of, x, size);
             return Store(of, Remapped(k.curve, k.unknowns));
+        }
+        // a fitted spline's shape placed by its frame: its poles carry the derivatives with respect to the frame's place
+        // and turn, the shape is a constant
+        Curve<Dual, DualVector> Placed(const sketch::FittedShape &f) const {
+            const DualVector o = At(f.origin);
+            const Dual turn = Var(f.angle), c = Cos(turn), sn = Sin(turn);
+            Curve<Dual, DualVector> g = Converted(f.shape, [](double k) { return Dual(k); });
+            for (size_t k = 0; k < g.poles.size(); ++k)
+                g.poles[k] = PlacedPoint(f, f.shape.poles[k], o, c, sn);
+            return g;
+        }
+        static DualVector PlacedPoint(const sketch::FittedShape &f, const Vertex &q, const DualVector &o, const Dual &c, const Dual &sn) {
+            const Dual x(q.x), y(f.mirrored ? -q.y : q.y);
+            return {o.x + c * x - sn * y, o.y + sn * x + c * y};
+        }
+        // where a fitted spline's shape puts its first (end: last) pole
+        DualVector PlacedEnd(const sketch::FittedShape &f, bool end) const {
+            const Dual turn = Var(f.angle);
+            return PlacedPoint(f, end ? f.shape.poles.back() : f.shape.poles.front(), At(f.origin), Cos(turn), Sin(turn));
+        }
+        // a blend's curve from the directions and curvatures of the elements it joins at its ends
+        Curve<Dual, DualVector> Blended(const SplineData &d) const {
+            std::array<DualVector, 2> t;
+            std::array<Dual, 2> k;
+            for (size_t i = 0; i < 2; ++i) {
+                const Ref arm{d.blend->arms[i]};
+                const Dual sense(d.BlendSense(s, i));
+                t[i] = Unit(TangentAt(arm, d.points[i])) * sense;
+                k[i] = CurvatureAt(arm, d.points[i]) * sense;
+            }
+            const DualVector p0 = At(d.points[0]), p1 = At(d.points[1]);
+            return d.blend->curvature ? G2Blend<Dual, DualVector>(p0, t[0], k[0], p1, t[1], k[1]) : G1Blend<Dual, DualVector>(p0, t[0], p1, t[1]);
         }
         const Curve<Dual, DualVector> &Store(size_t of, Curve<Dual, DualVector> &&curve) const {
             curves.emplace_back(of, std::move(curve));
@@ -183,24 +220,52 @@ namespace planex2d::cs {
             }
             if (e.kind == ElementKind::Spline) {
                 const SplineData &d = s.splines[e.SplineIndex()];
-                if (const SplinePiece *piece = e.Piece(s)) {
-                    if (piece->fromPoint != sketch::none && s.coordsOf[piece->fromPoint] == s.coordsOf[point])
-                        return SplineAt(e, Var(piece->from), 1);
-                    if (piece->toPoint != sketch::none && s.coordsOf[piece->toPoint] == s.coordsOf[point])
-                        return SplineAt(e, Var(piece->to), 1);
-                }
-                for (size_t k = 0; k < d.points.size(); ++k) {
-                    if (s.coordsOf[d.points[k]] != s.coordsOf[point])
-                        continue;
-                    for (size_t t = 0; t < d.tangentAt.size(); ++t)
-                        if (d.tangentAt[t] == k)
-                            return {Cos(Var(d.tangent[t])), Sin(Var(d.tangent[t]))};
-                    return SplineAt(e, CurveOf(e).params[k], 1);
-                }
+                for (size_t t = 0; t < d.tangentAt.size(); ++t)
+                    if (s.coordsOf[d.points[d.tangentAt[t]]] == s.coordsOf[point])
+                        return {Cos(Var(d.tangent[t])), Sin(Var(d.tangent[t]))};
+                return SplineAt(e, SplineParamAt(e, point), 1);
             }
             if (e.kind == ElementKind::Line || e.kind == ElementKind::Axis)
                 return CarrierOf(r).u;
             return Left(At(point) - RoundOf(r).c);
+        }
+        // where one of a spline element's points lies along its spline: a piece's end, or a point it runs through (a
+        // fitted spline's points are its ends, its parameters run over the knots between them)
+        Dual SplineParamAt(const Element &e, size_t point) const {
+            if (const SplinePiece *piece = e.Piece(s)) {
+                if (piece->fromPoint != sketch::none && s.coordsOf[piece->fromPoint] == s.coordsOf[point])
+                    return Var(piece->from);
+                if (piece->toPoint != sketch::none && s.coordsOf[piece->toPoint] == s.coordsOf[point])
+                    return Var(piece->to);
+            }
+            const SplineData &d = s.splines[e.SplineIndex()];
+            const std::vector<Dual> &u = CurveOf(e).params;
+            for (size_t k = 0; k < d.points.size(); ++k)
+                if (s.coordsOf[d.points[k]] == s.coordsOf[point])
+                    return d.fitted ? (k == 0 ? u.front() : u.back()) : u[k];
+            return u.back();
+        }
+        // the curvature of a line, arc, circle, spline or offset curve at one of its points, signed along TangentAt (a
+        // left turn positive)
+        Dual CurvatureAt(const Ref &r, size_t point) const {
+            const Element &e = s.elements[r.element];
+            if (e.kind == ElementKind::Line || e.kind == ElementKind::Axis)
+                return Dual(0.0);
+            if (e.kind == ElementKind::Arc || e.kind == ElementKind::Circle)
+                return Dual(1.0) / Var(e.Radius());
+            if (e.kind == ElementKind::OffsetCurve) {
+                const OffsetCurveData &c = s.offsetCurves[e.OffsetCurveIndex()];
+                const Dual u = OffsetRange(e)[s.coordsOf[c.range.toPoint] == s.coordsOf[point]];
+                const Dual k = Bending(SplineAt(e, u, 1), SplineAt(e, u, 2));
+                // offset by d to the left, a curve bending by k bends by k / (1 - d k)
+                return k / (Dual(1.0) - Var(c.distance) * Dual(c.side) * k) * Dual(c.reversed ? -1.0 : 1.0);
+            }
+            const Dual u = SplineParamAt(e, point);
+            return Bending(SplineAt(e, u, 1), SplineAt(e, u, 2));
+        }
+        static Dual Bending(const DualVector &d1, const DualVector &d2) {
+            const Dual speed = Norm(d1);
+            return Cross(d1, d2) / (speed * speed * speed);
         }
         DualVector PointOf(const Ref &r) const {
             const Element &e = s.elements[r.element];

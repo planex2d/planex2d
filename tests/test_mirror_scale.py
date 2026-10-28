@@ -57,7 +57,7 @@ def test_mirror_and_scale_of_a_spline():
     s = m.edges[0].edge
     assert point(s.start) == (0, 0)
     assert point(s.end) == pytest.approx((-3, 2))
-    assert [tuple(p) for p in s.bspline["poles"]] == pytest.approx([(-x, y) for x, y in w.edges[0].edge.bspline["poles"]])
+    assert flat(s.bspline["poles"]) == pytest.approx(flat((-x, y) for x, y in w.edges[0].edge.bspline["poles"]))
     big = w.Scaled((0, 0), 2)
     assert point(big.edges[0].edge.end) == pytest.approx((6, 4))
     assert big.mass == pytest.approx(2 * w.mass)

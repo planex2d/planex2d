@@ -38,7 +38,7 @@ def test_cuts_that_separate_nothing_return_the_original():
 
 
 def test_closed_cutters_and_holes():
-    pieces = square(0, 0, 4).Split(px.QuickSketch().Circle(2, 2, 1).Wire())
+    pieces = square(0, 0, 4).Split(px.QuickSketch().Circle((2, 2), 1).Wire())
     assert areas(pieces) == [round(math.pi, 9), round(16 - math.pi, 9)]
     ring = square(0, 0, 4) - square(1.5, 1.5, 1)
     pieces = ring.Split(px.Line((2, -1), (2, 5)))
@@ -61,7 +61,7 @@ def test_trim_by_distance_size_and_side():
     left = square(0, 0, 4).Trim(up, keep_left=True)
     assert left.mass == pytest.approx(4) and left.center[0] == pytest.approx(0.5)
     assert square(0, 0, 4).Trim(up, keep_right=True).center[0] == pytest.approx(2.5)
-    ccw = px.QuickSketch().Circle(2, 2, 1).Wire()
+    ccw = px.QuickSketch().Circle((2, 2), 1).Wire()
     assert square(0, 0, 4).Trim(ccw, keep_left=True).mass == pytest.approx(math.pi)
     assert square(0, 0, 4).Trim(ccw, keep_right=True).mass == pytest.approx(16 - math.pi)
     with pytest.raises(ValueError, match="exactly one"):
@@ -97,3 +97,21 @@ def test_shapes_are_cut_face_by_face_and_cutters_are_projected():
     lifted = px.Line((1, -1), (1, 3)).Translated((0, 0, 7))
     assert areas(square(0, 0, 2).Split(lifted)) == [2, 2]
     assert areas(square(0, 0, 2).Split(circle(2, 2, 1))) == sorted([round(4 - math.pi / 4, 9), round(math.pi / 4, 9)])
+
+
+def test_a_wire_is_cut_where_it_crosses_a_spline_cutter():
+    blob = px.QuickSketch((0, -3)).Spline([(4, -2), (5, 0), (4, 2), (0, 3)]).Close().Face()
+    spline = px.Spline([(0, -3), (4, -2), (5, 0), (4, 2), (0, 3)])
+    circle = px.Circle((0, 0), 4.5)
+    assert len(circle.Split(blob)) == 2
+    assert len(circle.Split(spline)) == 2
+    assert len(px.Line((-4.5, 0.5), (9, 0.5)).Split(blob)) == 3
+    assert len(px.Line((-1, 0.5), (9, 0.5)).Split(spline)) == 2
+    assert len(spline.Split(circle)) == 3 and len(spline.Split(px.Line((-4.5, 0.5), (9, 0.5)))) == 2
+    pieces = circle.Split(blob)
+    assert sum(e.mass for p in pieces for e in p.edges) == pytest.approx(circle.mass, rel=1e-12)
+
+
+def test_a_circle_cut_at_a_spline_cutter_s_ends_only():
+    blob = px.QuickSketch((0, -3)).Spline([(4, -2), (5, 0), (4, 2), (0, 3)]).Close().Face()
+    assert len(px.Circle((0, 0), 3).Split(blob)) == 2

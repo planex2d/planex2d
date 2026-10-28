@@ -34,7 +34,7 @@ def test_mirrored_whole_sketch_is_a_copy():
 
 def test_mirror_of_elements_moves_them_in_place():
     sk = plate()
-    sk.Circle(6, 1, 0.5, id="hole")
+    sk.Circle((6, 1), 0.5, id="hole")
     sk.Move((8, 0)).Arc(1, 90, id="bend")
     x, y = sk._Geometry("bend")["center"]
     sk.Mirror(["hole", "bend"], px.V)

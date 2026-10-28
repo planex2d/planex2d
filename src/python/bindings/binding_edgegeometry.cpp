@@ -63,7 +63,7 @@ void BindEdgeGeometry(py::module_ &m) {
              "Args:\n"
              "    start: the start (h, v).\n"
              "    end: the end (h, v).\n"
-             "    center: the centre (h, v).\n"
+             "    center: the center (h, v).\n"
              "    reverse: True runs clockwise from start to end.\n"
              "    tol: the largest difference of the distances of start and end from the center; None: the rounding.\n\n"
              "Raises:\n"
@@ -74,7 +74,7 @@ void BindEdgeGeometry(py::module_ &m) {
              "    arc = px.ArcEdge((1, 0), (0, 1), (0, 0), reverse=True)")
         .def_property_readonly("start", &Arc::Start, "start: Vertex\n\nThe start, a Vertex.")
         .def_property_readonly("end", &Arc::End, "end: Vertex\n\nThe end, a Vertex.")
-        .def_property_readonly("center", &Arc::Center, "center: Vertex\n\nThe centre, a Vertex.")
+        .def_property_readonly("center", &Arc::Center, "center: Vertex\n\nThe center, a Vertex.")
         .def_property_readonly("radius", &Arc::Radius, "radius: float\n\nThe radius.")
         .def_property_readonly("sweep", [](const Arc &a) { return Degrees(a.CCW() ? a.Sweep() : -a.Sweep()); },
                                "sweep: float\n\nThe angle from start to end in degrees, negative for a clockwise arc.")
@@ -122,7 +122,7 @@ void BindEdgeGeometry(py::module_ &m) {
              "The geometry of the circle of radius r around center, counterclockwise, or clockwise with reverse=True.\n\n"
              "Its origin, where start and end lie, is the point r from the center along +h.\n\n"
              "Args:\n"
-             "    center: the centre (h, v).\n"
+             "    center: the center (h, v).\n"
              "    r: the radius, > 0.\n"
              "    reverse: True runs clockwise.\n\n"
              "Raises:\n"
@@ -130,7 +130,7 @@ void BindEdgeGeometry(py::module_ &m) {
              "Examples:\n"
              "    circle = px.CircleEdge((0, 0), 1)\n"
              "    circle = px.CircleEdge((0, 0), 1, reverse=True)")
-        .def_property_readonly("center", &Circle::Center, "center: Vertex\n\nThe centre, a Vertex.")
+        .def_property_readonly("center", &Circle::Center, "center: Vertex\n\nThe center, a Vertex.")
         .def_property_readonly("radius", &Circle::Radius, "radius: float\n\nThe radius.")
         .def_property_readonly("ccw", &Circle::CCW, "ccw: bool\n\nTrue if the circle runs counterclockwise.")
         .def_property_readonly("origin", &Circle::Origin, "origin: Vertex\n\nThe point the circle starts and ends at, a Vertex: it has no vertex there.")
@@ -195,11 +195,11 @@ void BindEdgeGeometry(py::module_ &m) {
            "    ValueError: tol is not positive and finite, or below the rounding of the spline's coordinates.\n\n"
            "Examples:\n"
            "    spline.Sample(1e-3)")
-        .def("Tangent", &Spline::Tangent, py::arg("p"),
+        .def("Tangent", &Spline::ExactTangent, py::arg("p"),
              "Tangent(p: Point) -> Vertex\n\n"
-             "The unit tangent in the spline's direction at its point p; (0, 0) if p is not on the spline.\n\n"
+             "The unit tangent in the spline's direction at the point of its exact curve nearest p.\n\n"
              "Args:\n"
-             "    p: a point (h, v) of the spline.\n\n"
+             "    p: a point (h, v), usually one of the spline's.\n\n"
              "Examples:\n"
              "    spline.Tangent(spline.MidPoint())")
         .def("Offset", [](const Spline &sp, double d) { return sp.Offset(d).SingleFace("Offset(d)"); }, py::arg("d"),

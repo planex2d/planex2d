@@ -46,16 +46,16 @@ def test_a_negative_number_counts_from_the_end():
     assert [i.local for i in sk("Chain.-1")] == sk.wires["Chain.3"]
     assert [i.local for i in sk("Chain.-2")] == sk.wires["Chain.2"]
     assert sk.Location("Line.-1.end") == pytest.approx((2, 5))
-    assert sk.Edge("Chain.-2").mass == pytest.approx(2)
+    assert sk.Wire("Chain.-2").mass == pytest.approx(2)
     assert [i.local for i in sk(sk.id + ".Line.-2")] == ["Line.3"]
     with pytest.raises(ValueError, match=r"'Chain.-4': there are 3 numbers under 'Chain' \(-1 is the last\)"):
         sk("Chain.-4")
     with pytest.raises(ValueError, match="there are 3 numbers under 'Chain'"):
-        sk.Edge("Chain.-4")
+        sk.Wire("Chain.-4")
 
 
 def test_a_negative_number_in_a_wire():
-    w = chains().Edge("Chain.2")
+    w = chains().Wire("Chain.2")
     last = max(w.edges, key=lambda e: int(e.id.rsplit(".", 1)[1]))
     assert len(w.edges) == 2 and w("Line.-1")[0].id == last.id
 

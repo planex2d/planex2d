@@ -31,6 +31,7 @@ def test_a_converted_quicksketch_has_its_geometry_and_no_constraints():
 
 
 def test_auto_constraint_adds_what_the_points_show():
+    """Line.3 turns back along Arc.1's end (a cusp): tangent all the same"""
     quick = draw(px.QuickSketch())
     with warnings.catch_warnings():
         warnings.simplefilter("error")

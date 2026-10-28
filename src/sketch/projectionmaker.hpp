@@ -19,9 +19,8 @@
 #include "core/vertex.hpp"
 #include "curves/edge.hpp"
 #include "curves/interpolate.hpp"
-#include "curves/occspline.hpp"
-#include "integrations/netgenocc/project.hpp"
 #include "sketch/options.hpp"
+#include "sketch/projection.hpp"
 
 namespace planex2d::sketch {
 
@@ -135,25 +134,20 @@ namespace planex2d::sketch {
             return made;
         }
         void AddSpline(const planex2d::Spline &curve, const Options &opt) {
-            const Handle(Geom2d_BSplineCurve) c = MakeBSpline(curve.BSpline(), false);
-            const double u0 = c->FirstParameter(), u1 = c->LastParameter();
+            const Curve<double, Vertex> c = curve.Segment();
+            const double u0 = c.First(), u1 = c.Last();
             const BBox &box = curve.Box();
-            const double tol = config::spline_tol * Norm(box.Size());
+            const double tol = config::state->spline_tol * Norm(box.Size());
             const bool closed = curve.Start().IsClose(curve.End(), Tol(std::max(NormInf(curve.Start()), 1.0)));
-            const auto at = [&](double u) {
-                const gp_Pnt2d q = c->Value(u);
-                return Vertex{q.X(), q.Y()};
-            };
+            const auto at = [&](double u) { return c.At(u); };
             const auto direction = [&](double u) {
-                gp_Pnt2d q;
-                gp_Vec2d v;
-                c->D1(u, q, v);
-                return std::atan2(v.Y(), v.X());
+                const Vertex v = c.Derivative(u);
+                return std::atan2(v.y, v.x);
             };
             std::vector<double> u{u0};
-            for (int k = 1; k <= c->NbKnots(); ++k)
-                if (c->Knot(k) > u0 && c->Knot(k) < u1)
-                    u.push_back(c->Knot(k));
+            for (double k : c.knots)
+                if (k > u.back() && k < u1)
+                    u.push_back(k);
             u.push_back(u1);
             while (u.size() < (closed ? 4 : 3))
                 for (size_t k = u.size() - 1; k > 0; --k)

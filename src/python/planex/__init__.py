@@ -13,21 +13,26 @@ try:
     __version__ = _version("planex2d")
 except _PackageNotFoundError:
     __version__ = "unknown"
-from ._planex import (Arc, ArcEdge, Circle, CircleEdge, Constraint, EdgeView, EdgesView, Face, FaceView,
-                      FacesView, FromPolyline, GetTransformation, Glue, H, Intersect, Line, LineEdge, Move,
+from . import _occ
+from ._planex import (Arc, ArcEdge, Circle, CircleEdge, Constraint, Curve, EdgeView, EdgesView, Ellipse, Face, FaceView,
+                      FacesView, FromNumpy, FromPolyline, GetTransformation, Glue, H, Intersect, Line, LineEdge, Move,
                       OCCGeometry, Pad, Plane, PlanexWarning, Pocket, Project, QuickSketch, ResetIdCounters, Rotation,
-                      Shape, Spline, SplineEdge, Subtract, Translation, Unify, V, Vertex, VertexView,
-                      VerticesView, Wire, Wires, XY, YZ, ZX, origin)
+                      Shape, Spline, SplineEdge, Subtract, SymmetricDifference, Translation, Unify, V, Vertex, VertexView,
+                      VerticesView, Wire, Wires, XY, XZ, YZ, ZX, origin)
 # outside __all__, re-exported for type checkers by the alias
 from ._planex import BSpline as BSpline, config as config, first as first, last as last
-from ._planex import (Angle, Coincident, Concentric, Diameter, Distance, Equal, Fix, Horizontal, Parallel,
+from ._planex import Auto as Auto
+from ._planex import (Angle, Coincident, Concentric, Curvature, Diameter, Distance, Equal, Fix, Horizontal, Parallel,
                       Perpendicular, Radius, RigidGroup, Symmetric, SymmetricCarriers, Tangent, Vertical)
+from ._planex import Chamfer, Flat, OffsetForm, Round, Sharp, Square
 from ._closing import ClosedOpenWires
 from ._compound import Compound
 from ._deformable import DeformableShape
 from ._dxf import FromDXF, WriteDXF
+from ._svgfile import FromSVG, WriteSVG
+from ._drawing import Drawing, Sheet
 from ._gmsh import WriteGeo
-from ._io import FromOCC, WriteBrep, WriteStep
+from ._io import FromBrep, FromOCC, FromStep, WriteBrep, WriteStep
 from ._meshsection import Intersect3d
 from ._kicad import FromKiCad
 from ._kicadwrite import WriteKiCad
@@ -52,11 +57,15 @@ for _cls in (Face, Shape, Wire, Compound):
     _cls.WriteStep = WriteStep
     _cls.WriteBrep = WriteBrep
     _cls.WriteDXF = WriteDXF
+    _cls.WriteSVG = WriteSVG
     _cls.WriteGeo = WriteGeo
     _cls.ToShapely = ToShapely
     _cls.ToSVG = ToSVG
     _cls._repr_svg_ = _svg._repr_svg
 del _cls
+
+# the offset's flags print as their names, so that help shows a default as px.Sharp (as px.Auto prints px.Auto)
+OffsetForm.__repr__ = lambda self: "px." + self.name
 
 # the two kinds of sketch: with constraints (Sketch, a stand-in that raises when the build has none) and without
 from ._sketches import Sketch, sketch_types as _sketch_types  # noqa: E402
@@ -66,12 +75,15 @@ for _cls in _sketch_types:
     _cls.WriteStep = WriteStep
     _cls.WriteBrep = WriteBrep
     _cls.WriteDXF = WriteDXF
+    _cls.WriteSVG = WriteSVG
     _cls.WriteGeo = WriteGeo
     _cls.ToShapely = ToShapely
     _cls.Plot = _plot_sketch.Plot
     _cls._repr_svg_ = _svg._repr_svg
     _cls.Polylines = _geom.shape_polylines
 del _cls
+from ._parameters import Parameters, use as _use  # noqa: E402
+Sketch.Use = _use
 DeformableShape.Plot = Plot
 DeformableShape.ToSVG = ToSVG
 DeformableShape._repr_svg_ = _svg._repr_svg
@@ -91,15 +103,15 @@ x, y, z, h, v = (_select.Coordinate(c) for c in "xyzhv")
 X, Y, Z = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
 
 # not x, y, z, h, v, X, Y, Z, BSpline and config: a star import after NGSolve's or netgen.occ's keeps theirs
-__all__ = ["Angle", "Arc", "ArcEdge", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint",
-           "DeformableShape", "Diameter", "Distance", "Edge", "EdgeView",
-           "EdgesView", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FromDXF", "FromKiCad", "FromLevelSet",
-           "FromNACA", "FromOCC", "FromPolyline", "FromShapely", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
-           "Intersect3d", "Line", "LineEdge", "Move", "OCCGeometry", "Pad", "Parallel", "Perpendicular", "Plane",
+__all__ = ["Angle", "Arc", "ArcEdge", "Auto", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "Curve",
+           "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
+           "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "Flat", "FromBrep", "FromDXF", "FromKiCad", "FromLevelSet",
+           "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
+           "Intersect3d", "Line", "LineEdge", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
            "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "ResetIdCounters",
-           "RigidGroup", "Rotation", "Selection", "Shape", "Sketch", "Spline", "SplineEdge", "Subtract", "Symmetric",
+           "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricDifference",
            "SymmetricCarriers", "Tangent", "ToSVG", "ToShapely", "Translation", "Unify", "V", "Vertex", "VertexView",
            "Vertical", "VerticesView", "Wire", "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad",
-           "WriteStep", "XY", "YZ", "ZX", "cm", "inch", "m", "mil", "mm", "origin", "um"]
+           "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m", "mil", "mm", "origin", "um"]
 
 types._unquote_annotations([globals()[name] for name in __all__] + [getattr(measurements, name) for name in measurements.__all__])

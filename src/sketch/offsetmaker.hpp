@@ -41,8 +41,8 @@ namespace planex2d::sketch {
     public:
         OffsetMaker(Sketch &sk, const OffsetChain &source, double d, const std::optional<Vertex> &point, const std::optional<bool> &bothSides,
                     const Options &opt, const std::optional<bool> &constructionGiven, const std::string &call, const std::string &slot,
-                    std::optional<double> hole)
-            : sk(sk), source(source), d(d), point(point), opt(opt), constructionGiven(constructionGiven), call(call), slot(slot), hole(hole),
+                    std::optional<double> hole, const OffsetForms &forms)
+            : sk(sk), source(source), d(d), point(point), opt(opt), constructionGiven(constructionGiven), call(call), slot(slot), hole(hole), forms(forms),
               n(source.elements.size()), tied(sk.TiesOffsets()), ad(std::abs(d)), circle(sk.s.elements[Element(0)].kind == ElementKind::Circle),
               edges(sk.SourceEdges(source)), tol(Tol(OffsetScale(edges, ad))), both(!point && bothSides.value_or(!source.closed)) {}
 
@@ -60,7 +60,7 @@ namespace planex2d::sketch {
                     Loop(fixed, loop);
             SideWires();
             if (tied)
-                sk.OffsetMade(name, made, tieIds, source, edges, ad, towards, asked, curveIds, call);
+                sk.OffsetMade(name, made, tieIds, source, edges, ad, towards, forms, asked, curveIds, call);
             else
                 sk.NameWire(name, drawn, call + ": ");
         }
@@ -74,6 +74,7 @@ namespace planex2d::sketch {
         const std::optional<bool> constructionGiven;
         const std::string &call, &slot;
         const std::optional<double> hole;
+        const OffsetForms forms;
 
         const size_t n;
         const bool tied;
@@ -113,7 +114,7 @@ namespace planex2d::sketch {
             else
                 towards = {both ? 0 : point ? SideOfChain(edges, *point, tol, call) : d > 0.0 ? 1 : -1};
             try {
-                sides = sk.SidesOf(source, edges, ad, towards, call);
+                sides = sk.SidesOf(source, edges, ad, towards, forms, call);
             } catch (const std::exception &) {
                 // near a cusp the offsets of a spline's arcs fall apart: say why
                 if (const std::optional<std::string> cusp = sk.ChainCusp(source, edges, ad, towards))
@@ -145,7 +146,7 @@ namespace planex2d::sketch {
                     for (const OffsetPiece &p : loop.pieces) {
                         if (!seen.insert({p.kind, p.k, p.side}).second)
                             throw std::invalid_argument(call + ": the offset of " +
-                                                        (p.kind == OffsetPiece::Kind::Vertex ? "the corner where " + IdOf(Element(p.k % n)) + " starts"
+                                                        (IsAround(p.kind) ? "the corner where " + IdOf(Element(p.k % n)) + " starts"
                                                                                              : IdOf(Element(p.k))) +
                                                         " falls into pieces, which an offset cannot hold yet");
                         if (const std::string side = Label(fixed, p); !side.empty())
@@ -164,10 +165,16 @@ namespace planex2d::sketch {
             sk.groups.push_back({slot.empty() ? "Offset" : slot, name});
         }
 
-        // along the chain: each edge's piece after the corner at its start
+        // along the chain: the corner at vertex v, the spur before edge v, edge v, the spur after it
         size_t OrderOf(const OffsetPiece &p) const {
             const size_t vertex = source.closed && p.k == 0 ? n : p.k;
-            return p.kind == OffsetPiece::Kind::Vertex ? 2 * vertex : 2 * p.k + 1;
+            if (IsAround(p.kind))
+                return 4 * vertex;
+            return 4 * p.k + (p.kind == OffsetPiece::Kind::SpurBefore ? 1 : p.kind == OffsetPiece::Kind::SpurAfter ? 3 : 2);
+        }
+        // a piece around or across a vertex: a corner or a cap
+        static bool IsAround(OffsetPiece::Kind k) {
+            return k == OffsetPiece::Kind::Vertex || k == OffsetPiece::Kind::CornerLine || k == OffsetPiece::Kind::CapLine;
         }
         void Tie(OffsetTie how, std::vector<Ref> refs, double sign) {
             refs.push_back({*param});
@@ -260,7 +267,7 @@ namespace planex2d::sketch {
                 const std::string sa = a ? Label(fixed, *a) : "", sb = b ? Label(fixed, *b) : "";
                 sk.idScope = name + (!sa.empty() ? "." + sa : !sb.empty() ? "." + sb : std::string());
                 const OffsetPiece &next = b ? *b : *a;
-                const size_t from = next.kind == OffsetPiece::Kind::Vertex ? Before(next.k) : Element(next.k);
+                const size_t from = IsAround(next.kind) ? Before(next.k) : Element(next.k);
                 sk.AddElement(sk.s.AddPoint(sk.s.NewPoint(b ? b->start : a->end)), "Point", {std::nullopt, nullptr, IsConstructed(from)});
                 joints[i] = sk.s.elements.size() - 1;
                 made.push_back(sk.elementIds.back());
@@ -270,8 +277,9 @@ namespace planex2d::sketch {
         // of a tied closed loop of touching arcs only, the widest arc: it gets a centre of its own
         std::optional<size_t> FreeArc(const OffsetLoop &loop) const {
             if (!tied || !loop.closed || !std::all_of(loop.joints.begin(), loop.joints.end(), [](const OffsetJoint &j) { return j.tangent; }) ||
-                std::any_of(loop.pieces.begin(), loop.pieces.end(),
-                            [](const OffsetPiece &p) { return p.kind == OffsetPiece::Kind::Line || p.kind == OffsetPiece::Kind::Curve; }))
+                std::any_of(loop.pieces.begin(), loop.pieces.end(), [](const OffsetPiece &p) {
+                    return p.kind != OffsetPiece::Kind::Arc && p.kind != OffsetPiece::Kind::Vertex;
+                }))
                 return std::nullopt;
             return (size_t)(std::max_element(loop.pieces.begin(), loop.pieces.end(),
                                              [](const OffsetPiece &x, const OffsetPiece &y) { return PieceSweep(x) < PieceSweep(y); }) -
@@ -282,19 +290,22 @@ namespace planex2d::sketch {
             std::vector<size_t> pieces(m);
             for (size_t i = 0; i < m; ++i) {
                 const OffsetPiece &p = loop.pieces[i];
-                const bool corner = p.kind == OffsetPiece::Kind::Vertex;
+                const bool corner = IsAround(p.kind);
                 const std::string side = Label(fixed, p);
                 size_t a = sk.s.elements[joints[i]].Point(), b = sk.s.elements[joints[(i + 1) % count]].Point();
                 if (!p.along)
                     std::swap(a, b);
-                // a round corner is named after the element whose end it goes around
-                const std::string id = !corner                         ? Under(side) + (slot.empty() ? "." + IdOf(Element(p.k)) : "")
+                // a corner (round or chamfered) is named after the element whose end it goes around; a spur (a sharp
+                // corner's or a square cap's straight piece along a curve) after the element it runs on
+                // from, before or after its offset
+                const std::string spur = p.kind == OffsetPiece::Kind::SpurBefore ? ".before" : p.kind == OffsetPiece::Kind::SpurAfter ? ".after" : "";
+                const std::string id = !corner                         ? Under(side) + (slot.empty() ? "." + IdOf(Element(p.k)) : "") + spur
                                        : fixed.empty() && p.side == 0 ? name + (p.k == 0 ? (hole ? ".hole" : ".startcap") : ".endcap")
                                                                        : Under(side) + "." + IdOf(Before(p.k)) + ".corner";
                 const Options o = OptionsOf(corner ? Before(p.k) : Element(p.k), id);
                 const size_t madeBefore = sk.elementIds.size();
                 sk.idScope = Under(side);
-                if (p.kind == OffsetPiece::Kind::Line)
+                if (p.kind != OffsetPiece::Kind::Arc && p.kind != OffsetPiece::Kind::Vertex && p.kind != OffsetPiece::Kind::Curve)
                     sk.AddElement(sk.s.AddLine(a, b), "Line", o);
                 else if (p.kind == OffsetPiece::Kind::Curve) {
                     const size_t ja = p.along ? i : (i + 1) % count, jb = p.along ? (i + 1) % count : i;
@@ -318,13 +329,21 @@ namespace planex2d::sketch {
             }
             return pieces;
         }
-        // the point on piece p's line, circle or curve (index: its place in the loop)
+        // the point on piece p's line, circle or curve (index: its place in the loop); a spur's line is the tangent of its
+        // element at its end, offset; a square cap's line d beyond the chain's end
         void TieToCarrier(const Ref &at, const OffsetPiece &p, size_t piece) {
             if (p.kind == OffsetPiece::Kind::Vertex)
                 Tie(OffsetTie::Carrier, {at, VertexAt(p.k)}, 1.0);
             else if (p.kind == OffsetPiece::Kind::Curve)
                 Tie(OffsetTie::Along, {at, {piece}}, 1.0);
-            else
+            else if (p.kind == OffsetPiece::Kind::SpurBefore || p.kind == OffsetPiece::Kind::SpurAfter) {
+                const size_t v = p.kind == OffsetPiece::Kind::SpurBefore ? p.k : p.k + 1;
+                Tie(OffsetTie::Spur, {at, {Element(p.k)}, VertexRef(p.k, source.closed ? v % n : v)}, SignOf(p.k, p.side));
+            } else if (p.kind == OffsetPiece::Kind::CapLine) {
+                // out of the chain: against the element's way at the start, along it at the end
+                const size_t k = p.k == 0 ? 0 : n - 1;
+                Tie(OffsetTie::Beyond, {at, {Element(k)}, VertexAt(p.k)}, (p.k == 0) == bool(source.forward[k]) ? -1.0 : 1.0);
+            } else
                 Tie(OffsetTie::Carrier, {at, {Element(p.k)}}, SignOf(p.k, p.side));
         }
         void Ties(const OffsetLoop &loop, const std::vector<size_t> &joints, const std::vector<size_t> &pieces, const std::optional<size_t> &freeArc) {
@@ -334,11 +353,12 @@ namespace planex2d::sketch {
                 const bool held = a && (a->kind == OffsetPiece::Kind::Arc || a->kind == OffsetPiece::Kind::Vertex) && freeArc != (i + m - 1) % m;
                 const Ref at{joints[i]};
                 if (loop.joints[i].tangent) {
-                    // a curve's tie puts the point where the curve ends; else the element's before it, or after
+                    // a curve's tie puts the point where the curve ends; else the element's before it, or after (a
+                    // piece on an edge's offset)
                     const OffsetPiece *on = a && a->kind == OffsetPiece::Kind::Curve   ? a
                                             : b && b->kind == OffsetPiece::Kind::Curve ? b
-                                            : a && a->kind != OffsetPiece::Kind::Vertex ? a
-                                                                                        : b;
+                                            : a && IsEdgePiece(a->kind)                ? a
+                                                                                       : b;
                     Tie(held ? OffsetTie::Foot : OffsetTie::Point, {at, {Element(on->k)}, VertexRef(on->k, loop.joints[i].vertex)}, SignOf(on->k, on->side));
                 } else {
                     if (!held)

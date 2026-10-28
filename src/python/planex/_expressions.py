@@ -11,7 +11,8 @@ import re
 from . import _units
 
 # the functions with how many arguments they take (None: two or more); angles in degrees
-FUNCTIONS = {"sqrt": 1, "abs": 1, "min": None, "max": None, "sin": 1, "cos": 1, "tan": 1, "asin": 1, "acos": 1, "atan2": 2}
+FUNCTIONS = {"sqrt": 1, "abs": 1, "min": None, "max": None, "sin": 1, "cos": 1, "tan": 1, "asin": 1, "acos": 1, "atan2": 2,
+             "exp": 1, "log": 1, "sinh": 1, "cosh": 1, "tanh": 1, "asinh": 1, "acosh": 1, "atanh": 1}
 UNITS = {name: getattr(_units, name) for name in ("mm", "cm", "m", "um", "inch", "mil")}
 CONSTANTS = {"pi": math.pi}
 # per measure: the element kinds it measures ("point": any point reference) and what it is called in messages
@@ -22,7 +23,7 @@ OPERATORS = {ast.Add: "add", ast.Sub: "sub", ast.Mult: "mul", ast.Div: "div", as
 SEPARATORS = "+-*/^(),%"
 NUMBER = re.compile(r"([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?")
 # the constraints the sketch makes itself: no px name
-INTERNAL = ("Copy", "OnCircle", "Value", "Offset")
+INTERNAL = ("Copy", "OnCircle", "Value", "Offset", "OnCurve")
 PARTS = ("start", "end", "center", "mid")
 ALLOWED = "(+ - * / ^ **, brackets and the functions)"
 
@@ -270,3 +271,88 @@ def _Parse(text, rhs=None, dimensions=None, elements=None, ispoint=None, others=
     nodes = equation.side(lhs, "left") + equation.side(rhs, "right") + [("sub", 0)]
     drives = lhs.strip() if lhs.strip() in dimensions else None
     return {"text": given, "drives": drives, "names": list(equation.names), "nodes": nodes}
+
+
+class _CurveFormula(_Equation):
+    """the names a curve's formula is read with: its parameter t, its coordinates h and v (each in the other's
+    formula), numbers, units, pi, the functions and the driving dimensions; driven {id: why} the dimensions it may not
+    use; numbers_only: why it may use no dimension at all"""
+
+    def __init__(self, text, dimensions, driven, elements, ispoint, others, numbers_only):
+        super().__init__(text, dimensions, elements, ispoint, others)
+        self.driven = driven
+        self.numbers_only = numbers_only
+        self.coordinates = set()
+
+    def Error(self, what):
+        return ValueError("%s: %s" % (self.text, what))
+
+    def value(self, name):
+        if name in ("t", "h", "v"):
+            self.coordinates.add(name)
+            leaf = (name,)
+        else:
+            meanings = self.meanings(name)
+            kind = meanings[0][0] if meanings else None
+            if kind in ("unit", "constant", "function"):
+                return super().value(name)
+            if self.numbers_only:
+                raise self.Error("'%s': %s; a curve's formula there takes numbers, units, pi, t, h and v" % (name, self.numbers_only))
+            if kind == "measure":
+                raise self.Error("'%s' is %s, a measure of the solved geometry; a curve's shape is known before each solve, from "
+                                 "numbers and driving dimensions" % (name, meanings[0][1]))
+            if kind is None:
+                raise self.Error(self.unknown(name))
+            if name in self.driven:
+                raise self.Error("'%s' is %s; a curve's shape is known before each solve, from driving dimensions" % (name, self.driven[name]))
+            leaf = ("dimension", name)
+        if leaf not in self.leaves:
+            self.leaves[leaf] = len(self.names)
+            self.names.append(leaf)
+        return "_v%d" % self.leaves[leaf]
+
+
+def _ParseCurve(text, point, span, dimensions=None, driven=None, elements=None, ispoint=None, others=None, numbers_only=None):
+    """a curve's point (h, v), two expressions in t, and its range span (t0, t1), numbers or expressions, read with the names
+    of a sketch (as _Parse takes them; driven {id: why} the dimensions the formula may not use, numbers_only: why it
+    may use none) for the call text. A dict: h and v (an h in v or v in h written out), from and to as postfix nodes
+    whose ("val", 0) is t and ("val", k) the dimension k - 1 of dimensions, the ids of the dimensions it uses"""
+    elements = elements or {}
+    curve = _CurveFormula(text, dimensions or {}, driven or {}, elements, ispoint or (lambda ref: elements.get(ref) == "Point"),
+                          others or {}, numbers_only)
+    sides, uses = {}, {}
+    for name, formula in zip("hv", point):
+        curve.coordinates = set()
+        sides[name] = curve.side(formula, name)
+        uses[name] = curve.coordinates & {"h", "v"}
+    for name in "hv":
+        if name in uses[name]:
+            raise curve.Error("%s uses %s itself; write it in t (and the other coordinate)" % (name, name))
+    if uses["h"] and uses["v"]:
+        raise curve.Error("h uses v and v uses h, a cycle; write one of them in t only")
+    ends = []
+    for which, end in zip(("start", "end"), span):
+        if not isinstance(end, str):
+            ends.append([("num", float(end))])
+            continue
+        curve.coordinates = set()
+        ends.append(curve.side(end, "range's " + which))
+        if curve.coordinates:
+            raise curve.Error("the range's %s uses %s; the range takes numbers and driving dimensions, not t, h or v" %
+                              (which, " and ".join(sorted(curve.coordinates))))
+    dimensions_used = [leaf[1] for leaf in curve.names if leaf[0] == "dimension"]
+
+    def resolved(nodes):
+        out = []
+        for op, k in nodes:
+            leaf = curve.names[k] if op == "val" else None
+            if leaf is None:
+                out.append((op, k))
+            elif leaf[0] in ("h", "v"):
+                out.extend(resolved(sides[leaf[0]]))
+            else:
+                out.append(("val", 0 if leaf == ("t",) else 1 + dimensions_used.index(leaf[1])))
+        return out
+
+    return {"h": resolved(sides["h"]), "v": resolved(sides["v"]), "from": resolved(ends[0]), "to": resolved(ends[1]),
+            "dimensions": dimensions_used}

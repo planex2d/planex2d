@@ -15,8 +15,8 @@ TOL = 1e-13
 
 def flange():
     sk = px.Sketch()
-    sk.Circle(0, 0, 3, px.Fix, id="rim")
-    sk.Circle(2, 0, 0.3, id="bolt")
+    sk.Circle((0, 0), 3, px.Fix, id="rim")
+    sk.Circle((2, 0), 0.3, id="bolt")
     sk.Constrain("bolt.center", px.H, px.Coincident)
     sk.Constrain(sk.origin, "bolt.center", px.Distance, 2, id="pcd")
     sk.Constrain("bolt", px.Diameter, 0.6, id="d")
@@ -198,3 +198,13 @@ def test_copies_have_ids_under_their_pattern_and_a_new_count_shifts_no_other_id(
     assert sk("Rectangle.1.Line.1")[0].id != sk("LinearPattern.1.1.Rectangle.1.Line.1")[0].id
     assert sorted(i.local for i in sk("LinearPattern.1.*.Rectangle.1", kind="line")) == sorted(
         f"LinearPattern.1.{k}.Rectangle.1.Line.{j}" for k in (1, 2) for j in range(1, 5))
+
+
+@pytest.mark.parametrize("make", [px.Sketch, px.QuickSketch])
+def test_a_pattern_of_arcs_sharing_a_center_copies_it_once(make):
+    sk = make()
+    sk.Move((22, 0)).Arc((2, 58), 50, id="blade", construction=True)
+    sk.Offset("blade", 1.5, id="vane")
+    sk("vane").construction = False
+    sk.CircularPattern("vane", "origin", 6, id="vanes")
+    assert len(sk.Shape().faces) == 6

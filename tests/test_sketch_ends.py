@@ -19,7 +19,7 @@ def last_line(sketch):
 
 def chord_and_circle():
     """a construction circle of radius 2 around the origin and the construction line y = 1; the pen at (2, 0) heads +y"""
-    s = px.QuickSketch().Circle(0, 0, 2, id="c", construction=True)
+    s = px.QuickSketch().Circle((0, 0), 2, id="c", construction=True)
     s.Move((-5, 1)).Line((5, 1), id="chord", construction=True)
     return s.Move((2, 0), dir=(0, 1))
 
@@ -134,11 +134,11 @@ def test_until_is_first_last_or_a_target_for_arcs_too():
 
 def test_the_old_keyword_forms_raise_naming_the_positional_ones():
     s = px.Move((0, 0))
-    with pytest.raises(TypeError, match=r"Arc\(from_=...\): the ends are positional: Arc\(from, to, ...\), or Arc\(to, ...\)"):
+    with pytest.raises(TypeError, match=r"Arc\(from_=...\): the ends are positional: Arc\(start, end, ...\), or Arc\(to, ...\)"):
         s.Arc(from_=(0, 0), to=(1, 1))
     with pytest.raises(TypeError, match=r"Arc\(to=...\): the ends are positional"):
         s.Arc(to=(1, 1))
-    with pytest.raises(TypeError, match=r"Line\(from_=...\): the ends are positional: Line\(from, to, ...\), or Line\(to, ...\)"):
+    with pytest.raises(TypeError, match=r"Line\(from_=...\): the ends are positional: Line\(start, end, ...\), or Line\(to, ...\)"):
         s.Line(from_=(0, 0))
     with pytest.raises(TypeError, match=r"Arc\(r=...\): the radius is positional: Arc\(r, sweep\)"):
         s.Arc(r=2, sweep=45)

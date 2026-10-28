@@ -33,6 +33,9 @@ namespace planex2d::cs {
         // frozen from the drawing when it is made: the side (+1 or -1), the pairing or which of two circles is outside
         double sign = 1.0;
         int variant = 0;
+        // a copy in a pattern of two directions: its steps along the second (variant: along the first); a Distance on a
+        // pattern: 2 for its second step
+        int variant2 = 0;
         // Fix: the values held: of a whole line, circle or spline those of its points (heldPoints, followed through
         // merges) and of its other unknowns (held); Copy of a spline's tangent direction or position: the two unknowns
         std::vector<double> target;

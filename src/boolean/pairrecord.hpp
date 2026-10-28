@@ -61,12 +61,14 @@ namespace planex2d {
             }
     };
 
-    // the ends the cut identified move onto their vertex; an edge left without length goes
+    // the ends the cut identified move onto their vertex (a closed spline's one end with both); an edge left without
+    // length goes
     template <class F>
     void ApplyIdentified(Wire &w, std::vector<CutState> &state, const VertexMerges &ids, F use) {
         for (size_t k = 0; k < w.Size(); ++k) {
             if (state[k].excluded || !use(k))
                 continue;
+            const bool closed = IsClosedEdge(w[k]);
             std::visit([&](auto &e) {
                 if constexpr (!IsCircle<decltype(e)>) {
                     if (!ids.Empty()) {
@@ -75,7 +77,7 @@ namespace planex2d {
                         if (s != e.Start() || t != e.End())
                             e.template Trim<true>(s, t);
                     }
-                    if (e.Start() == e.End())
+                    if (e.Start() == e.End() && !closed)
                         state[k].excluded = true;
                 }
             }, w[k]);

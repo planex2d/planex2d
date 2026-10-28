@@ -44,7 +44,7 @@ def test_trim_with_a_cutter_near_and_reverse():
 @pytest.mark.constraints
 def test_a_circle_cut_by_a_chord_is_a_segment():
     sk = px.Sketch()
-    sk.Circle(0, 0, 1, id="ring")
+    sk.Circle((0, 0), 1, id="ring")
     sk.Move((-2, 0.3)).Line(4, 0, px.Horizontal, id="cut")
     sk.Trim(("ring", (0, -1)), "cut")
     sk.Trim(("cut", (-1.9, 0.3)))

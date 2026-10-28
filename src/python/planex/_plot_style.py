@@ -36,7 +36,7 @@ def _separated(lines):
 
 
 def _limits(values, clim):
-    """the colour range: None and None autoscale; one end alone takes the other from the values, never past the given
+    """the color range: None and None autoscale; one end alone takes the other from the values, never past the given
     one (plotly ignores a zmin without a zmax, matplotlib fails on vmin > vmax)"""
     import numpy as np
 
@@ -56,7 +56,7 @@ def _default_colours(name):
 
 def _colormap(colormap):
     """a matplotlib Colormap: "default" (or "default_r", reversed) planex's map, a matplotlib colormap or its name, or
-    a list of colours"""
+    a list of colors"""
     import matplotlib
     from matplotlib.colors import Colormap, LinearSegmentedColormap
 
@@ -72,7 +72,7 @@ def _colormap(colormap):
     try:
         return LinearSegmentedColormap.from_list("colours", list(colormap))
     except (TypeError, ValueError):
-        raise ValueError(f"Plot: colormap is 'default', a matplotlib colormap or its name, or a list of colours, not "
+        raise ValueError(f"Plot: colormap is 'default', a matplotlib colormap or its name, or a list of colors, not "
                          f"{colormap!r}") from None
 
 
@@ -107,7 +107,7 @@ def _contours_arg(contours):
         levels = np.unique(np.asarray(contours, dtype=float))
         if np.isfinite(levels).all():
             return levels
-    raise ValueError("Plot: contours= is None, a number of levels (evenly spaced inside the colour range) or a list "
+    raise ValueError("Plot: contours= is None, a number of levels (evenly spaced inside the color range) or a list "
                      "of levels")
 
 
@@ -122,7 +122,7 @@ def _density(field_lines):
 
 
 def _levels(values, clim, contours):
-    """the contour levels: those given, or a number of them evenly spaced inside the colour range (min, max, else the
+    """the contour levels: those given, or a number of them evenly spaced inside the color range (min, max, else the
     values')"""
     import numpy as np
 
@@ -147,7 +147,7 @@ def _offscreen():
 
 
 def _contour_set(ax, surface, levels):
-    """the contour lines of the colours on the faces at the levels, drawn into the matplotlib axes ax; surface is
+    """the contour lines of the colors on the faces at the levels, drawn into the matplotlib axes ax; surface is
     ("contour", (xs, ys, z)) for a pixel grid or ("tricontour", (tri, values)); None without levels"""
     if not len(levels):
         return None

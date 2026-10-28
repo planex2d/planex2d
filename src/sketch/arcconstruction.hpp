@@ -75,11 +75,11 @@ namespace planex2d::sketch {
 
         void Check() const {
             if (r.center && r.congruent)
-                r.Fail("give center (or concentric) or congruent, not both");
+                r.Fail("give center (or concentric) or coincident, not both");
             if (r.tangent.size() > 2)
                 r.Fail("tangent is one target, two targets or a direction (dh, dv)");
             if (r.congruent && r.radius)
-                r.Fail("congruent takes the radius of its reference");
+                r.Fail("coincident takes the radius of its reference");
             if (r.to && r.to->at && r.until != Until::No && !r.untilTarget)
                 r.Fail("until= picks among the intersections with an element as the end, a point has none; through= gives a "
                        "point the arc passes");
@@ -164,7 +164,7 @@ namespace planex2d::sketch {
 
         ConstructedArc BetweenPoints() {
             if (toElement || fromElement)
-                r.Fail("an element as an end needs the circle: center=, concentric= or congruent=; Arc(r, until=<target>) goes "
+                r.Fail("an element as an end needs the circle: center=, concentric= or coincident=; Arc(r, until=<target>) goes "
                        "along the pen's direction until it");
             const Vertex s = r.from ? *r.from->at : pen.pos, e = *r.to->at;
             const double tol = Tol(scale);
@@ -178,7 +178,7 @@ namespace planex2d::sketch {
                 return OfRadius(s, e, tol);
             if (!r.start && r.from)
                 r.Fail("two ends alone do not fix the arc; give a radius, through=, tangent=(dh, dv), center=, concentric= or "
-                       "congruent=");
+                       "coincident=");
             return LeavingAlong(s, e, tol);
         }
         ConstructedArc Through(const Vertex &s, const Vertex &e, double tol) const {
@@ -215,7 +215,7 @@ namespace planex2d::sketch {
         CircleCarrier CircleGiven() const {
             if (!circle) {
                 if (!r.radius)
-                    r.Fail("give a radius, center=, concentric= or congruent=, or the end with through= or tangent=(dh, dv)");
+                    r.Fail("give a radius, center=, concentric= or coincident=, or the end with through= or tangent=(dh, dv)");
                 const double radius = std::abs(*r.radius);
                 // as netgen's Arc(r, ang): with ang its sign picks the side, else the sign of r
                 return {pen.pos + left * ((r.sweep ? *r.sweep > 0.0 : *r.radius > 0.0) ? radius : -radius), radius};
@@ -223,7 +223,7 @@ namespace planex2d::sketch {
             if (r.congruent) {
                 const std::optional<CircleCarrier> k = CarrierOf(*r.congruent);
                 if (!k)
-                    r.Fail("congruent needs an arc");
+                    r.Fail("coincident needs an arc");
                 return *k;
             }
             return {*r.center, r.radius ? std::abs(*r.radius) : Norm((r.from && r.from->at ? *r.from->at : pen.pos) - *r.center)};
@@ -287,7 +287,7 @@ namespace planex2d::sketch {
         ConstructedArc OnCircle() {
             if (r.through || r.start)
                 r.Fail(circle ? "through= and tangent=(dh, dv) fix the circle themselves; give them without center=, concentric= "
-                                "or congruent="
+                                "or coincident="
                               : "through= and tangent=(dh, dv) need the end: Arc(to, through=...), Arc(to, tangent=(dh, dv))");
             const CircleCarrier k = CircleGiven();
             if (!(k.radius > 0.0))

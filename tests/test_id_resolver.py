@@ -23,7 +23,7 @@ def test_every_form_of_an_id_names_the_same_element(form):
     ref = lambda i: FORMS[form](sk, i)
     assert sk.Location(ref("a.end")) == pytest.approx((4, 0))
     assert sk.Geometry(ref("b"))["length"] == pytest.approx(3)
-    assert len(sk.Edge(ref("c")).edges) == 1
+    assert len(sk.Wire(ref("c")).edges) == 1
     assert sk.Measure(ref("a"))["length"] == pytest.approx(4)
     assert sk.Measure(ref("a"), to=ref("c"))["distance"] == pytest.approx(3)
     sk.Move((2, -1)).Line((2, 4), id="cut")
@@ -55,19 +55,19 @@ def test_another_sketchs_id_or_element_raises():
     with pytest.raises(ValueError, match="belongs to " + a.id.replace(".", r"\.") + ", this is " + b.id.replace(".", r"\.")):
         b.Location(a.id + ".a.end")
     with pytest.raises(ValueError, match="belongs to another sketch"):
-        b.Edge(a("a")[0])
+        b.Wire(a("a")[0])
 
 
 def test_unknown_ids_raise_with_the_closest_ids():
     sk = plate()
     with pytest.raises(ValueError, match=r"no element 'bb' \(did you mean 'b'\?\)"):
-        sk.Edge("bb")
+        sk.Wire("bb")
     with pytest.raises(ValueError, match=r"no element 'bb' here \(did you mean 'b'\?\)"):
         sk("bb")
     with pytest.raises(ValueError, match=r"Measure\('bb'\): no element, point or edge name 'bb' \(did you mean 'b'\?\)"):
         sk.Measure("bb")
-    with pytest.raises(ValueError, match=r"^Edge\('zz'\): no element 'zz'$"):
-        sk.Edge("zz")
+    with pytest.raises(ValueError, match=r"^Wire\('zz'\): no element 'zz'$"):
+        sk.Wire("zz")
 
 
 def test_a_shape_measures_by_name_id_or_selected_face_or_edge():

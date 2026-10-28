@@ -548,19 +548,30 @@ ISFILE = os.path.isfile
 
 
 class FakeKiCadCli:
-    """subprocess.run as kicad-cli answers it: its version, and a conversion that writes BOARD or fails with stderr"""
+    """subprocess.run as kicad-cli answers it: its version; a conversion that writes imported (BOARD's text) or fails
+    with stderr; a zone refill (pcb drc) that keeps the board it was given (refilled) and writes BOARD, or fails with
+    refill_stderr"""
 
-    def __init__(self, version="10.0.0", stderr=None):
-        self.version, self.stderr, self.calls = version, stderr, []
+    def __init__(self, version="10.0.0", stderr=None, stdout="", imported=None, refill_stderr=None):
+        self.version, self.stderr, self.stdout, self.calls = version, stderr, stdout, []
+        self.imported = imported if imported is not None else open(BOARD).read()
+        self.refill_stderr, self.refilled = refill_stderr, None
 
     def __call__(self, args, **kwargs):
         self.calls.append(list(args))
         if args[1] == "version":
             return subprocess.CompletedProcess(args, 0, self.version + "\n", "")
+        if args[2] == "drc":
+            self.refilled = open(args[-1]).read()
+            if self.refill_stderr is not None:
+                return subprocess.CompletedProcess(args, 3, "", self.refill_stderr)
+            shutil.copyfile(BOARD, args[-1])
+            return subprocess.CompletedProcess(args, 0, "", "")
         if self.stderr is not None:
-            return subprocess.CompletedProcess(args, 1, "", self.stderr)
-        shutil.copyfile(BOARD, args[args.index("-o") + 1])
-        return subprocess.CompletedProcess(args, 0, "", "")
+            return subprocess.CompletedProcess(args, 1, self.stdout, self.stderr)
+        with open(args[args.index("-o") + 1], "w") as f:
+            f.write(self.imported)
+        return subprocess.CompletedProcess(args, 0, self.stdout, "")
 
 
 @pytest.fixture
@@ -604,10 +615,12 @@ def test_a_board_of_another_program_is_converted_by_kicad_cli(no_kicad, eagle):
     cli = FakeKiCadCli()
     no_kicad.setattr(subprocess, "run", cli)
     layers = px.FromKiCad(eagle)
-    version, convert = cli.calls
+    version, convert, refill = cli.calls
     assert version == ["/usr/bin/kicad-cli", "version"]
     assert convert[:6] == ["/usr/bin/kicad-cli", "pcb", "import", "--format", "auto", "-o"] and convert[7:] == [eagle]
     assert convert[6].endswith(".kicad_pcb") and not os.path.exists(os.path.dirname(convert[6]))
+    assert refill[:5] == ["/usr/bin/kicad-cli", "pcb", "drc", "--refill-zones", "--save-board"]
+    assert refill[-1] == convert[6]
     native = px.FromKiCad(BOARD)
     assert list(layers) == list(native)
     for name in native:
@@ -644,6 +657,74 @@ def test_a_failed_conversion_raises_with_kicad_clis_message(no_kicad, eagle, tmp
     other.write_text("not a board\n")
     with pytest.raises(ValueError, match="could not convert the non-KiCad board: Failed to load board$"):
         px.FromKiCad(str(other))
+
+
+def test_an_easyeda_pro_project_of_several_boards_is_named_when_kicad_cli_fails(no_kicad, tmp_path):
+    """kicad-cli 10.0.7 fails on such a project (KiCad's own test data, Yuzuki Chameleon: 5 boards) with a bare
+    bad_function_call"""
+    import zipfile
+
+    no_kicad.setattr(shutil, "which", lambda name: "/usr/bin/kicad-cli")
+    no_kicad.setattr(subprocess, "run", FakeKiCadCli(stderr="Error: Unhandled exception class: St17bad_function_call\n"))
+    for boards, name in ((2, "two.epro"), (1, "one.epro")):
+        path = tmp_path / name
+        with zipfile.ZipFile(path, "w") as z:
+            z.writestr("project.json", "{}")
+            for k in range(boards):
+                z.writestr("PCB/board%d.epcb" % k, "")
+        message = ("FromKiCad(%r): kicad-cli could not convert the EasyEDA Pro project, which holds 2 boards; export one "
+                   "board on its own from EasyEDA Pro (kicad-cli: Error: Unhandled exception class: St17bad_function_call)"
+                   if boards == 2 else "FromKiCad(%r): kicad-cli could not convert the EasyEDA Pro board: Error: "
+                   "Unhandled exception class: St17bad_function_call") % str(path)
+        with pytest.raises(ValueError, match=re.escape(message) + "$"):
+            px.FromKiCad(str(path))
+
+
+def test_a_converted_boards_zones_are_filled_by_kicad_cli(no_kicad, eagle):
+    """KiCad's importers write the zones unfilled; the items on layers KiCad does not know go first (KiCad does not load
+    a board with them), a footprint stays"""
+    no_kicad.setattr(shutil, "which", lambda name: "/usr/bin/kicad-cli")
+    unfilled = open(BOARD).read().split("\t\t(filled_polygon")[0] + "\t)\n"
+    undefined = ('\t(gr_text "x" (at 1 1) (layer "UNDEFINED"))\n'
+                 '\t(footprint "t:u" (layer "F.Cu") (at 3 3)\n'
+                 '\t\t(fp_line (start 0 0) (end 1 0) (layer "UNDEFINED")))\n')
+    cli = FakeKiCadCli(imported=unfilled + undefined + ")\n")
+    no_kicad.setattr(subprocess, "run", cli)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", px.PlanexWarning)
+        copper = px.FromKiCad(eagle, "B.Cu")
+    assert "UNDEFINED" not in cli.refilled and '(footprint "t:u" (layer "F.Cu") (at 3 3)' in cli.refilled
+    assert areas_by_name(copper) == pytest.approx(areas_by_name(px.FromKiCad(BOARD, "B.Cu")), rel=1e-12)
+    no_kicad.setattr(subprocess, "run", FakeKiCadCli(imported=unfilled + ")\n", refill_stderr="Failed to load board\n"))
+    fill = ("FromKiCad: 1 zone not filled: kicad-cli could not fill them (Failed to load board); open the board in "
+            "KiCad, fill the zones (B) and save it as a .kicad_pcb")
+    with pytest.warns(px.PlanexWarning, match=re.escape(fill) + "$"):
+        px.FromKiCad(eagle, "B.Cu")
+
+
+def test_a_zone_kicad_filled_empty_is_filled(tmp_path):
+    path = tmp_path / "board.kicad_pcb"
+    zone = open(BOARD).read().split("\t\t(filled_polygon")[0]
+    path.write_text(zone + "\t\t(fill yes (thermal_gap 0.5) (thermal_bridge_width 0.5))\n\t)\n)\n")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", px.PlanexWarning)
+        px.FromKiCad(str(path), "B.Cu")
+
+
+def test_the_messages_name_the_program_from_the_file(no_kicad, tmp_path):
+    files = {"allegro.brd": (b"\x00\x14\x00\x00\x03\x00", "Allegro"), "eagle.brd": (b"<?xml?>\n<eagle>", "Eagle"),
+             "geda.pcb": (b"# release: pcb 4.2.0\n", "gEDA PCB"), "pcad.pcb": (b'ACCEL_ASCII "pcad.pcb"\n', "P-CAD"),
+             "meter.json": (b'{"head": {}}', "EasyEDA Standard")}
+    for name, (data, program) in files.items():
+        (tmp_path / name).write_bytes(data)
+        with pytest.raises(RuntimeError, match="it converts %s boards$" % program):
+            px.FromKiCad(str(tmp_path / name))
+    no_kicad.setattr(shutil, "which", lambda name: "/usr/bin/kicad-cli")
+    reported = "Importing 'board.zip' using EasyEDA Pro format...\n"
+    no_kicad.setattr(subprocess, "run", FakeKiCadCli(stderr="Failed to load board\n", stdout=reported))
+    (tmp_path / "board.zip").write_bytes(b"PK\x03\x04")
+    with pytest.raises(ValueError, match="could not convert the EasyEDA Pro board: Failed to load board$"):
+        px.FromKiCad(str(tmp_path / "board.zip"))
 
 
 def test_a_legacy_kicad_board_is_not_converted(no_kicad, tmp_path):
@@ -693,3 +774,49 @@ def test_a_kicad_10_development_build_is_taken(no_kicad, eagle):
     no_kicad.setattr(shutil, "which", lambda name: "/usr/bin/kicad-cli")
     no_kicad.setattr(subprocess, "run", FakeKiCadCli(version="9.99.0-rc1"))
     assert list(px.FromKiCad(eagle)) == list(px.FromKiCad(BOARD))
+
+
+def test_outline_lines_running_past_their_corner_arcs_are_left_out_with_a_count(tmp_path):
+    def line(a, b):
+        return '(gr_line (start %g %g) (end %g %g) (stroke (width 0.05) (type default)) (layer "Edge.Cuts"))' % (a + b)
+
+    def arc(a, m, b):
+        return ('(gr_arc (start %g %g) (mid %g %g) (end %g %g) (stroke (width 0.05) (type default)) (layer "Edge.Cuts"))'
+                % (a + m + b))
+
+    q = 2 - math.sqrt(2)
+    outline = [line((1.7, 0), (58.4, 0)), line((60, 1.8), (60, 38.45)), line((58.3, 40), (1.6, 40)), line((0, 38.5), (0, 1.75)),
+               arc((0, 2), (q, q), (2, 0)), arc((58, 0), (60 - q, q), (60, 2)), arc((60, 38), (60 - q, 40 - q), (58, 40)),
+               arc((2, 40), (q, 40 - q), (0, 38))]
+    path = tmp_path / "stubs.kicad_pcb"
+    path.write_text('(kicad_pcb (version 20241229) (generator "t")\n %s\n (setup )\n (net 0 "")\n %s\n)' %
+                    (LAYERS % "", "\n ".join(outline)))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        profile = px.FromKiCad(str(path), "Edge.Cuts")
+    texts = [str(w.message) for w in caught]
+    assert "FromKiCad: 8 line ends on Edge.Cuts run past the outline (0.20 to 0.50 mm) and are left out" in texts
+    assert not any("ClosedOpenWires" in t for t in texts)
+    assert profile.mass / MM2 == pytest.approx(60 * 40 - 4 * (4 - math.pi), rel=1e-5)
+
+
+def test_copper_on_and_past_the_outline_stacks_in_3d(tmp_path):
+    # a pad across the left edge (a castellated pad), one on the bottom edge from inside, one on the back side
+    body = ('(gr_rect (start -1 10) (end 3 14) (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu") (net 1))\n'
+            '(gr_rect (start 20 36) (end 26 40) (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu") (net 1))\n'
+            '(gr_rect (start 50 0) (end 55 3) (stroke (width 0) (type solid)) (fill yes) (layer "B.Cu") (net 1))')
+    board = px.FromKiCad(kicad_board(tmp_path, body), [1.5])
+    assert [s.name for s in board.solids] == ["dielectric_1"]
+    assert board.solids[0].mass == pytest.approx(60 * 40 * 1.5 * 1e-9, rel=1e-6)
+    copper = sorted(round(f.mass * 1e6, 6) for f in board.faces if f.name == "A")
+    assert copper == [12, 15, 24]
+
+
+def test_a_warning_names_the_caller_s_line(tmp_path):
+    font = "(effects (font (size 1 1) (thickness 0.15)))"
+    path = kicad_board(tmp_path, '(gr_text "x" (at 5 5) (layer "F.SilkS") %s)' % font)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        px.FromKiCad(path)
+    left_out = [w for w in caught if "left out" in str(w.message)]
+    assert left_out and all(w.filename == __file__ for w in left_out)

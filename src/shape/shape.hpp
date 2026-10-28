@@ -20,6 +20,9 @@ namespace planex2d {
     // the set of parts it belongs to, several for a stretch glued wires share. a part is a group of faces with the same
     // properties (split into single faces only when they are asked for), parts 0 .. groups - 1, or a wire
     class Shape {
+        friend class PlanexWriter;
+        friend class PlanexReader;
+
         private:
             Wire edges;
             // the parts of every owner of the edges, those with a face group first; in each the face group that names
@@ -373,8 +376,8 @@ namespace planex2d {
             // boundary with (thrown away when it shares none); the wires stay
             Shape WithoutSmallFaces(double area, bool merge) const;
             // on all edges at once, so a vertex shared between parts moves with both
-            Shape &Simplify(const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                            const Cleanup &cleanup = config::cleanup) {
+            Shape &Simplify(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                            const Cleanup &cleanup = config::state->cleanup) {
                 if (cleanup.remove_faces_smaller > 0.0) {
                     Identifications kept = std::move(ids);
                     *this = WithoutSmallFaces(cleanup.remove_faces_smaller, cleanup.merge_small_faces_instead);
@@ -398,8 +401,8 @@ namespace planex2d {
 
                 bool IsOnGroup(size_t i) const { return !partsOf[i].empty() && partsOf[i].front() < groupProps.size(); }
             };
-            ExportPlan Export(const ArcFit &arcs = config::arc_fit, const SplineFit &fit = config::spline_fit,
-                              const Cleanup &cleanup = config::cleanup) const {
+            ExportPlan Export(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
+                              const Cleanup &cleanup = config::state->cleanup) const {
                 if (cleanup.remove_faces_smaller > 0.0) {
                     Cleanup rest = cleanup;
                     rest.remove_faces_smaller = 0.0;
@@ -477,7 +480,7 @@ namespace planex2d {
                     "first, px.Unify(shape.faces), which removes the inner and free wires, or do the boolean first and "
                     "Glue the wires to its result");
             if (wires && !unite)
-                throw std::invalid_argument("only faces have an intersection or difference");
+                throw std::invalid_argument("only faces have an intersection, a difference or a symmetric difference");
         }
         WireList Outlines() const {
             WireList outlines;

@@ -4,13 +4,14 @@
 """planex polygons from NGSolve level set functions"""
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from . import _planex as px
+from ._auto import Auto, is_auto
 from ._geom import oriented, scale
+from ._caller import warn
 
 NEWTON_STEPS = 3
 
@@ -165,9 +166,9 @@ def _side_names(sides):
             renamed[tuple(sorted(va))], renamed[tuple(sorted(vb))] = a, b
             pairs.add((a, b))
         names.append(sorted(pairs))
-        warnings.warn(f"FromLevelSet: the sides of periodic identification {k} share their boundary names with other "
+        warn(f"FromLevelSet: the sides of periodic identification {k} share their boundary names with other "
                       f"sides; they are named {', '.join(f'{a!r} and {b!r}' for a, b in sorted(pairs))}",
-                      px.PlanexWarning, stacklevel=3)
+                      px.PlanexWarning)
     return renamed, names
 
 
@@ -189,8 +190,8 @@ def _periodic_targets(coords, cuts, sides, names):
         mine, partner = _side_crossings(coords, cuts, side)
         if len(mine) != len(partner):
             na, nb = ", ".join(a for a, _ in pairs), ", ".join(b for _, b in pairs)
-            warnings.warn(f"FromLevelSet: {len(mine)} crossing(s) on the periodic side '{na}', {len(partner)} on '{nb}'; "
-                          "they stay unmatched", px.PlanexWarning, stacklevel=4)
+            warn(f"FromLevelSet: {len(mine)} crossing(s) on the periodic side '{na}', {len(partner)} on '{nb}'; "
+                          "they stay unmatched", px.PlanexWarning)
             continue
         for xa, xb in zip(mine, partner):
             middle = 0.5 * (xa + (xb - shift))
@@ -229,7 +230,7 @@ def _face(segments, plane):
         w.name = nm
         lines.append(w)
     if not lines:
-        warnings.warn("level set has no inside region")
+        warn("level set has no inside region")
         return px.Shape()
     return px._RegionOfEdges(lines)
 
@@ -349,9 +350,10 @@ def _length(pts):
     return float(np.linalg.norm(np.diff(pts, axis=0), axis=1).sum())
 
 
+# id= is the id wrapper's (_ids.with_id), which names the result; declared here so that type checkers see it
 def FromLevelSet(field: Any, /, edge_length: float | None, inside: str = "positive", name: str = "interface",
-                 project: bool = True, subdivide: int | None = None, plane: Plane | None = None,
-                 periodic: bool = True) -> Shape:
+                 project: bool = True, subdivide: int | Auto = Auto, plane: Plane | None = None,
+                 periodic: bool = True, *, id: str | None = None) -> Shape:
     """The region where an NGSolve level set function is positive (or negative) as a Shape of lines.
 
     The level set is cut on a lattice of subdivide steps per element; the interface is then resampled to lines about
@@ -364,7 +366,7 @@ def FromLevelSet(field: Any, /, edge_length: float | None, inside: str = "positi
         inside: 'positive' or 'negative': the sign of the field inside the region.
         name: the name of the interface edges.
         project: True moves the interface points onto the exact zero level set by Newton steps.
-        subdivide: the lattice steps per element; None takes the polynomial order of the field's space.
+        subdivide: the lattice steps per element; px.Auto takes the polynomial order of the field's space.
         plane: the plane of the shape; None is the xy plane.
         periodic: True takes the periodic identifications of the mesh (field.space.mesh.ngmesh): a crossing on an
             identified boundary edge and its partner on the partner edge get the mean of their parameters along the
@@ -392,7 +394,7 @@ def FromLevelSet(field: Any, /, edge_length: float | None, inside: str = "positi
     tri = np.array([[v.nr for v in el.vertices] for el in mesh.Elements(VOL)])
     if tri.shape[1:] != (3,):
         raise NotImplementedError("FromLevelSet needs a triangular mesh")
-    k = subdivide or max(1, field.space.globalorder)
+    k = max(1, field.space.globalorder) if is_auto(subdivide, "FromLevelSet", "subdivide") else subdivide
     nodes, tris = _lattice(k)
     ir = IntegrationRule(points=[(a / k, b / k) for a, b, c in nodes], weights=[1.0 / len(nodes)] * len(nodes))
     mips = mesh.MapToAllElements(ir, VOL)

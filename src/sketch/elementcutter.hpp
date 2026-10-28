@@ -135,7 +135,7 @@ namespace planex2d::sketch {
                 sk.PiecesCut(a, el, pieceElement, id, call);
             for (size_t i = 0; i < cuts.size(); ++i)
                 if (cuts[i].by != none)
-                    sk.Relate(Kind::Coincident, {{cutElement[i]}, {cuts[i].by}});
+                    sk.Relate(Kind::Coincident, {{cutElement[i]}, OnCutter(cuts[i])});
             if (line && tied)
                 for (size_t point : along) {
                     const Element &e = sk.s.elements[a];
@@ -200,13 +200,26 @@ namespace planex2d::sketch {
                                    }) - sk.s.elements.begin();
                 sk.Relate(Kind::Coincident, {{cut}, {a}}, {b.unknown});
                 if (cuts[i].by != none)
-                    sk.Relate(Kind::Coincident, {{cut}, {cuts[i].by}});
+                    sk.Relate(Kind::Coincident, {{cut}, OnCutter(cuts[i])});
             }
             made.pieces = pieceElement;
             return made;
         }
 
     private:
+        // what a cut point is held on: its cutter, or the cutter's end where it lies (one point with it then: at a tangent
+        // contact a point held on the line could slide along it to about sqrt(eps) after a solve)
+        Ref OnCutter(const CutPoint &c) const {
+            const Element &k = sk.s.elements[c.by];
+            if (k.kind == ElementKind::Line || k.kind == ElementKind::Arc) {
+                const double near = 1e-9 * std::max(sk.s.Size(), 1.0);
+                for (const Part end : {Part::Start, Part::End})
+                    if (Norm(sk.Coords(end == Part::Start ? k.Start() : k.End()) - c.p) <= near)
+                        return {c.by, end};
+            }
+            return {c.by};
+        }
+
         Sketch &sk;
         const size_t a;
         const Element el;
@@ -351,6 +364,7 @@ namespace planex2d::sketch {
         // hidden, the carrier and the ends of all of them, and its id the wire of the pieces in their order; the other
         // wires it was in take the drawn pieces in its place (the trimmed one, removed, is drawn no more)
         void Pieced(const std::vector<size_t> &pieces, size_t keep, size_t removed, bool round) {
+            sk.BlendsFollow(a, pieces);
             const bool span = keep == pieces.size();
             for (auto &[name, ids] : sk.wires) {
                 const auto at = std::find(ids.begin(), ids.end(), sk.elementIds[a]);

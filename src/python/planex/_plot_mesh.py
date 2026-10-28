@@ -112,7 +112,7 @@ def _field_mesh(f, mesh):
 
 
 def _pixels(box, n):
-    """the centres of square pixels over the box, n along its longer side, and the pixel size"""
+    """the centers of square pixels over the box, n along its longer side, and the pixel size"""
     import numpy as np
 
     (x0, y0), (x1, y1) = box
@@ -165,13 +165,13 @@ def _magnitude(values):
 
 
 def _grid(region, n):
-    """the pixel centres over the faces' box (n along its longer side) as xs, ys, the (m, 2) array of those inside
+    """the pixel centers over the faces' box (n along its longer side) as xs, ys, the (m, 2) array of those inside
     the faces and their index into the grid, and the pixel size"""
     import numpy as np
 
     box = region.bounding_box
     if box is None:
-        raise ValueError("Plot: no faces to colour")
+        raise ValueError("Plot: no faces to color")
     xs, ys, step = _pixels(box, n)
     gx, gy = np.meshgrid(xs, ys)
     pts = np.c_[gx.ravel(), gy.ravel()]
@@ -195,7 +195,7 @@ def _field_raster(region, f, mesh, plane, n, flow):
 
 
 def _arrows(region, f, mesh, plane):
-    """the field's arrows (its part in the plane) at the centres of a coarse grid inside the faces and the mesh, the
+    """the field's arrows (its part in the plane) at the centers of a coarse grid inside the faces and the mesh, the
     longest one cell long"""
     import numpy as np
 
@@ -224,7 +224,7 @@ def _mesh_field(obj, f, mesh, plane, samples, vectors, flow):
 def _section(corners, edges, plane, tol):
     """where the plane cuts elements given by their (e, k, 3) corners and their edges as (j, 2) corner indices, as
     (m, 2, 2) segments in plane coordinates: per element the polygon through its corners on the plane (closer than
-    tol) and the points where its edges cross it, in order around their centre; two points give one line, one none"""
+    tol) and the points where its edges cross it, in order around their center; two points give one line, one none"""
     import numpy as np
 
     o, u, v, n = (np.asarray(a, dtype=float) for a in (plane.origin, plane.h, plane.v, plane.normal))

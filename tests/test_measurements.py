@@ -15,7 +15,7 @@ def rect(w=4.0, h=1.0):
 
 
 def ring():
-    return px.QuickSketch().Circle(0, 0, 2).Face() - px.QuickSketch().Circle(0, 0, 1).Face()
+    return px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0, 0), 1).Face()
 
 
 def test_min_thickness_says_when_its_minimum_is_a_corner_tip():
@@ -80,7 +80,7 @@ def test_corner_angles_and_radii():
 
 def test_torsion_constant_of_a_circle_and_a_square():
     pytest.importorskip("ngsolve")
-    circle = px.QuickSketch().Circle(0, 0, 1).Face()
+    circle = px.QuickSketch().Circle((0, 0), 1).Face()
     assert circle.Measure(pm.TorsionConstant()) == pytest.approx(math.pi / 2, rel=1e-4)
     assert rect(1, 1).Measure(pm.TorsionConstant(maxh=0.05)) == pytest.approx(0.140577, rel=1e-3)
 
@@ -106,3 +106,28 @@ def test_plot_colours_the_face_by_a_measurement(backend):
     assert edges is not None
     with pytest.raises(TypeError, match="plot=True"):
         px.PlotField(pm.HydraulicDiameter(), part)
+
+
+def test_max_thickness_of_a_filleted_l_bracket_is_exact():
+    # the largest disc touches both outer sides and the inner fillet: 2 (15 sqrt2 - 5) / (1 + sqrt2)
+    face = px.Face([px.FromPolyline([(0, 0), (40, 0), (40, 10), (10, 10), (10, 30), (0, 30)], closed=True)])
+    face.Fillet((10, 10), 5)
+    exact = 2 * (15 * math.sqrt(2) - 5) / (1 + math.sqrt(2))
+    assert face.Measure(pm.MaxThickness()) == pytest.approx(exact, rel=1e-12)
+
+
+def test_hausdorff_takes_the_highest_of_several_peaks():
+    curve = px.Spline([(0, 0), (2, 0.8), (4, 0), (4.3, 1.0), (4.6, 0), (10, 0)])
+    far = (4.4, -100.0)
+    edge = curve.edges[0]
+    # the curve's exact points, as Hausdorff samples them
+    dense = max(math.dist(edge.ClosestPoint(tuple(edge.PointAt(k / 20000))[:2]), far) for k in range(20001))
+    assert pm.Hausdorff(lambda o: curve, lambda o: px.Circle(far, 1e-9))(None) == pytest.approx(dense - 1e-9, abs=1e-6)
+
+
+def test_max_thickness_finds_a_disc_that_touches_reflex_corners_only():
+    # a V notch from the middle of each side, tips 30 from the center: the largest disc touches the four tips only
+    notched = px.Face([px.FromPolyline([(0, 0), (45, 0), (50, 20), (55, 0), (100, 0), (100, 45), (80, 50), (100, 55),
+                                       (100, 100), (55, 100), (50, 80), (45, 100), (0, 100), (0, 55), (20, 50), (0, 45)],
+                                      closed=True)])
+    assert notched.Measure(pm.MaxThickness()) == pytest.approx(60, rel=1e-9)

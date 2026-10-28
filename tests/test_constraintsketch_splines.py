@@ -59,6 +59,8 @@ def test_constraints_on_its_points_reshape_it():
     sk.Move(sk.origin, px.Coincident).Spline([(1, 0.8), (2.3, 0.5), (3, -0.4)])
     sk.Constrain("Point.4", px.H, px.Coincident)
     sk.Constrain("Point.1", "Point.4", px.Distance, 4)
+    # the spline stretches as a whole to the new end; points 2 and 3 are fixed where that put them
+    fixed = sk.Location("Point.3")
     sk.Constrain("Point.2", px.Fix)
     sk.Constrain("Point.3", px.Fix)
     assert (sk.status, sk.dof) == ("full", 0)
@@ -66,7 +68,7 @@ def test_constraints_on_its_points_reshape_it():
     assert g["points"][-1] == pytest.approx((4, 0), abs=TOL)
     path = g["path"]
     assert path[-1] == pytest.approx((4, 0), abs=TOL)
-    assert min(math.dist(p, (2.3, 0.5)) for p in path) == pytest.approx(0, abs=TOL)
+    assert min(math.dist(p, fixed[:2]) for p in path) == pytest.approx(0, abs=TOL)
 
 
 def test_a_line_and_a_spline_tangent_at_their_joint():
@@ -194,7 +196,7 @@ def test_a_closed_spline_is_a_face_through_its_points():
     assert face.mass > 2.0
     wire = sk.Wire()
     assert all(e.name == "blob" for e in wire.edges)
-    # a closed edge is two, like a circle
+    # one closed edge, like a circle
     edges = wire.edges
     assert flat([(edges[0].start.x, edges[0].start.y), (edges[-1].end.x, edges[-1].end.y)]) == pytest.approx([0.3, -1, 0.3, -1], abs=TOL)
 
@@ -298,6 +300,7 @@ def test_the_errors_of_a_spline():
 
 
 def test_splines_in_the_plots():
+    pytest.importorskip("plotly")
     sk = px.Sketch()
     sk.Move((0, 0)).Line(2, 0.3, id="lead").Spline([(3, 1.2), (4.5, 0.4), (5, 2)], px.Tangent)
     svg = sk.ToSVG(show_constraints=True, show_ends=True)
@@ -307,7 +310,7 @@ def test_splines_in_the_plots():
     assert any("Spline.1" in str(t) for t in fig.data)
     sk.Constrain("Spline.1.p2", px.H, px.Distance, 0.5, id="low")
     sk.Constrain(px.H, "Spline.1.t3", px.Angle, 60, id="steep")
-    sk.Circle(4.3, 2.0, 0.3, id="ball")
+    sk.Circle((4.3, 2.0), 0.3, id="ball")
     sk.Constrain("ball", "Spline.1", px.Tangent)
     svg = sk.ToSVG(show_constraints=True)
     assert "low: " in svg and "steep: " in svg and "Tangent.2" in svg

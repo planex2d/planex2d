@@ -73,7 +73,7 @@ def test_the_outer_loop_runs_head_to_tail_with_a_spline_in_it(drawn):
 @pytest.mark.parametrize("hole", [
     lambda: px.QuickSketch().Move((2, 2)).Line(1, 4).Spline([(5, 5), (4, 3)]).Close().Face(),
     lambda: px.QuickSketch().Move((2, 2)).Spline([(4, 3), (5, 5), (3, 6)]).Close().Face(),
-    lambda: px.QuickSketch().Circle(8, 3, 1).Face(),
+    lambda: px.QuickSketch().Circle((8, 3), 1).Face(),
 ])
 def test_holes_run_head_to_tail(hole):
     f = (px.QuickSketch().Move((-1, -1)).Rectangle(12, 9).Face() - hole()).faces[0]

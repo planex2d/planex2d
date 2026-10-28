@@ -27,6 +27,9 @@ namespace planex2d {
             Properties props;
             Ends ends;
 
+        friend class PlanexWriter;
+        friend class PlanexReader;
+
         private:
             bool ccw;
             Vertex center;

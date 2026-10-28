@@ -20,7 +20,8 @@ namespace planex2d::sketch {
                ((part == Part::Start || part == Part::End || part == Part::Mid) &&
                 (e == ElementKind::Line || e == ElementKind::Arc || e == ElementKind::Spline || e == ElementKind::OffsetCurve)) ||
                (part == Part::Center && (e == ElementKind::Circle || e == ElementKind::Arc)) ||
-               ((part == Part::Point || part == Part::Tangent) && e == ElementKind::Spline && index < g.splines[g.elements[element].SplineIndex()].points.size());
+               ((part == Part::Point || part == Part::Tangent) && e == ElementKind::Spline && !g.elements[element].IsFitted(g) &&
+                index < g.splines[g.elements[element].SplineIndex()].points.size());
     }
     inline bool Ref::IsPoint(const Geometry &g) const {
         return (part != Part::Whole && part != Part::Tangent) || g.elements[element].kind == ElementKind::Point;

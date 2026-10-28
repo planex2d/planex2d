@@ -32,6 +32,9 @@ namespace planex2d {
     // the plane of a sketch in 3d: its origin, its u and v directions and its normal, always right-handed
     // (v = normal x u), so a mirror in 3d reverses v again
     class AxisSystem {
+        friend class PlanexWriter;
+        friend class PlanexReader;
+
         private:
             Vector3 origin;
             Vector3 xDirection{1.0, 0.0, 0.0};
@@ -105,7 +108,7 @@ namespace planex2d {
             }
 
             // origins within distance, the normals and the x directions each within angle (radians)
-            bool IsClose(const AxisSystem &o, double distance = config::axes_distance, double angle = config::axes_angle) const {
+            bool IsClose(const AxisSystem &o, double distance = config::state->axes_distance, double angle = config::state->axes_angle) const {
                 return Norm(origin - o.origin) <= distance && AngleBetween(normal, o.normal) <= angle &&
                        AngleBetween(xDirection, o.xDirection) <= angle;
             }

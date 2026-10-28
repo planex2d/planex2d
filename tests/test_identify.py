@@ -75,7 +75,7 @@ def test_sides_that_do_not_match_say_so():
 def test_periodic_sides_mesh_as_pairs(kind):
     obj = plate() if kind is px.Face else px.Shape(plate())
     obj.Identify("left", "right")
-    assert obj.identifications == {"left-right": ("left", "right", None, IdentificationType.PERIODIC)}
+    assert obj.identifications == {"left-right": ("left", "right", px.Auto, IdentificationType.PERIODIC)}
     pairs = identified_points(obj)
     assert len(pairs) >= 5
     for p, q in pairs:
@@ -105,7 +105,7 @@ def test_motions_move_the_stored_map():
     g = plate()
     g.Identify("left", "right")
     g.Mirror((0, 0), (0, 1))
-    assert g.identifications["left-right"][2] is None
+    assert g.identifications["left-right"][2] == px.Auto
     for p, q in identified_points(g):
         assert (q[0] - p[0], q[1] - p[1]) == pytest.approx((-2, 0), abs=1e-12)
 
@@ -113,7 +113,7 @@ def test_motions_move_the_stored_map():
 def test_booleans_splits_and_copies_keep_them():
     f = plate()
     f.Identify("left", "right")
-    hole = px.QuickSketch().Circle(1, 0.5, 0.2).Face()
+    hole = px.QuickSketch().Circle((1, 0.5), 0.2).Face()
     s = f - hole
     assert list(s.identifications) == ["left-right"] and len(identified_points(s)) >= 5
     assert list((hole + f).identifications) == ["left-right"]

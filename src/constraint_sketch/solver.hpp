@@ -21,18 +21,30 @@
 //   size_t Count() const                                      the number of constraints
 //   size_t Rows(size_t c) const                               the residual rows of constraint c
 //   const std::vector<size_t> &Indices(size_t c) const       the unknowns constraint c depends on
+//   const std::vector<RowBlock> &Blocks(size_t c) const      its rows in blocks, each with the unknowns it depends on
 //   void Evaluate(size_t c, const std::vector<double> &x, double *r, double *J) const
-//                                                             its residuals and their derivatives with respect to its
-//                                                             unknowns (Rows(c) x Indices(c).size(), row major)
+//                                                             its residuals and their derivatives with respect to the
+//                                                             unknowns of their block, block by block (rows x
+//                                                             indices.size(), row major)
 // Residuals are lengths, so that one tolerance relative to the size of the geometry fits all of them.
 
 namespace planex2d {
+
+    // rows of a constraint that depend on the same unknowns: most constraints are one block, a Fix and a rigid group one
+    // per held point and value, so that J has only the derivatives they have
+    struct RowBlock {
+        size_t rows = 0;
+        std::vector<size_t> indices;
+    };
 
     struct Unknowns {
         std::vector<double> value;
         // the change that counts as much as a unit change of a length: 1 for lengths, 1 / size for angles
         std::vector<double> scale;
         std::vector<char> fixed;
+        // the unknowns whose target in a later pull round is where the round before left them (empty: none), so that
+        // only the others go on being pulled to theirs
+        std::vector<char> follow;
         explicit Unknowns(std::vector<double> v = {}) : value(std::move(v)), scale(value.size(), 1.0), fixed(value.size(), 0) {}
     };
 
@@ -94,38 +106,43 @@ namespace planex2d {
         const ConstraintComponent &part;
         std::vector<size_t> column;
         size_t m = 0;
-        // J's pattern, all zero, and per row of a constraint and unknown of it the entry of J (-1: a fixed unknown)
+        // J's pattern, all zero, and per row of a block and unknown of it the entry of J (-1: a fixed unknown) and the
+        // unknown
         SparseMatrix pattern;
         std::vector<Eigen::Index> entry;
+        std::vector<size_t> unknown;
 
         ComponentEquations(const System &s, const ConstraintComponent &p, size_t nunknowns)
             : system(s), part(p), column(nunknowns, nunknowns) {
             for (size_t k = 0; k < part.unknowns.size(); ++k)
                 column[part.unknowns[k]] = k;
             std::vector<Eigen::Triplet<double>> entries;
-            for (size_t c : part.constraints) {
-                for (size_t i = 0; i < system.Rows(c); ++i)
-                    for (size_t u : system.Indices(c))
-                        if (column[u] != column.size())
-                            entries.emplace_back(m + i, column[u], 0.0);
-                m += system.Rows(c);
-            }
+            for (size_t c : part.constraints)
+                for (const RowBlock &b : system.Blocks(c)) {
+                    for (size_t i = 0; i < b.rows; ++i)
+                        for (size_t u : b.indices)
+                            if (column[u] != column.size())
+                                entries.emplace_back(m + i, column[u], 0.0);
+                    m += b.rows;
+                }
             pattern.resize(Eigen::Index(m), Eigen::Index(part.unknowns.size()));
             pattern.setFromTriplets(entries.begin(), entries.end());
             size_t row = 0;
-            for (size_t c : part.constraints) {
-                for (size_t i = 0; i < system.Rows(c); ++i)
-                    for (size_t u : system.Indices(c)) {
-                        if (column[u] == column.size()) {
-                            entry.push_back(-1);
-                            continue;
+            for (size_t c : part.constraints)
+                for (const RowBlock &b : system.Blocks(c)) {
+                    for (size_t i = 0; i < b.rows; ++i)
+                        for (size_t u : b.indices) {
+                            unknown.push_back(u);
+                            if (column[u] == column.size()) {
+                                entry.push_back(-1);
+                                continue;
+                            }
+                            const int *begin = pattern.innerIndexPtr() + pattern.outerIndexPtr()[column[u]];
+                            const int *end = pattern.innerIndexPtr() + pattern.outerIndexPtr()[column[u] + 1];
+                            entry.push_back(pattern.outerIndexPtr()[column[u]] + (std::lower_bound(begin, end, (int)(row + i)) - begin));
                         }
-                        const int *begin = pattern.innerIndexPtr() + pattern.outerIndexPtr()[column[u]];
-                        const int *end = pattern.innerIndexPtr() + pattern.outerIndexPtr()[column[u] + 1];
-                        entry.push_back(pattern.outerIndexPtr()[column[u]] + (std::lower_bound(begin, end, (int)(row + i)) - begin));
-                    }
-                row += system.Rows(c);
-            }
+                    row += b.rows;
+                }
         }
 
         // J has the pattern
@@ -135,14 +152,15 @@ namespace planex2d {
             std::vector<double> local;
             size_t row = 0, e = 0;
             for (size_t c : part.constraints) {
-                const std::vector<size_t> &idx = system.Indices(c);
-                const size_t rows = system.Rows(c);
-                local.assign(rows * idx.size(), 0.0);
+                size_t size = 0;
+                for (const RowBlock &b : system.Blocks(c))
+                    size += b.rows * b.indices.size();
+                local.assign(size, 0.0);
                 system.Evaluate(c, x.value, r.data() + row, local.data());
-                for (size_t k = 0; k < local.size(); ++k, ++e)
+                for (size_t k = 0; k < size; ++k, ++e)
                     if (entry[e] >= 0)
-                        J.valuePtr()[entry[e]] += local[k] * x.scale[idx[k % idx.size()]];
-                row += rows;
+                        J.valuePtr()[entry[e]] += local[k] * x.scale[unknown[e]];
+                row += system.Rows(c);
             }
         }
     };
@@ -170,7 +188,7 @@ namespace planex2d {
     template <class System>
     inline SolveResult SolveComponent(const ComponentEquations<System> &eq, Unknowns &x, double size, bool predict = false,
                                       const std::vector<double> *origin = nullptr) {
-        const double target = config::solve_tol * size;
+        const double target = config::state->solve_tol * size;
         const size_t m = eq.m, n = eq.part.unknowns.size();
         // the smaller of J J^T (m < n) and J^T J: the same step by (J^T J + l I)^-1 J^T = J^T (J J^T + l I)^-1
         const bool wide = m < n;
@@ -199,8 +217,41 @@ namespace planex2d {
         Eigen::VectorXd e = Eigen::VectorXd::Zero(Eigen::Index(n));
         bool pull = true, pulling = false;
         double pulled = std::numeric_limits<double>::infinity();
+        // the pull rounds: the unknowns that follow start the next round where this one left them; a round that does not
+        // end solved (its target far, the steps toward it short of rounding) goes back to where it began
+        size_t round = 0;
+        constexpr size_t rounds = 50;
+        std::vector<double> roundStart(n);
+        const auto nextRound = [&] {
+            if (MaxAbs(r) > target) {
+                for (size_t j = 0; j < n; ++j)
+                    x.value[eq.part.unknowns[j]] = roundStart[j];
+                eq.Evaluate(x, r, J);
+            }
+            if (x.follow.empty() || ++round == rounds)
+                return false;
+            double moved = 0.0;
+            for (size_t j = 0; j < n; ++j)
+                if (x.follow[eq.part.unknowns[j]])
+                    moved = std::max(moved, std::abs(x.value[eq.part.unknowns[j]] - start[j]));
+            if (moved <= floor)
+                return false;
+            for (size_t j = 0; j < n; ++j) {
+                if (x.follow[eq.part.unknowns[j]])
+                    start[j] = x.value[eq.part.unknowns[j]];
+                roundStart[j] = x.value[eq.part.unknowns[j]];
+            }
+            pulled = std::numeric_limits<double>::infinity();
+            return true;
+        };
         // the solved values the pull started from: kept if it does not end solved
         std::vector<double> solvedAt(n);
+        const auto startPull = [&] {
+            pull = false;
+            pulling = true;
+            for (size_t j = 0; j < n; ++j)
+                solvedAt[j] = roundStart[j] = x.value[eq.part.unknowns[j]];
+        };
         const auto endPull = [&] {
             pulling = false;
             if (MaxAbs(r) <= target)
@@ -212,12 +263,8 @@ namespace planex2d {
         while (true) {
             result.residual = MaxAbs(r);
             result.solved = result.residual <= target;
-            if (result.solved && pull) {
-                pull = false;
-                pulling = true;
-                for (size_t j = 0; j < n; ++j)
-                    solvedAt[j] = x.value[eq.part.unknowns[j]];
-            }
+            if (result.solved && pull)
+                startPull();
             // then nearly undamped steps take the residuals down to rounding while they drop: a point constrained onto
             // a curve then lies on it within the Tol the rest of planex compares with
             if (result.solved && !pulling && (result.residual <= floor || result.residual >= polished))
@@ -226,7 +273,7 @@ namespace planex2d {
                 polished = result.residual;
             if (result.solved || pulling)
                 lambda = std::min(lambda, 1e-12 * maxDiagonal);
-            if (result.iterations == config::solve_max_iterations) {
+            if (result.iterations == config::state->solve_max_iterations) {
                 if (pulling) {
                     endPull();
                     result.residual = MaxAbs(r);
@@ -292,14 +339,19 @@ namespace planex2d {
                         x.value[u] = trial.value[u];
                     eq.Evaluate(x, r, J);
                     pulled = step;
-                } else
+                } else if (!nextRound())
                     endPull();
                 F = 0.5 * r.squaredNorm();
                 continue;
             }
-            if (step <= (result.solved ? floor : Tol(size)))
+            const bool short_ = step <= (result.solved ? floor : Tol(size));
+            if (short_ && result.solved)
                 return result;
             eq.Evaluate(trial, rNew, JNew);
+            // a short step ends the solve only if it does not bring the residuals down: a small sketch (Tol's floor above
+            // its size) or a system of two scales (ShapedSystem) still converges in steps that short
+            if (short_ && !(MaxAbs(rNew) < MaxAbs(r)))
+                return result;
             const double FNew = 0.5 * rNew.squaredNorm();
             const double rho = predicted > 0.0 ? (F - FNew) / predicted : -1.0;
             if (rho > 0.0) {
@@ -334,7 +386,7 @@ namespace planex2d {
             std::vector<double> J(system.Rows(c) * system.Indices(c).size());
             system.Evaluate(c, x.value, r.data(), J.data());
             result.residual = std::max(result.residual, MaxAbs(r));
-            if (!(MaxAbs(r) <= config::solve_tol * size))
+            if (!(MaxAbs(r) <= config::state->solve_tol * size))
                 result.solved = false;
         }
         for (const ConstraintComponent &part : components.parts) {

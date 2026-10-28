@@ -4,25 +4,27 @@
 from __future__ import annotations
 
 import math
-import warnings
 import weakref
 from typing import Any, Callable
 
 from . import _planex as px
+from ._auto import Auto, is_auto
 from ._sketches import sketch_types
 from ._select import Point, Selection, SketchElement, _did_you_mean, _point, as_target, owner
+from ._caller import warn
 
 # the stored measurements of each object: {id: (f, args, params)}
 _STORED = weakref.WeakKeyDictionary()
 
 MEASURE_DOC = ("\n\nWith a callable first: f(obj, *args, **params), its value; id= also stores it, obj.measures then "
-               "holds it next to the standard measurements, RemoveMeasure(id) drops it (see planex.measurements)")
+               "holds it next to the standard measurements, RemoveMeasure(id) drops it (see planex.measurements); a stored "
+               "measurement stays with this object, copies, moved copies and boolean results do not carry it")
 MEASURE_FORM = "Measure(f: Callable, /, *args, id: str | None = None, **params) -> object"
 MEASURE_ARGS = [
     "    f: a measurement, a callable f(obj, *args, **params) (see px.measurements): Measure returns its value.",
     "    args: the further arguments of f.",
     "    id: stores the measurement f under this id: obj.measures then holds it next to the standard measurements,",
-    "        RemoveMeasure(id) drops it.",
+    "        RemoveMeasure(id) drops it; it stays with this object (copies and boolean results do not carry it).",
     "    params: the keyword arguments of f.",
 ]
 MEASURE_RAISES = "    TypeError: id without a measurement f."
@@ -106,24 +108,31 @@ def hausdorff(a, b, samples=64):
         if _is_point(source):
             return dst.Distance(_point(as_target(source)))
 
+        # a spline's samples moved from its approximation onto its exact curve, where Distance measures the target
         def far(e, t):
             p = e.PointAt(t)
-            return dst.Distance((p.x, p.y))
+            return dst.Distance(e.ClosestPoint((p.x, p.y)) if exact else (p.x, p.y))
 
         best = 0.0
+        g = (math.sqrt(5) - 1) / 2
         for e in _edges(source):
+            exact = isinstance(e.edge, px.SplineEdge)
             ts = [k / samples for k in range(samples + 1)]
             ds = [far(e, t) for t in ts]
-            k = max(range(len(ts)), key=ds.__getitem__)
-            lo, hi = ts[max(k - 1, 0)], ts[min(k + 1, samples)]
-            g = (math.sqrt(5) - 1) / 2
-            for _ in range(48):
-                p, q = hi - g * (hi - lo), lo + g * (hi - lo)
-                if far(e, p) < far(e, q):
-                    lo = p
-                else:
-                    hi = q
-            best = max(best, ds[k], far(e, 0.5 * (lo + hi)))
+            best = max(best, max(ds))
+            # every sampled peak refined, not only the highest: a peak between samples can be higher than the sampled best
+            for k in range(samples + 1):
+                left, right = ds[max(k - 1, 0)], ds[min(k + 1, samples)]
+                if ds[k] < left or ds[k] < right or (0 < k < samples and ds[k] == left == right):
+                    continue
+                lo, hi = ts[max(k - 1, 0)], ts[min(k + 1, samples)]
+                for _ in range(48):
+                    p, q = hi - g * (hi - lo), lo + g * (hi - lo)
+                    if far(e, p) < far(e, q):
+                        lo = p
+                    else:
+                        hi = q
+                best = max(best, far(e, 0.5 * (lo + hi)))
         return best
 
     return max(one_way(a, b), one_way(b, a))
@@ -222,9 +231,9 @@ def _warn_corner_pinch(obj, method, samples, value, at):
     if not away or not corners or min(s[4] for s in away) <= 2.0 * value:
         return
     point, angle = min(corners, key=lambda c: math.dist(c[0], at))
-    warnings.warn("MinThickness: the minimum %.4g is the tip of the corner at (%.6g, %.6g) (%.4g degrees); "
+    warn("MinThickness: the minimum %.4g is the tip of the corner at (%.6g, %.6g) (%.4g degrees); "
                   "ignore_corners=%d leaves out corners up to that angle" % (value, *point, angle, math.floor(angle) + 1),
-                  px.PlanexWarning, stacklevel=4)
+                  px.PlanexWarning)
 
 
 def _thickness(method, statistic, samples, ignore_corners, label):
@@ -300,7 +309,7 @@ def MaxThickness(method: str = "ball", samples: int = 400, ignore_corners: float
     return _thickness(method, max, samples, ignore_corners, "wall thickness (%s)" % method)
 
 
-def TorsionConstant(order: int = 3, maxh: float | None = None) -> Callable:
+def TorsionConstant(order: int = 3, maxh: float | Auto = Auto) -> Callable:
     """A measurement: the St. Venant torsion constant J of the faces, a cross-section in the xy plane.
 
     J is computed by NGSolve from the warping function w: J = integral of x^2 + y^2 + x dw/dy - y dw/dx about the
@@ -309,7 +318,7 @@ def TorsionConstant(order: int = 3, maxh: float | None = None) -> Callable:
 
     Args:
         order: the polynomial order of the finite elements and of the curved mesh.
-        maxh: the mesh size; None takes a twentieth of the larger side of the bounding box.
+        maxh: the mesh size; px.Auto takes a twentieth of the larger side of the bounding box.
 
     Returns:
         the measurement f(obj), for obj.Measure(f).
@@ -319,6 +328,8 @@ def TorsionConstant(order: int = 3, maxh: float | None = None) -> Callable:
         face.Measure(px.measurements.TorsionConstant(order=4, maxh=0.001))
     """
 
+    computed = is_auto(maxh, "TorsionConstant", "maxh")
+
     def measure(obj, **_):
         try:
             import ngsolve as ngs
@@ -326,7 +337,7 @@ def TorsionConstant(order: int = 3, maxh: float | None = None) -> Callable:
             raise ImportError("TorsionConstant needs NGSolve (pip install ngsolve)") from e
         region = _region(obj)
         (x0, y0), (x1, y1) = region.bounding_box
-        mesh = ngs.Mesh(px.OCCGeometry(region).GenerateMesh(maxh=maxh or max(x1 - x0, y1 - y0) / 20))
+        mesh = ngs.Mesh(px.OCCGeometry(region).GenerateMesh(maxh=max(x1 - x0, y1 - y0) / 20 if computed else maxh))
         mesh.Curve(order)
         area = ngs.Integrate(1, mesh)
         X = ngs.x - ngs.Integrate(ngs.x, mesh) / area
