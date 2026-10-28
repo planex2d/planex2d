@@ -66,12 +66,24 @@ def test_single_face_and_compound():
     assert area(two) == pytest.approx(2)
 
 
-def test_remove_small_gaps_moves_the_nearby_endpoint_onto_the_open_one():
+def test_remove_small_gaps_meets_the_ends_at_their_midpoint():
     p = px.Wire([line((0, 0), (1, 0)), line((1, 0), (1, 1)), line((1, 1), (0, 1)), line((0, 1), (0, 1e-9))])
     assert len(open_vertices(p)) == 2
     p.CloseGaps(1e-6)
-    assert [ends(l)[0] for l in p.lines] == [(0, 0), (1, 0), (1, 1), (0, 1)]
+    assert [ends(l)[0] for l in p.lines] == [(0, 5e-10), (1, 0), (1, 1), (0, 1)]
+    assert ends(p.lines[3])[1] == (0, 5e-10)
     assert open_vertices(p) == []
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_close_gaps_meets_halfway_whatever_the_edge_order(reverse):
+    # the right side starts 1e-4 above the bottom's end: the ends meet at (1, 5e-5) whichever comes first in the chain
+    chain = [((1, 1e-4), (1, 1)), ((1, 1), (0, 1)), ((0, 1), (0, 0)), ((0, 0), (1, 0))]
+    if reverse:
+        chain = [(b, a) for a, b in reversed(chain)]
+    w = px.Wire([line(a, b) for a, b in chain])
+    w.CloseGaps(1e-3)
+    assert w.Face().mass == pytest.approx(1 - 2.5e-5, rel=1e-12)
 
 
 def test_remove_small_edges_merges_both_ends_into_the_midpoint():
