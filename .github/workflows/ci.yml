@@ -79,6 +79,8 @@ jobs:
         env:
           CIBW_PLATFORM: pyodide
           CIBW_BUILD: "cp${{ matrix.python == '3.12' && '312' || matrix.python == '3.13' && '313' || '314' }}-*"
+          # Pyodide 0.27 (Python 3.12) is end of life: cibuildwheel builds it only when asked
+          CIBW_ENABLE: ${{ matrix.python == '3.12' && 'pyodide-eol' || '' }}
           CIBW_CONFIG_SETTINGS: cmake.define.PLANEX_OCC=OFF
           CIBW_TEST_REQUIRES: pytest hypothesis
           CIBW_TEST_COMMAND: python -m pytest {project}/tests -q -p no:cacheprovider

@@ -94,6 +94,7 @@ print(json.dumps({"groups": groups, "moves": sorted(moves)}))
 """
 
 
+@pytest.mark.subprocess
 def test_gmsh_meshes_what_is_written(tmp_path):
     import json
     import subprocess
