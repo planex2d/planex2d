@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.1
+
+### Fixed
+
+- `Sketch.Update` is fast again where it moves geometry without changing a drawn shape (a circle moved by its position
+  dimensions, any rigid move): it took thousands of smallest steps, about 0.4 s per update, now under a millisecond
+
+### Packaging
+
+- Windows wheels follow in a later release (not in v0.2.1, as v0.2.0 said)
+
 ## v0.2.0
 
 ### Packaging

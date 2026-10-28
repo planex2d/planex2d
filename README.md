@@ -34,7 +34,7 @@ pip install "planex2d[occ]"   # with the OpenCASCADE bindings and netgen
 The quotes keep shells like zsh, the default on macOS, from reading the brackets as a file pattern.
 
 planex2d comes as wheels for Linux (x86_64 and aarch64) and macOS (Apple silicon and Intel, macOS 13.3 or newer), for
-Python 3.11 to 3.14; Windows follows with version 0.2.1. The core runs on numpy alone. The extra `occ` installs
+Python 3.11 to 3.14; Windows follows in a later release. The core runs on numpy alone. The extra `occ` installs
 planex2d-occ, the OpenCASCADE bindings built for the last netgen releases (on Linux x86_64 and macOS, where netgen has
 wheels), and netgen with it; planex picks the bindings for the installed netgen. The package is called `planex2d` on
 PyPI and `planex` in Python (`import planex as px`). See

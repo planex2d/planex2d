@@ -16,9 +16,9 @@ namespace planex2d::cs {
 
     // a system as the solver sees it with the drawn shapes kept: a row per shape value of an element (a line's end minus
     // its start, an arc's ends from its centre, a spline's steps from point to point, every value of an element that is
-    // no point coordinate, every other unknown) whose change from ref goes into a slack unknown of its own, and the
-    // system's own unknowns counted by moveWeight: the least change then moves the geometry as a whole where it can and
-    // changes the drawn shapes as little as it can
+    // no point coordinate, every other unknown) whose change from ref goes into a slack unknown of its own, the slacks
+    // counted 1 / moveWeight times as much as the system's own unknowns: the least change then moves the geometry as a
+    // whole where it can and changes the drawn shapes as little as it can
     template <class S>
     class ShapedSystem {
         public:
@@ -78,20 +78,19 @@ namespace planex2d::cs {
                 J[slack] = -1.0;
             }
 
-            // the system's unknowns counted by moveWeight, then the slacks, each at its row's change from ref; the unknowns
-            // follow the solution in the solver's later pull rounds (Unknowns::follow), the slacks keep their target, no
-            // change of shape: the shapes then end as close to ref as the constraints let them, not moveWeight short of it
+            // the system's unknowns at their own scale, then the slacks, each at its row's change from ref, at the scale
+            // sqrt(moveWeight); the unknowns follow the solution in the solver's later pull rounds (Unknowns::follow), the
+            // slacks keep their target, no change of shape: the shapes then end as close to ref as the constraints let
+            // them, not moveWeight short of it
             Unknowns Extended(Unknowns x) const {
-                const double weight = 1.0 / std::sqrt(moveWeight);
-                for (double &scale : x.scale)
-                    scale *= weight;
+                const double slackScale = std::sqrt(moveWeight);
                 x.follow.assign(x.value.size(), 1);
                 for (const Row &row : shape) {
                     double v = 0.0;
                     for (size_t k = 0; k + 1 < row.indices.size(); ++k)
                         v += row.coef[k] * (x.value[row.indices[k]] - ref[row.indices[k]]);
                     x.value.push_back(v);
-                    x.scale.push_back(1.0);
+                    x.scale.push_back(slackScale);
                     x.fixed.push_back(0);
                     x.follow.push_back(0);
                 }

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 import math
+import time
 import warnings
 
 import pytest
@@ -256,6 +257,25 @@ def test_fixing_an_arc_keeps_it():
     assert fixed.keys() == drawn.keys()
     for key in drawn:
         assert fixed[key] == pytest.approx(drawn[key], abs=TOL)
+
+
+@pytest.mark.constraints
+def test_an_update_that_moves_a_circle_walks_there_in_few_steps():
+    # moving a circle changes no drawn shape: the walk's prediction once missed that move and took 8000 smallest steps
+    sk = px.Sketch()
+    sk.Move((0, 0), px.Fix).Rectangle(160, 100, id="plate")
+    sk.Constrain("plate.Line.1", px.Horizontal)
+    sk.Constrain("plate.Line.1", px.Distance, 160)
+    sk.Constrain("plate.Line.2", px.Distance, 100)
+    sk.Circle(4, center=(40, 25), id="c")
+    sk.Constrain("c", px.Diameter, 8)
+    sk.Constrain("c.center", "plate.Line.4", px.Distance, 40, id="x")
+    sk.Constrain("c.center", "plate.Line.1", px.Distance, 25, id="y")
+    start = time.perf_counter()
+    for k in range(20):
+        sk.Update({"x": 41.0 + k, "y": 26.0 + k})
+    assert time.perf_counter() - start < 1.0
+    assert sk.Location("c.center") == pytest.approx((60, 45), abs=1e-9)
 
 
 @pytest.mark.constraints
