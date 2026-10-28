@@ -6,6 +6,8 @@
 
 - Wheels for Windows (x86-64), Python 3.11 to 3.14; planex2d-occ follows with Windows wheels for the same netgen
   releases, so that `pip install "planex2d[occ]"` works there as on Linux and macOS
+- On Windows planex needs the latest Microsoft Visual C++ Redistributable (x64); the wheels do not bring Microsoft's
+  runtime, and `import planex` says so where it is missing
 - planex compiles with MSVC: a source build on Windows needs Visual Studio 2022
 
 ### Fixed

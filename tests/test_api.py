@@ -58,3 +58,21 @@ def test_a_star_import_after_ngsolve_keeps_its_names():
     ])
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_a_core_module_windows_cannot_load_names_the_visual_cpp_redistributable():
+    code = """
+import importlib.abc, sys
+class NoRuntime(importlib.abc.MetaPathFinder):
+    def find_spec(self, name, path, target=None):
+        if name == "planex._planex":
+            raise ImportError("DLL load failed while importing _planex: The specified module could not be found.")
+sys.meta_path.insert(0, NoRuntime())
+try:
+    import planex
+except ImportError as e:
+    print(e)
+"""
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.strip()
+    assert out == ("DLL load failed while importing _planex: The specified module could not be found. planex needs the "
+                   "latest Microsoft Visual C++ Redistributable (x64): https://aka.ms/vc14/vc_redist.x64.exe")

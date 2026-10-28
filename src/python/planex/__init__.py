@@ -13,6 +13,14 @@ try:
     __version__ = _version("planex2d")
 except _PackageNotFoundError:
     __version__ = "unknown"
+# on Windows the core's C++ runtime is not in the wheel: it comes with Microsoft's Visual C++ Redistributable
+try:
+    from . import _planex
+except ImportError as _e:
+    if "DLL load failed" not in str(_e):
+        raise
+    raise ImportError(f"{_e} planex needs the latest Microsoft Visual C++ Redistributable (x64): "
+                      "https://aka.ms/vc14/vc_redist.x64.exe") from None
 from . import _occ
 from ._planex import (Arc, ArcEdge, Circle, CircleEdge, Constraint, Curve, EdgeView, EdgesView, Ellipse, Face, FaceView,
                       FacesView, FromNumpy, FromPolyline, GetTransformation, Glue, H, Intersect, Line, LineEdge, Move,
