@@ -44,6 +44,7 @@ def test_without_the_occ_module_planex_has_the_same_names():
     assert json.loads(_run(WITHOUT_OCC + NAMES)) == json.loads(_run(NAMES))
 
 
+@pytest.mark.subprocess
 def test_without_the_occ_module_an_occ_call_says_what_is_missing():
     out = _run(WITHOUT_OCC + """
 import planex as px

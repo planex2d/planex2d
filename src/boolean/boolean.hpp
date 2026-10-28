@@ -200,7 +200,7 @@ namespace planex2d {
         // two operands keep their order: on an overlap the first one's edge properties win
         if (n > 2)
             SortSpatially(regions);
-        bool parallel = multithreaded && Executor().this_worker_id() < 0;
+        bool parallel = threadsAvailable && multithreaded && Executor().this_worker_id() < 0;
         tf::Taskflow flow;
         std::vector<tf::Task> last(n);
         for (size_t stride = 1; stride < n; stride *= 2)

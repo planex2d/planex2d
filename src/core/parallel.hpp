@@ -7,6 +7,13 @@
 
 namespace planex2d {
 
+    // Emscripten without threads (Pyodide) cannot start the executor's workers: everything runs in the calling thread
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    inline constexpr bool threadsAvailable = false;
+#else
+    inline constexpr bool threadsAvailable = true;
+#endif
+
     inline tf::Executor &OwnExecutor() {
         static tf::Executor executor;
         return executor;

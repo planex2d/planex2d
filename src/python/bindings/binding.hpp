@@ -2177,14 +2177,13 @@ inline void ForRows(size_t n, S &state, F f) {
     // rows per task: enough work to outweigh scheduling it
     constexpr size_t chunk = 4096;
     py::gil_scoped_release release;
-    tf::Executor &executor = Executor();
-    const size_t workers = executor.num_workers();
-    if (n < 2 * chunk || workers < 2 || executor.this_worker_id() >= 0) {
+    if (!threadsAvailable || n < 2 * chunk || Executor().num_workers() < 2 || Executor().this_worker_id() >= 0) {
         for (size_t i = 0; i < n; ++i)
             f(state, i);
         return;
     }
-    std::vector<std::optional<S>> own(workers);
+    tf::Executor &executor = Executor();
+    std::vector<std::optional<S>> own(executor.num_workers());
     tf::Taskflow flow;
     for (size_t first = 0; first < n; first += chunk)
         flow.emplace([&, first] {

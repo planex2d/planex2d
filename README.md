@@ -35,14 +35,14 @@ pip install "planex2d[occ]"   # with the OpenCASCADE bindings and netgen
 The quotes keep shells like zsh, the default on macOS, from reading the brackets as a file pattern.
 
 planex2d comes as wheels for Linux (x86_64 and aarch64), macOS (Apple silicon and Intel, macOS 13.3 or newer) and
-Windows (x86-64), for Python 3.11 to 3.14; on Windows it needs the latest
-[Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) (x64), which most machines have. The core
-runs on numpy alone. The extra `occ` installs planex2d-occ, the
-OpenCASCADE bindings built for the last netgen releases (on Linux x86_64, macOS and Windows, where netgen has wheels),
-and netgen with it; planex picks the bindings for the installed netgen. The package is called `planex2d` on PyPI and
-`planex` in Python (`import planex as px`). See [Installation](https://planex2d.org/docs/core/installation.html) for the
-optional packages and for building from source (a C++20 compiler, CMake; Xcode 16 on macOS, Visual Studio 2022 on
-Windows).
+Windows (x86-64), for Python 3.11 to 3.14; on Windows it needs the latest [Microsoft Visual C++
+Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) (x64), which most machines have. In the browser, Pyodide 0.29
+and 314 install the core with `micropip.install("planex2d")`. The core runs on numpy alone. The extra `occ` installs
+planex2d-occ, the OpenCASCADE bindings built for the last netgen releases (on Linux x86_64, macOS and Windows, where
+netgen has wheels), and netgen with it; planex picks the bindings for the installed netgen. The package is called
+`planex2d` on PyPI and `planex` in Python (`import planex as px`). See
+[Installation](https://planex2d.org/docs/core/installation.html) for the optional packages and for building from source
+(a C++20 compiler, CMake; Xcode 16 on macOS, Visual Studio 2022 on Windows).
 
 ## A first sketch
 

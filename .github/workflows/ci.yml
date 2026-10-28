@@ -3,8 +3,8 @@
 
 # Tests every pull request, once per push to it: compiles planex2d as the installation page describes, in the three
 # installs of publish.yml (with NGSolve and the optional packages, with netgen alone, without netgen) on the oldest and
-# the newest Python planex2d supports, on Linux (GCC) and Windows (MSVC), and runs the whole test suite on the pull
-# request merged into its target. Only
+# the newest Python planex2d supports, on Linux (GCC) and Windows (MSVC), and the wasm32 wheel for Pyodide, and runs the
+# whole test suite on the pull request merged into its target. Only
 # pull requests: main is protected, so every change reaches it through one, and a push to main would only repeat the
 # test. The type stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python
 # tools/stubgen.py writes it). Nothing is published here; releases go through publish.yml. A newer push to the same pull
@@ -58,3 +58,30 @@ jobs:
             python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements
           fi
           python -m pytest tests -q
+
+  # planex in the browser: the wasm32 wheel from this checkout for every Python Pyodide has of those planex2d supports
+  # (3.12: Pyodide 0.27; 3.13: 0.29; 3.14: 314; none for 3.11) and the whole suite in Pyodide under Node.js; the tests
+  # that start a subprocess skip there
+  pyodide:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    name: pyodide (Python ${{ matrix.python }})
+    steps:
+      - uses: actions/checkout@v4
+      # cibuildwheel builds for Pyodide with a Python of the same version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build the wheel and run the suite in Pyodide
+        env:
+          CIBW_PLATFORM: pyodide
+          CIBW_BUILD: "cp${{ matrix.python == '3.12' && '312' || matrix.python == '3.13' && '313' || '314' }}-*"
+          CIBW_CONFIG_SETTINGS: cmake.define.PLANEX_OCC=OFF
+          CIBW_TEST_REQUIRES: pytest hypothesis
+          CIBW_TEST_COMMAND: python -m pytest {project}/tests -q -p no:cacheprovider
+        run: |
+          python -m pip install "cibuildwheel>=4.1.1,<5"
+          python -m cibuildwheel . --output-dir wheelhouse
