@@ -8,7 +8,8 @@
   <a href="https://planex2d.org/docs/">Documentation</a> ·
   <a href="https://planex2d.org/docs/core/installation.html">Installation</a> ·
   <a href="https://planex2d.org/docs/examples/index.html">Examples</a> ·
-  <a href="https://planex2d.org/docs/core/notices.html">License and notices</a>
+  <a href="https://planex2d.org/docs/core/notices.html">License and notices</a><br>
+  <a href="https://doi.org/10.5281/zenodo.23718969"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23718969.svg" alt="DOI 10.5281/zenodo.23718969"></a>
 </p>
 
 planex2d is free software under the GNU Lesser General Public License, version 2.1 or (at your option) any later
@@ -33,13 +34,15 @@ pip install "planex2d[occ]"   # with the OpenCASCADE bindings and netgen
 
 The quotes keep shells like zsh, the default on macOS, from reading the brackets as a file pattern.
 
-planex2d comes as wheels for Linux (x86_64 and aarch64) and macOS (Apple silicon and Intel, macOS 13.3 or newer), for
-Python 3.11 to 3.14; Windows follows in a later release. The core runs on numpy alone. The extra `occ` installs
-planex2d-occ, the OpenCASCADE bindings built for the last netgen releases (on Linux x86_64 and macOS, where netgen has
-wheels), and netgen with it; planex picks the bindings for the installed netgen. The package is called `planex2d` on
-PyPI and `planex` in Python (`import planex as px`). See
-[Installation](https://planex2d.org/docs/core/installation.html) for the optional packages and for building from source
-(a C++20 compiler, CMake; Xcode 16 on macOS).
+planex2d comes as wheels for Linux (x86_64 and aarch64), macOS (Apple silicon and Intel, macOS 13.3 or newer) and
+Windows (x86-64), for Python 3.11 to 3.14; on Windows it needs the latest
+[Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) (x64), which most machines have. The core
+runs on numpy alone. The extra `occ` installs planex2d-occ, the
+OpenCASCADE bindings built for the last netgen releases (on Linux x86_64, macOS and Windows, where netgen has wheels),
+and netgen with it; planex picks the bindings for the installed netgen. The package is called `planex2d` on PyPI and
+`planex` in Python (`import planex as px`). See [Installation](https://planex2d.org/docs/core/installation.html) for the
+optional packages and for building from source (a C++20 compiler, CMake; Xcode 16 on macOS, Visual Studio 2022 on
+Windows).
 
 ## A first sketch
 
@@ -54,7 +57,7 @@ bracket = px.QuickSketch()
 bracket.Line(60).Turn(90).Line(10).Turn(90).Line(40)
 bracket.Arc(10, -90).Line(30).Turn(90).Line(10).Close()
 bracket.Circle((45, 5), 2.5).Circle((5, 35), 2.5)
-face = px.Face(bracket.Wires())
+face = bracket.Face()
 face.Plot()
 ```
 
@@ -75,6 +78,12 @@ face.Plot()
 - [Examples](https://planex2d.org/docs/examples/index.html): mechanisms, machines, fields and manufacturing.
 - [Benchmarks](https://planex2d.org/docs/core/comparison/index.html): planex2d next to OpenCASCADE and polygon libraries on
   the same tasks.
+
+## Citing
+
+If you use planex2d in research, please cite it with its Zenodo DOI,
+[10.5281/zenodo.23718969](https://doi.org/10.5281/zenodo.23718969), which always points to the latest version.
+[CITATION.cff](CITATION.cff) holds the citation data.
 
 ## License
 

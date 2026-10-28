@@ -84,12 +84,14 @@ def test_the_occ_exports_take_the_settings_of_px_config():
     assert (len(w.ToOCCWire().edges), coarse) == (3, 2)
 
 
+# netgen.occ first, as planex's loaders do: on Windows it loads the DLLs of netgen and OpenCASCADE the module needs
 REFUSE = """
 import sys
 sys.modules['{module}'] = None
 import planex
 planex._planex.{name} = {value}
 del sys.modules['{module}']
+import netgen.occ
 try:
     import {module}
 except ImportError as e:

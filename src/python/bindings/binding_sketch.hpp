@@ -550,12 +550,12 @@ struct HelperView {
         return EdgeList(w.begin(), w.end());
     }
     // of several the one nearest near, of equally near ones the first
-    Edge NamedEdge(const std::string &id, const Vertex &near) {
+    Edge NamedEdge(const std::string &id, const Vertex &nearPoint) {
         std::optional<Edge> best;
         double bestDistance = 0.0;
         for (const Edge &e : NamedEdges(id)) {
-            const double d = Distance(near, e);
-            const double tol = Tol(std::max(NormInf(near), std::visit([](const auto &x) { return x.LengthScale(); }, e)));
+            const double d = Distance(nearPoint, e);
+            const double tol = Tol(std::max(NormInf(nearPoint), std::visit([](const auto &x) { return x.LengthScale(); }, e)));
             if (!best || d < bestDistance - tol) {
                 best = e;
                 bestDistance = d;

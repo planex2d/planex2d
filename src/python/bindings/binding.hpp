@@ -43,6 +43,7 @@
 #include "shape/fillet.hpp"
 
 namespace py = pybind11;
+// Windows' headers (through OCC) declare a global function Arc: at global scope planex's Arc is planex2d::Arc
 using namespace planex2d;
 
 namespace pybind11::detail {
@@ -598,7 +599,7 @@ inline void CheckSampleLimit(const char *call, const E &x, const char *kind, dou
 }
 
 // points along an arc from its start to its end, every chord within tol of it
-inline std::vector<Vertex> ArcPoints(const Arc &a, double tol, const char *call, const char *kind) {
+inline std::vector<Vertex> ArcPoints(const planex2d::Arc &a, double tol, const char *call, const char *kind) {
     CheckSampleLimit(call, a, kind, tol);
     // the sagitta r (1 - cos(t / 2)) as 2 r sin^2(t / 4): no cancellation for a small tol
     const double step = std::min(std::numbers::pi, 4.0 * std::asin(std::min(1.0, std::sqrt(tol / (2.0 * a.Radius())))));
@@ -617,10 +618,10 @@ inline std::vector<Vertex> ArcPoints(const Arc &a, double tol, const char *call,
 // points along the edge from its start to its end, every chord within tol of it: a line its ends, an arc by its sagitta,
 // a circle by those of its two halves, a spline as Spline::Sample
 inline std::vector<Vertex> SamplePoints(const Edge &e, double tol, const char *call) {
-    if (const Arc *a = std::get_if<Arc>(&e))
+    if (const planex2d::Arc *a = std::get_if<planex2d::Arc>(&e))
         return ArcPoints(*a, tol, call, "arc");
     if (const Circle *c = std::get_if<Circle>(&e)) {
-        const std::array<Arc, 2> halves = c->Halves();
+        const std::array<planex2d::Arc, 2> halves = c->Halves();
         std::vector<Vertex> pts = ArcPoints(halves[0], tol, call, "circle");
         const std::vector<Vertex> rest = ArcPoints(halves[1], tol, call, "circle");
         pts.insert(pts.end(), rest.begin() + 1, rest.end());
@@ -1313,7 +1314,7 @@ inline Until UntilArg(S &s, const py::handle &t, std::optional<sketch::Target> &
 // one edge: of several with the name the one nearest to near, with a warning unless near was given or they all lie
 // on one carrier
 template <class S>
-inline Edge ReferenceEdge(S &s, const py::handle &t, const Vertex &near, bool nearGiven, const std::string &call) {
+inline Edge ReferenceEdge(S &s, const py::handle &t, const Vertex &nearPoint, bool nearGiven, const std::string &call) {
     if ((py::isinstance<py::tuple>(t) || py::isinstance<py::list>(t)) && py::len(t) == 2)
         throw py::type_error(call + ": a reference edge is an id, an Edge, a Wire, a Face, a Shape or an OCC shape; "
                              "a target with a point is for the positional ends and tangent, near= picks among edges of one name");
@@ -1324,9 +1325,9 @@ inline Edge ReferenceEdge(S &s, const py::handle &t, const Vertex &near, bool ne
         if (n == 0)
             throw py::value_error(call + ": no edge named '" + name + "'");
         if (n > 1 && !nearGiven && !named.IsOnOneCarrier())
-            Warning() << call << ": " << n << " edges named '" << name << "', using the one nearest (" << near.x << ", "
-                      << near.y << ")";
-        return s.NamedEdge(name, near);
+            Warning() << call << ": " << n << " edges named '" << name << "', using the one nearest (" << nearPoint.x
+                      << ", " << nearPoint.y << ")";
+        return s.NamedEdge(name, nearPoint);
     }
     EdgeList edges = TargetEdges(s, t, call);
     if (edges.size() != 1)
@@ -1389,14 +1390,14 @@ template <class S>
 inline sketch::LineRefs LineRefsOf(S &wp, const std::string &call, std::optional<double> l, const py::object &until, const py::object &from,
                            const py::object &to, const py::object &parallel, const py::object &perpendicular, const py::object &angle,
                            const py::object &congruent, const py::object &tangent, const py::object &distance,
-                           const py::object &through, const py::object &near, bool reverse) {
+                           const py::object &through, const py::object &nearPoint, bool reverse) {
     sketch::LineRefs r;
     r.call = call;
     r.reverse = reverse;
     r.until = UntilArg(wp, until, r.untilTarget, r.call);
-    r.near = PointArg(wp, near, r.call);
+    r.nearPoint = PointArg(wp, nearPoint, r.call);
     r.through = PointArg(wp, through, r.call);
-    const Vertex at = r.near.value_or(wp.Position());
+    const Vertex at = r.nearPoint.value_or(wp.Position());
     r.length = l;
     if (!from.is_none())
         r.from = EndArg(wp, from, r.call);
@@ -1404,17 +1405,17 @@ inline sketch::LineRefs LineRefsOf(S &wp, const std::string &call, std::optional
         r.to = EndArg(wp, to, r.call);
     r.tangent = TangentArg(wp, tangent, r.call);
     if (!parallel.is_none())
-        r.parallel = ReferenceEdge(wp, parallel, at, r.near.has_value(), r.call);
+        r.parallel = ReferenceEdge(wp, parallel, at, r.nearPoint.has_value(), r.call);
     if (!perpendicular.is_none())
-        r.perpendicular = ReferenceEdge(wp, perpendicular, at, r.near.has_value(), r.call);
+        r.perpendicular = ReferenceEdge(wp, perpendicular, at, r.nearPoint.has_value(), r.call);
     if (!congruent.is_none())
-        r.congruent = ReferenceEdge(wp, congruent, at, r.near.has_value(), r.call);
+        r.congruent = ReferenceEdge(wp, congruent, at, r.nearPoint.has_value(), r.call);
     if (py::isinstance<py::tuple>(angle) || py::isinstance<py::list>(angle)) {
         py::sequence a = angle;
         if (a.size() != 2)
             throw py::value_error(r.call + ": angle is degrees or (degrees, reference)");
         r.angle = a[0].cast<double>();
-        r.angleRef = ReferenceEdge(wp, a[1], at, r.near.has_value(), r.call);
+        r.angleRef = ReferenceEdge(wp, a[1], at, r.nearPoint.has_value(), r.call);
     } else if (!angle.is_none()) {
         r.angle = angle.cast<double>();
     }
@@ -1451,19 +1452,19 @@ template <class S>
 inline sketch::ArcRefs ArcRefsOf(S &wp, const std::string &call, std::optional<double> r, std::optional<double> ang,
                          const py::object &center, const py::object &concentric, const py::object &congruent,
                          const py::object &tangent, const py::object &through, const py::object &until, const py::object &from,
-                         const py::object &to, const py::object &near, bool reverse) {
+                         const py::object &to, const py::object &nearPoint, bool reverse) {
     sketch::ArcRefs a;
     a.call = call;
     a.reverse = reverse;
     a.until = UntilArg(wp, until, a.untilTarget, a.call);
     a.radius = r;
     a.sweep = ang;
-    a.near = PointArg(wp, near, a.call);
+    a.nearPoint = PointArg(wp, nearPoint, a.call);
     a.through = PointArg(wp, through, a.call);
-    const Vertex at = a.near.value_or(wp.Position());
-    a.center = CenterArg(wp, center, concentric, at, a.near.has_value(), a.call);
+    const Vertex at = a.nearPoint.value_or(wp.Position());
+    a.center = CenterArg(wp, center, concentric, at, a.nearPoint.has_value(), a.call);
     if (!congruent.is_none())
-        a.congruent = ReferenceEdge(wp, congruent, at, a.near.has_value(), a.call);
+        a.congruent = ReferenceEdge(wp, congruent, at, a.nearPoint.has_value(), a.call);
     if (!tangent.is_none() && IsPoint(tangent)) {
         a.start = tangent.cast<Vertex>();
         if (!(Norm(*a.start) > 0.0))
@@ -1480,19 +1481,19 @@ inline sketch::ArcRefs ArcRefsOf(S &wp, const std::string &call, std::optional<d
 template <class S>
 inline sketch::CircleRefs CircleRefsOf(S &wp, std::optional<double> r, const py::object &center, const py::object &concentric,
                                const py::object &congruent, const py::object &through, const py::object &tangent,
-                               const py::object &near, bool reverse) {
+                               const py::object &nearPoint, bool reverse) {
     sketch::CircleRefs refs;
     refs.call = CallText("Circle", {{"r", r ? py::object(py::float_(*r)) : py::object(py::none())}, {"center", center},
                                  {"concentric", concentric}, {"coincident", congruent}, {"through", through},
-                                 {"tangent", tangent}, {"near", near},
+                                 {"tangent", tangent}, {"near", nearPoint},
                                  {"reverse", reverse ? py::object(py::bool_(true)) : py::object(py::none())}});
     refs.radius = r;
     refs.reverse = reverse;
-    refs.near = PointArg(wp, near, refs.call);
-    const Vertex at = refs.near.value_or(wp.Position());
-    refs.center = CenterArg(wp, center, concentric, at, refs.near.has_value(), refs.call);
+    refs.nearPoint = PointArg(wp, nearPoint, refs.call);
+    const Vertex at = refs.nearPoint.value_or(wp.Position());
+    refs.center = CenterArg(wp, center, concentric, at, refs.nearPoint.has_value(), refs.call);
     if (!congruent.is_none())
-        refs.congruent = ReferenceEdge(wp, congruent, at, refs.near.has_value(), refs.call);
+        refs.congruent = ReferenceEdge(wp, congruent, at, refs.nearPoint.has_value(), refs.call);
     refs.through = PointArg(wp, through, refs.call);
     refs.tangent = TangentArg(wp, tangent, refs.call);
     return refs;
@@ -2376,12 +2377,12 @@ inline Thing CarrierOver(const EdgeView &r, const BBox &box) {
         const Vertex center = box.Center();
         const double reach = Norm(box.Size()) + Norm(mid - center) + 1.0;
         carrier.Add(Line(mid - dir * reach, mid + dir * reach));
-    } else if (const Arc *a = std::get_if<Arc>(&r.Get())) {
+    } else if (const planex2d::Arc *a = std::get_if<planex2d::Arc>(&r.Get())) {
         const Vertex opposite = a->Center() * 2.0 - a->Start();
-        carrier.Add(Arc(a->Start(), opposite, a->Center(), true));
-        carrier.Add(Arc(opposite, a->Start(), a->Center(), true));
+        carrier.Add(planex2d::Arc(a->Start(), opposite, a->Center(), true));
+        carrier.Add(planex2d::Arc(opposite, a->Start(), a->Center(), true));
     } else if (const Circle *c = std::get_if<Circle>(&r.Get())) {
-        for (const Arc &half : c->Halves())
+        for (const planex2d::Arc &half : c->Halves())
             carrier.Add(half);
     } else {
         throw py::value_error("on_carrier: a spline has no carrier");
@@ -2653,7 +2654,7 @@ inline std::optional<OnCircle> CircleOfEdges(const Wire &w) {
         const std::optional<CircleCarrier> k = CarrierOf(e);
         if (!k)
             return std::nullopt;
-        const Arc *a = std::get_if<Arc>(&e);
+        const planex2d::Arc *a = std::get_if<planex2d::Arc>(&e);
         const double tol = Tol(LengthScaleOf(e));
         if (!c)
             c = OnCircle{k->center, k->radius, 0.0};
@@ -2665,7 +2666,7 @@ inline std::optional<OnCircle> CircleOfEdges(const Wire &w) {
 }
 
 inline const char *KindOf(const Edge &e) {
-    return std::holds_alternative<Line>(e) ? "line" : std::holds_alternative<Arc>(e) ? "arc" : std::holds_alternative<Circle>(e) ? "circle" : "spline";
+    return std::holds_alternative<Line>(e) ? "line" : std::holds_alternative<planex2d::Arc>(e) ? "arc" : std::holds_alternative<Circle>(e) ? "circle" : "spline";
 }
 
 // the properties of one measured thing
@@ -3090,13 +3091,14 @@ inline const char *SplitDoc(const std::string &x) {
 
 
 template <class S>
-inline sketch::SymRef SymRefOf(S &s, const py::handle &t, const Vertex &near, bool nearGiven, const std::string &call) {
+inline sketch::SymRef SymRefOf(S &s, const py::handle &t, const Vertex &nearPoint, bool nearGiven,
+                               const std::string &call) {
     if (py::isinstance<py::str>(t))
         if (std::optional<Vertex> p = s.FindPoint(t.cast<std::string>()))
             return *p;
     if (std::optional<std::vector<double>> p = AsPoint(t); p && p->size() == 2)
         return Vertex{(*p)[0], (*p)[1]};
-    Edge e = ReferenceEdge(s, t, near, nearGiven, call);
+    Edge e = ReferenceEdge(s, t, nearPoint, nearGiven, call);
     if (const Line *l = std::get_if<Line>(&e))
         return *l;
     if (const std::optional<CircleCarrier> c = CarrierOf(e))

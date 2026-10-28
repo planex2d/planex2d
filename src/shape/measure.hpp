@@ -368,14 +368,14 @@ namespace planex2d {
             return n;
         n = NearestTo(b, StartOf(a[0])).Swapped();
         Grid grid = b.EdgeGrid();
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         for (const Edge &e : a) {
             if (n.d == 0.0)
                 break;
             const BBox box = BoxOf(e);
-            near.clear();
-            grid.InBox(box.Grown(n.d), near);
-            for (uint32_t j : near)
+            nearby.clear();
+            grid.InBox(box.Grown(n.d), nearby);
+            for (uint32_t j : nearby)
                 if (BoxGap(box, BoxOf(b[j])) < n.d) {
                     Nearest m = NearestEdges(e, b[j]);
                     if (m.d < n.d)
@@ -425,7 +425,7 @@ namespace planex2d {
             BBox box;
             double cell;
             Grid grid;
-            std::vector<uint32_t> near;
+            std::vector<uint32_t> nearby;
 
             // about one edge per cell and few cells per edge, as EdgeGrid
             static double CellOf(const Wire &w, const BBox &all) {
@@ -458,9 +458,9 @@ namespace planex2d {
             }
             // an edge within t of p; an arc is no nearer than its circle
             bool Near(const Vertex &p, double t) {
-                near.clear();
-                grid.InBox(BBox::Of(p, p).Grown(t), near);
-                for (uint32_t k : near) {
+                nearby.clear();
+                grid.InBox(BBox::Of(p, p).Grown(t), nearby);
+                for (uint32_t k : nearby) {
                     const Edge &e = edges[k];
                     const Arc *a = std::get_if<Arc>(&e);
                     if (BoxGap(BoxOf(e), p) <= t && (!a || a->OnCarrier(p, t)) && NearestOnEdge(e, p).d <= t)
@@ -475,9 +475,9 @@ namespace planex2d {
                     return n;
                 size_t first = 0;
                 for (double r = BoxGap(box, p) + cell;; r = n.d < BBox::inf ? n.d : 2.0 * r) {
-                    near.clear();
-                    grid.InBox(BBox::Of(p, p).Grown(r), near);
-                    for (uint32_t k : near)
+                    nearby.clear();
+                    grid.InBox(BBox::Of(p, p).Grown(r), nearby);
+                    for (uint32_t k : nearby)
                         if (BoxGap(BoxOf(edges[k]), p) <= n.d) {
                             const Nearest m = NearestOnEdge(edges[k], p);
                             if (m.d < n.d || (m.d == n.d && k < first)) {

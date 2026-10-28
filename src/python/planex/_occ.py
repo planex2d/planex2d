@@ -36,6 +36,7 @@ def _load():
     if find_spec("netgen") is None:
         return "netgen is not installed; " + INSTALL
     if find_spec("planex._planex_occ") is not None:
+        import netgen.occ  # noqa: F401  (first: on Windows it loads the DLLs of netgen and OpenCASCADE)
         from . import _planex_occ  # noqa: F401
         return None
     if find_spec("planex_occ") is not None:

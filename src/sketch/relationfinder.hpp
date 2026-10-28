@@ -155,10 +155,10 @@ namespace planex2d::sketch {
             std::sort(order.begin(), order.end(), [&](size_t i, size_t j) { return places[i].at.x < places[j].at.x; });
             for (size_t a = 0; a < order.size(); ++a) {
                 const Vertex p = places[order[a]].at;
-                const double near = Near(NormInf(p));
-                for (size_t b = a + 1; b < order.size() && places[order[b]].at.x - p.x <= near; ++b) {
+                const double nearTol = Near(NormInf(p));
+                for (size_t b = a + 1; b < order.size() && places[order[b]].at.x - p.x <= nearTol; ++b) {
                     const size_t i = std::min(order[a], order[b]), j = std::max(order[a], order[b]);
-                    if (first[j] == none && places[j].at.IsClose(places[i].at, near))
+                    if (first[j] == none && places[j].at.IsClose(places[i].at, nearTol))
                         first[j] = first[i] == none ? i : first[i];
                 }
             }
@@ -268,8 +268,8 @@ namespace planex2d::sketch {
                     a = {c.x - r, c.y - r};
                     b = {c.x + r, c.y + r};
                 }
-                const double near = Near(std::max(NormInf(a), NormInf(b)));
-                boxes[k] = {{a.x - near, a.y - near}, {b.x + near, b.y + near}};
+                const double nearTol = Near(std::max(NormInf(a), NormInf(b)));
+                boxes[k] = {{a.x - nearTol, a.y - nearTol}, {b.x + nearTol, b.y + nearTol}};
                 lo = {std::min(lo.x, boxes[k].first.x), std::min(lo.y, boxes[k].first.y)};
                 hi = {std::max(hi.x, boxes[k].second.x), std::max(hi.y, boxes[k].second.y)};
                 targets.push_back(k);
@@ -302,19 +302,20 @@ namespace planex2d::sketch {
             const Vertex p = place.at;
             if (e.kind == ElementKind::Line) {
                 const Vertex a = g.Coords(e.Start()), d = g.Coords(e.End()) - a;
-                const double length = Norm(d), near = Near(std::max(NormInf(p), NormInf(a)));
-                if (!(length > 2.0 * near))
+                const double length = Norm(d), nearTol = Near(std::max(NormInf(p), NormInf(a)));
+                if (!(length > 2.0 * nearTol))
                     return false;
                 const double along = Dot(p - a, d) / length;
-                return std::abs(Cross(p - a, d)) / length <= near && along > near && along < length - near;
+                return std::abs(Cross(p - a, d)) / length <= nearTol && along > nearTol && along < length - nearTol;
             }
             const Vertex c = g.Coords(e.Center());
-            const double r = std::abs(g.values[e.Radius()]), near = Near(std::max(NormInf(p), NormInf(c) + r));
-            if (std::abs(Norm(p - c) - r) > near)
+            const double r = std::abs(g.values[e.Radius()]), nearTol = Near(std::max(NormInf(p), NormInf(c) + r));
+            if (std::abs(Norm(p - c) - r) > nearTol)
                 return false;
             if (e.kind == ElementKind::Circle)
                 return e.OriginPoint() == none || g.coordsOf[e.OriginPoint()] != place.unknown;
-            return Norm(p - g.Coords(e.Start())) > near && Norm(p - g.Coords(e.End())) > near && e.Param(g, p) < 1.0;
+            return Norm(p - g.Coords(e.Start())) > nearTol && Norm(p - g.Coords(e.End())) > nearTol &&
+                   e.Param(g, p) < 1.0;
         }
 
         bool Shares(const LineData &a, const LineData &b) {
@@ -342,8 +343,8 @@ namespace planex2d::sketch {
             return std::abs(Cross(a.d, b.d)) <= Near(std::max(a.size, b.size)) * (a.length + b.length);
         }
         bool OnCarrier(const LineData &a, const LineData &b) const {
-            const double near = Near(std::max(a.size, b.size));
-            return std::abs(Cross(b.a - a.a, a.d)) / a.length <= near && std::abs(Cross(b.a + b.d - a.a, a.d)) / a.length <= near;
+            const double nearTol = Near(std::max(a.size, b.size));
+            return std::abs(Cross(b.a - a.a, a.d)) / a.length <= nearTol && std::abs(Cross(b.a + b.d - a.a, a.d)) / a.length <= nearTol;
         }
 
         // horizontal, vertical, perpendicular at a corner, collinear, parallel, equal length
@@ -358,11 +359,11 @@ namespace planex2d::sketch {
                 }
             std::vector<char> hv(g.elements.size(), 0);
             for (const LineData &l : lines) {
-                const double near = Near(l.size);
-                if (o.horizontal && isNew[l.e] && std::abs(l.d.y) <= near) {
+                const double nearTol = Near(l.size);
+                if (o.horizontal && isNew[l.e] && std::abs(l.d.y) <= nearTol) {
                     hv[l.e] = 'h';
                     Add(HorizontalOrder, Kind::Horizontal, {{l.e}});
-                } else if (o.vertical && isNew[l.e] && std::abs(l.d.x) <= near) {
+                } else if (o.vertical && isNew[l.e] && std::abs(l.d.x) <= nearTol) {
                     hv[l.e] = 'v';
                     Add(VerticalOrder, Kind::Vertical, {{l.e}});
                 }

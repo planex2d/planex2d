@@ -106,7 +106,9 @@ function(planex_module name kind)
             if("x86_64" IN_LIST CMAKE_OSX_ARCHITECTURES)
                 target_compile_options(${name} PRIVATE "SHELL:-Xarch_x86_64 -march=core-avx2")
             endif()
-        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT MSVC)
+        elseif(MSVC AND CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
+            target_compile_options(${name} PRIVATE /arch:AVX2)
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
             target_compile_options(${name} PRIVATE -march=core-avx2)
         endif()
     endif()
@@ -117,6 +119,14 @@ function(planex_module name kind)
     # the results differ in the last bits. GCC before 14 reads "on" as "off"
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(${name} PRIVATE -ffp-contract=on)
+    endif()
+    # a binding file has more sections than an MSVC object file holds by default; the sources are UTF-8, whatever the
+    # code page of the machine that builds; Visual Studio's generator compiles a target's files one after the other
+    # unless /MP, here as many at a time as the memory holds. Since Visual Studio 2022 17.10 a std::mutex built by the
+    # compiler crashes on its first lock when an older msvcp140.dll is already loaded in the Python process
+    if(MSVC)
+        target_compile_options(${name} PRIVATE /bigobj /utf-8 /MP${PLANEX_COMPILE_JOBS})
+        target_compile_definitions(${name} PRIVATE _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
     endif()
     if(kind STREQUAL "occ")
         install(TARGETS ${name} LIBRARY DESTINATION ${PLANEX_OCC_DESTINATION})

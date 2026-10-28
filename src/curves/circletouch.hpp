@@ -123,8 +123,8 @@ namespace planex2d {
         if (x == a.Center())
             return std::nullopt;
         Vertex u = Normalized(x - a.Center());
-        Vertex near = a.Center() + u * a.Radius(), far = a.Center() - u * a.Radius();
-        return std::abs(Norm(near - x) - r) <= std::abs(Norm(far - x) - r) ? near : far;
+        Vertex closest = a.Center() + u * a.Radius(), farthest = a.Center() - u * a.Radius();
+        return std::abs(Norm(closest - x) - r) <= std::abs(Norm(farthest - x) - r) ? closest : farthest;
     }
     // +1 left of a line piece or outside an arc's circle, -1 right of it or inside
     inline double Side(const PrimitiveEdge &piece, const Vertex &p) {

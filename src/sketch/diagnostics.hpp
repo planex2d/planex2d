@@ -45,7 +45,7 @@ namespace planex2d::sketch {
         // looked: per element, whether it is looked at (the drawn lines, arcs, circles and splines); gap: ends of two
         // elements closer than it are a missing coincident, none for 1e-3 of the size of what is looked at
         Diagnosis(const Geometry &g, std::vector<char> looked, std::optional<double> gap)
-            : g(g), looked(std::move(looked)), gap(gap), tol(Tol(g.Size())), near(4.0 * tol), degenerate(g.elements.size(), 0) {}
+            : g(g), looked(std::move(looked)), gap(gap), tol(Tol(g.Size())), nearTol(4.0 * tol), degenerate(g.elements.size(), 0) {}
 
         // edgesOf(k): element k's edges as the sketch exports them
         template <class EdgesOf>
@@ -80,7 +80,7 @@ namespace planex2d::sketch {
         std::optional<double> gap;
         double tol;
         // Cut's own tolerance grows with the scale of its edges, up to about twice the sketch's size
-        double near;
+        double nearTol;
         std::vector<char> degenerate;
         std::vector<PrimitiveEdge> flat;
         std::vector<size_t> source;
@@ -222,7 +222,7 @@ namespace planex2d::sketch {
             std::vector<uint32_t> nearby;
             for (size_t i = 0; i < flat.size(); ++i) {
                 nearby.clear();
-                grid.InBox(boxes[i].Grown(near), nearby);
+                grid.InBox(boxes[i].Grown(nearTol), nearby);
                 for (uint32_t j : nearby)
                     if (j > i && source[j] != source[i])
                         CutPair(i, j, contacts[{source[i], source[j]}]);
@@ -269,17 +269,17 @@ namespace planex2d::sketch {
             if (!IsLookedEnd(k))
                 return false;
             const std::array<Vertex, 2> ends = g.elements[k].EndCoords(g);
-            return p.IsClose(ends[0], near) || p.IsClose(ends[1], near);
+            return p.IsClose(ends[0], nearTol) || p.IsClose(ends[1], nearTol);
         }
         bool IsOn(const std::vector<PrimitiveEdge> &stretches, const Vertex &p) const {
             for (const PrimitiveEdge &s : stretches)
-                if (s.Distance(p) <= near)
+                if (s.Distance(p) <= nearTol)
                     return true;
             return false;
         }
         bool IsOn(const std::vector<Vertex> &points, const Vertex &p) const {
             for (const Vertex &q : points)
-                if (q.IsClose(p, near))
+                if (q.IsClose(p, nearTol))
                     return true;
             return false;
         }
@@ -291,7 +291,7 @@ namespace planex2d::sketch {
             std::vector<char> used(shared.size(), 0);
             const auto meets = [&](const Vertex &p, size_t except) {
                 for (size_t k = 0; k < shared.size(); ++k)
-                    if (k != except && !used[k] && (shared[k].Start().IsClose(p, near) || shared[k].End().IsClose(p, near)))
+                    if (k != except && !used[k] && (shared[k].Start().IsClose(p, nearTol) || shared[k].End().IsClose(p, nearTol)))
                         return k;
                 return none;
             };
@@ -310,7 +310,7 @@ namespace planex2d::sketch {
                 used[start] = 1;
                 Vertex tip = reversed ? shared[start].Start() : shared[start].End();
                 for (size_t next = meets(tip, start); next != none; next = meets(tip, next)) {
-                    const bool flip = !shared[next].Start().IsClose(tip, near);
+                    const bool flip = !shared[next].Start().IsClose(tip, nearTol);
                     run.push_back({next, flip});
                     used[next] = 1;
                     tip = flip ? shared[next].Start() : shared[next].End();

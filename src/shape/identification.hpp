@@ -207,10 +207,11 @@ namespace planex2d {
                                         (ca.closed ? " (closed)" : "") + ", " + bName + " " + std::to_string(cb.points.size()) +
                                         (cb.closed ? " (closed)" : "") + "; both need the same");
         bool straight = true;
-        const auto far = std::max_element(ca.points.begin(), ca.points.end(), [&](const Vertex &x, const Vertex &y) {
-            return Norm(x - ca.points.front()) < Norm(y - ca.points.front());
-        });
-        const Vertex base = *far - ca.points.front();
+        const auto farthest =
+            std::max_element(ca.points.begin(), ca.points.end(), [&](const Vertex &x, const Vertex &y) {
+                return Norm(x - ca.points.front()) < Norm(y - ca.points.front());
+            });
+        const Vertex base = *farthest - ca.points.front();
         for (const Vertex &p : ca.points)
             straight = straight && std::abs(Cross(base, p - ca.points.front())) <= tol * Norm(base);
         struct Candidate {
@@ -227,7 +228,7 @@ namespace planex2d {
                 for (size_t k = 0; k < n; ++k)
                     q[k] = cb.points[point(k)];
                 std::vector<std::optional<Affine2>> maps;
-                const size_t last = (size_t)(far - ca.points.begin());
+                const size_t last = (size_t)(farthest - ca.points.begin());
                 if (straight)
                     for (bool mirrored : {false, true})
                         maps.push_back(Similarity(ca.points.front(), ca.points[last], q.front(), q[last], mirrored));

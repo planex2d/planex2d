@@ -1827,11 +1827,11 @@ namespace planex2d {
         // and its properties. Constraints on an end that went to another piece follow it there; those that held the
         // element's old ends (a line's length or equal length, Fix, a symmetry of its ends) are removed with a warning.
         // Trim without cutters and with nothing to cut at makes all of it construction
-        virtual BasicSketch &Cut(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> near, bool reverse,
+        virtual BasicSketch &Cut(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> nearPoint, bool reverse,
                                  bool trim, bool tied = true) {
             const std::string call = std::string(trim ? "Trim" : "Split") + "('" + id + "')";
             sketch::Undoable(*this, [&] {
-                CutPieces(id, cutterIds, near, reverse, trim, tied, call);
+                CutPieces(id, cutterIds, nearPoint, reverse, trim, tied, call);
             });
             return *this;
         }
@@ -1854,13 +1854,14 @@ namespace planex2d {
         // that place, made construction across its elements: the element nearest near trimmed when the cutters meet it,
         // else made construction whole and the walk goes on along the chain each way, through the elements the cutters
         // do not meet (construction whole), up to one they meet, trimmed there on the run's side
-        BasicSketch &TrimChain(const std::string &wire, const std::vector<std::string> &cutterIds, const Vertex &near) {
+        BasicSketch &TrimChain(const std::string &wire, const std::vector<std::string> &cutterIds,
+                               const Vertex &nearPoint) {
             const std::string call = "Trim('" + wire + "')";
             sketch::Undoable(*this, [&] {
                 const std::vector<std::string> ids = ChainOf(wire);
                 const size_t n = ids.size();
                 if (n == 1) {
-                    Cut(ids[0], cutterIds, near, false, true);
+                    Cut(ids[0], cutterIds, nearPoint, false, true);
                     return;
                 }
                 Wire cutters(axes);
@@ -1873,7 +1874,7 @@ namespace planex2d {
                 for (size_t k = 0; k < n; ++k) {
                     const Wire w = ElementWire(ids[k]);
                     for (const Edge &e : w)
-                        away[k] = std::min(away[k], Distance(near, e));
+                        away[k] = std::min(away[k], Distance(nearPoint, e));
                     const std::array<size_t, 2> ends = s.elements[RefOf(ids[k]).element].Ends(s);
                     for (const Vertex &x : Intersections(w, cutters)) {
                         bool atEnd = false;
@@ -1884,7 +1885,7 @@ namespace planex2d {
                 }
                 const size_t k = (size_t)(std::min_element(away.begin(), away.end()) - away.begin());
                 if (met[k]) {
-                    Cut(ids[k], cutterIds, near, false, true);
+                    Cut(ids[k], cutterIds, nearPoint, false, true);
                     return;
                 }
                 // closed: the last element ends where the first one starts (two elements share both ends)
@@ -2215,7 +2216,7 @@ namespace planex2d {
             return std::atan2(w.y, w.x);
         }
 
-        void CutPieces(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> near, bool reverse,
+        void CutPieces(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> nearPoint, bool reverse,
                        bool trim, bool tied, const std::string &call) {
             Finish();
             const sketch::Ref ar = RefOf(id);
@@ -2242,7 +2243,7 @@ namespace planex2d {
                         throw std::invalid_argument(call + ": '" + c + "' cuts nothing");
                     cutters.push_back(r.element);
                 }
-            sketch::ElementCutter<BasicSketch>(*this, a, id, call).Cut(cutters, cutterIds.empty(), near.value_or(pen.pos), reverse, trim, tied);
+            sketch::ElementCutter<BasicSketch>(*this, a, id, call).Cut(cutters, cutterIds.empty(), nearPoint.value_or(pen.pos), reverse, trim, tied);
         }
 
 

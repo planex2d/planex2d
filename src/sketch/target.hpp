@@ -46,7 +46,7 @@ namespace planex2d::sketch {
         }
         // a line where its foot from c lies, an arc where the line of the centers meets it; on the edge first, then nearest
         // to the point given (or to near), else the smaller
-        double RadiusAround(const Vertex &c, const std::optional<Vertex> &near, double tol, Choices &choices, const std::string &call) const {
+        double RadiusAround(const Vertex &c, const std::optional<Vertex> &nearPoint, double tol, Choices &choices, const std::string &call) const {
             struct Touching {
                 Vertex p;
                 double rho;
@@ -80,7 +80,7 @@ namespace planex2d::sketch {
             }
             if (found.empty())
                 throw std::invalid_argument(call + ": no circle around the center touches it");
-            const std::optional<Vertex> ref = point ? point : near;
+            const std::optional<Vertex> ref = point ? point : nearPoint;
             const std::vector<size_t> order = BestFirst(found.size(), [&](size_t x, size_t y) {
                 if (found[x].onEdge != found[y].onEdge)
                     return found[x].onEdge;
@@ -94,7 +94,7 @@ namespace planex2d::sketch {
         std::string call;
         std::vector<Target> tangent;
         bool reverse = false;
-        std::optional<Vertex> near;
+        std::optional<Vertex> nearPoint;
 
         double Scale(const Vertex &pen) const {
             double scale = NormInf(pen);
