@@ -206,5 +206,5 @@ def WriteGeo(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: s
         for name, ids in names[dim].items():
             tag += 1
             out.append(f'Physical {kind}("{name}", {tag}) = {{{", ".join(map(str, ids))}}};')
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")

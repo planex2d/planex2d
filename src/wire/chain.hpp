@@ -131,11 +131,11 @@ namespace planex2d {
             return std::nullopt;
         const double tol = flat.Tol();
         Grid grid = flat.EdgeGrid();
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         for (size_t i = 0; i < flat.Size(); ++i) {
-            near.clear();
-            grid.InBox(BoxOf(flat[i]).Grown(tol), near);
-            for (uint32_t j : near) {
+            nearby.clear();
+            grid.InBox(BoxOf(flat[i]).Grown(tol), nearby);
+            for (uint32_t j : nearby) {
                 if (j <= i)
                     continue;
                 Edge a = flat[i], b = flat[j];

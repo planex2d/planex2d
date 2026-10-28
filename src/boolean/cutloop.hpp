@@ -63,14 +63,14 @@ namespace planex2d {
         const double tol = Tol(scale);
         Grid grid = w.EdgeGrid();
         std::vector<std::vector<Vertex>> at(w.Size());
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         for (size_t i = 0; i < w.Size(); ++i) {
             const Circle *c = std::get_if<Circle>(&w[i]);
             if (!c || state[i].excluded || !state[i].needsCutting)
                 continue;
-            near.clear();
-            grid.InBox(BoxOf(w[i]).Grown(tol), near);
-            for (uint32_t j : near) {
+            nearby.clear();
+            grid.InBox(BoxOf(w[i]).Grown(tol), nearby);
+            for (uint32_t j : nearby) {
                 const Circle *other = std::get_if<Circle>(&w[j]);
                 if (j == i || (other && j < i) || !state[i].CanCut(state[j]) || (other && c->IsCongruent(*other, tol)))
                     continue;
@@ -198,14 +198,14 @@ namespace planex2d {
             if (!state[k].excluded && state[k].needsCutting)
                 scale = std::max(scale, LengthScaleOf(w[k]));
         const double tol = Tol(scale);
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         for (size_t i = 0; i < w.Size(); ++i) {
             if (state[i].excluded || !state[i].needsCutting)
                 continue;
-            near.clear();
-            grid.InBox(BoxOf(w[i]).Grown(tol), near);
-            std::sort(near.begin(), near.end());
-            for (uint32_t j : near) {
+            nearby.clear();
+            grid.InBox(BoxOf(w[i]).Grown(tol), nearby);
+            std::sort(nearby.begin(), nearby.end());
+            for (uint32_t j : nearby) {
                 if (state[i].excluded)
                     break;
                 if (j <= i || !state[i].CanCut(state[j]))

@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use planex2d in research, please cite it as below."
+title: planex2d
+type: software
+authors:
+  - family-names: Hirnschall
+    given-names: Sebastian
+license: LGPL-2.1-or-later
+doi: 10.5281/zenodo.23718969
+repository-code: "https://github.com/planex2d/planex2d"
+url: "https://planex2d.org"

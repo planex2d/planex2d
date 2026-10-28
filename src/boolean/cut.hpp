@@ -669,12 +669,12 @@ namespace planex2d {
             for (const PrimitiveEdge &p : pb)
                 boxes.push_back(BoxOf(p));
             Grid grid = Grid::OfBoxes(boxes);
-            std::vector<uint32_t> near;
+            std::vector<uint32_t> nearby;
             for (const PrimitiveEdge &p : a.Approximation()) {
-                near.clear();
-                grid.InBox(BoxOf(p).Grown(2.0 * tol), near);
-                std::sort(near.begin(), near.end());
-                for (uint32_t j : near)
+                nearby.clear();
+                grid.InBox(BoxOf(p).Grown(2.0 * tol), nearby);
+                std::sort(nearby.begin(), nearby.end());
+                for (uint32_t j : nearby)
                     std::visit([&](const auto &x, const auto &y) { f(x, y); }, p, pb[j]);
             }
         } else {

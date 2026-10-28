@@ -109,7 +109,7 @@ namespace planex2d {
             struct Chains {
                 std::vector<size_t> id;
                 std::vector<std::vector<size_t>> inc;
-                std::vector<bool> small, tiny;
+                std::vector<bool> isSmall, isTiny;
                 std::vector<Chain> chains;
                 size_t Start(size_t i) const { return id[2 * i]; }
                 size_t End(size_t i) const { return id[2 * i + 1]; }

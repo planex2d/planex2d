@@ -37,9 +37,9 @@ namespace planex2d {
         size_t n = edges.size();
         size_t nv = VertexIds(c.id);
         c.inc.assign(nv, {});
-        c.small.assign(n, false);
-        c.tiny.assign(n, false);
-        std::vector<bool> &small = c.small;
+        c.isSmall.assign(n, false);
+        c.isTiny.assign(n, false);
+        std::vector<bool> &isSmall = c.isSmall;
         std::vector<bool> used(n, false);
         DisjointSets connected(nv);
         for (size_t i = 0; i < n; ++i)
@@ -53,8 +53,8 @@ namespace planex2d {
             const double limit = maxLength ? *maxLength : runLength[connected.Find(c.Start(i))] / 20.0;
             std::visit([&](const auto &x) {
                 if constexpr (!std::is_same_v<std::decay_t<decltype(x)>, Spline> && !IsCircle<decltype(x)>) {
-                    small[i] = ((fromSplineIsSmall && x.fromSpline) || x.Length() < limit) && !HasPartition(x.props);
-                    c.tiny[i] = x.Length() < ignore;
+                    isSmall[i] = ((fromSplineIsSmall && x.fromSpline) || x.Length() < limit) && !HasPartition(x.props);
+                    c.isTiny[i] = x.Length() < ignore;
                 }
             }, edges[i]);
         }
@@ -65,22 +65,23 @@ namespace planex2d {
             if (c.inc[v].size() != 2)
                 return std::nullopt;
             size_t o = c.inc[v][0] == i ? c.inc[v][1] : c.inc[v][0];
-            if (!small[o] || used[o] || Owner(o) != Owner(i) || !SameProperties(PropsOf(edges[o]), PropsOf(edges[i])) ||
+            if (!isSmall[o] || used[o] || Owner(o) != Owner(i) ||
+                !SameProperties(PropsOf(edges[o]), PropsOf(edges[i])) ||
                 (stopAtVertexProps && (Marked(PropsAtVertex(c, i, v)) || Marked(PropsAtVertex(c, o, v)))))
                 return std::nullopt;
-            if (!c.tiny[o] && ref != none && Dot(leaving(ref, refv) * -1.0, leaving(o, v)) <= mincos)
+            if (!c.isTiny[o] && ref != none && Dot(leaving(ref, refv) * -1.0, leaving(o, v)) <= mincos)
                 return std::nullopt;
             return o;
         };
         for (size_t i = 0; i < n; ++i) {
-            if (!small[i] || used[i])
+            if (!isSmall[i] || used[i])
                 continue;
             used[i] = true;
             std::deque<size_t> chain{i};
             std::deque<size_t> vids{c.Start(i), c.End(i)};
             auto walk = [&](bool forward) {
                 size_t v = forward ? c.End(i) : c.Start(i);
-                size_t e = i, ref = c.tiny[i] ? none : i, refv = v;
+                size_t e = i, ref = c.isTiny[i] ? none : i, refv = v;
                 for (;;) {
                     std::optional<size_t> o = next(e, v, ref, refv);
                     if (!o)
@@ -95,7 +96,7 @@ namespace planex2d {
                         vids.push_front(v);
                     }
                     e = *o;
-                    if (!c.tiny[*o]) {
+                    if (!c.isTiny[*o]) {
                         ref = *o;
                         refv = v;
                     }
@@ -216,7 +217,7 @@ namespace planex2d {
         // a spline over vertices with properties is split at its points nearest them, keeping the curve smooth; the
         // vertices move onto it (by at most tol)
         const Chains c = FindChains(fit.max_edge_length, fit.max_edge_angle, fit.ignore_edges_smaller, true, false);
-        const std::vector<bool> &small = c.small, &tiny = c.tiny;
+        const std::vector<bool> &isSmall = c.isSmall, &isTiny = c.isTiny;
         const std::vector<std::vector<size_t>> &inc = c.inc;
         auto leaving = [&](size_t i, size_t v) { return Leaving(edges[i], v == c.Start(i)).dir; };
         const double mincos = std::cos(Radians(fit.max_edge_angle));
@@ -235,7 +236,7 @@ namespace planex2d {
             auto direction = [&](size_t k) { return leaving(chain[k], vids[k]); };
             auto real = [&](size_t k, bool forward) -> std::optional<size_t> {
                 for (size_t steps = 0; steps < N; ++steps, k = forward ? (k + 1) % N : (k + N - 1) % N)
-                    if (!tiny[chain[k]])
+                    if (!isTiny[chain[k]])
                         return k;
                 return std::nullopt;
             };
@@ -256,7 +257,7 @@ namespace planex2d {
                     if (c > best) {
                         best = c;
                         // a small neighbour is a chord of the same curve: the curve tangent bisects the two chords
-                        if (small[o])
+                        if (isSmall[o])
                             t = atStart ? d - l : d + l;
                         else
                             t = atStart ? l * -1.0 : l;

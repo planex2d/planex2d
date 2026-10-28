@@ -244,11 +244,11 @@ namespace planex2d {
         // the stretch from a to b as a curve of its own, its ends knots of full multiplicity; a or b within 1e-9 of the
         // range of a knot is taken as that knot (OCC's Segment does the same), so no span is nearly empty
         Curve Segment(S a, S b) const {
-            const S near = 1e-9 * (Last() - First());
+            const S nearTol = 1e-9 * (Last() - First());
             for (const S &t : knots) {
-                if (std::abs(t - a) <= near)
+                if (std::abs(t - a) <= nearTol)
                     a = t;
-                if (std::abs(t - b) <= near)
+                if (std::abs(t - b) <= nearTol)
                     b = t;
             }
             std::vector<S> t = knots, w = weights;

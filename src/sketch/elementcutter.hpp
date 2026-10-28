@@ -36,9 +36,9 @@ namespace planex2d::sketch {
 
         // anyCutter: the cutters are every other element; Trim without cutters and with nothing to cut at makes all of it
         // construction
-        void Cut(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &near, bool reverse, bool trim, bool tied) {
+        void Cut(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &nearPoint, bool reverse, bool trim, bool tied) {
             if (el.kind == ElementKind::Spline) {
-                CutSpline(cutters, anyCutter, near, reverse, trim);
+                CutSpline(cutters, anyCutter, nearPoint, reverse, trim);
                 return;
             }
             const bool circle = el.kind == ElementKind::Circle;
@@ -68,7 +68,7 @@ namespace planex2d::sketch {
                 throw std::invalid_argument(call + ": a circle needs two cuts");
             size_t removed = circle ? cuts.size() : cuts.size() + 1;
             if (trim) {
-                removed = NearestPiece(PieceRanges(cuts, circle, 0.0, 1.0, 1.0), near, reverse, [&](double t) { return el.At(sk.s, t - std::floor(t)); });
+                removed = NearestPiece(PieceRanges(cuts, circle, 0.0, 1.0, 1.0), nearPoint, reverse, [&](double t) { return el.At(sk.s, t - std::floor(t)); });
                 cuts = BoundingCuts(cuts, removed, circle);
             }
             CutAt(cuts, removed, trim, tied);
@@ -212,9 +212,9 @@ namespace planex2d::sketch {
         Ref OnCutter(const CutPoint &c) const {
             const Element &k = sk.s.elements[c.by];
             if (k.kind == ElementKind::Line || k.kind == ElementKind::Arc) {
-                const double near = 1e-9 * std::max(sk.s.Size(), 1.0);
+                const double nearTol = 1e-9 * std::max(sk.s.Size(), 1.0);
                 for (const Part end : {Part::Start, Part::End})
-                    if (Norm(sk.Coords(end == Part::Start ? k.Start() : k.End()) - c.p) <= near)
+                    if (Norm(sk.Coords(end == Part::Start ? k.Start() : k.End()) - c.p) <= nearTol)
                         return {c.by, end};
             }
             return {c.by};
@@ -228,7 +228,7 @@ namespace planex2d::sketch {
         // Trim / Split of a spline: the spline stays as it is, its pieces between the cuts are elements that run between
         // positions along it; each cut is a point on the spline (its position the unknown both pieces there end at) and
         // on its cutter
-        void CutSpline(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &near, bool reverse, bool trim) {
+        void CutSpline(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &nearPoint, bool reverse, bool trim) {
             const SplineSpan span = el.Span(sk.s);
             const bool round = span.round;
             const double from = span.from, to = span.to, end = span.end, same = 1e-9 * end;
@@ -254,7 +254,7 @@ namespace planex2d::sketch {
                 throw std::invalid_argument(call + ": a closed spline needs two cuts");
             size_t removed = 0;
             if (trim) {
-                removed = NearestPiece(PieceRanges(cuts, round, from, to, end), near, reverse, [&](double u) { return span.At(u, 0); });
+                removed = NearestPiece(PieceRanges(cuts, round, from, to, end), nearPoint, reverse, [&](double u) { return span.At(u, 0); });
                 cuts = BoundingCuts(cuts, removed, round);
             }
             SplineCutAt(span, cuts, removed, trim);

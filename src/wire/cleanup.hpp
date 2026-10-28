@@ -26,11 +26,11 @@ namespace planex2d {
     }
 
     inline std::vector<size_t> Wire::SmallEdges(double size) const {
-        std::vector<size_t> small;
+        std::vector<size_t> smallEdges;
         for (size_t i = 0; i < edges.size(); ++i)
             if (LengthOf(edges[i]) < size)
-                small.push_back(i);
-        return small;
+                smallEdges.push_back(i);
+        return smallEdges;
     }
 
     // an open end and the ends of other edges within tol meet at the midpoint of their places (ends that already
@@ -45,22 +45,22 @@ namespace planex2d {
         for (size_t k = 0; k < pts.size(); ++k) {
             if (Matched(pts, grid, k))
                 continue;
-            std::vector<size_t> near{k};
+            std::vector<size_t> nearby{k};
             grid.ForNear(pts[k], [&](size_t j) {
                 if (j / 2 != k / 2 && !IsClosedEdge(edges[j / 2]) && pts[j].IsClose(pts[k], tol))
-                    near.push_back(j);
+                    nearby.push_back(j);
             });
-            if (near.size() == 1)
+            if (nearby.size() == 1)
                 continue;
             std::vector<Vertex> places;
-            for (size_t j : near)
+            for (size_t j : nearby)
                 if (std::ranges::find(places, pts[j]) == places.end())
                     places.push_back(pts[j]);
             Vertex mid;
             for (const Vertex &p : places)
                 mid = mid + p;
             mid = mid / (double)places.size();
-            for (size_t j : near)
+            for (size_t j : nearby)
                 Move(pts, grid, j, mid);
         }
     }
@@ -259,7 +259,7 @@ namespace planex2d {
 
     // per small edge, the length of the run of small edges it lies in (small edges meeting at their ends)
     inline std::vector<double> SmallRunLengths(const EdgeList &edges, const std::vector<Vertex> &pts, Grid &grid,
-                                               const std::vector<bool> &small) {
+                                               const std::vector<bool> &isSmall) {
         const size_t n = edges.size();
         std::vector<size_t> run(n);
         for (size_t i = 0; i < n; ++i)
@@ -270,20 +270,20 @@ namespace planex2d {
             return i;
         };
         for (size_t j = 0; j < 2 * n; ++j) {
-            if (!small[j / 2])
+            if (!isSmall[j / 2])
                 continue;
             grid.ForCell(pts[j], [&](size_t k) {
-                if (small[k / 2] && pts[k] == pts[j])
+                if (isSmall[k / 2] && pts[k] == pts[j])
                     run[root(j / 2)] = root(k / 2);
             });
         }
         std::vector<double> total(n, 0.0);
         for (size_t i = 0; i < n; ++i)
-            if (small[i])
+            if (isSmall[i])
                 total[root(i)] += LengthOf(edges[i]);
         std::vector<double> length(n, 0.0);
         for (size_t i = 0; i < n; ++i)
-            if (small[i])
+            if (isSmall[i])
                 length[i] = total[root(i)];
         return length;
     }
@@ -292,16 +292,16 @@ namespace planex2d {
         static Timer t("planex RemoveSmallEdges");
         Region reg(t);
         size_t n = edges.size();
-        std::vector<bool> small(n), removed(n, false);
+        std::vector<bool> isSmall(n), removed(n, false);
         bool any = false;
         for (size_t i = 0; i < n; ++i) {
-            small[i] = std::visit([&](const auto &x) {
+            isSmall[i] = std::visit([&](const auto &x) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(x)>, Spline> || IsCircle<decltype(x)>)
                     return false;
                 else
                     return (splinePieces || !x.fromSpline) && !HasPartition(x.props) && x.Length() <= tol;
             }, edges[i]);
-            any = any || small[i];
+            any = any || isSmall[i];
         }
         if (!any)
             return;
@@ -310,10 +310,10 @@ namespace planex2d {
         // each small edge goes to its midpoint, one after the other, so a run of them shrinks to one point: a spline's
         // pieces go only where their whole run is no longer than tol
         if (splinePieces) {
-            const std::vector<double> run = SmallRunLengths(edges, pts, grid, small);
+            const std::vector<double> run = SmallRunLengths(edges, pts, grid, isSmall);
             for (size_t i = 0; i < n; ++i)
-                if (small[i] && run[i] > tol && IsFromSpline(edges[i]))
-                    small[i] = false;
+                if (isSmall[i] && run[i] > tol && IsFromSpline(edges[i]))
+                    isSmall[i] = false;
         }
         auto moveAll = [&](const Vertex &from, const Vertex &to) {
             std::vector<size_t> at;
@@ -325,7 +325,7 @@ namespace planex2d {
                 Move(pts, grid, j, to);
         };
         for (size_t i = 0; i < n; ++i) {
-            if (!small[i])
+            if (!isSmall[i])
                 continue;
             removed[i] = true;
             Vertex a = pts[2 * i], b = pts[2 * i + 1];

@@ -268,10 +268,10 @@ namespace planex2d {
     // the raw edges through its middle, +1 each running its way, -1 each running against it
     inline int WindingStep(const Wire &cut, size_t i, const Wire &raw, Grid &grid, double tol) {
         const Vertex m = MidPointOf(cut[i]), normal = LeftNormal(cut[i], m);
-        std::vector<uint32_t> near;
-        grid.InBox(BBox::Of(m, m).Grown(tol), near);
+        std::vector<uint32_t> nearby;
+        grid.InBox(BBox::Of(m, m).Grown(tol), nearby);
         int step = 0;
-        for (uint32_t r : near) {
+        for (uint32_t r : nearby) {
             const Vertex q = NearestPointOf(raw[r], m);
             if (q.IsClose(m, tol))
                 step += Dot(LeftNormal(raw[r], q), normal) > 0.0 ? 1 : -1;

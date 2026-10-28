@@ -104,7 +104,7 @@ namespace planex2d::sketch {
                 r.Fail("an arc touching two elements has its own circle and ends");
             const double radius = std::abs(*r.radius);
             const double tol = Tol(std::max(scale, radius));
-            const std::vector<TouchingCircle> found = TouchingCircles(r.tangent[0], r.tangent[1], radius, r.near, pen, tol, r.call).Ranked(choices);
+            const std::vector<TouchingCircle> found = TouchingCircles(r.tangent[0], r.tangent[1], radius, r.nearPoint, pen, tol, r.call).Ranked(choices);
             if (found.empty())
                 r.Fail("no arc of that radius touches both on those sides");
             const TouchingCircle &f = found.front();
@@ -272,13 +272,13 @@ namespace planex2d::sketch {
         }
         // the first ahead of s (the last with until=px.last), or with near the one nearest it
         std::optional<Vertex> Ahead(const CircleCarrier &k, bool ccw, const Vertex &s, const std::vector<Solution> &hits,
-                                    const std::optional<Vertex> &near, double tol) const {
+                                    const std::optional<Vertex> &nearPoint, double tol) const {
             const double angleTol = tol / k.radius;
-            const bool largest = r.until == Until::Last || near;
+            const bool largest = r.until == Until::Last || nearPoint;
             std::optional<std::pair<double, Vertex>> best;
             for (const Solution &x : hits) {
                 const double t = SweepAngle(k.center, ccw, s, x.p);
-                const double key = near ? -Norm(x.p - *near) : t;
+                const double key = nearPoint ? -Norm(x.p - *nearPoint) : t;
                 if (t > angleTol && t < 2.0 * std::numbers::pi - angleTol && (!best || (largest ? key > best->first : key < best->first)))
                     best = {key, x.p};
             }

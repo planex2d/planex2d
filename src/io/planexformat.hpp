@@ -286,8 +286,8 @@ namespace planex2d {
             a.xDirection = xyz(node["x"]);
             a.yDirection = xyz(node["y"]);
             a.normal = xyz(node["normal"]);
-            const auto near = [](double v, double want) { return std::abs(v - want) <= 1e-12; };
-            if (!near(Dot(a.normal, a.normal), 1.0) || !near(Dot(a.xDirection, a.xDirection), 1.0) || !near(Dot(a.normal, a.xDirection), 0.0) ||
+            const auto isNear = [](double v, double want) { return std::abs(v - want) <= 1e-12; };
+            if (!isNear(Dot(a.normal, a.normal), 1.0) || !isNear(Dot(a.xDirection, a.xDirection), 1.0) || !isNear(Dot(a.normal, a.xDirection), 0.0) ||
                 !(Norm(a.yDirection - Cross(a.normal, a.xDirection)) <= 1e-12))
                 throw std::invalid_argument("planex file: a plane's directions are not orthonormal and right-handed");
             return a;

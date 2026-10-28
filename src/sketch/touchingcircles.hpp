@@ -29,9 +29,9 @@ namespace planex2d::sketch {
     // every position counts and the nearest wins
     class TouchingCircles {
     public:
-        TouchingCircles(const Target &a, const Target &b, double radius, const std::optional<Vertex> &near, const Pen &pen,
+        TouchingCircles(const Target &a, const Target &b, double radius, const std::optional<Vertex> &nearPoint, const Pen &pen,
                         double tol, const std::string &call)
-            : a(a), b(b), radius(radius), near(near), pen(pen), tol(tol) {
+            : a(a), b(b), radius(radius), nearPoint(nearPoint), pen(pen), tol(tol) {
             CheckPointOffCircle(a, call);
             CheckPointOffCircle(b, call);
         }
@@ -67,7 +67,7 @@ namespace planex2d::sketch {
 
         const Target &a, &b;
         double radius;
-        std::optional<Vertex> near;
+        std::optional<Vertex> nearPoint;
         Pen pen;
         double tol;
 
@@ -88,7 +88,7 @@ namespace planex2d::sketch {
                 return d > arc.Radius() ? Touch::Outside : radius < arc.Radius() ? Touch::Inside : Touch::Around;
             }
             const bool picks = t.PointPicks(tol);
-            if (near && !picks)
+            if (nearPoint && !picks)
                 return std::nullopt;
             const Touch side = Side(e, line && picks ? *t.point : other.MidPoint()) > 0.0 ? Touch::Outside : Touch::Inside;
             return flip && !picks ? Opposite(side) : side;
@@ -126,7 +126,8 @@ namespace planex2d::sketch {
             std::vector<Solution> centers;
             for (const Candidate &c : found)
                 centers.push_back({c.circle.center, c.onEdge});
-            const std::vector<size_t> order = Preference{near.value_or(pen.pos), pen.pos, pen.dir, tol}.Ranked(centers);
+            const std::vector<size_t> order =
+                Preference{nearPoint.value_or(pen.pos), pen.pos, pen.dir, tol}.Ranked(centers);
             const std::vector<size_t> byHint = BestFirst(order.size(), [&](size_t i, size_t j) { return found[order[i]].hint < found[order[j]].hint - tol; });
             std::vector<TouchingCircle> out;
             for (size_t k : byHint)

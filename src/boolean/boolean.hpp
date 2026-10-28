@@ -64,15 +64,15 @@ namespace planex2d {
             // other operand can have new vertices, all others were snapped before
             static Timer tsnap("planex Boolean snap");
             Region regsnap(tsnap);
-            auto near = [&](size_t k) { return state[k].needsCutting; };
+            auto nearOther = [&](size_t k) { return state[k].needsCutting; };
             double s = 0.0;
             for (size_t k = 0; k < c.Size(); ++k)
-                if (near(k))
+                if (nearOther(k))
                     s = std::max(s, LengthScaleOf(c[k]));
-            ApplyIdentified(c, state, ids, near);
+            ApplyIdentified(c, state, ids, nearOther);
             ShareCongruent(c, grid, state, false, Tol(s));
             for (size_t k = 0; k < c.Size(); ++k)
-                if (!state[k].excluded && near(k))
+                if (!state[k].excluded && nearOther(k))
                     grid.Insert(k, BoxOf(c[k]));
             snapTol = Tol(s);
         }
@@ -234,7 +234,7 @@ namespace planex2d {
         const double tol = Tol(std::max(a.LengthScale(), b.LengthScale()));
         Grid grid = b.EdgeGrid();
         std::vector<Vertex> pts;
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         // a point inside a stretch where a runs along b (the joints of a spline's pieces there) is no meeting point,
         // the stretch's ends are: a little before and after it along its edge of a, a still lies on b
         auto alongB = [&](const Vertex &q) {
@@ -252,9 +252,9 @@ namespace planex2d {
             return inner && alongB(PointAtFraction(e, t - step)) && alongB(PointAtFraction(e, t + step));
         };
         for (const Edge &ea : a) {
-            near.clear();
-            grid.InBox(BoxOf(ea).Grown(tol), near);
-            for (uint32_t j : near)
+            nearby.clear();
+            grid.InBox(BoxOf(ea).Grown(tol), nearby);
+            for (uint32_t j : nearby)
                 std::visit([&](const auto &x, const auto &y) {
                     ForEachPart(x, [&](const auto &pa) {
                         ForEachPart(y, [&](const auto &pb) {

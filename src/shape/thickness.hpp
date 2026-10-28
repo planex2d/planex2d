@@ -35,7 +35,7 @@ namespace planex2d {
             size_t n;
             double size, tol, nudge;
             Grid grid;
-            std::vector<uint32_t> near;
+            std::vector<uint32_t> nearby;
             std::vector<std::vector<size_t>> pinch;
             // a reflex corner: its point, the edges meeting there and their inward normals at it, each away from the
             // other edge
@@ -110,9 +110,9 @@ namespace planex2d {
                 double reach = 4.0 * size;
                 size_t hit = n;
                 Vertex where = p;
-                near.clear();
-                grid.InBox(ray.Box(), near);
-                for (uint32_t j : near)
+                nearby.clear();
+                grid.InBox(ray.Box(), nearby);
+                for (uint32_t j : nearby)
                     std::visit([&](const auto &x) {
                         ForEachPart(x, [&](const auto &q) {
                             for (const Vertex &c : CommonPoints(ray, q, tol))
@@ -142,10 +142,10 @@ namespace planex2d {
             }
             // the boundary point nearest c that is not near p, with its edge
             std::pair<Nearest, size_t> Touching(const Vertex &c, double r, const Vertex &p) {
-                near.clear();
-                grid.InBox(BBox::Of(c, c).Grown(r * (1.0 + 1e-6) + tol), near);
+                nearby.clear();
+                grid.InBox(BBox::Of(c, c).Grown(r * (1.0 + 1e-6) + tol), nearby);
                 std::pair<Nearest, size_t> best{Nearest{}, n};
-                for (uint32_t j : near) {
+                for (uint32_t j : nearby) {
                     const Nearest m = NearestOnEdge(region[j], c);
                     if (Norm(m.a - p) > 0.1 * r && m.d < best.first.d)
                         best = {m, j};
@@ -155,9 +155,9 @@ namespace planex2d {
             // inside to rounding: the edge it touches at its sample is r away up to that (a relative slack let the largest
             // disc grow past the boundary by about 1e-9 of its radius)
             bool IsDiscInside(const Vertex &c, double r) {
-                near.clear();
-                grid.InBox(BBox::Of(c, c).Grown(r), near);
-                for (uint32_t j : near)
+                nearby.clear();
+                grid.InBox(BBox::Of(c, c).Grown(r), nearby);
+                for (uint32_t j : nearby)
                     if (NearestOnEdge(region[j], c).d < r - tol)
                         return false;
                 return true;
@@ -204,11 +204,11 @@ namespace planex2d {
             }
             // the edge nearest p and the fraction of its length where it comes nearest
             std::pair<size_t, double> EdgeAt(const Vertex &p) {
-                near.clear();
-                grid.InBox(BBox::Of(p, p).Grown(tol), near);
+                nearby.clear();
+                grid.InBox(BBox::Of(p, p).Grown(tol), nearby);
                 std::pair<size_t, double> best{0, 0.0};
                 double d = std::numeric_limits<double>::infinity();
-                for (uint32_t j : near)
+                for (uint32_t j : nearby)
                     if (const Nearest m = NearestOnEdge(region[j], p); m.d < d) {
                         d = m.d;
                         best = {j, LengthFraction(region[j], m.a)};
@@ -219,9 +219,9 @@ namespace planex2d {
             double Clearance(const Vertex &c) {
                 double d = std::numeric_limits<double>::infinity();
                 for (double r = 0.01 * size; d > r && r < 8.0 * size; r *= 4.0) {
-                    near.clear();
-                    grid.InBox(BBox::Of(c, c).Grown(r), near);
-                    for (uint32_t j : near)
+                    nearby.clear();
+                    grid.InBox(BBox::Of(c, c).Grown(r), nearby);
+                    for (uint32_t j : nearby)
                         d = std::min(d, NearestOnEdge(region[j], c).d);
                 }
                 return d;
@@ -263,10 +263,10 @@ namespace planex2d {
                 }
                 if (!(best.d > 0.0))
                     return std::nullopt;
-                near.clear();
-                grid.InBox(BBox::Of(best.c, best.c).Grown(best.d + tol), near);
+                nearby.clear();
+                grid.InBox(BBox::Of(best.c, best.c).Grown(best.d + tol), nearby);
                 Nearest touch;
-                for (uint32_t j : near)
+                for (uint32_t j : nearby)
                     if (const Nearest m = NearestOnEdge(region[j], best.c); m.d < touch.d)
                         touch = m;
                 return std::pair{best.c, touch.a};

@@ -332,11 +332,11 @@ namespace planex2d {
                 const double m = minDistance;
                 Grid grid = Grid::Of(Vertices(), m);
                 a.marked.assign(a.w.Size(), false);
-                std::vector<uint32_t> near;
+                std::vector<uint32_t> nearby;
                 for (size_t k = 0; k < a.w.Size(); ++k) {
-                    near.clear();
-                    grid.InBox(BBox::Of(a.At(k), a.At(k)).Grown(m), near);
-                    for (uint32_t j : near) {
+                    nearby.clear();
+                    grid.InBox(BBox::Of(a.At(k), a.At(k)).Grown(m), nearby);
+                    for (uint32_t j : nearby) {
                         double d = Norm(cur[j] - cur[k]);
                         if (d >= m || (moved && d >= Norm(ref[j] - ref[k])))
                             continue;

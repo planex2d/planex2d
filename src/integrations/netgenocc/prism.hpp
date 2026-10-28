@@ -212,12 +212,12 @@ namespace planex2d {
     // the prism cut at the plane; its end there is a cap
     inline TopoDS_Solid CutAtPlane(const TopoDS_Solid &prism, const gp_Pln &plane, const Profile &profile, const PrismCall &c) {
         const gp_Dir n = plane.Axis().Direction();
-        const FarSide far = BeyondPlane(prism, plane, c.dir.Dot(n) > 0.0 ? n : n.Reversed());
-        BRepAlgoAPI_Cut cut(prism, far.box);
+        const FarSide farSide = BeyondPlane(prism, plane, c.dir.Dot(n) > 0.0 ? n : n.Reversed());
+        BRepAlgoAPI_Cut cut(prism, farSide.box);
         if (!cut.IsDone() || cut.HasErrors())
             throw std::runtime_error(c.call + "(until=): OCC could not cut the prism at the plane");
         PropagateProperties(cut, prism);
-        const TopTools_ListOfShape &end = cut.Modified(far.bottom);
+        const TopTools_ListOfShape &end = cut.Modified(farSide.bottom);
         if (end.IsEmpty())
             throw std::runtime_error(c.call + "(until=): OCC gave no end face at the plane");
         for (const TopoDS_Shape &s : end)

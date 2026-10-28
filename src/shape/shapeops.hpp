@@ -122,15 +122,15 @@ namespace planex2d {
                 faceOf[2 * i + (forward ? 0 : 1)] = f;
         // the input edges through every piece's midpoint
         Grid grid = input.EdgeGrid();
-        std::vector<uint32_t> near;
+        std::vector<uint32_t> nearby;
         std::vector<std::vector<uint32_t>> owners;
         std::vector<bool> drop(c.Size(), false);
         for (size_t i = 0; i < c.Size(); ++i) {
             const Vertex m = MidPointOf(c[i]);
             std::vector<size_t> on;
-            near.clear();
-            grid.InBox(BBox::Of(m, m).Grown(tol), near);
-            for (uint32_t j : near)
+            nearby.clear();
+            grid.InBox(BBox::Of(m, m).Grown(tol), nearby);
+            for (uint32_t j : nearby)
                 if (Distance(m, input[j]) <= tol)
                     on.push_back(j);
             std::vector<uint32_t> lying{c.Owner(i)};
@@ -313,12 +313,12 @@ namespace planex2d {
         return sum;
     }
     inline Shape Shape::WithoutSmallFaces(double area, bool merge) const {
-        FaceList kept, small;
+        FaceList kept, smallFaces;
         for (const Face &f : Faces())
-            (std::abs(f.Area()) < area ? small : kept).push_back(f);
-        if (small.empty())
+            (std::abs(f.Area()) < area ? smallFaces : kept).push_back(f);
+        if (smallFaces.empty())
             return *this;
-        for (const Face &f : small) {
+        for (const Face &f : smallFaces) {
             if (!merge)
                 break;
             size_t best = kept.size();

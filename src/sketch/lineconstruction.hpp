@@ -136,7 +136,7 @@ namespace planex2d::sketch {
             directed = r.parallel || r.perpendicular || r.angle || r.congruent || !r.tangent.empty();
             throughGivesDirection = r.through && !directed;
             Check();
-            near = r.near.value_or(pen.pos);
+            nearPoint = r.nearPoint.value_or(pen.pos);
             if (tangentPair)
                 for (size_t k = 0; k < 2; ++k) {
                     if (r.from && r.from->IsSame(r.tangent[k]))
@@ -188,7 +188,7 @@ namespace planex2d::sketch {
         const EdgeList &sketchEdges;
         Choices choices;
         bool fromElement, toElement, tangentPair, directed, throughGivesDirection;
-        Vertex near;
+        Vertex nearPoint;
         double tol;
         std::optional<Vertex> fromAt, toAt;
         Vertex origin, anchor, direction;
@@ -281,7 +281,7 @@ namespace planex2d::sketch {
             std::array<double, 2> want;
             for (size_t k = 0; k < 2; ++k) {
                 const Target &t = r.tangent[k];
-                want[k] = side(t.point.value_or(near), k == 0 ? *a : *b);
+                want[k] = side(t.point.value_or(nearPoint), k == 0 ? *a : *b);
                 if (r.reverse && !t.point) {
                     want[k] = -want[k];
                     choices.MarkSwitched();
@@ -312,7 +312,7 @@ namespace planex2d::sketch {
                     choices.MarkSwitched();
                 }
             } else if (!sols.empty()) {
-                touchPoint = sols[choices.Take(Preference{t.point.value_or(near), origin, pen.dir, tol}.Ranked(sols), !t.point)].p;
+                touchPoint = sols[choices.Take(Preference{t.point.value_or(nearPoint), origin, pen.dir, tol}.Ranked(sols), !t.point)].p;
                 direction = Normalized(*touchPoint - origin);
             } else {
                 r.Fail("no tangent from the current position");
@@ -346,7 +346,7 @@ namespace planex2d::sketch {
         }
         std::pair<std::optional<Vertex>, std::optional<Vertex>> ChosenEnds(const std::vector<Solution> &fromSols,
                                                                            const std::vector<Solution> &toSols, bool fromFree, bool toFree) {
-            if (fromFree && toFree && !r.near) {
+            if (fromFree && toFree && !r.nearPoint) {
                 const std::optional<std::pair<size_t, size_t>> pair = ClosestPair(fromSols, toSols, tol, choices);
                 if (!pair)
                     r.Fail("from and to meet the line in the same point only");
@@ -360,7 +360,7 @@ namespace planex2d::sketch {
             if (r.to && !toTouch && r.to->point)
                 e = toSols[Preference{*r.to->point, anchor, direction, tol}.Ranked(toSols)[0]].p;
             if (r.from && !fromTouch) {
-                const Vertex ref = r.from->point ? *r.from->point : r.near ? *r.near : e ? *e : pen.pos;
+                const Vertex ref = r.from->point ? *r.from->point : r.nearPoint ? *r.nearPoint : e ? *e : pen.pos;
                 s = fromSols[choices.Take(Preference{ref, anchor, direction, tol}.Ranked(fromSols), fromFree)].p;
             }
             return {s, e};
@@ -399,7 +399,8 @@ namespace planex2d::sketch {
                         ends.push_back(x);
                 if (ends.empty())
                     r.Fail("the line does not meet to");
-                return ends[choices.Take(Preference{r.near.value_or(s), s, direction, tol}.Ranked(ends), toFree)].p;
+                return ends[choices.Take(Preference{r.nearPoint.value_or(s), s, direction, tol}.Ranked(ends),
+                                         toFree)].p;
             }
             if (r.length)
                 return s + direction * *r.length;

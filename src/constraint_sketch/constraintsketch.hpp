@@ -187,7 +187,7 @@ namespace planex2d {
         }
 
         // as BasicSketch::Cut; not of a piece of an offset, and an expression that used what goes goes too
-        ConstraintSketch &Cut(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> near, bool reverse,
+        ConstraintSketch &Cut(const std::string &id, const std::vector<std::string> &cutterIds, std::optional<Vertex> nearPoint, bool reverse,
                               bool trim, bool tied = true) override {
             const std::string call = std::string(trim ? "Trim" : "Split") + "('" + id + "')";
             Flush();
@@ -199,7 +199,7 @@ namespace planex2d {
                                                 " follow it as it is; Split it with auto_constraint=True, or Remove them first");
             sketch::Undoable(*this, [&] {
                 const std::map<size_t, std::string> held = ValueHolders();
-                CutPieces(id, cutterIds, near, reverse, trim, tied, call);
+                CutPieces(id, cutterIds, nearPoint, reverse, trim, tied, call);
                 Prune(call, held);
                 if (const std::optional<std::string> wrong = OffsetProblem())
                     throw std::invalid_argument(call + ": " + *wrong);

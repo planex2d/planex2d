@@ -3,7 +3,8 @@
 
 # Tests every pull request, once per push to it: compiles planex2d as the installation page describes, in the three
 # installs of publish.yml (with NGSolve and the optional packages, with netgen alone, without netgen) on the oldest and
-# the newest Python planex2d supports, and runs the whole test suite on the pull request merged into its target. Only
+# the newest Python planex2d supports, on Linux (GCC) and Windows (MSVC), and runs the whole test suite on the pull
+# request merged into its target. Only
 # pull requests: main is protected, so every change reaches it through one, and a push to main would only repeat the
 # test. The type stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python
 # tools/stubgen.py writes it). Nothing is published here; releases go through publish.yml. A newer push to the same pull
@@ -22,13 +23,18 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         install: [full, netgen, core]
         python: ["3.11", "3.14"]
-    name: test (${{ matrix.install }}, Python ${{ matrix.python }})
+    # the Linux jobs keep their names
+    name: test (${{ matrix.install }}, Python ${{ matrix.python }})${{ matrix.os == 'windows-latest' && ' on Windows' || '' }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

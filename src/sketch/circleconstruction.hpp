@@ -48,14 +48,14 @@ namespace planex2d::sketch {
                 Fail("a circle touching two elements has its own center");
             const double rho = std::abs(*radius);
             const double tol = Tol(std::max(Scale(pen.pos), rho));
-            const std::vector<TouchingCircle> found = TouchingCircles(tangent[0], tangent[1], rho, near, pen, tol, call).Ranked(choices);
+            const std::vector<TouchingCircle> found = TouchingCircles(tangent[0], tangent[1], rho, nearPoint, pen, tol, call).Ranked(choices);
             if (found.empty())
                 Fail("no circle of that radius touches both on those sides");
             return {found.front().center, rho};
         }
         double RadiusAround(const Vertex &c, const Pen &pen, Choices &choices) const {
             if (tangent.size() == 1)
-                return tangent[0].RadiusAround(c, near, Tol(std::max(Scale(pen.pos), NormInf(c))), choices, call);
+                return tangent[0].RadiusAround(c, nearPoint, Tol(std::max(Scale(pen.pos), NormInf(c))), choices, call);
             if (congruent) {
                 const std::optional<CircleCarrier> k = CarrierOf(*congruent);
                 if (!k)
