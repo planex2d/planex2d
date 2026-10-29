@@ -131,3 +131,36 @@ def test_max_thickness_finds_a_disc_that_touches_reflex_corners_only():
                                        (100, 100), (55, 100), (50, 80), (45, 100), (0, 100), (0, 55), (20, 50), (0, 45)],
                                       closed=True)])
     assert notched.Measure(pm.MaxThickness()) == pytest.approx(60, rel=1e-9)
+
+
+def test_wall_thickness_of_a_spline_face_follows_its_curves():
+    # the samples and the discs follow the spline's approximation, the result its exact curve: no sample collapses to
+    # zero in the middle of a side, and the results match the face drawn as lines within 1e-4
+    face = px.FromNACA("2412", chord=100)
+    lines = px.Face([px.FromPolyline(loop[:-1], closed=True) for loop in face.Polylines(1e-4)])
+    with pytest.warns(px.PlanexWarning, match="tip of the corner"):
+        data = pm.MinThickness()(face, plot=True)
+    with pytest.warns(px.PlanexWarning, match="tip of the corner"):
+        tip = lines.Measure(pm.MinThickness())
+    away = [v for (x, _), v in zip(data["points"], data["values"]) if x < 95]
+    assert len(away) > 300 and min(away) > 0.4
+    assert data["value"] == pytest.approx(tip, rel=1e-6) and data["marks"][0][0] == pytest.approx((100, 0), abs=1e-6)
+    assert face.Measure(pm.MaxThickness()) == pytest.approx(lines.Measure(pm.MaxThickness()), rel=1e-4)
+
+
+def test_ignore_corners_does_not_depend_on_how_the_outline_is_split():
+    # a sharp corner holds a disc whose touching points all lie in its wedge; a disc that also touches the far wall is
+    # that wall's, also on a plate barely longer than it is wide
+    for length in (1.5, 2.0, 4.0):
+        assert rect(length).Measure(pm.MinThickness(ignore_corners=91)) == pytest.approx(1, rel=1e-9)
+        assert rect(length).Measure(pm.MinThickness(method="ray", ignore_corners=91)) == pytest.approx(1, rel=1e-9)
+    # an airfoil: the taper behind the sharp trailing edge is the corner's, the thinnest wall left the leading edge; as
+    # lines within 1e-4 the same, with the lines' own corners (about 179 degrees) ignored too (with ignore_corners=30
+    # their tips count, as every corner's does)
+    face = px.FromNACA("2412", chord=100)
+    lines = px.Face([px.FromPolyline(loop[:-1], closed=True) for loop in face.Polylines(1e-4)])
+    splines = pm.MinThickness(ignore_corners=30)(face, plot=True)
+    assert splines["value"] == pytest.approx(3.13, rel=1e-2) and splines["marks"][0][0][0] < 2
+    splines, polyline = (pm.MinThickness(ignore_corners=179.999)(f, plot=True) for f in (face, lines))
+    assert splines["value"] == pytest.approx(polyline["value"], rel=1e-3)
+    assert splines["marks"][0][0][0] < 2 and polyline["marks"][0][0][0] < 2

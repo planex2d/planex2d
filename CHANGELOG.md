@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.4
+
+### Fixed
+
+- `MinThickness` and `MaxThickness` on faces with spline edges: no wall of about 1e-12 in the middle of a smooth side,
+  and fast (a NACA profile in about 0.1 s instead of 4 s); the result lies on the exact curve
+- Plotly sketch plots show an element's id all along it, not only near its middle
+
+### Changed
+
+- `ignore_corners` decides by geometry which samples a sharp corner holds: a disc whose touching points all lie in the
+  corner's wedge (within 2.2 r / tan(angle / 2) of it), so splines and lines give the same result and a plate barely
+  longer than it is wide still has its wall. On a tapered edge, such as an airfoil's trailing edge, the whole taper is
+  the corner's: `MinThickness(ignore_corners=30)` of a NACA profile is its leading edge
+
 ## v0.2.3
 
 ### Packaging

@@ -144,3 +144,17 @@ def test_show_parent_draws_the_solid_under_the_sketch_with_its_edge_names():
     assert {"top0", "top1", "top2", "top3", "top4"} <= names
     assert all(t.line.color == "black" for t in parent if t.mode == "lines")
     assert not any(n.startswith(("Line.", "Arc.", "Circle.")) for n in names if n)
+
+
+def test_plotly_shows_an_element_s_id_all_along_it():
+    # plotly's tooltip needs a point within 20 px: invisible markers lie along every element, a hundredth of the
+    # drawing apart, not only at its middle
+    pytest.importorskip("plotly")
+    sk = px.Sketch()
+    sk.Move((0, 0)).Line((100, 0), id="long").Line((100, 1), id="short")
+    fig = sk.Plot(backend="plotly")
+    along = [(x, y) for t in fig.data if t.hovertext is not None and t.mode == "markers"
+             for x, y, h in zip(t.x, t.y, t.hovertext) if h == "long"]
+    xs = sorted(x for x, _ in along)
+    assert len(along) >= 100 and xs[0] < 1 and xs[-1] > 99 and max(b - a for a, b in zip(xs, xs[1:])) <= 1.0 + 1e-9
+    assert sum(1 for t in fig.data if t.hovertext is not None for h in t.hovertext if h == "short") == 1

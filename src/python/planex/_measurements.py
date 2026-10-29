@@ -245,8 +245,10 @@ def _thickness(method, statistic, samples, ignore_corners, label):
         if not found:
             raise ValueError("thickness: no sample found a wall (empty, or every one pinched by a corner)")
         values = [s[4] for s in found]
-        value = statistic(values)
-        at = found[values.index(value)]
+        # the extreme of each face's refined sample, which lies on the exact curves (the others on a spline's
+        # approximation)
+        at = statistic((s for s in found if s[7]), key=lambda s: s[4])
+        value = at[4]
         if statistic is min and not ignore_corners:
             _warn_corner_pinch(obj, method, samples, value, (at[0], at[1]))
         if not plot:
@@ -272,7 +274,10 @@ def MinThickness(method: str = "ball", samples: int = 400, ignore_corners: float
             "ray": the distance along the inward normal to the other side, which never finds less than the disc and can
             miss thin spots at tapers.
         samples: the number of samples along the boundary.
-        ignore_corners: leaves out where a convex corner sharper than this many degrees pinches the disc or ray.
+        ignore_corners: leaves out where a convex corner sharper than this many degrees holds the disc (or the ray) in
+            its wedge: every point where it touches the boundary lies within 2.2 r / tan(angle / 2) of the corner, r
+            its radius (half the ray's length). On a tapered edge, such as an airfoil's trailing edge, that is the
+            whole taper.
 
     Returns:
         the measurement f(obj, plot=False, samples=samples), for obj.Measure(f) and px.PlotField(f, obj); it raises
@@ -294,7 +299,10 @@ def MaxThickness(method: str = "ball", samples: int = 400, ignore_corners: float
     Args:
         method: "ball" (the largest disc inside) or "ray" (along the inward normal), as MinThickness.
         samples: the number of samples along the boundary.
-        ignore_corners: leaves out where a convex corner sharper than this many degrees pinches the disc or ray.
+        ignore_corners: leaves out where a convex corner sharper than this many degrees holds the disc (or the ray) in
+            its wedge: every point where it touches the boundary lies within 2.2 r / tan(angle / 2) of the corner, r
+            its radius (half the ray's length). On a tapered edge, such as an airfoil's trailing edge, that is the
+            whole taper.
 
     Returns:
         the measurement f(obj, plot=False, samples=samples), for obj.Measure(f) and px.PlotField(f, obj).

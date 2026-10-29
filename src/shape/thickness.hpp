@@ -26,17 +26,27 @@ namespace planex2d {
     };
 
     // the wall thickness at a point of a region's boundary: the diameter of the largest disc inside it that touches
-    // there (ball), or the distance along the inward normal to the boundary it meets (ray). A disc or ray that ends on
-    // an edge meeting the sample's edge at a convex corner sharper than corner degrees is pinched by that corner
+    // there (ball), or the distance along the inward normal to the boundary it meets (ray). A convex corner sharper
+    // than corner degrees holds a disc (a ray: as the disc of its half length around its middle) in its wedge when
+    // every point where it touches the boundary lies within 2.2 r / tan(angle / 2) of the corner; such a sample counts
+    // as the corner's, not as a wall's
     class ThicknessProbe {
         private:
             const Wire &region;
-            bool ball;
+            bool ball, exact = false;
             size_t n;
-            double size, tol, nudge;
+            double size, tol, nudge, slack;
             Grid grid;
             std::vector<uint32_t> nearby;
-            std::vector<std::vector<size_t>> pinch;
+            // a convex corner sharper than corner degrees: its point and the distance from it, in disc radii, within
+            // which a disc its wedge holds touches its sides: 2.2 / tan of half its angle. A disc in the wedge touches
+            // at 1 / tan, a disc cut short at the corner's point (by the next edge, to rounding) at about 2 / tan; a
+            // plate's wall disc touches the far side at least sqrt(5) / 2 = 2.24 radii from a right angle (a square)
+            struct SharpCorner {
+                Vertex at;
+                double reach;
+            };
+            std::vector<SharpCorner> sharp;
             // a reflex corner: its point, the edges meeting there and their inward normals at it, each away from the
             // other edge
             struct ReflexCorner {
@@ -46,7 +56,16 @@ namespace planex2d {
             };
             std::vector<ReflexCorner> reflex;
 
-            bool IsPinched(size_t i, size_t j) const { return std::find(pinch[i].begin(), pinch[i].end(), j) != pinch[i].end(); }
+            // the point of edge j nearest p: on its lines and arcs (a spline's approximation, where the samples lie),
+            // or on the exact curves for the final sample
+            Nearest Near(size_t j, const Vertex &p) const {
+                if (exact)
+                    return NearestOnEdge(region[j], p);
+                Nearest m;
+                std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &q) { m.Take(q.NearestPoint(p), p); }); },
+                           region[j]);
+                return m;
+            }
             // where two edges meet: the point, the edges and their directions leaving it
             struct Corner {
                 Vertex at;
@@ -82,12 +101,31 @@ namespace planex2d {
                     return 360.0 - angle;
                 return angle;
             }
-            void FindPinchingCorners(double corner) {
+            void FindSharpCorners(double corner) {
                 for (const Corner &c : Corners())
-                    if (InsideAngle(c) < corner) {
-                        pinch[c.edges[0]].push_back(c.edges[1]);
-                        pinch[c.edges[1]].push_back(c.edges[0]);
-                    }
+                    if (const double angle = InsideAngle(c); angle < corner)
+                        sharp.push_back({c.at, 2.2 / std::tan(0.5 * angle * std::numbers::pi / 180.0)});
+            }
+            // a disc of radius r touching the boundary at the points touch sits in a sharp corner's wedge: all of them
+            // within the corner's reach (a disc that also touches a wall farther away is that wall's)
+            bool IsHeld(const std::vector<Vertex> &touch, double r) const {
+                if (touch.size() < 2)
+                    return false;
+                for (const SharpCorner &s : sharp)
+                    if (std::all_of(touch.begin(), touch.end(),
+                                    [&](const Vertex &q) { return Norm(q - s.at) <= s.reach * r; }))
+                        return true;
+                return false;
+            }
+            // the points where the disc of radius r around c touches the boundary, on the pieces Near measures
+            std::vector<Vertex> Contacts(const Vertex &c, double r) {
+                nearby.clear();
+                grid.InBox(BBox::Of(c, c).Grown(r + 2.0 * slack), nearby);
+                std::vector<Vertex> out;
+                for (uint32_t j : nearby)
+                    if (const Nearest m = Near(j, c); m.d <= r + slack)
+                        out.push_back(m.a);
+                return out;
             }
             // a reflex corner's inward normals at it, each away from the other edge: the disc touching there leans
             // anywhere between them
@@ -104,8 +142,8 @@ namespace planex2d {
                 }
             }
             // from p along the inward direction: the ray to the wall, or the largest disc inside that touches at p;
-            // nothing where it is pinched at a corner of the edges a or b there, or finds no wall
-            std::optional<ThicknessSample> From(const Vertex &p, const Vertex &inward, size_t a, size_t b) {
+            // nothing where a sharp corner holds it, or where it finds no wall
+            std::optional<ThicknessSample> From(const Vertex &p, const Vertex &inward) {
                 const Line ray(p + inward * nudge, p + inward * (4.0 * size));
                 double reach = 4.0 * size;
                 size_t hit = n;
@@ -126,7 +164,7 @@ namespace planex2d {
                 if (hit == n)
                     return std::nullopt;
                 if (!ball)
-                    return IsPinched(a, hit) || IsPinched(b, hit)
+                    return !sharp.empty() && IsHeld({p, where}, 0.5 * reach)
                                ? std::nullopt
                                : std::optional(ThicknessSample{p, where, (p + where) * 0.5, reach});
                 // the largest disc touching at p: between 0 and half the ray's reach, 60 halvings at most
@@ -136,7 +174,7 @@ namespace planex2d {
                     (IsDiscInside(p + inward * r, r) ? lo : hi) = r;
                 }
                 const auto [other, j] = Touching(p + inward * lo, lo, p);
-                if (j == n || IsPinched(a, j) || IsPinched(b, j))
+                if (j == n || (!sharp.empty() && IsHeld(Contacts(p + inward * lo, lo), lo)))
                     return std::nullopt;
                 return ThicknessSample{p, other.a, p + inward * lo, 2.0 * lo};
             }
@@ -146,7 +184,7 @@ namespace planex2d {
                 grid.InBox(BBox::Of(c, c).Grown(r * (1.0 + 1e-6) + tol), nearby);
                 std::pair<Nearest, size_t> best{Nearest{}, n};
                 for (uint32_t j : nearby) {
-                    const Nearest m = NearestOnEdge(region[j], c);
+                    const Nearest m = Near(j, c);
                     if (Norm(m.a - p) > 0.1 * r && m.d < best.first.d)
                         best = {m, j};
                 }
@@ -158,36 +196,55 @@ namespace planex2d {
                 nearby.clear();
                 grid.InBox(BBox::Of(c, c).Grown(r), nearby);
                 for (uint32_t j : nearby)
-                    if (NearestOnEdge(region[j], c).d < r - tol)
+                    if (Near(j, c).d < r - tol)
                         return false;
                 return true;
             }
 
         public:
             ThicknessProbe(const Wire &region, bool ball, double corner)
-                : region(region), ball(ball), n(region.Size()), grid(region.EdgeGrid()), pinch(region.Size()) {
+                : region(region), ball(ball), n(region.Size()), grid(region.EdgeGrid()) {
                 const BBox box = region.Box();
                 size = NormInf(box.Size());
                 tol = Tol(std::max(box.NormInf(), size));
                 nudge = 1e-9 * size;
+                // 1e-9: a disc's radius from the halving in From is good to 1e-14 of the size; touching within this
+                slack = 1e-9 * size;
                 if (corner > 0.0)
-                    FindPinchingCorners(corner);
+                    FindSharpCorners(corner);
                 if (ball)
                     FindReflexCorners();
             }
-            // at the fraction t of edge i, nothing where the disc or ray is pinched or finds no wall
+            // at the fraction t of edge i, nothing where a sharp corner holds the disc or ray, or it finds no wall
             std::optional<ThicknessSample> At(size_t i, double t) {
-                const Vertex p = PointAtFraction(region[i], t), tangent = TangentAtFraction(region[i], t);
+                return Along(i, PointAtFraction(region[i], t), TangentAtFraction(region[i], t));
+            }
+            // the sample at the fraction t of edge i on the exact curves: its point and normal on a spline's exact
+            // curve, the disc against the exact curves (the samples follow the approximation, within spline_tol of
+            // them)
+            std::optional<ThicknessSample> ExactAt(size_t i, double t) {
+                Vertex p = PointAtFraction(region[i], t), tangent = TangentAtFraction(region[i], t);
+                if (const Spline *s = std::get_if<Spline>(&region[i])) {
+                    tangent = s->ExactTangent(p);
+                    p = s->ExactNearestPoint(p);
+                }
+                exact = true;
+                const std::optional<ThicknessSample> out = Along(i, p, tangent);
+                exact = false;
+                return out;
+            }
+            // at p on edge i with the tangent there
+            std::optional<ThicknessSample> Along(size_t i, const Vertex &p, const Vertex &tangent) {
                 Vertex inward{-tangent.y, tangent.x};
                 if (!region.Contains(p + inward * nudge))
                     inward = inward * -1.0;
-                return From(p, inward, i, i);
+                return From(p, inward);
             }
             // the largest disc touching reflex corner k, its center along the direction s of the way from one edge's
             // inward normal there to the other's (0 and 1: the limits of the edges' own discs)
             std::optional<ThicknessSample> AtCorner(size_t k, double s) {
                 const ReflexCorner &c = reflex[k];
-                return From(c.at, Normalized(c.normals[0] * (1.0 - s) + c.normals[1] * s), c.edges[0], c.edges[1]);
+                return From(c.at, Normalized(c.normals[0] * (1.0 - s) + c.normals[1] * s));
             }
             // the direction s at reflex corner k (as AtCorner takes it) toward c
             double CornerDirectionTo(size_t k, const Vertex &c) const {
@@ -209,7 +266,7 @@ namespace planex2d {
                 std::pair<size_t, double> best{0, 0.0};
                 double d = std::numeric_limits<double>::infinity();
                 for (uint32_t j : nearby)
-                    if (const Nearest m = NearestOnEdge(region[j], p); m.d < d) {
+                    if (const Nearest m = Near(j, p); m.d < d) {
                         d = m.d;
                         best = {j, LengthFraction(region[j], m.a)};
                     }
@@ -222,7 +279,7 @@ namespace planex2d {
                     nearby.clear();
                     grid.InBox(BBox::Of(c, c).Grown(r), nearby);
                     for (uint32_t j : nearby)
-                        d = std::min(d, NearestOnEdge(region[j], c).d);
+                        d = std::min(d, Near(j, c).d);
                 }
                 return d;
             }
@@ -267,7 +324,7 @@ namespace planex2d {
                 grid.InBox(BBox::Of(best.c, best.c).Grown(best.d + tol), nearby);
                 Nearest touch;
                 for (uint32_t j : nearby)
-                    if (const Nearest m = NearestOnEdge(region[j], best.c); m.d < touch.d)
+                    if (const Nearest m = Near(j, best.c); m.d < touch.d)
                         touch = m;
                 return std::pair{best.c, touch.a};
             }
@@ -341,7 +398,17 @@ namespace planex2d {
                 a = c;
         }
         const std::optional<ThicknessSample> s = sample(0.5 * (a + b));
-        out.push_back(s && better(s->thickness, out[best].thickness) ? *s : out[best]);
+        const bool refined = s && better(s->thickness, out[best].thickness);
+        ThicknessSample result = refined ? *s : out[best];
+        // the result on the exact curves where the region has a spline; a sample at a reflex corner stays, its point is
+        // the vertex, which the approximation sets
+        const bool spline =
+            std::any_of(region.begin(), region.end(), [](const Edge &e) { return std::holds_alternative<Spline>(e); });
+        if (spline && !(refined && atCorner))
+            if (const std::optional<ThicknessSample> x =
+                    refined ? probe.ExactAt(edge, 0.5 * (a + b)) : probe.ExactAt(bestEdge, bestT))
+                result = *x;
+        out.push_back(result);
         return out;
     }
 
