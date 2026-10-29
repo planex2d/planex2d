@@ -1,20 +1,24 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Publishes the site (the root page, which sends visitors on to the built documentation under docs/) to GitHub Pages.
-# The site is not in this repository: it is the one .zip asset of a v* release of the documentation repository
-# planex2d/docs, so the docs can be updated between code releases. The zip holds the site's files (index.html,
-# robots.txt, docs/...) at its root, as the export's site.zip does, or in one folder, as Finder's Compress on the pages
-# folder makes it (pages.zip; its __MACOSX folder and .DS_Store files are dropped). This workflow downloads that zip,
-# unpacks it and publishes the folder with index.html as it is: the newest v* release of planex2d/docs, or the one
-# given by hand. It runs by hand, when planex2d/docs announces a release
-# (repository_dispatch, event type docs-release, client_payload.tag), and when a code release is published.
+# Publishes planex2d.org to GitHub Pages from two releases: the documentation (the .zip asset of a v* release of
+# planex2d/docs: docs/, a root index.html that sends visitors on to it, robots.txt, llms.txt) and the site around it
+# (site.zip of a v* release of planex2d/planex2d.org: the homepage, the tools, assets/, sitemap.xml, robots.txt). Both
+# are unpacked into one folder, the site over the docs, and published together. Only the root index.html (the homepage
+# replaces the docs' redirect) and robots.txt (the site's names both sitemaps) may be in both zips; any other file in
+# both, or a docs/ folder in the site, stops the run. Each part is the newest v* release of its repository, or the tag
+# given by hand; before planex2d/planex2d.org has a release, the docs are published alone.
+#
+# The docs zip holds the site's files at its root (the export's site.zip) or in one folder (Finder's Compress on the
+# pages folder makes pages.zip; its __MACOSX folder and .DS_Store files are dropped). It runs by hand, when
+# planex2d/docs announces a release (repository_dispatch, event type docs-release, client_payload.tag), and when a code
+# release is published. The actions are pinned by commit (their version in the comment).
 #
 # Once, before the first run:
-# - planex2d/docs is private, and this repository's own token cannot read it: a fine-grained personal access token,
-#   resource owner planex2d, repository access only planex2d/docs, permission Contents read-only, stored here as the
-#   environment secret DOCS_TOKEN of github-pages (Settings > Environments > github-pages); the organization must allow
-#   fine-grained tokens.
+# - planex2d/docs and planex2d/planex2d.org are private, and this repository's own token cannot read them: a
+#   fine-grained personal access token, resource owner planex2d, repository access planex2d/docs and
+#   planex2d/planex2d.org, permission Contents read-only, stored here as the environment secret DOCS_TOKEN of
+#   github-pages (Settings > Environments > github-pages); the organization must allow fine-grained tokens.
 # - Pages > Build and deployment > Source: "GitHub Actions", and the custom domain planex2d.org (with its DNS records).
 # - The environment github-pages deploys from the default branch (runs by hand and from planex2d/docs) and from v* tags
 #   (code releases): Settings > Environments > github-pages, deployment branches and tags: master and tag pattern v*.
@@ -23,8 +27,11 @@ name: docs
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: "The planex2d/docs release whose site.zip to publish (vX.Y.Z); empty: the newest v* release"
+      docs_tag:
+        description: "The planex2d/docs release to publish (vX.Y.Z); empty: the newest v* release"
+        required: false
+      site_tag:
+        description: "The planex2d/planex2d.org release to publish (vX.Y.Z); empty: the newest v* release"
         required: false
   repository_dispatch:
     types: [docs-release]
@@ -42,47 +49,76 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/configure-pages@v5
-      - name: The site from the docs release
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5.0.0
+      - name: The docs and the site from their releases
         env:
           GH_TOKEN: ${{ secrets.DOCS_TOKEN }}
           DOCS: planex2d/docs
-          TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+          DOCS_TAG: ${{ inputs.docs_tag || github.event.client_payload.tag }}
+          SITE: planex2d/planex2d.org
+          SITE_TAG: ${{ inputs.site_tag }}
         run: |
-          if [ -z "$TAG" ]; then
-            TAG=$(gh release list --repo "$DOCS" --exclude-drafts --exclude-pre-releases --limit 100 \
-                    --json tagName --jq '[.[].tagName | select(startswith("v"))][0] // ""')
-          fi
-          case "$TAG" in
-            v*) echo "publishing the site of $DOCS $TAG" ;;
-            *) echo "no v* release of $DOCS to publish (tag: '$TAG')"; exit 1 ;;
-          esac
-          gh release download "$TAG" --repo "$DOCS" --pattern '*.zip' --dir download
-          zips=(download/*.zip)
-          if [ "${#zips[@]}" -ne 1 ]; then
-            echo "the release $TAG needs exactly one .zip asset, it has ${#zips[@]}"; exit 1
-          fi
-          unzip -q "${zips[0]}" -d unpacked
-          rm -rf unpacked/__MACOSX
-          find unpacked -name .DS_Store -delete
-          # the files at the zip's root (the export's site.zip) or in its one folder (Finder's Compress on pages/)
-          if [ -f unpacked/index.html ]; then
-            mv unpacked site
-          else
-            tops=(unpacked/*/)
-            if [ "${#tops[@]}" -ne 1 ] || [ ! -f "${tops[0]}index.html" ]; then
-              echo "no index.html at the zip's root or in its one folder"; exit 1
+          newest() {
+            gh release list --repo "$1" --exclude-drafts --exclude-pre-releases --limit 100 \
+              --json tagName --jq '[.[].tagName | select(startswith("v"))][0] // ""'
+          }
+          # unpack the one .zip of release $2 of repository $1 into the folder $3: its files at the zip's root or in
+          # its one folder
+          fetch() {
+            gh release download "$2" --repo "$1" --pattern '*.zip' --dir "download-$3"
+            zips=("download-$3"/*.zip)
+            if [ "${#zips[@]}" -ne 1 ]; then
+              echo "the release $2 of $1 needs exactly one .zip asset, it has ${#zips[@]}"; exit 1
             fi
-            mv "${tops[0]}" site
+            unzip -q "${zips[0]}" -d "unpacked-$3"
+            rm -rf "unpacked-$3/__MACOSX"
+            find "unpacked-$3" -name .DS_Store -delete
+            if [ -f "unpacked-$3/index.html" ]; then
+              mv "unpacked-$3" "$3"
+            else
+              tops=("unpacked-$3"/*/)
+              if [ "${#tops[@]}" -ne 1 ] || [ ! -f "${tops[0]}index.html" ]; then
+                echo "no index.html at the root of the zip of $1 $2 or in its one folder"; exit 1
+              fi
+              mv "${tops[0]}" "$3"
+            fi
+          }
+
+          DOCS_TAG=${DOCS_TAG:-$(newest "$DOCS")}
+          case "$DOCS_TAG" in
+            v*) echo "publishing the docs of $DOCS $DOCS_TAG" ;;
+            *) echo "no v* release of $DOCS to publish (tag: '$DOCS_TAG')"; exit 1 ;;
+          esac
+          fetch "$DOCS" "$DOCS_TAG" site
+
+          SITE_TAG=${SITE_TAG:-$(newest "$SITE")}
+          case "$SITE_TAG" in
+            v*) echo "publishing the site of $SITE $SITE_TAG over the docs" ;;
+            "") echo "$SITE has no v* release yet: the docs are published alone" ;;
+            *) echo "no v* release of $SITE to publish (tag: '$SITE_TAG')"; exit 1 ;;
+          esac
+          if [ -n "$SITE_TAG" ]; then
+            fetch "$SITE" "$SITE_TAG" web
+            if [ -e web/docs ]; then
+              echo "the site's zip holds a docs/ folder: the docs come from $DOCS only"; exit 1
+            fi
+            clashes=$(cd web && find . -type f | sed 's#^\./##' | while read -r f; do
+              if [ "$f" != index.html ] && [ "$f" != robots.txt ] && [ -e "../site/$f" ]; then echo "$f"; fi
+            done)
+            if [ -n "$clashes" ]; then
+              echo "in both zips (only index.html and robots.txt may be):"; echo "$clashes"; exit 1
+            fi
+            cp -R web/. site/
           fi
           test -f site/index.html
-      - uses: actions/upload-pages-artifact@v3
+          test -f site/docs/index.html
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
         with:
           path: site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5

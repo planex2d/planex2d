@@ -279,6 +279,11 @@ def _plotly(sketch, fig, show_constraints, show_ends, show_direction, diagnoses,
                                          hovertext=name, hoverinfo="text", showlegend=False))
     everything, drawn, paths = _elements(sketch)
     ends = _ends(drawn)
+    # hover markers along every element, about a hundredth of the drawing apart (one at the middle of a short one):
+    # plotly shows a tooltip only within 20 px of a trace's points, not along the line between them
+    corners = [p for path in paths.values() for p in path]
+    size = max(max(p[0] for p in corners) - min(p[0] for p in corners),
+               max(p[1] for p in corners) - min(p[1] for p in corners), 1e-12) if corners else 1.0
     lines, hover = {}, ([], [], [])
     for g in drawn:
         if g["kind"] not in CURVES:
@@ -287,10 +292,12 @@ def _plotly(sketch, fig, show_constraints, show_ends, show_direction, diagnoses,
         xs, ys = lines.setdefault((_colour(g), g["construction"]), ([], []))
         xs.extend([p[0] for p in path] + [None])
         ys.extend([p[1] for p in path] + [None])
-        (mx, my), _ = _along(path, 0.5)
-        hover[0].append(mx)
-        hover[1].append(my)
-        hover[2].append(g["id"] + (" (construction)" if g["construction"] else ""))
+        n = max(1, math.ceil(sum(math.dist(a, b) for a, b in zip(path, path[1:])) / (0.01 * size)))
+        for i in range(n):
+            (mx, my), _ = _along(path, (i + 0.5) / n)
+            hover[0].append(mx)
+            hover[1].append(my)
+            hover[2].append(g["id"] + (" (construction)" if g["construction"] else ""))
     # the projections under the sketch's own lines
     for (colour, construction), (xs, ys) in sorted(lines.items(), key=lambda item: item[0][0] != PROJECTED):
         fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", hoverinfo="skip", showlegend=False,

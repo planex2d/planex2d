@@ -266,19 +266,22 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
             faces = {obj.cast<const FaceView &>().Copy()};
         else
             throw py::type_error("thickness: of a Face, Shape or face view");
-        std::vector<ThicknessSample> all;
+        std::vector<std::pair<ThicknessSample, bool>> all;
         {
             py::gil_scoped_release release;
-            for (const Face &f : faces)
-                for (const ThicknessSample &s : Thickness(f.Edges(), samples, ball, corner, refine))
-                    all.push_back(s);
+            for (const Face &f : faces) {
+                const std::vector<ThicknessSample> found = Thickness(f.Edges(), samples, ball, corner, refine);
+                for (size_t k = 0; k < found.size(); ++k)
+                    all.push_back({found[k], refine != 0 && k + 1 == found.size()});
+            }
         }
         py::list out;
-        for (const ThicknessSample &s : all)
-            out.append(py::make_tuple(s.at.x, s.at.y, s.other.x, s.other.y, s.thickness, s.centre.x, s.centre.y));
+        for (const auto &[s, refined] : all)
+            out.append(py::make_tuple(s.at.x, s.at.y, s.other.x, s.other.y, s.thickness, s.centre.x, s.centre.y, refined));
         return out;
     }, py::arg("obj"), py::arg("samples"), py::arg("ball"), py::arg("corner"), py::arg("refine") = 0,
-          "for px.measurements: (h, v, h, v of the other side, thickness, h, v of the center) at samples along each face's boundary");
+          "for px.measurements: (h, v, h, v of the other side, thickness, h, v of the center, refined) at samples along "
+          "each face's boundary; refined: the face's refined thinnest or thickest, on the exact curves");
     m.def("_EmptyShape", [](const py::object &plane) { return Shape(AxesArg(plane, "Intersect3d")); }, py::arg("plane"),
           "the empty shape on a plane, for the cut of a mesh that misses it");
     m.def("ResetIdCounters", [] { IdCounters().clear(); },
