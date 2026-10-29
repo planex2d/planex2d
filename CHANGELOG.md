@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.3
+
+### Packaging
+
+- Wheels for Pyodide 0.29 and 314 (Python 3.13 and 3.14, wasm32): planex runs in the browser,
+  `micropip.install("planex2d")`; the core without the OCC bindings, on one thread
+
 ## v0.2.2
 
 ### Packaging

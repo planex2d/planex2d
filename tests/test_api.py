@@ -45,6 +45,7 @@ def test_the_subpackages_show_only_their_names():
                                    "jlc7628f", "jlc7628g", "kicad"]
 
 
+@pytest.mark.subprocess
 def test_a_star_import_after_ngsolve_keeps_its_names():
     pytest.importorskip("ngsolve")
     code = "\n".join([
@@ -60,6 +61,7 @@ def test_a_star_import_after_ngsolve_keeps_its_names():
     assert result.returncode == 0, result.stderr
 
 
+@pytest.mark.subprocess
 def test_a_core_module_windows_cannot_load_names_the_visual_cpp_redistributable():
     code = """
 import importlib.abc, sys

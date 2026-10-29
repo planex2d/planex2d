@@ -22,6 +22,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "fuzz: a randomized test that shares the fuzz time budget")
     config.addinivalue_line("markers", "constraints: needs px.Sketch, the constraint sketch (CMake PLANEX_CONSTRAINTS)")
     config.addinivalue_line("markers", "occ: needs planex's OCC module (CMake PLANEX_OCC, netgen installed)")
+    config.addinivalue_line("markers", "subprocess: starts a Python subprocess, which Pyodide has not")
     config._fuzz_cases = {}
 
 
@@ -37,6 +38,11 @@ def pytest_collection_modifyitems(config, items):
         skip = pytest.mark.skip(reason="planex has no OCC module (PLANEX_OCC=OFF, or netgen not installed)")
         for item in items:
             if item.get_closest_marker("occ"):
+                item.add_marker(skip)
+    if sys.platform == "emscripten":
+        skip = pytest.mark.skip(reason="Pyodide starts no subprocesses")
+        for item in items:
+            if item.get_closest_marker("subprocess"):
                 item.add_marker(skip)
 
 

@@ -682,6 +682,7 @@ def test_triangulation_masks_the_triangles_outside_the_faces():
     assert values.tolist() == [float(v) for v in data["values"]]
 
 
+@pytest.mark.subprocess
 def test_plot_without_a_field_does_not_import_ngsolve():
     pytest.importorskip("matplotlib")
     code = "\n".join([
