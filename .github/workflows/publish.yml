@@ -197,8 +197,7 @@ jobs:
   # planex in the browser: the wasm32 wheels for Pyodide 0.29 (Python 3.13, the platform pyemscripten_2025_0) and 314
   # (Python 3.14, pyemscripten_2026_0), without threads (everything runs in the calling thread), built from the sdist by
   # cibuildwheel and tested with the sdist's suite in Pyodide under Node.js; the tests that start a subprocess skip
-  # there. PyPI takes only these platforms (PEP 783): ci.yml also tests Python 3.12 (Pyodide 0.27), whose wheel it would
-  # refuse
+  # there. PyPI takes only these platforms (PEP 783)
   pyodide:
     needs: sdist
     runs-on: ubuntu-latest
