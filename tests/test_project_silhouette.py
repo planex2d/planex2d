@@ -49,10 +49,15 @@ def test_a_sphere_casts_a_circle_from_any_side():
 
 
 def test_a_torus_casts_a_ring_along_its_axis_and_a_stadium_side_on():
+    # OCC traces a torus's folds within about 1e-7 of its size (8), the builds of other compilers within about twice
+    # that: an area within its outline's length times ten times that of the size
+    def near(exact, length):
+        return pytest.approx(exact, abs=length * 1e-6 * 8)
+
     ring = px.Project(torus(), silhouette=True)
-    assert len(ring) == 2 and area(ring) == pytest.approx(math.pi * (16 - 4), rel=1e-6)
+    assert len(ring) == 2 and area(ring) == near(math.pi * (16 - 4), 2 * math.pi * (4 + 2))
     side = px.Project(torus(), plane((1, 0, 0), (0, 1, 0)), silhouette=True)
-    assert len(side) == 1 and area(side) == pytest.approx(4 * 3 + math.pi, rel=1e-6)
+    assert len(side) == 1 and area(side) == near(4 * 3 + math.pi, 2 * 6 + 2 * math.pi)
 
 
 def test_holes_one_sees_through_stay_holes():

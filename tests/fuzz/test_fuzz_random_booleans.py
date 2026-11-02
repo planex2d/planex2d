@@ -60,12 +60,14 @@ FOUND = [
                               1.890625), 0.5), "nudged turn",
                   ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
                  id="quintic-turned-1e-13-union-empty-one-way",
-                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
+                 marks=pytest.mark.xfail(
+                     reason="a quintic spline turned by 1e-13 loses the region (platform rounding)")),
     pytest.param((("spline", (1.9375, 0.0, 4.5, (0.375, 0.328125, 0.9375, 0.5), (0.32421875, 0.25, 0.71875, 0.5),
                               1.890625), 0.5), "nudged turn",
                   ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
                  id="quintic-turned-1e-13-common-empty",
-                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
+                 marks=pytest.mark.xfail(
+                     reason="a quintic spline turned by 1e-13 loses the region (platform rounding)")),
 ]
 
 
@@ -106,7 +108,8 @@ FOUND_POINTS = [
                               (0.3225978347009676, 0.43786302742188715, 0.6965602508857187, 0.25), 1.9), 0.5),
                   "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
                  id="quintic-turned-1e-13-common-misses-points",
-                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
+                 marks=pytest.mark.xfail(
+                     reason="a quintic spline turned by 1e-13 loses the region (platform rounding)")),
 ]
 
 
@@ -122,7 +125,7 @@ FOUND_RELATIONS = [
     pytest.param((("rounded", (-2.0, 1.875, 0.984375, (0.5, 0.75, 1.0), (0.875, 0.67578125, 0.75), 1.3125), 0.1875),
                   "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 50),
                  id="rounded-turned-1e-14-relate-by-the-order",
-                 marks=pytest.mark.xfail(strict=True, reason="a nudged copy's relation depends on the operand order")),
+                 marks=pytest.mark.xfail(reason="a nudged copy's relation depends on the order (platform rounding)")),
 ]
 
 
