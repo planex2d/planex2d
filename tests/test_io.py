@@ -47,7 +47,7 @@ def test_bspline_round_trip_through_its_data():
     pytest.importorskip("shapely")
     s = px.Spline([(0, 0), (1, 1), (2, 0), (3, 1)])
     b = s.edges[0].edge.bspline
-    assert b["degree"] == 3 and b["weights"] is None
+    assert b["degree"] == 5 and b["weights"] is None
     assert len(b["knots"]) == len(b["poles"]) + b["degree"] + 1
     back = px.BSpline(b["poles"], b["knots"], b["degree"])
     assert len(back.edges) == 1

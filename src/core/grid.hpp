@@ -66,7 +66,9 @@ namespace planex2d {
             static double CellSize(const BBox &all, size_t n, double minimum) {
                 Vertex s = all.Size();
                 double c = std::sqrt(s.x * s.y / (double)n);
-                if ((s.x < s.y ? s.x : s.y) <= c)
+                // thin: the short side at most the square's side, written short * n <= long, since short * long / n
+                // underflows to 0 for a subnormal short side
+                if ((s.x < s.y ? s.x : s.y) * (double)n <= NormInf(s))
                     c = NormInf(s) / (double)n;
                 if (c < minimum)
                     c = minimum;

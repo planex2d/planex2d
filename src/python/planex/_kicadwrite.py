@@ -18,6 +18,7 @@ from ._geom import oriented, xy
 from ._compound import Compound
 from ._units import m
 from ._caller import warn
+from ._paths import with_extension
 
 if TYPE_CHECKING:
     from ._planex import Face, Shape, Wire
@@ -621,7 +622,7 @@ def WriteKiCad(path: str | os.PathLike,
     same file.
 
     Args:
-        path: the file to write.
+        path: the file to write; without an extension .kicad_pcb is added.
         layers: a dict {KiCad layer name: Shape, Face, Wire or Compound} (copper "F.Cu", "In1.Cu", ..., "B.Cu", the
             board outline "Edge.Cuts", the other KiCad layers such as "F.SilkS" or "F.Mask", and "pth", "npth"), or a
             list of the copper layers from the top.
@@ -745,7 +746,7 @@ def WriteKiCad(path: str | os.PathLike,
         warn("WriteKiCad: %d edge%s on no face left out on %s (copper needs an area)" %
                       (n, "s" if n > 1 else "", ", ".join(free)), px.PlanexWarning)
     text = _header(copper, thickness * board.k, codes) + board.footprints + board.items + board.vias + [")"]
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
+    with open(with_extension(path, ".kicad_pcb"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(text) + "\n")
 
 

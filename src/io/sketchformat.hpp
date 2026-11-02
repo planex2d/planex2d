@@ -4,7 +4,9 @@
 #pragma once
 
 #include <bit>
+#include <cmath>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -21,11 +23,11 @@ namespace planex2d {
         "Coincident", "Horizontal", "Vertical",   "Parallel",          "Perpendicular", "Tangent", "Equal",     "Symmetric",
         "Concentric", "Fix",        "Distance",   "Radius",            "Diameter",      "Angle",   "SymmetricCarriers",
         "OnCircle",   "Copy",       "RigidGroup", "Expression",        "Value",         "Offset",  "OnCurve",   "Parameter",
-        "Curvature"};
+        "Curvature",  "FixH",       "FixV",       "CurvatureRadius"};
     inline constexpr const char *elementKindNames[] = {"Point", "Line", "Circle", "Arc", "Axis", "Pattern", "Spline", "Offset", "OffsetCurve"};
     inline constexpr const char *partNames[] = {"Whole", "Start", "End", "Center", "Mid", "Point", "Tangent"};
     inline constexpr const char *roleNames[] = {"Drawn", "Construction", "Span", "Helper"};
-    inline constexpr const char *splineStyleNames[] = {"Averaged", "Clamped"};
+    inline constexpr const char *splineStyleNames[] = {"Averaged", "Clamped", "Quintic"};
     inline constexpr const char *offsetEndNames[] = {"Round", "Flat", "Square"};
     inline constexpr const char *offsetCornerNames[] = {"Round", "Sharp", "Chamfer"};
     inline constexpr size_t opCount = 18;
@@ -168,6 +170,10 @@ namespace planex2d {
             o.Add("tangent", Indices(d.tangent));
             o.Add("closed", d.closed);
             o.Add("style", splineStyleNames[(size_t)d.style]);
+            if (!d.tension.empty())
+                o.Add("tension", Numbers(d.tension));
+            if (!d.curvature.empty())
+                o.Add("curvature", Indices(d.curvature));
             if (d.fitted) {
                 const sketch::FittedShape &f = *d.fitted;
                 Json fitted{Json::Object{}};
@@ -191,6 +197,12 @@ namespace planex2d {
                 }
                 fitted.Add("copy_of", Index(f.copyOf));
                 o.Add("fitted", std::move(fitted));
+            }
+            if (d.poled) {
+                Json poles{Json::Object{}};
+                poles.Add("knots", Numbers(d.poled->knots));
+                poles.Add("degree", (double)d.poled->degree);
+                o.Add("poles", std::move(poles));
             }
             if (d.blend) {
                 Json blend{Json::Object{}};
@@ -252,7 +264,10 @@ namespace planex2d {
             Json o{Json::Object{}};
             o.Add("kind", sketchKindNames[(size_t)c.kind]);
             o.Add("refs", std::move(refs));
-            if (!IsDefault(c.value, 0.0))
+            // a straight curvature radius: math.inf, which JSON has no number for
+            if (std::isinf(c.value))
+                o.Add("value", std::string(c.value > 0.0 ? "inf" : "-inf"));
+            else if (!IsDefault(c.value, 0.0))
                 o.Add("value", c.value);
             if (c.reference)
                 o.Add("reference", true);
@@ -565,6 +580,10 @@ namespace planex2d {
             d.tangent = Indices(j["tangent"]);
             d.closed = j["closed"].AsBool();
             d.style = EnumOf<SplineStyle>(j["style"], splineStyleNames, "spline style");
+            if (j.Has("tension"))
+                d.tension = Numbers(j["tension"]);
+            if (j.Has("curvature"))
+                d.curvature = Indices(j["curvature"]);
             if (j.Has("fitted")) {
                 const Json &f = j["fitted"];
                 sketch::FittedShape fitted;
@@ -589,6 +608,8 @@ namespace planex2d {
                 fitted.copyOf = Index(f["copy_of"]);
                 d.fitted = std::move(fitted);
             }
+            if (j.Has("poles"))
+                d.poled = sketch::PoleShape{Numbers(j["poles"]["knots"]), j["poles"]["degree"].AsIndex()};
             if (j.Has("blend")) {
                 const Json &b = j["blend"];
                 const std::vector<size_t> arms = Indices(b["arms"]);
@@ -643,7 +664,8 @@ namespace planex2d {
             for (const Json &x : j["refs"].AsArray())
                 c.refs.push_back(Ref(x));
             if (j.Has("value"))
-                c.value = j["value"].AsNumber();
+                c.value = j["value"].IsString() ? (j["value"].AsString() == "-inf" ? -1.0 : 1.0) * std::numeric_limits<double>::infinity()
+                                                : j["value"].AsNumber();
             c.reference = j.Has("reference") && j["reference"].AsBool();
             c.suspended = j.Has("suspended") && j["suspended"].AsBool();
             if (j.Has("sign"))

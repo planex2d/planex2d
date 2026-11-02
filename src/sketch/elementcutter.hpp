@@ -26,7 +26,7 @@ namespace planex2d::sketch {
     // Trim (trim): the piece of the element nearest near (reverse: the next nearest) becomes a construction element, the
     // rest stays; Split: every piece stays. The cuts are where the element meets the cutters, each cut point constrained
     // onto its cutter so the cut follows later changes; pieces of a line stay on its line, pieces of an arc or circle on
-    // its circle, pieces of a spline run between positions along it
+    // its circle, pieces of a spline or offset curve run between positions along it
     template <class Sketch>
     class ElementCutter {
     public:
@@ -37,7 +37,7 @@ namespace planex2d::sketch {
         // anyCutter: the cutters are every other element; Trim without cutters and with nothing to cut at makes all of it
         // construction
         void Cut(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &nearPoint, bool reverse, bool trim, bool tied) {
-            if (el.kind == ElementKind::Spline) {
+            if (el.kind == ElementKind::Spline || el.kind == ElementKind::OffsetCurve) {
                 CutSpline(cutters, anyCutter, nearPoint, reverse, trim);
                 return;
             }
@@ -145,7 +145,8 @@ namespace planex2d::sketch {
             return {cutElement, pieceElement};
         }
 
-        // the spline element cut at cuts, the piece numbered removed (trim) a construction element
+        // the spline or offset curve element cut at cuts, the piece numbered removed (trim) a construction element; the
+        // pieces and cuts in their order along the spline
         CutMade SplineCutAt(const SplineSpan &span, const std::vector<CutPoint> &cuts, size_t removed, bool trim) {
             const SplinePiece &piece = span.piece;
             const bool round = span.round;
@@ -177,20 +178,23 @@ namespace planex2d::sketch {
             const bool spanning = (trim ? pieces - 1 : pieces) > 1;
             if (spanning)
                 keep = pieces;
-            const std::vector<std::string> names = PieceIds(pieces, false, keep, removed);
-            std::vector<size_t> pieceElement(pieces);
+            // a reversed offset curve runs against its spline: its pieces are named and chained in its own direction
+            const bool against = el.kind == ElementKind::OffsetCurve && sk.s.offsetCurves[el.OffsetCurveIndex()].reversed;
+            const auto along = [&](size_t i) { return against && i < pieces ? pieces - 1 - i : i; };
+            const std::vector<std::string> names = PieceIds(pieces, false, along(keep), along(removed));
+            std::vector<size_t> pieceElement(pieces), ordered(pieces);
             for (size_t i = 0; i < pieces; ++i) {
                 const SplinePiece range{bounds[i].unknown, bounds[i + 1].unknown, bounds[i].point, bounds[i + 1].point};
                 if (i == keep) {
-                    sk.s.pieces.push_back(range);
-                    sk.s.elements[a].SetPieceIndex(sk.s.pieces.size());
+                    KeepPiece(range);
                     pieceElement[i] = a;
-                    continue;
+                } else {
+                    sk.AddElement(PieceOf(range), "Spline", {names[along(i)], sk.props[a], !sk.IsDrawn(a) || i == removed});
+                    pieceElement[i] = sk.s.elements.size() - 1;
                 }
-                sk.AddElement(sk.s.AddSplinePiece(el.SplineIndex(), range), "Spline", {names[i], sk.props[a], !sk.IsDrawn(a) || i == removed});
-                pieceElement[i] = sk.s.elements.size() - 1;
+                ordered[along(i)] = pieceElement[i];
             }
-            Pieced(pieceElement, keep, removed, false);
+            Pieced(ordered, along(keep), along(removed), false);
             if (!spanning)
                 sk.PiecesCut(a, el, pieceElement, sk.elementIds[a], call);
             for (size_t i = 0; i < cuts.size(); ++i) {
@@ -225,9 +229,32 @@ namespace planex2d::sketch {
         const Element el;
         const std::string &id, &call;
 
-        // Trim / Split of a spline: the spline stays as it is, its pieces between the cuts are elements that run between
-        // positions along it; each cut is a point on the spline (its position the unknown both pieces there end at) and
-        // on its cutter
+        // element a keeps the piece range of its spline or offset curve, as new data: the element as it was (el) keeps its
+        // ends for the constraints on them to follow
+        void KeepPiece(const SplinePiece &range) {
+            if (el.kind == ElementKind::OffsetCurve) {
+                sk.s.offsetCurves.push_back(CurveOver(range));
+                sk.s.elements[a].SetOffsetCurveIndex(sk.s.offsetCurves.size() - 1);
+                return;
+            }
+            sk.s.pieces.push_back(range);
+            sk.s.elements[a].SetPieceIndex(sk.s.pieces.size());
+        }
+        // a new element of the piece range of a's spline or offset curve
+        size_t PieceOf(const SplinePiece &range) {
+            if (el.kind != ElementKind::OffsetCurve)
+                return sk.s.AddSplinePiece(el.SplineIndex(), range);
+            return sk.s.AddOffsetCurve(CurveOver(range));
+        }
+        OffsetCurveData CurveOver(const SplinePiece &range) const {
+            OffsetCurveData c = sk.s.offsetCurves[el.OffsetCurveIndex()];
+            c.range = range;
+            return c;
+        }
+
+        // Trim / Split of a spline or offset curve: the spline stays as it is, its pieces between the cuts are elements that
+        // run between positions along it; each cut is a point on the curve (its position the unknown both pieces there end
+        // at) and on its cutter
         void CutSpline(const std::vector<size_t> &cutters, bool anyCutter, const Vertex &nearPoint, bool reverse, bool trim) {
             const SplineSpan span = el.Span(sk.s);
             const bool round = span.round;
@@ -261,16 +288,7 @@ namespace planex2d::sketch {
         }
 
         // an element as edges to cut with: an axis as a long line
-        Wire CutterWire(size_t c, const std::unordered_map<size_t, Properties> &vertexProps) const {
-            Wire theirs(sk.axes);
-            if (sk.s.elements[c].kind == ElementKind::Axis) {
-                const double reach = 10.0 * std::max(1.0, sk.s.Size());
-                const auto [o, u] = sk.s.elements[c].Carrier(sk.s);
-                theirs.Add(planex2d::Line(o - u * reach, o + u * reach));
-            } else
-                sk.AddEdges(c, theirs, vertexProps);
-            return theirs;
-        }
+        Wire CutterWire(size_t c, const std::unordered_map<size_t, Properties> &vertexProps) const { return sk.AsEdges(c, vertexProps); }
         // where the spline or offset curve c meets the line, arc or circle cut, from x near it: Newton steps along the
         // curve on the distance from the cut element's carrier, from the foot of x on its spline
         Vertex OnSpline(size_t c, const Vertex &x) const {

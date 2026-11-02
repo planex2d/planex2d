@@ -389,7 +389,7 @@ def test_only_a_bare_id_on_the_left_is_driven(text, drives):
         with pytest.raises(ValueError, match=re.escape("ht is driven by Expression.1")):
             sk["ht"] = 2
     else:
-        with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (%s) is redundant (consistent)" % text)):
+        with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (%s) follows from w, ht; remove one of them" % text)):
             sk.Expression(text)
         sk["ht"] = 2
         assert "ht" in sk.redundant
@@ -454,7 +454,7 @@ def test_a_consistent_cycle_is_redundant():
     sk = chain3()
     sk.Expression("a = b + 1")
     sk.Expression("b = c + 1")
-    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.3 (c = a - 2) is redundant (consistent)")):
+    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.3 (c = a - 2) follows from Expression.1, Expression.2; remove one of them")):
         sk.Expression("c = a - 2")
     assert [sk[n] for n in "abc"] == pytest.approx([3, 2, 1], abs=TOL)
     assert sk.dof == 1 and {"Expression.1", "Expression.2", "Expression.3"} <= set(sk.redundant)

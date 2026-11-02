@@ -24,6 +24,9 @@ def transposed(m):
     (square(0, 0), "2FFF1FFF2"),            # equal
     (square(0.5, 0.5, 1), "212FF1FF2"),     # containing, no contact
     (square(0, 0, 1), "212F11FF2"),         # containing, touching inside along two edges
+    (square(0, 0) - square(0.5, 0.5, 1), "212F1FFF2"),        # the same outline with a hole
+    (square(-1, -1, 4) - square(0, 0), "FF2F1F212"),          # a hole that is a
+    (square(0, 0) - square(0.5, 0, 1), "212F11FF2"),          # a bite out of an edge: its opening outside b
 ])
 def test_two_faces(b, matrix):
     a = square(0, 0)

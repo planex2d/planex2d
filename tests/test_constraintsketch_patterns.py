@@ -157,7 +157,7 @@ def test_a_full_turn_pattern_spreads_its_new_count_and_a_given_angle_stays():
 
 def test_fewer_copies_take_the_constraints_on_them_and_a_failed_update_changes_nothing():
     sk = row(4)
-    with pytest.warns(px.PlanexWarning, match="redundant"):
+    with pytest.warns(px.PlanexWarning, match="follows from"):
         sk.Constrain(sk.elements["Line"][-4], px.Distance, 1, id="last bottom")
     with pytest.warns(px.PlanexWarning, match="removed last bottom with the copies they held"):
         sk.Update({"LinearPattern.1.count": 2})
@@ -208,3 +208,25 @@ def test_a_pattern_of_arcs_sharing_a_center_copies_it_once(make):
     sk("vane").construction = False
     sk.CircularPattern("vane", "origin", 6, id="vanes")
     assert len(sk.Shape().faces) == 6
+
+
+def test_a_new_count_leaves_the_original_where_nothing_holds_it():
+    sk = px.Sketch()
+    sk.Move((1, 0)).Circle(0.2, id="bolt")
+    sk.CircularPattern("bolt", sk.origin, 4, id="ring")
+    sk.Update({"ring.count": 6})
+    assert sk.Location("bolt.center") == pytest.approx((1, 0), abs=TOL)
+    assert sk.Location("ring.1.bolt.center") == pytest.approx((0.5, math.sqrt(3) / 2), abs=TOL)
+    sk.Update({"ring.angle": 50})
+    assert sk.Location("bolt.center") == pytest.approx((1, 0), abs=TOL)
+
+
+def test_a_constraint_on_a_copy_moves_the_original_with_it():
+    sk = px.Sketch()
+    sk.Move((1, 0)).Circle(0.2, id="bolt")
+    sk.CircularPattern("bolt", sk.origin, 4, id="ring")
+    sk.Constrain("ring.1.bolt.center", px.Fix)
+    sk.Update({"ring.count": 6})
+    # the first copy stays at (0, 1), 60 degrees on from the original now: the original turns back to 30 degrees
+    assert sk.Location("ring.1.bolt.center") == pytest.approx((0, 1), abs=1e-12)
+    assert sk.Location("bolt.center") == pytest.approx((math.cos(math.radians(30)), 0.5), abs=1e-12)

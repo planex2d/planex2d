@@ -32,6 +32,8 @@ namespace planex2d {
         std::vector<char> determined;
         // per constraint: it depends on the others (for a solved system: it is redundant, the system over-constrained)
         std::vector<char> redundant;
+        // per redundant constraint: the others it follows from
+        std::vector<std::vector<size_t>> partners;
         // the most a small change of the dimensions can move the geometry, relative to it: 1 / the smallest kept
         // singular value (lengths and angles times the size alike); large when nearly singular
         double amplification = 0.0;
@@ -54,6 +56,8 @@ namespace planex2d {
         size_t rank = 0;
         double amplification = 0.0;
         std::vector<char> determined, redundant;
+        // per redundant constraint, the others it follows from (indices into the component's constraints)
+        std::vector<std::vector<size_t>> partners;
         // false: determined was not worked out (the amplification is RowAmplification's)
         bool complete = true;
         // false: it depends on more than the Jacobian (the second derivatives at a double root)
@@ -139,6 +143,30 @@ namespace planex2d {
         return (size_t)(d - K.cols());
     }
 
+    // the rows of J of the constraints given (first: where each constraint's rows start), dense
+    inline Eigen::MatrixXd RowsOf(const SparseMatrix &J, const std::vector<size_t> &first, const std::vector<size_t> &constraints) {
+        std::vector<Eigen::Index> at((size_t)J.rows(), -1);
+        Eigen::Index k = 0;
+        for (size_t c : constraints)
+            for (size_t row = first[c]; row < first[c + 1]; ++row)
+                at[row] = k++;
+        Eigen::MatrixXd out = Eigen::MatrixXd::Zero(k, J.cols());
+        for (Eigen::Index o = 0; o < J.outerSize(); ++o)
+            for (SparseMatrix::InnerIterator it(J, o); it; ++it)
+                if (at[(size_t)it.row()] >= 0)
+                    out(at[(size_t)it.row()], it.col()) = it.value();
+        return out;
+    }
+    inline size_t RankOf(const Eigen::MatrixXd &A, double tol) {
+        if (A.rows() == 0)
+            return 0;
+        const Eigen::JacobiSVD<Eigen::MatrixXd> svd(A);
+        size_t rank = 0;
+        for (double v : svd.singularValues())
+            rank += v > tol;
+        return rank;
+    }
+
     // the analysis of one component, J its Jacobian at x; complete false: not the dense bases when its rows are
     // independent beyond doubt
     template <class System>
@@ -148,6 +176,7 @@ namespace planex2d {
         PartAnalysis out;
         out.determined.assign(n, 0);
         out.redundant.assign(eq.part.constraints.size(), 0);
+        out.partners.assign(eq.part.constraints.size(), {});
         // the rank as the singular values above rank_tol times the largest would give it
         const double largest = LargestSingularValue(J);
         if (!complete)
@@ -171,18 +200,45 @@ namespace planex2d {
             out.determined[j] = qr.motions.row(Eigen::Index(j)).norm() <= zero;
         // a constraint is redundant if it takes no rank: without its rows the rank stays, so the dependencies
         // restricted to its rows have full rank
-        size_t row = 0;
-        for (size_t c = 0; c < eq.part.constraints.size(); ++c) {
-            const size_t rows = eq.system.Rows(eq.part.constraints[c]);
+        const size_t count = eq.part.constraints.size();
+        std::vector<size_t> first(count + 1, 0);
+        for (size_t c = 0; c < count; ++c)
+            first[c + 1] = first[c] + eq.system.Rows(eq.part.constraints[c]);
+        const auto rowsOf = [&](const Eigen::MatrixXd &M, size_t c) {
+            return M.middleRows(Eigen::Index(first[c]), Eigen::Index(first[c + 1] - first[c]));
+        };
+        for (size_t c = 0; c < count; ++c) {
+            const size_t rows = first[c + 1] - first[c];
             size_t spanned = 0;
             if (rows > 0 && qr.dependencies.cols() >= Eigen::Index(rows)) {
                 // a range-for over singularValues() of a temporary SVD reads it after it is destroyed (until C++23)
-                const Eigen::JacobiSVD<Eigen::MatrixXd> svd(qr.dependencies.middleRows(Eigen::Index(row), Eigen::Index(rows)));
+                const Eigen::JacobiSVD<Eigen::MatrixXd> svd(rowsOf(qr.dependencies, c));
                 for (double v : svd.singularValues())
                     spanned += v > zero;
             }
             out.redundant[c] = rows > 0 && spanned == rows;
-            row += rows;
+        }
+        // what a redundant constraint follows from: the others with weight in its rows' projections onto the
+        // dependencies, the smallest combinations of rows through it (not always the fewest constraints)
+        for (size_t c = 0; c < count; ++c) {
+            if (!out.redundant[c])
+                continue;
+            const Eigen::MatrixXd through = qr.dependencies * rowsOf(qr.dependencies, c).transpose();
+            const double most = through.cwiseAbs().maxCoeff();
+            std::vector<size_t> &from = out.partners[c];
+            for (size_t j = 0; j < count; ++j)
+                if (j != c && first[j + 1] > first[j] && rowsOf(through, j).cwiseAbs().maxCoeff() > zero * most)
+                    from.push_back(j);
+            // a partner goes where c's rows still depend on the others' (from the last one back)
+            const double tol = config::state->rank_tol * largest;
+            for (size_t k = from.size(); k-- > 0;) {
+                std::vector<size_t> fewer = from;
+                fewer.erase(fewer.begin() + (std::ptrdiff_t)k);
+                std::vector<size_t> with = fewer;
+                with.push_back(c);
+                if (RankOf(RowsOf(J, first, with), tol) == RankOf(RowsOf(J, first, fewer), tol))
+                    from = std::move(fewer);
+            }
         }
         return out;
     }
@@ -241,6 +297,7 @@ namespace planex2d {
         ConstraintAnalysis analysis;
         analysis.determined.assign(x.value.size(), 0);
         analysis.redundant.assign(system.Count(), 0);
+        analysis.partners.assign(system.Count(), {});
         for (size_t i = 0; i < x.value.size(); ++i)
             analysis.determined[i] = x.fixed[i];
         for (size_t c : components.constant)
@@ -263,8 +320,11 @@ namespace planex2d {
             analysis.rank += p.rank;
             analysis.amplification = std::max(analysis.amplification, p.amplification);
             analysis.complete = analysis.complete && p.complete;
-            for (size_t c = 0; c < part.constraints.size(); ++c)
+            for (size_t c = 0; c < part.constraints.size(); ++c) {
                 analysis.redundant[part.constraints[c]] = p.redundant[c];
+                for (size_t j : p.partners[c])
+                    analysis.partners[part.constraints[c]].push_back(part.constraints[j]);
+            }
             if (p.complete)
                 for (size_t j = 0; j < part.unknowns.size(); ++j)
                     analysis.determined[part.unknowns[j]] = p.determined[j];

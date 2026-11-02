@@ -108,7 +108,7 @@ namespace planex2d {
                 Finish();
                 pen.pos = pen.start = p;
                 for (sketch::Kind k : flags) {
-                    if (k != sketch::Kind::Fix)
+                    if (!sketch::IsFix(k))
                         throw std::invalid_argument("Move((h, v)): px." + std::string(sketch::KindName(k)) +
                                                     " is no flag here (a coincidence needs a point id: Move(id, px.Coincident))");
                     RelateGiven(k, {{PenPoint({})}});
@@ -125,9 +125,9 @@ namespace planex2d {
                     throw std::invalid_argument("Move('" + ref + "'): not a point");
                 pen.pos = pen.start = r.PointValue(s);
                 for (sketch::Kind k : flags) {
-                    if (k != sketch::Kind::Fix && k != sketch::Kind::Coincident)
+                    if (!sketch::IsFix(k) && k != sketch::Kind::Coincident)
                         throw std::invalid_argument("Move('" + ref + "'): px." + std::string(sketch::KindName(k)) + " is no flag here");
-                    RelateGiven(k, k == sketch::Kind::Fix ? std::vector<sketch::Ref>{{PenPoint({})}} : std::vector<sketch::Ref>{{PenPoint({})}, r});
+                    RelateGiven(k, sketch::IsFix(k) ? std::vector<sketch::Ref>{{PenPoint({})}} : std::vector<sketch::Ref>{{PenPoint({})}, r});
                 }
                 Sync();
             });
@@ -212,14 +212,24 @@ namespace planex2d {
         }
         // a spline from the pen (fromPen, else from the first point) through points, closed back to its start, with
         // tangent directions at some of them (indices into all its points, the start 0); its points are point elements,
-        // the tangents angle unknowns
+        // the tangents angle unknowns; settings: a tangent's tension and the curvature there, a curvature a dimension
+        // (CurvatureRadius) in a sketch with constraints
         BasicSketch &Spline(const std::vector<Vertex> &points, bool closed, const std::map<size_t, Vertex> &tangents, bool fromPen,
-                                 const std::vector<sketch::Kind> &flags, const Options &opt, SplineStyle style = SplineStyle::Averaged) {
+                                 const std::vector<sketch::Kind> &flags, const Options &opt, SplineStyle style = SplineStyle::Averaged,
+                                 const std::map<size_t, TangentSetting<double>> &settings = {}) {
             CheckFlags(flags);
             for (const Vertex &p : points)
                 IsFinite("Spline", {p.x, p.y});
             for (const auto &[k, t] : tangents)
                 IsFinite("Spline", {t.x, t.y});
+            for (const auto &[k, setting] : settings) {
+                if (!tangents.count(k))
+                    throw std::invalid_argument("Spline: a " + std::string(setting.curvature ? "curvature radius" : "tension") + " at point " +
+                                                std::to_string(k) + ", which has no tangent; give its tangent too");
+                if (!(setting.tension > 0.0) || !std::isfinite(setting.tension))
+                    throw std::invalid_argument("Spline: the tension at point " + std::to_string(k) + " is " + std::to_string(setting.tension) +
+                                                "; it is positive and finite");
+            }
             return Drawing(opt, [&] {
                 std::vector<Vertex> rest = points;
                 if (!fromPen && !rest.empty()) {
@@ -250,8 +260,12 @@ namespace planex2d {
                     at.push_back(k);
                     angles.push_back(std::atan2(t.y, t.x));
                 }
-                const size_t e = AddElement(s.AddSpline(ids, at, angles, closed, style), "Spline", opt);
+                const size_t e = AddElement(s.AddSpline(ids, at, angles, closed, style, settings), "Spline", opt);
                 SplineAdded(e);
+                for (const auto &[k, setting] : settings)
+                    if (setting.curvature)
+                        Dimension(sketch::Kind::CurvatureRadius, {{e, sketch::Part::Point, k}},
+                                  *setting.curvature == 0.0 ? std::numeric_limits<double>::infinity() : 1.0 / *setting.curvature, "", false);
                 Extend(e);
                 if (closed)
                     pen.pos = Coords(s.elements[*pen.point].Point());
@@ -264,9 +278,50 @@ namespace planex2d {
                     Finish();
             });
         }
+        // a spline by its poles: the poles point elements, its knots (clamped and uniform, or one period evenly, when
+        // none are given) and degree; periodic: closed. It goes on from the pen if the pen is at its first pole (to
+        // rounding), else it starts a chain of its own. Its control polygon's legs are construction lines (AddLegs)
+        BasicSketch &BSpline(const std::vector<Vertex> &poles, const std::optional<std::vector<double>> &knots, size_t degree,
+                             bool periodic, const std::vector<sketch::Kind> &flags, const Options &opt) {
+            CheckFlags(flags);
+            for (const Vertex &p : poles)
+                IsFinite("BSpline", {p.x, p.y});
+            if (poles.size() < degree + 1 || degree < 1)
+                throw std::invalid_argument("BSpline: " + std::to_string(poles.size()) + " poles of degree " + std::to_string(degree) +
+                                            "; it needs a degree of 1 at least and degree + 1 poles");
+            return Drawing(opt, [&] {
+                if (!poles.front().IsClose(pen.pos, Tol(std::max(NormInf(pen.pos), NormInf(poles.front()))))) {
+                    Finish();
+                    pen.pos = pen.start = poles.front();
+                }
+                std::vector<size_t> ids{s.elements[PenPoint(opt)].Point()};
+                for (size_t k = 1; k < poles.size(); ++k) {
+                    const size_t e = k + 1 == poles.size() && !periodic ? EndPoint(poles[k], opt)
+                                                                         : AddElement(s.AddPoint(s.NewPoint(poles[k])), "Point", {std::nullopt, {}, true});
+                    ids.push_back(s.elements[e].Point());
+                    pen.pos = poles[k];
+                    if (!periodic)
+                        pen.point = e;
+                }
+                const std::vector<double> k = knots ? *knots : UniformKnots(poles.size(), degree, periodic);
+                const size_t e = AddElement(s.AddPoledSpline(ids, k, degree, periodic), "BSpline", opt);
+                AddLegs(e);
+                SplineAdded(e);
+                Extend(e);
+                if (periodic)
+                    pen.pos = poles.front();
+                const Vertex t = s.elements[e].TangentAtFraction(s, periodic ? 0.0 : 1.0);
+                pen.dir = t * (1.0 / Norm(t));
+                Flags(e, flags);
+                pen.last = e;
+                Sync();
+                if (periodic)
+                    Finish();
+            });
+        }
         // a curve: the spline fitted to it, shape in sketch coordinates where its formula puts it, its frame at the
-        // sketch's origin (it moves and turns as one, px.Fix by default; formula: what it refits from, none for a
-        // callable's). It goes on from the pen if the pen is at its start (to rounding), else it starts a chain of its
+        // sketch's origin (it moves and turns as one, px.Fix by default, px.FixH or px.FixV in its place when given;
+        // formula: what it refits from, none for a callable's). It goes on from the pen if the pen is at its start (to rounding), else it starts a chain of its
         // own; the pen goes to its end
         BasicSketch &Curve(const planex2d::Curve<double, Vertex> &shape, std::optional<sketch::CurveFormula> formula, const std::vector<sketch::Kind> &flags,
                            const Options &opt) {
@@ -287,7 +342,7 @@ namespace planex2d {
                 const Vertex t = shape.At(shape.closed ? shape.params.front() : shape.params.back(), 1);
                 pen.dir = t * (1.0 / Norm(t));
                 Flags(e, flags);
-                if (std::find(flags.begin(), flags.end(), sketch::Kind::Fix) == flags.end())
+                if (std::none_of(flags.begin(), flags.end(), sketch::IsFix))
                     RelateGiven(sketch::Kind::Fix, {{e}});
                 pen.last = e;
                 Sync();
@@ -578,6 +633,7 @@ namespace planex2d {
                 throw std::invalid_argument("Remove('" + id + "'): '" + elementIds[*blend] + "' is computed from it; Remove('" + elementIds[*blend] +
                                             "') first");
             const std::vector<std::string> ends = EndsToRemove(k, id);
+            const std::vector<std::string> legs = LegsGoingWith(k);
             ElementGoes(k, id);
             Finish();
             std::erase_if(wires, [&](auto &w) {
@@ -591,6 +647,24 @@ namespace planex2d {
                 if (Unused(byId.at(end).index))
                     RemoveOne(end);
             Reindex();
+            for (const std::string &leg : legs)
+                RemoveOne(leg);
+        }
+        // the legs of b-spline element k, which go with it (their poles then too, unless used) when no other piece of its
+        // spline stays
+        std::vector<std::string> LegsGoingWith(size_t k) const {
+            const sketch::Element &e = s.elements[k];
+            if (!e.IsPoled(s))
+                return {};
+            std::vector<std::string> legs;
+            for (size_t j = 0; j < s.elements.size(); ++j) {
+                const sketch::Element &other = s.elements[j];
+                if (j != k && other.kind == sketch::ElementKind::Spline && other.SplineIndex() == e.SplineIndex())
+                    return {};
+                if (s.LegOf(other) == e.SplineIndex())
+                    legs.push_back(elementIds[j]);
+            }
+            return legs;
         }
         // the point elements at the ends and centre of element k (id), which go with it if nothing else uses them; raises
         // for the axes and the origin, and for a point something ends at, runs through or has its centre at
@@ -611,6 +685,7 @@ namespace planex2d {
                     if (j != k && (centre || std::find(through.begin(), through.end(), e.Point()) != through.end()))
                         throw std::invalid_argument("Remove('" + id + "'): " + elementIds[j] +
                                                     (centre                                      ? " has its center there"
+                                                     : other.IsPoled(s)                          ? " has it as a pole"
                                                      : other.kind == sketch::ElementKind::Spline ? " runs through it"
                                                                                                  : " ends there") +
                                                     ", remove it first");
@@ -621,7 +696,7 @@ namespace planex2d {
         // the element ids by kind, in the order they were made
         std::vector<std::pair<std::string, std::vector<std::string>>> Elements() const {
             std::vector<std::pair<std::string, std::vector<std::string>>> out;
-            for (const char *kind : {"Point", "Line", "Arc", "Circle", "Spline", "Curve", "Axis", "Pattern", "Offset"}) {
+            for (const char *kind : {"Point", "Line", "Arc", "Circle", "Spline", "BSpline", "Curve", "Axis", "Pattern", "Offset"}) {
                 std::vector<std::string> ids;
                 for (size_t e = 0; e < s.elements.size(); ++e)
                     if (s.elements[e].KindName(s) == kind && !IsHidden(e))
@@ -644,7 +719,7 @@ namespace planex2d {
         // the (kind, id) of what an id names in a selection: the element and the elements under it (Line.1.corner), in
         // the order of Elements(); none unless the id names a line, arc, circle, spline or point itself
         std::vector<std::pair<std::string, std::string>> Chosen(const std::string &id) const {
-            constexpr std::array<const char *, 6> kinds = {"Point", "Line", "Arc", "Circle", "Spline", "Curve"};
+            constexpr std::array<const char *, 7> kinds = {"Point", "Line", "Arc", "Circle", "Spline", "BSpline", "Curve"};
             std::vector<std::pair<std::pair<size_t, size_t>, std::string>> hits;
             const auto take = [&](const std::string &x) {
                 const auto at = byId.find(x);
@@ -1799,7 +1874,13 @@ namespace planex2d {
             const sketch::OffsetCurveData &c = s.offsetCurves[s.elements[byId.at(curve).index].OffsetCurveIndex()];
             const planex2d::Curve<double, Vertex> f = s.splines[c.spline].Interpolated(s);
             const std::array<double, 2> range = c.Range(s, f);
-            return sketch::Cusp(f, c.side, range[0], range[1], d, source);
+            const double end = f.params.back();
+            if (range[1] <= end)
+                return sketch::Cusp(f, c.side, range[0], range[1], d, source);
+            // a piece over a closed spline's seam: the stretches before and after it
+            if (std::optional<std::string> cusp = sketch::Cusp(f, c.side, range[0], end, d, source))
+                return cusp;
+            return sketch::Cusp(f, c.side, 0.0, range[1] - end, d, source);
         }
         // of any spline of the chain over all of it, on the sides the offset takes (towards as SidesOf takes it)
         std::optional<std::string> ChainCusp(const sketch::OffsetChain &source, const EdgeList &edges, double d, const std::vector<int> &towards) const {
@@ -1834,6 +1915,119 @@ namespace planex2d {
                 CutPieces(id, cutterIds, nearPoint, reverse, trim, tied, call);
             });
             return *this;
+        }
+
+        // the end of a line along its line, of an arc along its circle, to where it first meets one of the targets, or by
+        // length along it; ends its point (what shares the point moves with it)
+        virtual BasicSketch &Extend(const std::string &id, const std::vector<std::string> &targets, std::optional<double> length) {
+            const auto [point, at] = ExtendedEnd(id, targets, length, "Extend('" + id + "')");
+            MovePoint(point, at);
+            Sync();
+            return *this;
+        }
+        // the point Extend moves and where to: an end given, or of an element given whole the end nearer the targets; a
+        // length needs the end. The point must be the element's own
+        std::pair<size_t, Vertex> ExtendedEnd(const std::string &id, const std::vector<std::string> &targets, std::optional<double> length,
+                                              const std::string &call) {
+            Finish();
+            const sketch::Ref r = RefOf(id);
+            const size_t e = r.element;
+            const sketch::Element el = s.elements[e];
+            const bool line = el.kind == sketch::ElementKind::Line;
+            if (e < 3 || (!line && el.kind != sketch::ElementKind::Arc) ||
+                (r.part != sketch::Part::Whole && r.part != sketch::Part::Start && r.part != sketch::Part::End))
+                throw std::invalid_argument(call + ": a line or an arc, or one of its ends, extends (a spline does not)");
+            if (length && r.part == sketch::Part::Whole)
+                throw std::invalid_argument(call + ": a length moves one end; give '" + id + ".start' or '" + id + ".end'");
+            if (length && !(std::isfinite(*length) && *length > 0.0))
+                throw std::invalid_argument(call + ": the length is above 0 (Trim shortens)");
+            const std::unordered_map<size_t, Properties> vertexProps = VertexProps();
+            Wire to(axes);
+            for (const std::string &t : targets) {
+                const sketch::Ref tr = RefOf(t);
+                const sketch::ElementKind k = s.elements[tr.element].kind;
+                if (tr.part != sketch::Part::Whole || tr.element == e || k == sketch::ElementKind::Point || k == sketch::ElementKind::Pattern ||
+                    k == sketch::ElementKind::Offset)
+                    throw std::invalid_argument(call + ": '" + t + "' is no line, arc, circle, spline or axis to extend to");
+                for (const Edge &x : AsEdges(tr.element, vertexProps))
+                    to.Add(x);
+            }
+            const auto apart = [&](const Vertex &p) {
+                double nearest = std::numeric_limits<double>::infinity();
+                for (const Edge &x : to)
+                    nearest = std::min(nearest, planex2d::Distance(p, x));
+                return nearest;
+            };
+            const bool atEnd = r.part == sketch::Part::End || (r.part == sketch::Part::Whole && apart(Coords(el.End())) < apart(Coords(el.Start())));
+            const size_t point = atEnd ? el.End() : el.Start();
+            for (size_t k = 3; k < s.elements.size(); ++k)
+                if (k != e && s.elements[k].kind != sketch::ElementKind::Point)
+                    for (size_t q : s.elements[k].PointsAndCentre(s))
+                        if (s.coordsOf[q] == s.coordsOf[point])
+                            throw std::invalid_argument(call + ": " + elementIds[k] + " ends there too; a free end extends");
+            const Vertex from = Coords(point), other = Coords(atEnd ? el.Start() : el.End());
+            const double tol = Tol(std::max(1.0, s.Size()));
+            const std::string what = targets.size() == 1 ? targets[0] : Joined(targets);
+            if (line) {
+                const Vertex u = planex2d::Normalized(from - other);
+                if (length)
+                    return {point, from + u * *length};
+                Wire ray(axes);
+                ray.Add(planex2d::Line(from, from + u * (10.0 * std::max(1.0, s.Size()) + Norm(from))));
+                std::optional<Vertex> hit;
+                for (const Vertex &x : planex2d::Intersections(ray, to))
+                    if (!x.IsClose(from, tol) && (!hit || Norm(x - from) < Norm(*hit - from)))
+                        hit = x;
+                if (!hit)
+                    throw std::invalid_argument(call + ": it does not meet " + what + " along its line");
+                return {point, *hit};
+            }
+            // an arc goes on the way it runs at its end, back at its start, round the gap to its other end
+            const Vertex c = Coords(el.Center());
+            const double radius = s.values[el.Radius()];
+            const bool forward = atEnd == el.ccw;
+            const auto turn = [&](const Vertex &p) {
+                const Vertex a = from - c, b = p - c;
+                const double t = std::atan2(Cross(a, b), Dot(a, b)) * (forward ? 1.0 : -1.0);
+                return t < 0.0 ? t + 2.0 * std::numbers::pi : t;
+            };
+            const double gap = turn(other);
+            if (length) {
+                const double angle = *length / radius;
+                if (angle >= gap)
+                    throw std::invalid_argument(call + ": the arc would close into a circle");
+                return {point, planex2d::Rotated(from, c, std::cos(angle), std::sin(angle) * (forward ? 1.0 : -1.0))};
+            }
+            Wire rest(axes);
+            rest.Add(planex2d::Arc(from, other, c, forward));
+            std::optional<Vertex> hit;
+            double first = gap;
+            for (const Vertex &x : planex2d::Intersections(rest, to))
+                if (const double t = turn(x); t > tol / radius && t < first) {
+                    first = t;
+                    hit = x;
+                }
+            if (!hit)
+                throw std::invalid_argument(call + ": it does not meet " + what + " along its circle");
+            return {point, *hit};
+        }
+        // point p moved to q, and what shares it
+        void MovePoint(size_t p, const Vertex &q) {
+            for (size_t k : {s.coordsOf[p], s.ownCoordsOf[p]}) {
+                s.values[k] = q.x;
+                s.values[k + 1] = q.y;
+            }
+        }
+        // an element as edges: an axis as a line that crosses the sketch
+        Wire AsEdges(size_t e, const std::unordered_map<size_t, Properties> &vertexProps) const {
+            Wire w(axes);
+            if (s.elements[e].kind == sketch::ElementKind::Axis) {
+                const double reach = 10.0 * std::max(1.0, s.Size());
+                const auto [o, u] = s.elements[e].Carrier(s);
+                w.Add(planex2d::Line(o - u * reach, o + u * reach));
+            } else
+                AddEdges(e, w, vertexProps);
+            return w;
         }
 
         // the elements of a wire (a chain, an id_wire) or a group (a profile's id), in order; none for an element's id
@@ -2225,7 +2419,8 @@ namespace planex2d {
                 throw std::invalid_argument(call + ": it is cut into " + Joined(wires.at(elementIds[a])) + " already; cut one of them");
             const sketch::Element el = s.elements[a];
             const bool line = el.kind == sketch::ElementKind::Line, circle = el.kind == sketch::ElementKind::Circle;
-            if (ar.part != sketch::Part::Whole || a < 3 || !(line || circle || el.kind == sketch::ElementKind::Arc || el.kind == sketch::ElementKind::Spline))
+            if (ar.part != sketch::Part::Whole || a < 3 ||
+                !(line || circle || el.kind == sketch::ElementKind::Arc || el.kind == sketch::ElementKind::Spline || el.kind == sketch::ElementKind::OffsetCurve))
                 throw std::invalid_argument(call + ": not a line, arc, circle or spline");
             std::vector<size_t> cutters;
             if (cutterIds.empty()) {
@@ -2262,7 +2457,8 @@ namespace planex2d {
             std::vector<std::pair<size_t, bool>> out;
             for (size_t e = 3; e < s.elements.size(); ++e) {
                 const sketch::ElementKind kind = s.elements[e].kind;
-                if (!IsDrawn(e) || (kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc && kind != sketch::ElementKind::Spline))
+                if (!IsDrawn(e) || (kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc && kind != sketch::ElementKind::Spline &&
+                                    kind != sketch::ElementKind::OffsetCurve))
                     continue;
                 const std::array<size_t, 2> ends = s.elements[e].Ends(s);
                 for (size_t k = 0; k < 2; ++k)
@@ -2294,14 +2490,18 @@ namespace planex2d {
             cornering = true;
             const std::string id = elementIds[e];
             sketch::ElementCutter<BasicSketch> cutter(*this, e, id, call);
-            if (el.kind == sketch::ElementKind::Spline) {
+            // a spline's or offset curve's pieces come in their order along the spline, which a reversed offset curve runs against
+            size_t piece = removed;
+            if (el.kind == sketch::ElementKind::Spline || el.kind == sketch::ElementKind::OffsetCurve) {
+                if (el.kind == sketch::ElementKind::OffsetCurve && s.offsetCurves[el.OffsetCurveIndex()].reversed)
+                    piece = 1 - removed;
                 const sketch::SplineSpan span = el.Span(s);
                 const double t = span.Along(x);
-                made = cutter.SplineCutAt(span, {sketch::CutPoint{t, span.At(t, 0), sketch::none}}, removed, true);
+                made = cutter.SplineCutAt(span, {sketch::CutPoint{t, span.At(t, 0), sketch::none}}, piece, true);
             } else
                 made = cutter.CutAt({sketch::CutPoint{el.Param(s, x), x, sketch::none}}, removed, true, true);
             cornering = false;
-            return {s.elements[made.cuts[0]].Point(), {made.cuts[0]}, {made.pieces[removed], corner}};
+            return {s.elements[made.cuts[0]].Point(), {made.cuts[0]}, {made.pieces[piece], corner}};
         }
         virtual void CornerMade(const FilletRule &, const sketch::CornerParts &) {}
         virtual void CornerMade(const ChamferRule &, const sketch::CornerParts &) {}
@@ -2492,13 +2692,19 @@ namespace planex2d {
                 made.points.push_back({pe, elementIds.size() - 1});
                 return s.elements.back().Point();
             };
-            std::set<size_t> centres;
+            std::set<size_t> centres, splines;
             std::unordered_map<size_t, size_t> copiedCentres;
-            for (size_t e : originals)
+            for (size_t e : originals) {
                 if (s.elements[e].kind == sketch::ElementKind::Arc || s.elements[e].kind == sketch::ElementKind::Circle)
                     centres.insert(s.elements[e].Center());
+                if (s.elements[e].kind == sketch::ElementKind::Spline)
+                    splines.insert(s.elements[e].SplineIndex());
+            }
             for (size_t e : originals) {
                 const sketch::Element el = s.elements[e];
+                // a copied b-spline makes its own legs
+                if (splines.contains(s.LegOf(el)))
+                    continue;
                 const Options opt{copyId(e), props[e], !IsDrawn(e)};
                 if (el.kind == sketch::ElementKind::Point) {
                     if (!centres.contains(el.Point()))
@@ -2558,6 +2764,15 @@ namespace planex2d {
                 roles[pointElementOf.at(s.elements[b.helper].Center())] = sketch::Role::Helper;
             }
         }
+        // the control polygon of b-spline element e: construction lines between its neighbouring poles, '<id>.leg.k' from
+        // pole k (a periodic one's last back to the first pole), so that line constraints shape it
+        void AddLegs(size_t e) {
+            const sketch::SplineData &d = s.splines[s.elements[e].SplineIndex()];
+            const std::vector<size_t> poles = d.points;
+            const bool closed = d.closed;
+            for (size_t i = 0; i + 1 < poles.size() + (closed ? 1 : 0); ++i)
+                AddElement(s.AddLine(poles[i], poles[(i + 1) % poles.size()]), "Line", {elementIds[e] + ".leg." + std::to_string(i), {}, true});
+        }
         // the copy of spline element e: pieces of one spline share one copy of it, the positions they end at copied once
         template <class F, class CopyPoint>
         void CopySpline(size_t e, const Options &opt, F f, bool flip, CopyPoint copyPoint, const std::unordered_map<size_t, size_t> &pointElement,
@@ -2582,13 +2797,22 @@ namespace planex2d {
                 for (size_t p : d.points)
                     points.push_back(copyPoint(p));
                 std::vector<double> angles;
+                std::map<size_t, TangentSetting<double>> settings;
                 for (size_t t = 0; t < d.tangent.size(); ++t) {
                     const Vertex p = Coords(d.points[d.tangentAt[t]]), u{std::cos(s.values[d.tangent[t]]), std::sin(s.values[d.tangent[t]])};
                     const Vertex w = f(p + u) - f(p);
                     angles.push_back(std::atan2(w.y, w.x));
+                    const size_t k = d.tangentAt[t], c = d.CurvatureAt(k);
+                    settings[k] = {d.TensionAt(k), c == sketch::none ? std::nullopt : std::optional<double>(flip ? -s.values[c] : s.values[c])};
                 }
-                AddElement(s.AddSpline(points, d.tangentAt, angles, d.closed, d.style), "Spline", opt);
-                copy = s.elements.size() - 1;
+                if (d.poled) {
+                    AddElement(s.AddPoledSpline(points, d.poled->knots, d.poled->degree, d.closed), "BSpline", opt);
+                    copy = s.elements.size() - 1;
+                    AddLegs(copy);
+                } else {
+                    AddElement(s.AddSpline(points, d.tangentAt, angles, d.closed, d.style, settings), "Spline", opt);
+                    copy = s.elements.size() - 1;
+                }
                 made.splines.push_back({e, copy});
             }
             size_t element = copy;
@@ -2891,9 +3115,18 @@ namespace planex2d {
                     if (s.elements[it->second.index].IsFitted(s))
                         throw std::invalid_argument("no element '" + text + "': a curve has no points of its own but its ends, '" + text.substr(0, dot) +
                                                     ".start' and '" + text.substr(0, dot) + ".end'");
-                    const size_t n = s.splines[s.elements[it->second.index].SplineIndex()].points.size();
+                    const sketch::SplineData &d = s.splines[s.elements[it->second.index].SplineIndex()];
+                    const size_t n = d.points.size();
                     if (k->second >= n)
                         throw std::invalid_argument("no element '" + text + "': the spline has the points p0 to p" + std::to_string(n - 1));
+                    if (d.poled && k->first == sketch::Part::Tangent && d.closed)
+                        throw std::invalid_argument("no element '" + text + "': a periodic BSpline runs through none of its poles; its legs '" +
+                                                    text.substr(0, dot) + ".leg.0' to '" + text.substr(0, dot) + ".leg." + std::to_string(n - 1) +
+                                                    "' shape it");
+                    if (d.poled && k->first == sketch::Part::Tangent)
+                        throw std::invalid_argument("no element '" + text + "': a BSpline runs through no pole but its ends; its tangents there are "
+                                                    "its first and last legs, '" + text.substr(0, dot) + ".leg.0' and '" + text.substr(0, dot) +
+                                                    ".leg." + std::to_string(n - 2) + "'");
                     return {it->second.index, k->first, k->second};
                 }
                 const std::optional<sketch::Part> p = part == "start"    ? std::optional(sketch::Part::Start)
@@ -2905,6 +3138,11 @@ namespace planex2d {
                     if (s.elements[it->second.index].kind == sketch::ElementKind::Circle && *p != sketch::Part::Center)
                         throw std::invalid_argument("no element '" + text + "': a circle has no start, end or mid point; its point is '" +
                                                     text.substr(0, dot) + ".center'");
+                    if (const sketch::Element &el = s.elements[it->second.index];
+                        el.kind == sketch::ElementKind::Spline && !el.IsPiece(s) && s.splines[el.SplineIndex()].poled && s.splines[el.SplineIndex()].closed &&
+                        (*p == sketch::Part::Start || *p == sketch::Part::End))
+                        throw std::invalid_argument("no element '" + text + "': a periodic BSpline has no start or end and runs through none of its "
+                                                    "poles, '" + text.substr(0, dot) + ".p0', ...");
                     const sketch::Ref r{it->second.index, *p};
                     if (!r.HasPart(s))
                         throw std::invalid_argument("no element '" + text + "': '" + text.substr(0, dot) + "' has no ." + part + " point");
@@ -2973,6 +3211,8 @@ namespace planex2d {
                 case sketch::Kind::Horizontal:
                 case sketch::Kind::Vertical:
                 case sketch::Kind::Fix:
+                case sketch::Kind::FixH:
+                case sketch::Kind::FixV:
                     RelateGiven(k, {{e}});
                     break;
                 case sketch::Kind::Tangent:

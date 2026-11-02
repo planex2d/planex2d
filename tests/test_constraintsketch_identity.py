@@ -59,7 +59,7 @@ def bends():
 
 def curve():
     sk = px.Sketch()
-    sk.Move((0, 0), px.Fix).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, id="s")
+    sk.Move((0, 0), px.Fix).Spline([(1, 1), (2, 0), (3, 1)], tangents={0: (1, 0)}, id="s", style="averaged")
     sk.Constrain("s.p2", px.Fix)
     sk.Move((1, -1)).Line(2, 3, id="l")
     sk.Constrain("l.start", "s", px.Coincident)

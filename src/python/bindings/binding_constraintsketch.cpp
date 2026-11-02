@@ -146,8 +146,8 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
                     kind = h.cast<sketch::Kind>();
                 } else if (kind && IsNumber(h) && !value)
                     value = h.cast<double>();
-                else if (!kind && occ->isShape(h))
-                    refs.push_back(s.ProjectedReference(*occ->projected(h, s.Axes(), true), "Constrain"));
+                else if (!kind && occHooks->isShape(h))
+                    refs.push_back(s.ProjectedReference(*occHooks->projected(h, s.Axes(), true), "Constrain"));
                 else if (!kind)
                     refs.push_back(RefIn(s, h, "Constrain"));
                 else
@@ -287,6 +287,13 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
                                "status: str\n\nWhether the constraints fix everything: 'full', or 'under' (it can still move), or 'over' while a constraint that contradicts the others is kept but not solved; redundant constraints are in redundant.")
         .def_property_readonly("redundant", &ConstraintSketch::Redundant,
                                "redundant: list[str]\n\nThe ids of the constraints that follow from the others (consistently: the sketch is solved).")
+        .def_property_readonly("dependencies", [](ConstraintSketch &s) {
+            py::dict out;
+            for (const auto &[id, from] : s.Dependencies())
+                out[py::str(id)] = from;
+            return out;
+        }, "dependencies: dict[str, list[str]]\n\nEach constraint in redundant with the ids of the constraints it follows from, such as "
+           "{\"Horizontal.1\": [\"Fix.1\"]}; a small set that makes it redundant, not always the smallest.")
         .def_property_readonly("dof", &ConstraintSketch::Dof, "dof: int\n\nHow many ways the geometry can still move.")
         .def("FreeMotions", [](ConstraintSketch &s) {
             py::list out;
@@ -434,6 +441,12 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
            "    e[i] = J['row_scale'][i]\n"
            "    per_degree = dict(zip(J['columns'], J['scale'] * spsolve(J['matrix'].tocsc(), e)))\n"
            "    per_degree[('crank.end', 'x')]  # how far crank.end moves in x per degree of phi")
+        .def("_DrivenDimensions", [](const ConstraintSketch &s) {
+            std::vector<std::string> out;
+            for (const auto &[id, why] : s.DrivenDimensions())
+                out.push_back(id);
+            return out;
+        }, "for ReadSpreadsheet: the dimensions that follow the geometry (references) or an expression, not driving it")
         .def("_Constraints", [](ConstraintSketch &s) {
             py::list out;
             for (const cs::ConstraintInfo &i : s.Infos()) {

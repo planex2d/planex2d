@@ -84,6 +84,13 @@ class ConfigMeta(base):
             throw py::type_error("px.Auto has no truth value: it stands for a value worked out automatically");
         });
     m.attr("Auto") = AutoValue{};
+    py::class_<MinimalValue>(m, "MinimalType",
+                             "The type of px.Minimal, a selection's propagate= that takes what it names alone, without "
+                             "propagating across the ends.")
+        .def("__repr__", [](const MinimalValue &) { return std::string("px.Minimal"); })
+        .def("__eq__", [](const MinimalValue &, const py::object &b) { return IsA<MinimalValue>(b); })
+        .def("__hash__", [](const MinimalValue &) { return py::hash(py::str("px.Minimal")); });
+    m.attr("Minimal") = MinimalValue{};
     auto cfg = py::class_<Config>(m, "config", py::metaclass(scope["ConfigMeta"]),
                                   "The defaults of planex: the absolute tolerance k * eps * S (S the largest coordinate "
                                   "magnitude involved), and the fit and cleanup values the OCC exports take by default.");
@@ -101,11 +108,11 @@ class ConfigMeta(base):
     cfg.def_property_static("spline_style", [](py::object) { return std::string(StyleName(config::state->spline_style)); },
                             [](py::object, const py::object &v) {
                                 if (v.is_none())
-                                    throw py::value_error("config.spline_style = None: it is 'averaged' or 'clamped'");
+                                    throw py::value_error("config.spline_style = None: it is 'quintic', 'averaged' or 'clamped'");
                                 config::state->spline_style = StyleArg(v, "config.spline_style");
                             },
-                            "spline_style: str\n\nThe style of a spline drawn without style=: 'averaged' (planex's) or 'clamped' (netgen's "
-                            "splines).");
+                            "spline_style: str\n\nThe style of a spline drawn without style=: 'quintic' (the least change of curvature, the "
+                            "default), 'averaged' (planex's cubic) or 'clamped' (netgen's splines).");
     cfg.def_property_static("default_sketch_type", [m](py::object) { return m.attr(quickSketchDefault ? "QuickSketch" : "Sketch"); },
                             [m](py::object, const py::object &v) {
                                 if (v.is(m.attr("QuickSketch")))
@@ -119,6 +126,18 @@ class ConfigMeta(base):
                                                           "without px.Sketch (PLANEX_CONSTRAINTS=OFF)");
                             },
                             "default_sketch_type: type\n\nWhat px.Move makes: px.QuickSketch (the default, without constraints) or px.Sketch.");
+    cfg.def_property_static("drawing_standard", [](py::object) { return drawingStandard; },
+                            [](py::object, const py::object &v) {
+                                const std::string s = py::isinstance<py::str>(v) ? v.cast<std::string>() : "";
+                                if (s != "DIN" && s != "ASME")
+                                    throw py::value_error("config.drawing_standard = " + py::repr(v).cast<std::string>() +
+                                                          ": it is 'DIN' or 'ASME'");
+                                drawingStandard = s;
+                            },
+                            "drawing_standard: str\n\nThe standard of px.Sheet and px.Drawing without standard=: 'DIN' (the "
+                            "default: first-angle projection, a decimal comma) or 'ASME' (third-angle projection and its symbol, a "
+                            "decimal point; the dimension text along the line, A4 to A0 sheets, the title block and millimeters "
+                            "stay as DIN's in this version).");
     ConfigValue(cfg, "max_preview_edges", config::state->max_preview_edges,
                 "max_preview_edges: int\n\nThe most edges a notebook picture of an object draws; above it the object shows its text repr.");
     ConfigFit(cfg, "fit_splines", config::state->spline_fit);

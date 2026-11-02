@@ -9,8 +9,9 @@ namespace planex2d::sketch {
 
     inline std::array<double, 2> OffsetCurveData::Range(const Geometry &g, const Curve<double, Vertex> &f) const {
         const SplinePiece *source = piece ? &g.pieces[piece - 1] : nullptr;
-        return {RangeEnd(g, range.from, source ? source->from : none, 0.0),
-                RangeEnd(g, range.to, source ? source->to : none, f.params.back())};
+        const double end = f.params.back(), from = RangeEnd(g, range.from, source ? source->from : none, 0.0);
+        const double to = RangeEnd(g, range.to, source ? source->to : none, end);
+        return {from, to < from ? to + end : to};
     }
     inline Vertex OffsetCurveData::Point(const Geometry &g, const Curve<double, Vertex> &f, double t) const {
         const Vertex d1 = f.At(t, 1);

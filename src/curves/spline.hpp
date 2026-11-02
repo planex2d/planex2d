@@ -171,17 +171,20 @@ namespace planex2d {
                 KeepOuterEnds(pieces, ends);
                 return pieces;
             }
-            // averaged takes the tangents' directions only; clamped scales them as OCC does, whatever their length
+            // clamped scales the tangents as OCC does, whatever their length
             static Curve<double, Vertex> Interpolated(const std::vector<Vertex> &pts, const std::map<size_t, Vertex> &tangents, bool periodic,
-                                                      double tol, SplineStyle style) {
-                CheckSpline(pts, tangents, periodic, tol);
+                                                      double tol, SplineStyle style, const std::map<size_t, TangentSetting<double>> &settings = {}) {
+                CheckSpline(pts, tangents, periodic, tol, settings);
                 std::vector<size_t> at;
                 std::vector<Vertex> given;
+                std::vector<TangentSetting<double>> set;
                 for (const auto &[i, v] : tangents) {
                     at.push_back(i);
                     given.push_back(style == SplineStyle::Clamped ? v : Normalized(v));
+                    const auto s = settings.find(i);
+                    set.push_back(s == settings.end() ? TangentSetting<double>{} : s->second);
                 }
-                return Interpolate(pts, at, given, periodic, style);
+                return Interpolate(pts, at, given, periodic, style, set);
             }
             bool IsOffChord(const Vertex &a, const Vertex &b, double u, double tol) const {
                 const Vertex p = data->curve.At(u), d = b - a;
@@ -256,10 +259,11 @@ namespace planex2d {
             }
 
             static std::vector<Spline> Through(const std::vector<Vertex> &pts, bool periodic, double tol,
-                                               const std::map<size_t, Vertex> &tangents, SplineStyle style = config::state->spline_style) {
+                                               const std::map<size_t, Vertex> &tangents, SplineStyle style = config::state->spline_style,
+                                               const std::map<size_t, TangentSetting<double>> &settings = {}) {
                 static Timer t("planex Spline Through");
                 Region reg(t);
-                const Curve<double, Vertex> c = Interpolated(pts, tangents, periodic, tol, style);
+                const Curve<double, Vertex> c = Interpolated(pts, tangents, periodic, tol, style, settings);
                 std::vector<Vertex> nodes = pts;
                 if (periodic)
                     nodes.push_back(pts.front());
@@ -377,18 +381,19 @@ namespace planex2d {
             }
             // the exact curve's points at this stretch's ends, within spline_tol of Start() and End()
             std::pair<Vertex, Vertex> ExactEnds() const { return {data->curve.At(data->params[first]), data->curve.At(data->params[last])}; }
-            // f(point, tangent, weight) at the Gauss-Legendre points of the exact curve over this stretch, 10 on each
-            // stretch between the knots and the approximation's joints: exact for a polynomial of degree 19
+            // f(point, tangent, weight) at the Gauss-Legendre points of the exact curve over this stretch (up to the
+            // parameter to), 10 on each stretch between the knots and the approximation's joints: exact for a
+            // polynomial of degree 19
             template <class F>
-            void ForEachGaussPoint(F f) const {
+            void ForEachGaussPoint(F f, double to = std::numeric_limits<double>::infinity()) const {
                 static constexpr std::array<double, 5> x{0.14887433898163121, 0.43339539412924719, 0.67940956829902441,
                                                          0.86506336668898451, 0.97390652851717172};
                 static constexpr std::array<double, 5> w{0.29552422471475287, 0.26926671930999636, 0.21908636251598204,
                                                          0.14945134915058059, 0.066671344308688138};
                 const std::vector<double> &knots = data->curve.knots;
                 size_t j = 0;
-                for (size_t k = first; k < last; ++k) {
-                    const double end = data->params[k + 1];
+                for (size_t k = first; k < last && data->params[k] < to; ++k) {
+                    const double end = std::min(data->params[k + 1], to);
                     for (double a = data->params[k]; a < end;) {
                         while (j < knots.size() && knots[j] <= a)
                             ++j;
@@ -406,6 +411,32 @@ namespace planex2d {
                 ForEachGaussPoint([&](const Vertex &, const Vertex &t, double w) { l += w * Norm(t); });
                 return l;
             }
+            // the length of the exact curve from this stretch's start to its parameter u, as ExactLength integrates
+            double ExactLengthTo(double u) const {
+                double l = 0.0;
+                ForEachGaussPoint([&](const Vertex &, const Vertex &t, double w) { l += w * Norm(t); }, u);
+                return l;
+            }
+            // the parameter where the exact curve is s long from this stretch's start: Newton steps on ExactLengthTo
+            // from the approximation's point at that fraction of the length
+            double ExactParamAt(double s) const {
+                const double lo = data->params[first], hi = data->params[last];
+                double u = ExactNearest(PointAtFraction(s / ExactLength())).first;
+                for (int it = 0; it < 30; ++it) {
+                    const double speed = Norm(data->curve.At(u, 1));
+                    // a parametrization that comes to a stop at an end (FromNACA's trailing edge): no step
+                    if (!(speed > 0.0))
+                        break;
+                    const double step = (ExactLengthTo(u) - s) / speed;
+                    u = std::clamp(u - step, lo, hi);
+                    if (std::abs(step) <= 1e-14 * (hi - lo))
+                        break;
+                }
+                return u;
+            }
+            Vertex ExactPointAt(double u) const { return data->curve.At(u); }
+            Vertex ExactDirectionAt(double u) const { return data->curve.Direction(u); }
+            double ExactCurvatureAt(double u) const { return data->curve.Curvature(u); }
             // closed to Start() and End() by lines, so that the stretches of one loop add up
             double ExactSignedArea(const Vertex &o) const {
                 const auto [a, b] = ExactEnds();

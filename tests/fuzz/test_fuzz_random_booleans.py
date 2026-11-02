@@ -29,6 +29,11 @@ def test_points_classified_like_their_operands(fuzz_budget):
     fuzzlib.run(fuzzlib.check_points, fuzzlib.pairs(), fuzz_budget)
 
 
+@pytest.mark.fuzz
+def test_relations_follow_their_matrix_and_shapely(fuzz_budget):
+    fuzzlib.run(fuzzlib.check_relate, fuzzlib.pairs(), fuzz_budget)
+
+
 FOUND = [
     pytest.param((("rounded", (0.0, 0.0, 4.6953125, (0.34375, 1.0, 1.0, 0.5, 0.5, 0.3125),
                                (0.5, 0.875, 0.875, 0.375, 0.25, 0.8125), 1.0), 0.5), "nudged shift",
@@ -51,6 +56,16 @@ FOUND = [
     pytest.param((("spline", (0.0, -1.0, 4.46875, (1.0, 1.0, 1.0, 0.375, 1.0), (1.0, 1.0, 0.5, 1.0, 1.0), 1.0), 0.5),
                   "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 36),
                  id="spline-turned-1e-13-union-empty"),
+    pytest.param((("spline", (1.9375, 0.0, 4.5, (0.3125, 0.328125, 0.9375, 0.5), (0.322265625, 0.25, 0.5, 0.5),
+                              1.890625), 0.5), "nudged turn",
+                  ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
+                 id="quintic-turned-1e-13-union-empty-one-way",
+                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
+    pytest.param((("spline", (1.9375, 0.0, 4.5, (0.375, 0.328125, 0.9375, 0.5), (0.32421875, 0.25, 0.71875, 0.5),
+                              1.890625), 0.5), "nudged turn",
+                  ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
+                 id="quintic-turned-1e-13-common-empty",
+                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
 ]
 
 
@@ -86,9 +101,31 @@ FOUND_POINTS = [
     pytest.param((("spline", (0.0, -1.0, 4.46875, (1.0, 1.0, 1.0, 0.375, 1.0), (1.0, 1.0, 0.5, 1.0, 1.0), 1.0), 0.5),
                   "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 36),
                  id="spline-turned-1e-13-common-misses-points"),
+    pytest.param((("spline", (1.9271819658796048, 1.0, 4.75,
+                              (0.32112479120335163, 0.333984375, 0.9497670531365341, 0.5),
+                              (0.3225978347009676, 0.43786302742188715, 0.6965602508857187, 0.25), 1.9), 0.5),
+                  "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 49),
+                 id="quintic-turned-1e-13-common-misses-points",
+                 marks=pytest.mark.xfail(strict=True, reason="a quintic spline turned by 1e-13 loses the region")),
 ]
 
 
 @pytest.mark.parametrize("spec", FOUND_POINTS)
 def test_found_point_cases(spec):
     fuzzlib.check_points(spec)
+
+
+FOUND_RELATIONS = [
+    pytest.param((("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), "free",
+                  ("holed", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 0),
+                 id="triangle-and-itself-with-a-hole-relate-as-equal"),
+    pytest.param((("rounded", (-2.0, 1.875, 0.984375, (0.5, 0.75, 1.0), (0.875, 0.67578125, 0.75), 1.3125), 0.1875),
+                  "nudged turn", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 50),
+                 id="rounded-turned-1e-14-relate-by-the-order",
+                 marks=pytest.mark.xfail(strict=True, reason="a nudged copy's relation depends on the operand order")),
+]
+
+
+@pytest.mark.parametrize("spec", FOUND_RELATIONS)
+def test_found_relation_cases(spec):
+    fuzzlib.check_relate(spec)

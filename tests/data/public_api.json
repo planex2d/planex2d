@@ -31,6 +31,7 @@
  "px.Auto": [
   "(no signature)"
  ],
+ "px.Bottom": "value",
  "px.Chamfer": "value",
  "px.Circle": [
   "Circle(center: Point, r: float, reverse: bool = False, plane: Plane | None = None, *, id: str | None = None) -> Wire"
@@ -143,10 +144,13 @@
  "px.Constraint.Coincident": "member",
  "px.Constraint.Concentric": "member",
  "px.Constraint.Curvature": "member",
+ "px.Constraint.CurvatureRadius": "member",
  "px.Constraint.Diameter": "member",
  "px.Constraint.Distance": "member",
  "px.Constraint.Equal": "member",
  "px.Constraint.Fix": "member",
+ "px.Constraint.FixH": "member",
+ "px.Constraint.FixV": "member",
  "px.Constraint.Horizontal": "member",
  "px.Constraint.Parallel": "member",
  "px.Constraint.Perpendicular": "member",
@@ -159,8 +163,9 @@
  "px.Constraint.name": "property",
  "px.Constraint.value": "property",
  "px.Curvature": "value",
+ "px.CurvatureRadius": "value",
  "px.Curve": [
-  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float, float], /, *, plane: Plane | None = None, id: str | None = None) -> Wire"
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float, float], /, *, plane: Plane | None = None, tol: float | None = None, id: str | None = None) -> Wire"
  ],
  "px.DeformableShape": [
   "(self, shape: Face | Shape, h: float, min_distance: float | Auto = px.Auto, clean: bool = False, topology_changed_callback: Callable[[DeformableShape], Any] | None = None) -> None"
@@ -183,7 +188,7 @@
  "px.Diameter": "value",
  "px.Distance": "value",
  "px.Drawing": [
-  "(self, sketch, /, unit: float | None = None, names: bool = False, view_name: str | None = None)"
+  "(self, sketch, plane=None, /, unit: float | None = None, names: bool = False, view_name: str | None = None, section: bool = False, hidden: bool = True, standard: str | None = None)"
  ],
  "px.Drawing.Add": [
   "(self, sketch, /) -> Drawing"
@@ -208,6 +213,9 @@
  ],
  "px.Drawing.Place": [
   "(self, id: str, place: Any = px.Auto, /, *, leader: bool = False, outside: bool = False, inside: bool = False, across: float | None = None, supplement: bool = False, count: int | Auto = px.Auto, text: str | None = None, suffix: str | None = None) -> Drawing"
+ ],
+ "px.Drawing.Section": [
+  "(self, view: Drawing, /) -> Drawing"
  ],
  "px.Drawing.ToSVG": [
   "(self) -> str"
@@ -250,7 +258,7 @@
   "(self, other: Any, samples: int = 64) -> float"
  ],
  "px.EdgeView.Measure": [
-  "Measure(to: Point | Point3 | Face | Shape | Wire | EdgeView | None = None, project: bool = False) -> dict",
+  "Measure(to: Point | Point3 | Face | Shape | Wire | EdgeView | None = None, project: bool = False, at: float | Point | Point3 | None = None) -> dict",
   "Measure(f: Callable, /, *args, id: str | None = None, **params) -> object"
  ],
  "px.EdgeView.Mirrored": [
@@ -435,7 +443,7 @@
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Face.Project": [
-  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, silhouette: bool = False) -> list[Wire]"
  ],
  "px.Face.Relate": [
   "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
@@ -666,7 +674,7 @@
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.FaceView.Project": [
-  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, silhouette: bool = False) -> list[Wire]"
  ],
  "px.FaceView.Relate": [
   "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
@@ -815,9 +823,14 @@
   "(id: str) -> Any"
  ],
  "px.Fix": "value",
+ "px.FixH": "value",
+ "px.FixV": "value",
  "px.Flat": "value",
  "px.FromBrep": [
   "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> Face | Shape | Wire | Compound"
+ ],
+ "px.FromCATPart": [
+  "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> dict"
  ],
  "px.FromDXF": [
   "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
@@ -849,6 +862,7 @@
  "px.FromStep": [
   "(path: str | os.PathLike, /, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto) -> Face | Shape | Wire | Compound"
  ],
+ "px.Front": "value",
  "px.GetTransformation": [
   "GetTransformation(a: Wire | Face | Shape | EdgeView | EdgesView | Selection | LineEdge | ArcEdge | list, b: Wire | Face | Shape | EdgeView | EdgesView | Selection | LineEdge | ArcEdge | list, /, reverse: bool = False) -> Transformation"
  ],
@@ -863,6 +877,8 @@
  "px.Intersect3d": [
   "(plane: Plane | None, shape: Any, /, *, id: str | None = None) -> Shape"
  ],
+ "px.Isometric": "value",
+ "px.Left": "value",
  "px.Line": [
   "Line(start: Point, end: Point, plane: Plane | None = None, *, id: str | None = None) -> Wire"
  ],
@@ -887,6 +903,7 @@
  "px.LineEdge.end": "property",
  "px.LineEdge.from_spline": "property",
  "px.LineEdge.start": "property",
+ "px.Minimal": "value",
  "px.Move": [
   "Move(start: Point, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None) -> Sketch | QuickSketch",
   "Move(h: float, v: float, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None) -> Sketch | QuickSketch"
@@ -974,7 +991,7 @@
   "Pocket(target: TopoDS_Shape, profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, dir: Point3 | Auto = px.Auto, reverse: bool = False, until: SketchUntil | Plane | Face | Shape | Sketch | QuickSketch | TopoDS_Shape | Sequence[TopoDS_Shape] | None = None, offset: float = 0.0) -> TopoDS_Shape"
  ],
  "px.Project": [
-  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, plane: Plane | None = None, silhouette: bool = False, *, id: str | None = None) -> list[Wire]"
  ],
  "px.QuickSketch": [
   "QuickSketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, copy: bool = False, id: str | None = None)",
@@ -996,6 +1013,9 @@
   "ArcSlot(to: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "ArcSlot(start: Point | Id, end: Point | Id, r: float, w: float, /, *flags: Constraint, **options) -> QuickSketch",
   "ArcSlot(*ends: Point | Id | float | Constraint, sweep: float | None = None, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, tangent: tuple[float, float] | Id | Shape | tuple[Id, Id] | None = None, through: Point | None = None, until: Id | Shape | SketchUntil | None = None, reverse: bool = False, **options) -> QuickSketch"
+ ],
+ "px.QuickSketch.BSpline": [
+  "BSpline(poles: list[tuple[float, float]], knots: list[float] | None = None, degree: int = 3, /, *flags: Constraint, periodic: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Chamfer": [
   "Chamfer(at: Id | Point | list[Id | Point], d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False, *, id: str | list[str] | None = None, **options) -> QuickSketch"
@@ -1021,7 +1041,7 @@
   "Copy(*, id: str | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Curve": [
-  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, **options) -> QuickSketch"
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, tol: float | None = None, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Diagnose": [
   "Diagnose(gap: float | Auto = px.Auto) -> dict"
@@ -1029,6 +1049,9 @@
  "px.QuickSketch.Direction": [
   "Direction(d: tuple[float, float], /) -> QuickSketch",
   "Direction(dh: float, dv: float, /) -> QuickSketch"
+ ],
+ "px.QuickSketch.Extend": [
+  "Extend(a: Id, b: Ids | float, /) -> QuickSketch"
  ],
  "px.QuickSketch.Face": [
   "Face(*, id: str | None = None) -> Face"
@@ -1071,7 +1094,7 @@
   "Location(id: Id, /) -> tuple[float, float]"
  ],
  "px.QuickSketch.Measure": [
-  "Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False) -> dict",
+  "Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False, at: float | Point | Point3 | None = None) -> dict",
   "Measure(f: Callable, /, *args, id: str | None = None, **params) -> object"
  ],
  "px.QuickSketch.Mirror": [
@@ -1108,7 +1131,7 @@
   "(sketch: Sketch | QuickSketch, tol: float) -> list[np.ndarray]"
  ],
  "px.QuickSketch.Project": [
-  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> QuickSketch"
+  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None, silhouette: bool = False) -> QuickSketch"
  ],
  "px.QuickSketch.Rectangle": [
   "Rectangle(l: float, w: float, **options) -> QuickSketch",
@@ -1155,7 +1178,7 @@
   "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Spline": [
-  "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tol: float | None = None, **options) -> QuickSketch"
+  "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tensions: dict[int, float] | None = None, curvature_radii: dict[int, float] | None = None, tol: float | None = None, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Split": [
   "Split(a: Id, b: Ids | None = None, /, *, auto_constraint: bool = True) -> QuickSketch"
@@ -1211,7 +1234,7 @@
   "Vertex(id: str, point: tuple[float, float] | None = None) -> QuickSketch"
  ],
  "px.QuickSketch.Wire": [
-  "Wire(element: Id | None = None, /, *, unify: bool = True, id: str | None = None) -> Wire"
+  "Wire(element: Id | None = None, /, *, unify: bool = True, propagate: Constraint | MinimalType = px.Minimal, id: str | None = None) -> Wire"
  ],
  "px.QuickSketch.Wires": [
   "Wires(unify: bool = True, *, id: str | None = None) -> list[Wire]"
@@ -1242,9 +1265,11 @@
  "px.QuickSketch.points": "property",
  "px.QuickSketch.wires": "property",
  "px.Radius": "value",
+ "px.Rear": "value",
  "px.ResetIdCounters": [
   "ResetIdCounters() -> None"
  ],
+ "px.Right": "value",
  "px.RigidGroup": "value",
  "px.Rotation": [
   "Rotation(angle: float, center: Point = (0, 0)) -> Transformation"
@@ -1394,7 +1419,7 @@
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Shape.Project": [
-  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, silhouette: bool = False) -> list[Wire]"
  ],
  "px.Shape.Relate": [
   "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
@@ -1516,7 +1541,7 @@
  "px.Shape.wires": "property",
  "px.Sharp": "value",
  "px.Sheet": [
-  "(self, *drawings: Drawing, size: str = 'A4', scale: float | None = None, frame: bool = False, font: str | os.PathLike | None = None, landscape: bool | None = None)"
+  "(self, *drawings: Drawing, size: str = 'A4', scale: float | None = None, frame: bool = False, font: str | os.PathLike | None = None, landscape: bool | None = None, standard: str | None = None)"
  ],
  "px.Sheet.Add": [
   "(self, drawing: Drawing, /, at=None) -> Sheet"
@@ -1549,6 +1574,12 @@
  "px.Sketch.Add": [
   "Add(geometry: Wire | Face | Shape, /) -> Sketch"
  ],
+ "px.Sketch.AddToSpreadsheet": [
+  "(sketch: Any, path: str | os.PathLike, /, name: str | None = None, values: dict | None = None) -> None"
+ ],
+ "px.Sketch.Animate": [
+  "(sketch: Any, rows: Any, /, steps: int = 1, fps: float = 10, label: Callable | None = None, keep_designs: bool | Auto = px.Auto, show_constraints: bool | None = None) -> Any"
+ ],
  "px.Sketch.Arc": [
   "Arc(r: float, sweep: float, /, *flags: Constraint, **options) -> Sketch",
   "Arc(to: Point | Id, /, *flags: Constraint, **options) -> Sketch",
@@ -1565,6 +1596,9 @@
  ],
  "px.Sketch.AutoConstrain": [
   "AutoConstrain(geometric: bool | dict = True, dimensional: bool = True, tol: float | None = None) -> list[str]"
+ ],
+ "px.Sketch.BSpline": [
+  "BSpline(poles: list[tuple[float, float]], knots: list[float] | None = None, degree: int = 3, /, *flags: Constraint, periodic: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Chamfer": [
   "Chamfer(at: Id | Point | list[Id | Point], d: float, /, d2: float | None = None, angle: float | None = None, reverse: bool = False, *, id: str | list[str] | None = None, **options) -> Sketch"
@@ -1593,7 +1627,7 @@
   "Copy(*, id: str | None = None) -> Sketch"
  ],
  "px.Sketch.Curve": [
-  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, **options) -> Sketch"
+  "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, tol: float | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Diagnose": [
   "Diagnose(gap: float | Auto = px.Auto) -> dict"
@@ -1604,6 +1638,9 @@
  ],
  "px.Sketch.Expression": [
   "Expression(text: str, rhs: str | None = None, *, id: str | None = None) -> Sketch"
+ ],
+ "px.Sketch.Extend": [
+  "Extend(a: Id, b: Ids | float, /) -> Sketch"
  ],
  "px.Sketch.Face": [
   "Face(*, id: str | None = None) -> Face"
@@ -1649,7 +1686,7 @@
   "Location(id: Id, /) -> tuple[float, float]"
  ],
  "px.Sketch.Measure": [
-  "Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False) -> dict",
+  "Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False, at: float | Point | Point3 | None = None) -> dict",
   "Measure(f: Callable, /, *args, id: str | None = None, **params) -> object"
  ],
  "px.Sketch.Mirror": [
@@ -1686,7 +1723,10 @@
   "(sketch: Sketch | QuickSketch, tol: float) -> list[np.ndarray]"
  ],
  "px.Sketch.Project": [
-  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None) -> Sketch"
+  "Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, id: str | None = None, silhouette: bool = False) -> Sketch"
+ ],
+ "px.Sketch.ReadSpreadsheet": [
+  "(sketch: Any, path: str | os.PathLike, /) -> dict"
  ],
  "px.Sketch.Rectangle": [
   "Rectangle(l: float, w: float, **options) -> Sketch",
@@ -1739,7 +1779,7 @@
   "Slot(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Spline": [
-  "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tol: float | None = None, **options) -> Sketch"
+  "Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, style: str | None = None, tensions: dict[int, float] | None = None, curvature_radii: dict[int, float] | None = None, tol: float | None = None, **options) -> Sketch"
  ],
  "px.Sketch.Split": [
   "Split(a: Id, b: Ids | None = None, /, *, auto_constraint: bool = True) -> Sketch"
@@ -1804,7 +1844,7 @@
   "Vertex(id: str, point: tuple[float, float] | None = None) -> Sketch"
  ],
  "px.Sketch.Wire": [
-  "Wire(element: Id | None = None, /, *, unify: bool = True, id: str | None = None) -> Wire"
+  "Wire(element: Id | None = None, /, *, unify: bool = True, propagate: Constraint | MinimalType = px.Minimal, id: str | None = None) -> Wire"
  ],
  "px.Sketch.Wires": [
   "Wires(unify: bool = True, *, id: str | None = None) -> list[Wire]"
@@ -1829,6 +1869,7 @@
  "px.Sketch.chain_start": "property",
  "px.Sketch.condition": "property",
  "px.Sketch.constraints": "property",
+ "px.Sketch.dependencies": "property",
  "px.Sketch.dimensions": "property",
  "px.Sketch.dof": "property",
  "px.Sketch.elements": "property",
@@ -1846,7 +1887,7 @@
  "px.Sketch.status": "property",
  "px.Sketch.wires": "property",
  "px.Spline": [
-  "Spline(points: list[Point] | np.ndarray, /, periodic: bool = False, tol: float = 1e-08, tangents: dict[int, tuple[float, float]] | None = None, plane: Plane | None = None, style: str | None = None, *, id: str | None = None) -> Wire"
+  "Spline(points: list[Point] | np.ndarray, /, periodic: bool = False, tol: float = 1e-08, tangents: dict[int, tuple[float, float]] | None = None, plane: Plane | None = None, style: str | None = None, tensions: dict[int, float] | None = None, curvature_radii: dict[int, float] | None = None, *, id: str | None = None) -> Wire"
  ],
  "px.SplineEdge": [
   "(self, /, *args, **kwargs)"
@@ -1888,6 +1929,7 @@
  "px.ToShapely": [
   "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, tol: float = 0.001) -> Any"
  ],
+ "px.Top": "value",
  "px.Translation": [
   "Translation(dh: float, dv: float) -> Transformation",
   "Translation(d: tuple[float, float]) -> Transformation"
@@ -2022,7 +2064,7 @@
   "IsWithin(other: Face | Shape | Wire | Point, /) -> bool"
  ],
  "px.Wire.Measure": [
-  "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict",
+  "Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False, at: float | Point | Point3 | None = None) -> dict",
   "Measure(f: Callable, /, *args, id: str | None = None, **params) -> object"
  ],
  "px.Wire.MergeCollinearEdges": [
@@ -2040,7 +2082,7 @@
   "Normal() -> tuple[float, float, float]"
  ],
  "px.Wire.Offset": [
-  "Offset(d: float, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round, *, id: str | None = None) -> Shape"
+  "Offset(d: float, both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round, *, id: str | None = None) -> Wire"
  ],
  "px.Wire.OpenEnds": [
   "OpenEnds() -> list[tuple[int, bool]]"
@@ -2058,7 +2100,7 @@
   "Polylines(tol: float) -> list[np.ndarray]"
  ],
  "px.Wire.Project": [
-  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]"
+  "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, silhouette: bool = False) -> list[Wire]"
  ],
  "px.Wire.Relate": [
   "Relate(other: Face | Shape | Wire | Point, /, pattern: str | None = None) -> str | bool"
@@ -2068,6 +2110,12 @@
  ],
  "px.Wire.RemoveSmallEdges": [
   "RemoveSmallEdges(tol: float) -> Wire"
+ ],
+ "px.Wire.Reverse": [
+  "Reverse() -> Wire"
+ ],
+ "px.Wire.Reversed": [
+  "Reversed(*, id: str | None = None) -> Wire"
  ],
  "px.Wire.Rotate": [
   "Rotate(center: Point, angle: float) -> Wire",
@@ -2301,6 +2349,15 @@
  "px.m": "value",
  "px.measurements.Clearance": [
   "(a: str | Callable | Any, b: str | Callable | Any) -> Callable"
+ ],
+ "px.measurements.ConvexHull": [
+  "(*args: Any) -> Callable"
+ ],
+ "px.measurements.EnclosingCircle": [
+  "(*args: Any) -> Callable"
+ ],
+ "px.measurements.EnclosingRectangle": [
+  "(*args: Any) -> Callable"
  ],
  "px.measurements.Hausdorff": [
   "(a: str | Callable | Any, b: str | Callable | Any, /, samples: int = 64) -> Callable"

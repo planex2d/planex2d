@@ -75,7 +75,7 @@ def test_dxf_splines_are_transferred_exactly(tmp_path):
     s.WriteDXF(tmp_path / "s.dxf")
     doc = ezdxf.readfile(tmp_path / "s.dxf")
     spline = list(doc.modelspace())[0]
-    assert spline.dxftype() == "SPLINE" and spline.dxf.degree == 3
+    assert spline.dxftype() == "SPLINE" and spline.dxf.degree == 5
     [back] = px.FromDXF(tmp_path / "s.dxf")
     e = back.edges[0].edge
     assert isinstance(e, px.SplineEdge)

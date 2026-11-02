@@ -702,7 +702,7 @@ namespace planex2d {
                             w.Add(l);
                             continue;
                         }
-                        for (Spline &sp : Spline::Through(pts, false, Tol(S), {})) {
+                        for (Spline &sp : Spline::Through(pts, false, Tol(S), {}, SplineStyle::Averaged)) {
                             sp.props = r.props[k];
                             w.Add(sp);
                         }

@@ -32,13 +32,16 @@ void AddSketchOCCMethods(py::class_<S> sketch) {
     sketch
         // the caller's own object back, not a new wrapper of it (the OCC bindings' registry may be another one)
         .def("Project", [](const py::object &self, const py::object &shape, bool construction, const std::optional<std::string> &name,
-                           const std::optional<std::string> &id) {
+                           const std::optional<std::string> &id, bool silhouette) {
             S &s = self.cast<S &>();
-            s.AddProjection(Project(ShapeArg(shape, "Project"), s.Axes(), true), construction, name, "Projection", UserId(id));
+            const TopoDS_Shape occ = ShapeArg(shape, "Project");
+            s.AddProjection(silhouette ? Projection{Shadow(occ, s.Axes(), true), {}} : Project(occ, s.Axes(), true), construction, name, "Projection",
+                            UserId(id));
             return self;
         }, py::arg("shape"), py::pos_only(), py::arg("construction") = true, py::arg("name") = py::none(), py::arg("id") = py::none(),
+           py::arg("silhouette") = false,
              Doc("Project(shape: occ.TopoDS_Shape | list[occ.TopoDS_Shape], /, construction: bool = True, name: str | None = None, "
-                 "id: str | None = None) -> " + sk + "\n\n"
+                 "id: str | None = None, silhouette: bool = False) -> " + sk + "\n\n"
                  "Add the edges and points of an OCC shape projected straight onto the sketch's plane, fixed where they are.\n\n"
                  "A curve becomes a spline through samples of it, within the spline tolerance. Its elements are "
                  "Projection.N.Edge.X, X the edge's index in shape.edges (the number the webgui shows), and "
@@ -47,10 +50,17 @@ void AddSketchOCCMethods(py::class_<S> sketch) {
                  "    shape: the OCC shape, or a list of them (one compound: X numbers the edges of the compound).\n"
                  "    construction: references; False adds drawn edges.\n"
                  "    name: the name of the drawn edges.\n"
-                 "    id: replaces Projection.N.\n\n"
+                 "    id: replaces Projection.N.\n"
+                 "    silhouette: only the outline of the shadow the shape casts along the sketch's normal: the edges that bound "
+                 "it and the fold lines of curved faces where they do (Projection.N.Fold.K), exact where the surface allows (a "
+                 "cylinder or cone: lines, a sphere: a circle), a torus's as OCC's hidden-line algorithm traces them (within "
+                 "about 1e-7 of its size), other surfaces' splines through points on their exact fold; constraints onto them "
+                 "hold to those splines.\n\n"
+                 "Raises:\n"
+                 "    ValueError: silhouette=True for a shape without faces.\n\n"
                  "Examples:\n"
                  "    sk.Project(box)\n"
-                 "    sk.Project(box, construction=False, name=\"outline\")"))
+                 "    sk.Project(shaft, silhouette=True)"))
         .def("ToOCCWire", [](S &s, bool approximation, EXPORT_PARAMS, bool unify) {
             s.RequireFull("ToOCCWire()");
             return ToOCCWire(OneSketchWire(s, unify, unify ? "ToOCCWire()" : "ToOCCWire(unify=False)"), approximation, WIRE_EXPORT_OPTIONS);

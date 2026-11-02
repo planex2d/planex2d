@@ -383,7 +383,7 @@ namespace planex2d {
                     *this = WithoutSmallFaces(cleanup.remove_faces_smaller, cleanup.merge_small_faces_instead);
                     ids = std::move(kept);
                 }
-                edges = edges.Cleaned(arcs, fit, cleanup);
+                edges = edges.Cleaned(arcs, fit, cleanup, SidesOf(ids));
                 Compact();
                 return *this;
             }
@@ -410,7 +410,7 @@ namespace planex2d {
                     merged.ids = ids;
                     return merged.Export(arcs, fit, rest);
                 }
-                ExportPlan plan{edges.Cleaned(arcs, fit, cleanup), {}, {}, {}, groupProps, groupProps.size() + wireCount, ids};
+                ExportPlan plan{edges.Cleaned(arcs, fit, cleanup, SidesOf(ids)), {}, {}, {}, groupProps, groupProps.size() + wireCount, ids};
                 const Wire &c = plan.edges;
                 // every edge runs with a face it bounds on its left, so the mesh normal points out of it: for an edge
                 // between two faces a face of its first owner group, the one that names it

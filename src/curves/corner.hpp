@@ -57,9 +57,7 @@ namespace planex2d {
                     return 0.0;
                 if (const Arc *a = std::get_if<Arc>(&edge))
                     return (a->CCW() ? 1.0 : -1.0) / a->Radius();
-                const Vertex d1 = curve.At(u, 1), d2 = curve.At(u, 2);
-                const double speed = Norm(d1);
-                return Cross(d1, d2) / (speed * speed * speed);
+                return curve.Curvature(u);
             }
             double ParamOf(const Vertex &p) const {
                 if (const Line *l = std::get_if<Line>(&edge))

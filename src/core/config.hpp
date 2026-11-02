@@ -38,9 +38,9 @@ namespace planex2d {
         double ignore_edges_smaller = 1e-5;
     };
 
-    // how a spline interpolates its points: knots averaged from the parameters (The NURBS Book), or clamped with a knot at
-    // every point as OCC's Geom2dAPI_Interpolate (netgen's splines)
-    enum class SplineStyle { Averaged, Clamped };
+    // how a spline interpolates its points: knots averaged from the parameters (The NURBS Book), clamped with a knot at
+    // every point as OCC's Geom2dAPI_Interpolate (netgen's splines), or the quintic
+    enum class SplineStyle { Averaged, Clamped, Quintic };
 
     struct Cleanup {
         double remove_edges_smaller = 1e-7;  // OCC's Precision::Confusion()
@@ -85,7 +85,7 @@ namespace planex2d::config {
         // max deviation of a spline's arc approximation, relative to the diagonal of its points' bounding box
         double spline_tol = 1e-6;
         // the style of a spline drawn without style=
-        SplineStyle spline_style = SplineStyle::Averaged;
+        SplineStyle spline_style = SplineStyle::Quintic;
         // the most edges a notebook picture of an object draws; above it the object shows its text repr
         int max_preview_edges = 5000;
         // constraint solver: solved when every residual is below solve_tol * the size of the geometry

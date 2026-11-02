@@ -18,7 +18,8 @@ namespace planex2d::cs {
     // its start, an arc's ends from its centre, a spline's steps from point to point, every value of an element that is
     // no point coordinate, every other unknown) whose change from ref goes into a slack unknown of its own, the slacks
     // counted 1 / moveWeight times as much as the system's own unknowns: the least change then moves the geometry as a
-    // whole where it can and changes the drawn shapes as little as it can
+    // whole where it can and changes the drawn shapes as little as it can. A b-spline's poles move alone: its legs and
+    // the steps between its poles are no shape
     template <class S>
     class ShapedSystem {
         public:
@@ -35,7 +36,7 @@ namespace planex2d::cs {
                             Add({{s.coordsOf[b] + i, 1.0}, {s.coordsOf[a] + i, -1.0}});
                 };
                 for (const sketch::Element &e : s.elements) {
-                    if (e.kind == sketch::ElementKind::Line)
+                    if (e.kind == sketch::ElementKind::Line && s.LegOf(e) == sketch::none)
                         step(e.Start(), e.End());
                     if (e.kind == sketch::ElementKind::Arc) {
                         step(e.Center(), e.Start());
@@ -49,7 +50,7 @@ namespace planex2d::cs {
                 }
                 for (const sketch::SplineData &d : s.splines) {
                     // a fitted spline's ends follow its frame, whose turn is its shape value
-                    if (d.fitted)
+                    if (d.fitted || d.poled)
                         continue;
                     for (size_t k = 0; k + 1 < d.points.size(); ++k)
                         step(d.points[k], d.points[k + 1]);

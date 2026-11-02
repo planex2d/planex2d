@@ -71,18 +71,30 @@ namespace planex2d::sketch {
         bool curvature = true;
     };
 
+    // a spline by its poles (its points, each a point of the sketch): their knots and degree; a closed one is periodic
+    struct PoleShape {
+        std::vector<double> knots;
+        size_t degree = 3;
+    };
+
     struct SplineData {
         std::vector<size_t> points, tangentAt, tangent;
         bool closed = false;
         SplineStyle style = SplineStyle::Averaged;
         std::optional<FittedShape> fitted;
         std::optional<BlendShape> blend;
+        std::optional<PoleShape> poled;
+        std::vector<double> tension;
+        std::vector<size_t> curvature;
 
         Curve<double, Vertex> Interpolated(const Geometry &g) const;
+        double TensionAt(size_t k) const { return tension.empty() ? 1.0 : tension[k]; }
+        size_t CurvatureAt(size_t k) const { return curvature.empty() ? none : curvature[k]; }
         // a blend's way at its point i along the direction (DirectionAt) of the element it joins there: +1 the same,
         // -1 the other; into the blend at its start, out of it at its end
         double BlendSense(const Geometry &g, size_t i) const;
-        // the points it runs through; of a fitted spline its ends and its shape's points at the knots between
+        // the points it runs through; of a fitted spline its ends and its shape's points at the knots between; of a
+        // spline by its poles its points at its knots (an open one's ends its first and last poles)
         std::vector<Vertex> Points(const Geometry &g) const;
     };
 

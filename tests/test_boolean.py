@@ -8,7 +8,7 @@ import netgen.occ as occ
 import pytest
 
 import planex as px
-from helpers import (cell_boundary, circle, ends, is_empty, polygon_area, rect, seg, segments, square, stadium_area,
+from helpers import (offset_band, cell_boundary, circle, ends, is_empty, polygon_area, rect, seg, segments, square, stadium_area,
                      unit_boundary)
 
 A = square(0, 0, 2)
@@ -209,7 +209,7 @@ def random_shape(rng):
         return circle(x, y, r), math.pi * r * r
     length, d = rng.uniform(0.5, 4), rng.uniform(0.1, 0.8)
     angle = rng.uniform(0, 2 * math.pi)
-    return px.Move((x, y)).Line(length * math.cos(angle), length * math.sin(angle)).Wire().Offset(d), stadium_area(length, d)
+    return offset_band(px.Move((x, y)).Line(length * math.cos(angle), length * math.sin(angle)).Wire(), d), stadium_area(length, d)
 
 
 @pytest.mark.parametrize("seed", range(40))
@@ -280,7 +280,7 @@ def _coupler_band(d, mirror):
     c = (p1[0] - s * 10 * math.sin(t), p1[1] + 10 * math.cos(t))
     a = math.radians(30)
     w.Add(px.Arc(p1, (c[0] + s * 10 * math.sin(t + a), c[1] - 10 * math.cos(t + a)), c, reverse=mirror))
-    return w.Offset(0.25)
+    return offset_band(w, 0.25)
 
 
 def test_bands_on_lines_closer_than_the_arcs_tolerance_unite():

@@ -72,7 +72,7 @@ def test_activation_warns_redundant():
     sk = _plate()
     with pytest.warns(px.PlanexWarning):
         sk.Constrain("plate.Line.3", px.Distance, 41, id="w2")
-    with pytest.warns(px.PlanexWarning, match="redundant"):
+    with pytest.warns(px.PlanexWarning, match="follows from"):
         sk.Update({"w": 41})
     assert sk.status != "over"
 

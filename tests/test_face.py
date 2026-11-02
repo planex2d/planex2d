@@ -8,7 +8,7 @@ import netgen.occ as occ
 import pytest
 
 import planex as px
-from helpers import (arc, area, cell_boundary, circle, ends, is_empty, line, open_vertices, polygon_area, rect,
+from helpers import (arc, area, offset_band, cell_boundary, circle, ends, is_empty, line, open_vertices, polygon_area, rect,
                      square, unit_boundary)
 
 
@@ -107,7 +107,8 @@ def test_remove_small_edges_merges_a_chain_into_one_point():
     p.Add(line((1, 1), (0, 1)))
     p.Add(line((0, 1), (0, 0)))
     p.RemoveSmallEdges(1e-7)
-    y = (1e-8 / 2 + 2e-8) / 2
+    # the run of small edges goes to the mean of its vertices
+    y = (0.0 + 1e-8 + 2e-8) / 3
     assert [ends(l) for l in p.lines] == [((0, 0), (1, y)), ((1, y), (1, 1)), ((1, 1), (0, 1)), ((0, 1), (0, 0))]
 
 
@@ -291,7 +292,7 @@ def test_a_wire_has_no_fold_backs_or_junctions_to_merge():
 
 
 def test_merge_collinear_edges_ignores_the_edges_of_a_spline():
-    trace = px.Move((0, 0)).Spline([(1, 0), (2, 0)]).Wire().Offset(0.1)
+    trace = offset_band(px.Move((0, 0)).Spline([(1, 0), (2, 0)]).Wire(), 0.1)
     assert len(trace.splines) == 2
     trace.MergeCollinearEdges()
     assert len(trace.splines) == 2

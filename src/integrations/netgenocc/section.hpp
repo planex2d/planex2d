@@ -11,7 +11,7 @@
 #include <BRepAlgoAPI_Section.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 #include <TopoDS_Face.hxx>
 #include <gp_Pln.hxx>
 
@@ -59,7 +59,7 @@ namespace planex2d {
                 continue;
             Properties props;
             if (faces.Contains(edge))
-                for (TopTools_ListIteratorOfListOfShape f(faces.FindFromKey(edge)); f.More() && !props; f.Next())
+                for (TopTools_ListOfShape::Iterator f(faces.FindFromKey(edge)); f.More() && !props; f.Next())
                     if (!InPlane(TopoDS::Face(f.Value()), axes))
                         props = PropertiesOf(f.Value());
             if (TopoDS_Shape f; !props && section.HasAncestorFaceOn1(edge, f))
@@ -123,7 +123,7 @@ namespace planex2d {
                 continue;
             Properties props = PropertiesOf(edge);
             if ((!props || !props->name) && wires.Contains(edge))
-                for (TopTools_ListIteratorOfListOfShape w(wires.FindFromKey(edge)); w.More() && (!props || !props->name); w.Next())
+                for (TopTools_ListOfShape::Iterator w(wires.FindFromKey(edge)); w.More() && (!props || !props->name); w.Next())
                     if (const Properties named = PropertiesOf(w.Value()); named && named->name)
                         props = ChangedProperties(props, [&](ShapeProperties &x) { x.name = named->name; });
             const TopoDS_Shape cut = PlaneCut(edge, axes);

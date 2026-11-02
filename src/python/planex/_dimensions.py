@@ -26,11 +26,11 @@ COMPASS = {"e": 0.0, "ne": 45.0, "n": 90.0, "nw": 135.0, "w": 180.0, "sw": 225.0
 CURVES = ("Line", "Arc", "Circle", "Spline")
 
 
-def Fmt(value):
-    """a number with a decimal comma and at most three decimals; a text as it is"""
+def Fmt(value, sign=","):
+    """a number with sign as its decimal sign (DIN's comma) and at most three decimals; a text as it is"""
     if isinstance(value, str):
         return value
-    return f"{value:.3f}".rstrip("0").rstrip(".").replace(".", ",")
+    return f"{value:.3f}".rstrip("0").rstrip(".").replace(".", sign)
 
 
 def _unit(v):
@@ -156,6 +156,13 @@ def _hv(plane, point):
     return np.asarray(plane.ToHV(tuple(p[:3]))) if len(p) == 3 else p[:2]
 
 
+def _axis_and_line(refs, everything):
+    """an angle's axis (H or V) and its line, or None where it is not measured between a line and an axis"""
+    axes = [r for r in refs if r in ("H", "V")]
+    lines = [r for r in refs if everything.get(r, {}).get("kind") == "Line"]
+    return (axes[0], lines[0]) if len(axes) == 1 and len(lines) == 1 else None
+
+
 def Dimensions(sketch, everything=None):
     """the sketch's dimension constraints as drawings measure them, in the sketch's plane coordinates"""
     import planex as px
@@ -178,7 +185,8 @@ def Dimensions(sketch, everything=None):
         refs, kind, value = c["refs"], c["kind"], c["value"]
         if value is None or c["derived"]:
             continue
-        if any(everything.get(r, {}).get("kind") in ("Pattern", "Offset") for r in refs):
+        sides = _slot_sides(refs[0], everything) if kind == "Diameter" and len(refs) == 1 else None
+        if not sides and any(everything.get(r, {}).get("kind") in ("Pattern", "Offset") for r in refs):
             continue
         name = None if c["id"].startswith((kind + ".", "Reference.")) else c["id"]
         d = Dimension(c["id"], kind, value, bool(c.get("reference")), c["state"] == "over", name, refs=tuple(refs))
@@ -215,6 +223,10 @@ def Dimensions(sketch, everything=None):
                 continue
             if np.linalg.norm(d.q - d.p) == 0:
                 continue
+            d.u = _unit(d.q - d.p)
+            d.span = float(np.linalg.norm(d.q - d.p))
+        elif sides:
+            d.kind, d.p, d.q, d.lines = "linear", *sides
             d.u = _unit(d.q - d.p)
             d.span = float(np.linalg.norm(d.q - d.p))
         elif kind in ("Radius", "Diameter") and g0 is not None and g0["kind"] in ("Circle", "Arc"):
@@ -259,10 +271,42 @@ def Dimensions(sketch, everything=None):
                 sides.append((_unit(far - d.c), (float(np.linalg.norm(near - d.c)), float(np.linalg.norm(far - d.c)))))
             (d.a, la), (d.b, lb) = sides
             d.legs = (la, lb)
+        elif kind == "Angle" and len(refs) == 2 and (pair := _axis_and_line(refs, everything)):
+            # the axis from the line's start is a side without an edge: its extension line is the auxiliary line
+            axis, line = pair
+            p0, p1 = (np.asarray(everything[line][k], float) for k in ("start", "end"))
+            d.kind, d.c = "angle", p0
+            d.a, d.b = np.array([1.0, 0.0] if axis == "H" else [0.0, 1.0]), _unit(p1 - p0)
+            if abs(d.a[0] * d.b[1] - d.a[1] * d.b[0]) < 1e-9:
+                continue
+            d.legs = ((0.0, 0.0), (0.0, float(np.linalg.norm(p1 - p0))))
         else:
             continue
         out.append(d)
     return out
+
+
+def _slot_sides(ref, everything):
+    """a slot (an offset with a side left and right, lines or arcs): the middle of its left side, the point across on its
+    right side, and the sides as lines for extension lines (None for an arc); None for any other offset"""
+    left, right = everything.get(ref + ".left"), everything.get(ref + ".right")
+    if everything.get(ref, {}).get("kind") != "Offset" or left is None or right is None or left["kind"] != right["kind"]:
+        return None
+    if left["kind"] == "Line":
+        a, b, c, e = (np.asarray(g[k], float) for g in (left, right) for k in ("start", "end"))
+        p, u = (a + b) / 2, _unit(e - c)
+        return p, c + u * (u @ (p - c)), ((a, b), (c, e))
+    if left["kind"] != "Arc":
+        return None
+    o = np.asarray(left["center"], float)
+    s, t = np.subtract(left["start"], o), np.subtract(left["end"], o)
+    if not left["ccw"]:
+        s, t = t, s
+    t0, t1 = math.atan2(s[1], s[0]), math.atan2(t[1], t[0])
+    while t1 <= t0:
+        t1 += 2 * math.pi
+    w = np.array([math.cos((t0 + t1) / 2), math.sin((t0 + t1) / 2)])
+    return o + left["r"] * w, o + right["r"] * w, (None, None)
 
 
 def _ccw(a, b):
@@ -505,10 +549,22 @@ def Text(d, place, names, measured=None, fmt=Fmt):
     return f"({text})" if d.reference else text
 
 
+def Ordered(found):
+    """the dimensions in the order a layout draws them: the linear ones first, shorter ones first (the rows fill from the
+    part outward), then the others; the angles among their places smaller first, so that the arcs at one vertex stack
+    outward"""
+    out = sorted(found, key=lambda d: (d.kind != "linear", d.span))
+    places = [k for k, d in enumerate(out) if d.kind == "angle"]
+    for k, d in zip(places, sorted((out[k] for k in places), key=lambda d: abs(d.value))):
+        out[k] = d
+    return out
+
+
 class Layout:
     """the dimension lines' places: given ones from a drawing, the others in rows outside the part (horizontal ones
     below or above, vertical ones left or right, shorter nearer the part, no two on one stretch of a row), inclined
-    ones off their measured points away from the part, radii and diameters away from the part's middle"""
+    ones off their measured points away from the part, radii and diameters away from the part's middle, the angles at
+    one vertex on arcs a row apart"""
 
     def __init__(self, outline, mm, width, places=None, names=False, fmt=Fmt):
         pts = [np.asarray(p, float) for line in outline for p in line]
@@ -524,6 +580,8 @@ class Layout:
         self.drawn = []
         # the radius and diameter lines drawn at each centre: (centre, direction)
         self.spokes = []
+        # the angles' arcs drawn: (vertex, radius)
+        self.arcs = []
 
     def _row(self, side, lo, hi):
         """the first row of side whose stretches leave [lo, hi] free"""
@@ -634,14 +692,24 @@ class Layout:
             if place is not None and place.radius is not None:
                 radius = place.radius
             else:
-                # the arc long enough for its value, but never further out than just past the shorter leg's end: past
-                # the longer one it reaches across the rest of the part, and a small angle or legs short on the paper
-                # get their value beyond the arrows there
+                # the arc long enough for its value, but never further out than just past the shorter leg's end, nor,
+                # where an edge starts at the vertex, than three rows on the paper (a vertex off the part, a taper's,
+                # keeps its arc at the edges): past the longer one it reaches across the rest of the part, and a small
+                # angle, a long value or legs short on the paper get their value beyond the arrows there; a row further
+                # out than an angle drawn before at the same vertex
                 fars = [far for _, far in d.legs if far > 0]
                 base = max(pen.mm(FIRST * 1.5), 0.5 * min(fars) if fars else 0.0)
                 radius = max(base, _room(pen, text) / math.radians(_ccw(a, b)))
+                # an edge from the vertex: its nearer end within 0.1 mm of it on the paper
+                if min(near for near, _ in d.legs) <= pen.mm(0.1):
+                    radius = min(radius, pen.mm(3 * ROW))
                 if fars:
                     radius = min(radius, min(fars) + pen.mm(OVER))
+                for c, r in self.arcs:
+                    # the same vertex on the paper: 0.1 mm
+                    if np.linalg.norm(c - d.c) <= pen.mm(0.1):
+                        radius = max(radius, r + pen.mm(ROW))
+            self.arcs.append((d.c, radius))
             Angular(pen, d.c, a, b, legs, radius, text)
             middle = math.atan2(a[1], a[0]) + math.radians(_ccw(a, b)) / 2
             entity.update(c=d.c, a=a, b=b, legs=legs, radius=radius,
@@ -768,7 +836,7 @@ class Layout:
 
 def CenterLines(everything, dims, mm, outline, centers=None, axes=(), carried=()):
     """the center lines: a cross through every circle drawn (not construction), a short cross at the center of an arc
-    whose radius is dimensioned, the sketch's axes (not H and V) across the part, a circular pattern's pitch circle;
+    whose radius or diameter is dimensioned, the sketch's axes (not H and V) across the part, a circular pattern's pitch circle;
     centers: {id: dict(arms=..., cross=..., off=...)} changes; axes: more (a, b) or (a, b, through); carried: the
     construction elements a drawn dimension measures, drawn as center lines"""
     from ._svg import _path
@@ -777,7 +845,7 @@ def CenterLines(everything, dims, mm, outline, centers=None, axes=(), carried=()
     out = Strokes("center lines")
     pts = [np.asarray(p, float) for line in outline for p in line]
     lo, hi = (np.min(pts, axis=0), np.max(pts, axis=0)) if pts else (np.zeros(2), np.zeros(2))
-    dimensioned = {d.element for d in dims if d.kind == "radius"}
+    dimensioned = {d.element for d in dims if d.kind in ("radius", "diameter")}
 
     def cross(c, reach, arms="hv"):
         for arm, d in (("h", (1.0, 0.0)), ("v", (0.0, 1.0))):

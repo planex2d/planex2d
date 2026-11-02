@@ -9,7 +9,7 @@ from importlib.util import find_spec
 from . import _planex
 
 FUNCTIONS = ("CheckShape", "Intersect3d", "OCCGeometry", "Pad", "Pocket", "Project", "_Ax2d", "_FromOCC", "_OccBSpline",
-             "_StackedPrisms", "_UseSplineFit")
+             "_ShadedImage", "_Shading", "_StackedPrisms", "_UseSplineFit", "_ViewLines")
 _EXPORTS = ("ToOCCFace", "ToOCCShape", "ToOCCWire", "ToOCCWires")
 METHODS = {"Face": _EXPORTS + ("Project",), "Shape": ("Project", "ToOCCFace", "ToOCCShape", "ToOCCWires"),
            "Wire": _EXPORTS + ("Project",), "Plane": ("ToOCCAxes",), "QuickSketch": _EXPORTS + ("Intersect3d", "Project"),

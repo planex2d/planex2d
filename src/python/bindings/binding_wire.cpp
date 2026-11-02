@@ -201,31 +201,50 @@ void BindWire(py::module_ &m, py::class_<Wire> &wire) {
            "    ValueError: the region has several parts; px.Shape([wire]) keeps them all.\n\n"
            "Examples:\n"
            "    face = wire.Face()")
-        .def("Offset", [](const Wire &w, double d, OffsetForm ends, OffsetForm corners) {
-            return Shape(w.Offset(d, EndsOf(ends), CornersOf(corners)), nullptr);
-        }, py::arg("d"), py::arg("ends") = OffsetForm::Round, py::arg("corners") = OffsetForm::Round,
-             "Offset(d: float, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round) -> Shape\n\n"
-             "The band within distance d of the edges, as a Shape: the offsets of the edges to both sides, joined around "
-             "the corners and closed at the open ends.\n\n"
-             "A spline's offset is one spline within config.spline_tol of the exact offset. The ends of an open wire are a "
-             "half circle (px.Round), the line across (px.Flat) or flat d beyond the end (px.Square). A corner's outside is "
-             "an arc of radius d about it (px.Round), the two offsets extended along their end tangents until they meet "
-             "(px.Sharp, without a limit: a corner of angle theta between its edges reaches d / sin(theta / 2) out from "
-             "it) or the line between their ends (px.Chamfer). Where the band overlaps itself it is one region.\n\n"
+        .def("Offset", [](const Wire &w, double d, const py::object &bothSides, OffsetForm ends, OffsetForm corners) {
+            const std::optional<bool> both =
+                IsPlainAuto(bothSides, "Offset", "both_sides") ? std::nullopt : std::optional(TieArg(bothSides, "Offset", "both_sides"));
+            return w.OffsetCurves(d, both, EndsOf(ends), CornersOf(corners));
+        }, py::arg("d"), py::arg("both_sides") = PlainAuto(), py::arg("ends") = OffsetForm::Round, py::arg("corners") = OffsetForm::Round,
+             "Offset(d: float, both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round) -> Wire\n\n"
+             "The offset of the wire as a wire, as the sketch's Offset makes it, chain by chain: a closed chain's loop d "
+             "outside it (d < 0 inside), an open chain's band around it, the distance to either side (its boundary: the offsets of its "
+             "edges on both sides, joined around the corners and closed at the ends); both_sides switches. .Face() or "
+             "px.Shape([...]) makes the region.\n\n"
+             "A spline's offset is one spline within config.spline_tol of the exact offset. The ends of an open chain's "
+             "band are a half circle (px.Round), the line across (px.Flat) or flat d beyond the end (px.Square). A corner's "
+             "outside is an arc of radius d about it (px.Round), the two offsets extended along their end tangents until "
+             "they meet (px.Sharp, without a limit: a corner of angle theta between its edges reaches d / sin(theta / 2) "
+             "out from it) or the line between their ends (px.Chamfer). Where the bands overlap they are one region.\n\n"
              "Args:\n"
-             "    d: the distance from the edges, a length > 0.\n"
+             "    d: the distance; one side: of an open chain d > 0 its left (along its direction), d < 0 its right, of a "
+             "closed chain d > 0 outside, d < 0 inside.\n"
+             "    both_sides: True both sides (a closed chain: both loops, an open chain: the band); False one side (an open "
+             "chain: the run along it, no ends); px.Auto: one side for a closed chain, both for an open one.\n"
              "    ends: px.Round, px.Flat or px.Square.\n"
              "    corners: px.Round, px.Sharp or px.Chamfer.\n\n"
              "Raises:\n"
-             "    ValueError: d is not positive and finite, ends is px.Sharp or px.Chamfer, corners is px.Flat or "
-             "px.Square.\n\n"
+             "    ValueError: d is 0 or not finite, ends is px.Sharp or px.Chamfer, corners is px.Flat or px.Square.\n"
+             "    TypeError: both_sides is not True, False or px.Auto.\n\n"
              "Examples:\n"
-             "    band = wire.Offset(0.5)\n"
-             "    track = wire.Offset(0.2, ends=px.Flat, corners=px.Sharp)")
+             "    band = wire.Offset(0.5).Face()\n"
+             "    rail = wire.Offset(0.2, both_sides=False)")
         .def("Intersections", [](const Wire &w, const Wire &other) { return Intersections(w, other); }, py::arg("other"), py::pos_only(),
              IntersectionsDoc("wire", "its edges"))
         .def("OpenEnds", &Wire::OpenEnds, OpenEndsDoc("wire"))
         .def("IsClosed", &Wire::IsClosed, IsClosedDoc("wire"))
+        .def("Reverse", &Wire::Reverse, py::return_value_policy::reference_internal,
+             "Reverse() -> Wire\n\n"
+             "Runs the wire the other way, in place: its edges in reverse order, each reversed; returns it.\n\n"
+             "Examples:\n"
+             "    wire.Reverse()\n"
+             "    wire.Reverse().Measure(at=0)")
+        .def("Reversed", [](const Wire &w) { Wire r = CopyOf(w, "Reverse"); return r.Reverse(), r; },
+             "Reversed() -> Wire\n\n"
+             "A copy run the other way: its edges in reverse order, each reversed; the wire stays as it is.\n\n"
+             "Examples:\n"
+             "    wire.Reversed()\n"
+             "    wire.Reversed().Measure(at=0)[\"tangent_hv\"]")
         .def("SmallEdges", &Wire::SmallEdges, py::arg("tol"), SmallEdgesDoc("wire"))
         .def("CloseGaps", [](Wire &w, double tol) -> Wire & {
             Wire r = w;

@@ -18,19 +18,24 @@ def ring():
     return px.QuickSketch().Circle((0, 0), 2).Face() - px.QuickSketch().Circle((0, 0), 1).Face()
 
 
-def test_min_thickness_says_when_its_minimum_is_a_corner_tip():
-    with pytest.warns(px.PlanexWarning, match=r"the minimum .* is the tip of the corner at .* \(90 degrees\); ignore_corners=91"):
-        rect().Measure(pm.MinThickness())
+def knife():
+    """a triangle with two knife edges of 30.96 degrees and an obtuse corner"""
+    return px.QuickSketch().Move((0, 0)).Line((10, 0)).Line((5, 3)).Close().Face()
+
+
+def test_min_thickness_says_when_its_minimum_is_a_knife_edge_tip():
+    for method in ("ball", "ray"):
+        with pytest.warns(px.PlanexWarning, match=r"the minimum .* is the tip of the corner at \(0, 0\) \(30\.96 degrees\); ignore_corners=31"):
+            assert knife().Measure(pm.MinThickness(method=method)) < 1e-6
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        assert rect().Measure(pm.MinThickness(ignore_corners=91)) == pytest.approx(1, rel=1e-9)
+        assert rect().Measure(pm.MinThickness()) == pytest.approx(1, rel=1e-9)
         assert ring().Measure(pm.MinThickness()) == pytest.approx(1, rel=1e-9)
 
 
 def test_wall_thickness_by_ball_and_ray():
     assert rect().Measure(pm.MinThickness(ignore_corners=100)) == pytest.approx(1, rel=1e-9)
-    with pytest.warns(px.PlanexWarning, match="tip of the corner"):
-        assert rect().Measure(pm.MinThickness()) < 0.05
+    assert rect().Measure(pm.MinThickness()) == pytest.approx(1, rel=1e-9)
     assert rect().Measure(pm.MinThickness(method="ray")) == pytest.approx(1, rel=1e-12)
     assert rect().Measure(pm.MaxThickness(method="ray")) == pytest.approx(4, rel=1e-12)
     for method in ("ball", "ray"):
@@ -154,13 +159,44 @@ def test_ignore_corners_does_not_depend_on_how_the_outline_is_split():
     for length in (1.5, 2.0, 4.0):
         assert rect(length).Measure(pm.MinThickness(ignore_corners=91)) == pytest.approx(1, rel=1e-9)
         assert rect(length).Measure(pm.MinThickness(method="ray", ignore_corners=91)) == pytest.approx(1, rel=1e-9)
-    # an airfoil: the taper behind the sharp trailing edge is the corner's, the thinnest wall left the leading edge; as
-    # lines within 1e-4 the same, with the lines' own corners (about 179 degrees) ignored too (with ignore_corners=30
-    # their tips count, as every corner's does)
+    # an airfoil: the taper behind the sharp trailing edge is the corner's, the thinnest wall left is where the leading
+    # edge's sides first face each other; as lines within 1e-4 the same (their own corners walk to their walls)
     face = px.FromNACA("2412", chord=100)
     lines = px.Face([px.FromPolyline(loop[:-1], closed=True) for loop in face.Polylines(1e-4)])
-    splines = pm.MinThickness(ignore_corners=30)(face, plot=True)
-    assert splines["value"] == pytest.approx(3.13, rel=1e-2) and splines["marks"][0][0][0] < 2
-    splines, polyline = (pm.MinThickness(ignore_corners=179.999)(f, plot=True) for f in (face, lines))
-    assert splines["value"] == pytest.approx(polyline["value"], rel=1e-3)
-    assert splines["marks"][0][0][0] < 2 and polyline["marks"][0][0][0] < 2
+    splines, polyline = (pm.MinThickness(ignore_corners=30)(f, plot=True) for f in (face, lines))
+    assert splines["value"] == pytest.approx(4.0, rel=1e-2) and splines["value"] == pytest.approx(polyline["value"], rel=2e-3)
+    assert splines["marks"][0][0][0] < 3 and polyline["marks"][0][0][0] < 3
+
+
+def ngon(k, r):
+    return px.Face([px.FromPolyline([(r * math.cos(2 * math.pi * i / k), r * math.sin(2 * math.pi * i / k))
+                                     for i in range(k)], closed=True)])
+
+
+def test_corners_and_bends_measure_the_wall_they_lead_to():
+    # a disc counts where the points it touches lie more than 90 degrees apart; a corner's or a bend's disc grows along
+    # the medial axis to the first one that does, so an outline measures the same drawn as lines, coarse or fine
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        bracket = px.Face([px.FromPolyline([(0, 0), (10, 0), (10, 1), (1, 1), (1, 10), (0, 10)], closed=True)])
+        assert bracket.Measure(pm.MinThickness()) == pytest.approx(1, rel=1e-9)
+        for k in (16, 64):
+            assert ngon(k, 10).Measure(pm.MinThickness()) == pytest.approx(20 * math.cos(math.pi / k), rel=1e-9)
+        assert px.QuickSketch().Circle(10).Face().Measure(pm.MinThickness()) == pytest.approx(20, rel=1e-9)
+        rounded = px.Face([px.FromPolyline([(0, 0), (4, 0), (4, 1), (0, 1)], closed=True)])
+        for corner in ((0, 0), (4, 0), (4, 1), (0, 1)):
+            rounded.Fillet(corner, 0.3)
+        for method in ("ball", "ray"):
+            assert rounded.Measure(pm.MinThickness(method=method)) == pytest.approx(1, rel=1e-9)
+
+
+def test_a_thin_wall_between_samples_is_found_where_another_sample_is_thinner():
+    # neck A, 0.5 between two small holes, widens fast; neck B, 0.6 between two large ones, slowly: the samples read B
+    # as the thinner, the refinement of every local minimum finds A
+    plate = px.QuickSketch().Rectangle(100, 40).Face()
+    for c, r in (((20, 20), 1), ((22.5, 20), 1), ((50, 20), 10), ((70.6, 20), 10)):
+        plate = plate - px.QuickSketch().Move(c).Circle(r).Face()
+    data = pm.MinThickness(samples=400)(plate, plot=True)
+    assert min(data["values"][:-1]) > 0.6
+    # the place to about the square root of the value's precision: the wall widens quadratically from the neck
+    assert data["value"] == pytest.approx(0.5, abs=1e-9) and data["discs"][-1][:2] == pytest.approx((21.25, 20), abs=1e-6)

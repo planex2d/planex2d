@@ -10,26 +10,26 @@ import planex as px
 PTS = [(0, 0), (1, 0.8), (2.3, 0.5), (3, -0.4), (4.2, 0.2)]
 
 
-def at(points, u, k=0, tangents=None, closed=False):
-    return px._planex._InterpolatedAt(points, tangents or {}, closed, u, k)
+def at(points, u, k=0, tangents=None, closed=False, style=None):
+    return px._planex._InterpolatedAt(points, tangents or {}, closed, u, k, style=style)
 
 
 def test_the_curve_runs_through_its_points():
-    f = px._planex._Interpolate(PTS)
+    f = px._planex._Interpolate(PTS, style="averaged")
     assert f["degree"] == 3 and len(f["poles"]) == len(PTS)
     assert f["params"][1] == pytest.approx(math.dist(PTS[0], PTS[1]))
     for p, u in zip(PTS, f["params"]):
-        assert at(PTS, u) == pytest.approx(p, abs=1e-12)
+        assert at(PTS, u, style="averaged") == pytest.approx(p, abs=1e-12)
 
 
 def test_given_tangents_are_the_derivatives_there():
     tangents = {0: (1, 0), 2: (0.6, -0.8), 4: (0, 1)}
-    f = px._planex._Interpolate(PTS, tangents)
+    f = px._planex._Interpolate(PTS, tangents, style="averaged")
     assert len(f["poles"]) == len(PTS) + 3
     for p, u in zip(PTS, f["params"]):
-        assert at(PTS, u, tangents=tangents) == pytest.approx(p, abs=1e-12)
+        assert at(PTS, u, tangents=tangents, style="averaged") == pytest.approx(p, abs=1e-12)
     for k, t in tangents.items():
-        assert at(PTS, f["params"][k], 1, tangents) == pytest.approx(t, abs=1e-12)
+        assert at(PTS, f["params"][k], 1, tangents, style="averaged") == pytest.approx(t, abs=1e-12)
 
 
 def test_a_closed_curve_meets_itself_smoothly():
@@ -50,9 +50,9 @@ def test_points_on_a_line_give_the_line():
 
 
 def test_few_points_lower_the_degree():
-    assert px._planex._Interpolate([(0, 0), (1, 1)])["degree"] == 1
-    assert px._planex._Interpolate([(0, 0), (1, 1), (2, 0)])["degree"] == 2
-    assert px._planex._Interpolate([(0, 0), (1, 1)], {0: (1, 0)})["degree"] == 2
+    assert px._planex._Interpolate([(0, 0), (1, 1)], style="averaged")["degree"] == 1
+    assert px._planex._Interpolate([(0, 0), (1, 1), (2, 0)], style="averaged")["degree"] == 2
+    assert px._planex._Interpolate([(0, 0), (1, 1)], {0: (1, 0)}, style="averaged")["degree"] == 2
 
 
 def test_interpolation_errors():

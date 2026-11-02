@@ -60,6 +60,12 @@ namespace planex2d {
         const auto r = std::to_chars(buf, buf + sizeof(buf), v);
         return std::string(buf, r.ptr);
     }
+    // a solved value in a message: to 12 significant digits, below which a solve's rounding would show
+    inline std::string SolvedText(double v) {
+        char buf[32];
+        const auto r = std::to_chars(buf, buf + sizeof(buf), v, std::chars_format::general, 12);
+        return std::string(buf, r.ptr);
+    }
     // the number a whole text spells, what NumberText wrote bit for bit; none if it is no number
     inline std::optional<double> NumberOf(std::string_view text) {
         double x = 0.0;

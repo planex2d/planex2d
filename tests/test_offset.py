@@ -7,18 +7,18 @@ import random
 import pytest
 
 import planex as px
-from helpers import open_vertices, polygon_area, shortest_edge, stadium_area
+from helpers import open_vertices, polygon_area, shortest_edge, stadium_area, offset_band
 
 
 def test_straight_trace():
-    p = px.Move((0, 0)).Line(1).Line(1).Line(1).Wire().Offset(0.25)
+    p = offset_band(px.Move((0, 0)).Line(1).Line(1).Line(1).Wire(), 0.25)
     assert (len(p.lines), len(p.arcs)) == (2, 2)
     assert polygon_area(p) == pytest.approx(stadium_area(3, 0.25))
 
 
 def test_trace_with_a_right_angle():
     d = 0.5
-    p = px.Move((0, 0)).Line((4, 0)).Line((4, 3)).Wire().Offset(d)
+    p = offset_band(px.Move((0, 0)).Line((4, 0)).Line((4, 3)).Wire(), d)
     assert (len(p.lines), len(p.arcs)) == (4, 3)
     outer_join = math.pi * d * d / 4
     inner_corner = d * d
@@ -27,18 +27,18 @@ def test_trace_with_a_right_angle():
 
 def test_smooth_trace_has_the_tube_area():
     d = 0.25
-    p = px.Move((0, 0)).Line(2).Arc(1, 90).Line(2).Wire().Offset(d)
+    p = offset_band(px.Move((0, 0)).Line(2).Arc(1, 90).Line(2).Wire(), d)
     assert polygon_area(p) == pytest.approx(stadium_area(4 + math.pi / 2, d))
 
 
 def test_arc_offset_area():
     d, r = 0.5, 2
-    p = px.Arc(px.Vertex((r, 0)), px.Vertex((0, r)), px.Vertex((0, 0))).Offset(d)
+    p = offset_band(px.Arc(px.Vertex((r, 0)), px.Vertex((0, r)), px.Vertex((0, 0))), d)
     assert polygon_area(p) == pytest.approx(math.pi / 2 * 2 * r * d + math.pi * d * d)
 
 
 def test_circle_offset_is_a_ring():
-    p = px.QuickSketch().Circle((0, 0), 2).Wire().Offset(0.5)
+    p = offset_band(px.QuickSketch().Circle((0, 0), 2).Wire(), 0.5)
     face = p.ToOCCFace()
     assert len(face.faces) == 1
     assert len(face.wires) == 2
@@ -46,14 +46,14 @@ def test_circle_offset_is_a_ring():
 
 
 def test_offset_of_one_chain():
-    p = px.Move((0, 0)).Line(1).Finish().Move((5, 5)).Line(2, id="b").Wire("b").Offset(0.1)
+    p = offset_band(px.Move((0, 0)).Line(1).Finish().Move((5, 5)).Line(2, id="b").Wire("b"), 0.1)
     assert polygon_area(p) == pytest.approx(stadium_area(2, 0.1))
 
 
 @pytest.mark.parametrize("x", [0.5, 3.0, 3.3, 5.0, 7.123456])
 def test_t_junction_of_two_traces(x):
     d = 0.2
-    p = px.Move((0, 0)).Line((10, 0)).Wire().Offset(d) + px.Move((x, 4)).Line((x, 0)).Wire().Offset(d)
+    p = offset_band(px.Move((0, 0)).Line((10, 0)).Wire(), d) + offset_band(px.Move((x, 4)).Line((x, 0)).Wire(), d)
     assert shortest_edge(p) > 1e-6
     overlap = math.pi * d * d / 2 + 2 * d * d
     assert polygon_area(p) == pytest.approx(stadium_area(10, d) + stadium_area(4, d) - overlap)
@@ -64,8 +64,8 @@ def test_t_junction_of_two_traces(x):
 def test_angled_t_junctions_export_cleanly(angle, rotation):
     r, t = math.radians(rotation), math.radians(angle + rotation)
     end = (5 * math.cos(r), 5 * math.sin(r))
-    trunk = px.Move((0, 0)).Line((10 * math.cos(r), 10 * math.sin(r))).Wire().Offset(0.2)
-    branch = px.Move((end[0] + 4 * math.cos(t), end[1] + 4 * math.sin(t))).Line(end).Wire().Offset(0.2)
+    trunk = offset_band(px.Move((0, 0)).Line((10 * math.cos(r), 10 * math.sin(r))).Wire(), 0.2)
+    branch = offset_band(px.Move((end[0] + 4 * math.cos(t), end[1] + 4 * math.sin(t))).Line(end).Wire(), 0.2)
     p = trunk + branch
     assert shortest_edge(p) > 1e-6
     assert polygon_area(p) > 0
@@ -73,20 +73,20 @@ def test_angled_t_junctions_export_cleanly(angle, rotation):
 
 def test_long_stroke_crossing_a_cap_at_a_shallow_angle():
     d = 0.099949
-    short = px.Move((238.099092, 20.519136)).Line((238.299244, 20.519136)).Wire().Offset(d)
-    long = px.Move((238.299244, 20.319492)).Line((368.099086, 20.319492)).Wire().Offset(d)
+    short = offset_band(px.Move((238.099092, 20.519136)).Line((238.299244, 20.519136)).Wire(), d)
+    long = offset_band(px.Move((238.299244, 20.319492)).Line((368.099086, 20.319492)).Wire(), d)
     assert open_vertices(short + long) == []
 
 
 def test_touching_strokes_merge():
     n, d = 5, 0.5
-    p = sum(px.Move((i, 0)).Line((i, 30)).Wire().Offset(d) for i in range(n))
+    p = sum(offset_band(px.Move((i, 0)).Line((i, 30)).Wire(), d) for i in range(n))
     assert (len(p.lines), len(p.arcs)) == (2, 2 * n)
     assert polygon_area(p) == pytest.approx(n * stadium_area(30, d))
 
 
 def test_zigzag_fill_has_no_internal_edges():
-    p = px.Move((0, 0)).Line((0, 10)).Line((1, 10)).Line((1, 0)).Line((2, 0)).Line((2, 10)).Wire().Offset(0.5)
+    p = offset_band(px.Move((0, 0)).Line((0, 10)).Line((1, 10)).Line((1, 0)).Line((2, 0)).Line((2, 10)).Wire(), 0.5)
     internal = [l for l in p.lines if l.start.x == l.end.x and l.start.x in (0.5, 1.5)]
     assert internal == []
     assert polygon_area(p) == pytest.approx(31 + math.pi / 2)
@@ -105,14 +105,14 @@ def random_trace(rng):
 
 @pytest.mark.parametrize("seed", range(20))
 def test_random_traces_export_cleanly(seed):
-    p = px.Unify([w.Offset(0.2) for w in random_trace(random.Random(seed)).Wires()])
+    p = px.Unify([offset_band(w, 0.2) for w in random_trace(random.Random(seed)).Wires()])
     assert shortest_edge(p) > 1e-6
     assert polygon_area(p) > 0
 
 
 def test_consecutive_strokes_with_slightly_different_directions_stay_closed():
-    a = px.Move((65.11844, 61.36984)).Line((65.26079, 61.9011)).Wire().Offset(0.15)
-    b = px.Move((65.26079, 61.9011)).Line((65.2802, 61.97354)).Wire().Offset(0.15)
+    a = offset_band(px.Move((65.11844, 61.36984)).Line((65.26079, 61.9011)).Wire(), 0.15)
+    b = offset_band(px.Move((65.26079, 61.9011)).Line((65.2802, 61.97354)).Wire(), 0.15)
     assert open_vertices(a + b) == []
 
 
@@ -126,15 +126,15 @@ def test_half_circles_whose_ends_miss_their_circle_offset_to_a_ring():
         g = e.edge
         assert math.hypot(g.end.x - g.center.x, g.end.y - g.center.y) == pytest.approx(g.radius, abs=1e-13)
     r = (r1 + r2) / 2
-    assert w.Offset(0.225).mass == pytest.approx(math.pi * ((r + 0.225) ** 2 - (r - 0.225) ** 2), abs=1e-9)
+    assert offset_band(w, 0.225).mass == pytest.approx(math.pi * ((r + 0.225) ** 2 - (r - 0.225) ** 2), abs=1e-9)
 
 
 def test_an_arc_offset_as_wide_as_its_radius_covers_its_inside():
     half = px.Arc((1, 0), (-1, 0), (0, 0))
-    assert half.Offset(1).mass == pytest.approx(3 * math.pi, rel=1e-12)
+    assert offset_band(half, 1).mass == pytest.approx(3 * math.pi, rel=1e-12)
     lens = 2 * 4 * math.acos(0.5) - 2 * math.sqrt(3)
-    assert half.Offset(2).mass == pytest.approx(9 * math.pi / 2 + 4 * math.pi - lens / 2, rel=1e-12)
-    chain = px.Move((-2, 0)).Line(2).Arc(1, 90).Line(2).Wire().Offset(1.5)
+    assert offset_band(half, 2).mass == pytest.approx(9 * math.pi / 2 + 4 * math.pi - lens / 2, rel=1e-12)
+    chain = offset_band(px.Move((-2, 0)).Line(2).Arc(1, 90).Line(2).Wire(), 1.5)
     assert len(chain.faces) == 1 and len(chain.faces[0].inner) == 0
 
 
@@ -177,7 +177,7 @@ def test_bands_wider_than_the_radius_are_netgens_offsets(case, d):
         source, wp = px.Arc((1, 0), (0, 1), (0, 0)), occ.WorkPlane().MoveTo(1, 0).Direction(0, 1).Arc(1, 90)
     else:
         source, wp = px.Move((-2, 0)).Line(2).Arc(1, 90).Line(2).Wire(), occ.WorkPlane().MoveTo(-2, 0).Line(2).Arc(1, 90).Line(2)
-    band, theirs = source.Offset(d), wp.Finish().Offset(d).Face()
+    band, theirs = offset_band(source, d), wp.Finish().Offset(d).Face()
     ours = band.ToOCCShape()
 
     def area(s):
@@ -191,7 +191,7 @@ def test_bands_wider_than_the_radius_are_netgens_offsets(case, d):
 def test_a_spline_offset_past_its_smallest_curvature_radius_is_one_clean_face(d):
     shapely = pytest.importorskip("shapely")
     w = px.Spline([px.Vertex((0, 0)), px.Vertex((2, 2)), px.Vertex((4, 0)), px.Vertex((6, 2))])
-    band = w.Offset(d)
+    band = offset_band(w, d)
     assert len(band.faces) == 1 and band.faces[0].outer.IsClosed()
     curve = shapely.LineString(w.edges[0].edge.Sample(1e-7)).buffer(d, quad_segs=2048)
     assert band.mass == pytest.approx(curve.area, rel=1e-5)

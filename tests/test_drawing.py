@@ -184,6 +184,42 @@ def test_an_angles_arc_beyond_a_short_leg_gets_an_extension_line():
     assert any(np.allclose(a, (60, 30)) for a, _, _ in s.lines)
 
 
+def test_angles_at_one_vertex_stack_a_row_apart_smaller_inside_from_three_rows_out():
+    sk = px.Sketch()
+    for deg in (0, 80, 15, 40):
+        sk.Move((0, 0), px.Fix).Line(60 * math.cos(math.radians(deg)), 60 * math.sin(math.radians(deg)), id=f"l{deg}")
+    for deg in (80, 15, 40):
+        sk.Constrain("l0", f"l{deg}", px.Angle, id=f"a{deg}", reference=True)
+    s = strokes(px.Drawing(sk, unit=px.mm))
+    radii = {deg: float(np.linalg.norm(s[f"a{deg}"].arcs[0][0])) for deg in (15, 40, 80)}
+    assert radii == pytest.approx({15: 3 * dims.ROW, 40: 4 * dims.ROW, 80: 5 * dims.ROW})
+
+
+def test_an_angle_to_an_axis_gets_an_auxiliary_line_along_the_axis_from_the_line_s_start():
+    from planex import _svg
+    sk = px.Sketch()
+    sk.Move((5, 5), px.Fix).Line(20 * math.cos(math.radians(20)), -20 * math.sin(math.radians(20)), id="tilted")
+    sk.Constrain("tilted", px.Distance, 20, id="l")
+    sk.Constrain(px.H, "tilted", px.Angle, -20, id="tilt")
+    sk.Move((5, 5), px.Fix).Line(10 * math.sin(math.radians(30)), 10 * math.cos(math.radians(30)), id="leaning")
+    sk.Constrain("leaning", px.Distance, 10, id="m")
+    sk.Constrain("leaning", px.V, px.Angle, -30, id="lean")
+    sk.Move((5, 5)).Line(15, 0, id="flat")
+    sk.Constrain(px.H, "flat", px.Angle, 0, id="level")
+    s = strokes(px.Drawing(sk, unit=px.mm))
+    for name, value, axis in (("tilt", "20°", (1, 0)), ("lean", "30°", (0, 1))):
+        assert texts(s[name]) == [value]
+        radius = s[name].entity["radius"]
+        assert any(np.allclose(a, (5, 5)) and np.allclose(np.abs(b - a), np.multiply(axis, radius + dims.OVER))
+                   for a, b, style in s[name].lines)
+        arc, = s[name].arcs
+        assert np.linalg.norm(arc - (5, 5), axis=1) == pytest.approx(np.full(len(arc), radius))
+    # along the axis: nothing to draft, the value keeps its label
+    assert "level" not in s
+    drafted, _ = _svg._drafting(sk, {g["id"]: g for g in sk._Drawing()}, 4.0, 12)
+    assert {"tilt", "lean"} <= set(drafted) and "level" not in drafted
+
+
 def test_center_lines_and_axes():
     sk = plate()
     sk.SymmetryLine((30, -5), (30, 45), id="sym")
@@ -197,6 +233,26 @@ def test_center_lines_and_axes():
     assert off.lines == []
     axis = strokes(px.Drawing(plate(), unit=px.mm).Center("hole", off=True).Axis((-5, 30), (65, 30)))["center lines"]
     assert len(axis.lines) == 2 and all(style == "center" for _, _, style in axis.lines)
+
+
+def test_two_sketches_of_a_view_keep_their_equal_ids_apart():
+    a, b = px.Sketch(), px.Sketch()
+    for sk, x in ((a, 20), (b, 70)):
+        sk.Circle((x, 20), 5)
+        sk.Constrain("Circle.1", px.Diameter, 10)
+    dw = px.Drawing(a, unit=px.mm).Add(b)
+
+    def centers():
+        return {round(float(p[0] + q[0]) / 2) for p, q, _ in strokes(dw)["center lines"].lines}
+
+    assert centers() == {20, 70}
+    with pytest.raises(ValueError, match=rf"'Diameter.1' is in 2 of the drawing's sketches; name one by its full id "
+                                         rf"\('{a.id}.Diameter.1', '{b.id}.Diameter.1'\) or selected"):
+        dw.Place("Diameter.1", "ne")
+    dw.Place(f"{b.id}.Diameter.1", "ne").Center(b("Circle.1"), off=True)
+    assert centers() == {20}
+    dw.Hide(f"{a.id}.Diameter.1")
+    assert [d.id for d in dw._shown()] == [f"{b.id}.Diameter.1"]
 
 
 def test_measures_and_extra_lines():
@@ -231,6 +287,66 @@ def test_first_angle_placement():
     _, places, _, _, _ = sh._layout(1.0, _Lettering())
     assert places[1][0] == 0 and places[1][1] < -20
     assert places[2][1] == 0 and places[2][0] < -40
+
+
+def test_asme_places_the_views_in_third_angle_projection():
+    front, top, right = (px.Sketch(plane) for plane in (px.XZ, px.XY, px.YZ))
+    for sk in (front, top, right):
+        sk.Move((0, 0), px.Fix).Line(40, 0, px.Horizontal).Line(0, 20, px.Vertical).Line(-40, 0, px.Horizontal) \
+            .Close(px.Vertical)
+    sh = px.Sheet(*(px.Drawing(sk, unit=px.mm) for sk in (front, top, right)), standard="ASME")
+    _, places, _, _, _ = sh._layout(1.0, _Lettering())
+    assert places[1][0] == 0 and places[1][1] > 20
+    assert places[2][1] == 0 and places[2][0] > 40
+
+
+def test_the_drawing_standard_comes_from_the_config():
+    assert px.config.drawing_standard == "DIN" and px.Sheet().standard == "DIN"
+    try:
+        px.config.drawing_standard = "ASME"
+        assert px.Sheet().standard == "ASME" and px.Sheet(standard="DIN").standard == "DIN"
+        for wrong in ("ISO", None, 1):
+            with pytest.raises(ValueError, match="it is 'DIN' or 'ASME'"):
+                px.config.drawing_standard = wrong
+    finally:
+        px.config.drawing_standard = "DIN"
+    with pytest.raises(ValueError, match="Sheet: standard 'ISO'; it is 'DIN' or 'ASME'"):
+        px.Sheet(standard="ISO")
+    with pytest.raises(ValueError, match="Drawing: standard 'ansi'; it is 'DIN' or 'ASME'"):
+        px.Drawing(plate(), standard="ansi")
+
+
+def test_asme_writes_a_decimal_point_and_the_third_angle_symbol(tmp_path):
+    from planex._drawing import _Ink
+
+    class Record(_Ink):
+        def __init__(self):
+            self.lines = []
+
+        def polyline(self, pts, width, style="-"):
+            self.lines.append(np.asarray(pts, float))
+
+    for third in (False, True):
+        r = Record()
+        r.projection_symbol(100.0, 10.0, third)
+        cone, circle = r.lines[0], r.lines[1]
+        assert (circle[:, 0].mean() < cone[:, 0].mean()) == third
+        assert cone[0, 0] < cone[1, 0] and np.ptp(cone[[0, 3], 1]) < np.ptp(cone[[1, 2], 1])
+    ezdxf = pytest.importorskip("ezdxf")
+    asme = px.Drawing(part(), unit=px.mm, standard="ASME")
+    din = px.Drawing(part(), unit=px.mm)
+    for sheet, standard in ((px.Sheet(din, scale=0.5, standard="ASME"), "ASME"), (px.Sheet(din, scale=0.5), "DIN"),
+                            (px.Sheet(asme, scale=0.5), "DIN")):
+        sheet.WriteDXF(tmp_path / "part.dxf")
+        doc = ezdxf.readfile(tmp_path / "part.dxf")
+        sign = "." if standard == "ASME" else ","
+        assert chr(doc.dimstyles.get(standard).dxf.dimdsep) == sign
+        assert {d.dxf.dimstyle for d in doc.modelspace().query("DIMENSION")} == {standard}
+        shown = [e.text for d in doc.modelspace().query("DIMENSION") for e in doc.blocks.get(d.dxf.geometry)
+                 if e.dxftype() == "MTEXT"]
+        assert f"(39{sign}806°)" in shown
+    asme.WriteDXF(tmp_path / "alone.dxf")
+    assert ezdxf.readfile(tmp_path / "alone.dxf").dimstyles.get("ASME") is not None
 
 
 def test_svg_and_pdf_are_the_sheet_at_true_scale(tmp_path):
@@ -494,3 +610,43 @@ def test_a_box_check_finds_a_segment_through_it():
     assert not _meets_box(segments, (5.0, 3.0), (2.0, 2.0))
     assert _meets_box(segments, (19.0, 0.0), (1.5, 1.0))
     assert not _meets_box(np.zeros((0, 2, 2)), (0.0, 0.0), (1.0, 1.0))
+
+
+def test_a_sketch_on_a_turned_or_flipped_plane_is_dimensioned_in_the_view():
+    turned = px.Sketch(px.Plane(origin=(100, 0, 5), normal=(0, 0, 1), axis=(0, 1, 0)))
+    turned.Line((0, 0), (30, 0), id="rail")
+    turned.Constrain("rail", px.Distance, 30, id="rail_length")
+    turned.Circle((10, 5), 2, id="pin")
+    turned.Constrain("pin", px.Diameter, 4, id="pin_d")
+    flipped = px.Sketch(px.Plane(origin=(0, 100, 0), normal=(0, 0, -1), axis=(1, 0, 0)))
+    flipped.Line((0, 0), (20, 0), id="arm_a")
+    flipped.Line((0, 0), (20, 20), id="arm_b")
+    flipped.Constrain("arm_a", "arm_b", px.Angle, 45, id="spread")
+    view = px.Drawing(plate(), unit=px.mm).Add(turned).Add(flipped)
+    rail, spread = (next(d for d in view._dims if d.id == i) for i in ("rail_length", "spread"))
+    # the turned sketch's h runs along the view's y, its v along -x
+    assert rail.p == pytest.approx((100, 0)) and rail.q == pytest.approx((100, 30)) and rail.u == pytest.approx((0, 1))
+    # seen from behind, the angle still opens counterclockwise from its first side to its second
+    a, b = spread.a, spread.b
+    assert math.degrees(math.atan2(a[0] * b[1] - a[1] * b[0], a @ b)) == pytest.approx(45)
+    assert spread.c == pytest.approx((0, 100))
+    centers = strokes(view)["center lines"].lines
+    assert any(np.allclose((p + q) / 2, (95, 10)) for p, q, _ in centers)
+    px.Sheet(view)._figure()
+
+
+def test_a_slots_width_is_drawn_across_its_sides():
+    sk = px.Sketch()
+    sk.Slot(20, 6.6, id="slot")
+    (d,) = [d for d in px.Drawing(sk, unit=px.mm)._dims if d.id == "slot.w"]
+    assert d.kind == "linear" and d.value == pytest.approx(6.6)
+    assert d.p == pytest.approx((10, 3.3)) and d.q == pytest.approx((10, -3.3))
+
+
+def test_an_arc_dimensioned_by_its_diameter_gets_its_center_mark():
+    sk = px.Sketch()
+    sk.Move((10, 0)).Arc((-10, 0), center=(0, 0), id="throat")
+    sk.Constrain("throat", px.Diameter, 20)
+    s = strokes(px.Drawing(sk, unit=px.mm))["center lines"]
+    assert len([(a, b) for a, b, _ in s.lines if np.allclose((a + b) / 2, (0, 0))]) == 2
+

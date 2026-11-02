@@ -14,7 +14,7 @@ ID_DOC = "\n\nid: " + ID_TEXT
 
 # the calls that return new objects, per class
 METHODS = {
-    "Wire": ["Copy", "Rotated", "Translated", "Mirrored", "Scaled", "Face", "Offset", "Simplified", "Trim", "Filleted",
+    "Wire": ["Copy", "Rotated", "Translated", "Mirrored", "Reversed", "Scaled", "Face", "Offset", "Simplified", "Trim", "Filleted",
              "Chamfered"],
     "Face": ["Copy", "Rotated", "Translated", "Mirrored", "Scaled", "Offset", "Simplified", "Split", "Trim", "Filleted",
              "Chamfered"],

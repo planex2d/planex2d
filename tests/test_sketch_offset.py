@@ -7,6 +7,7 @@ import warnings
 
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 REL = 1e-12
@@ -265,14 +266,12 @@ def test_a_quicksketch_source_goes_alone():
 
 
 @pytest.mark.constraints
-def test_the_parts_of_an_offset_stay_with_it():
+def test_the_ties_and_points_of_an_offset_stay_with_it():
     sk = rectangle()
     sk.Offset("r", 1, id="wall")
-    for part in ("wall.Line.1", "wall.Line.1.corner", "wall.Point.1", "wall.tie.1"):
-        with pytest.raises(ValueError, match=r"part of the offset 'wall'; Remove\('wall'\)"):
+    for part in ("wall.Point.1", "wall.tie.1"):
+        with pytest.raises(ValueError, match=r"holds the offset 'wall' together; Remove\('wall'\)"):
             sk.Remove(part)
-    with pytest.raises(ValueError, match="part of the offset 'wall'"):
-        sk.Trim("wall.Line.1")
     assert len(sk("wall")) == 16
 
 
@@ -306,7 +305,7 @@ def test_a_line_gets_a_band_with_round_caps():
     assert (sk.wires["slot.left"], sk.wires["slot.right"]) == (["slot.left.a"], ["slot.right.a"])
     assert {"slot.startcap", "slot.endcap"} <= set(sk.elements["Arc"])
     assert area(sk, "slot") == pytest.approx(20 + math.pi, rel=REL)
-    assert area(sk, "slot") == pytest.approx(sk.Wire("a").Offset(1).mass, rel=REL)
+    assert area(sk, "slot") == pytest.approx(offset_band(sk.Wire("a"), 1).mass, rel=REL)
     assert sk._Geometry("slot.left.a")["start"] == pytest.approx((0, 1), abs=1e-12)
     assert sk._Geometry("slot.left.a")["end"] == pytest.approx((10, 1), abs=1e-12)
     assert sk._Geometry("slot.right.a")["start"] == pytest.approx((0, -1), abs=1e-12)
@@ -324,7 +323,7 @@ def test_an_open_chain_gets_both_sides_by_default():
     sk.Offset("L", 1, id="b")
     assert sk.wires["b.left"] == ["b.left.Line.1", "b.left.Line.2"]
     assert sk.wires["b.right"] == ["b.right.Line.1", "b.right.Line.1.corner", "b.right.Line.2"]
-    assert area(sk, "b") == pytest.approx(sk.Wire("L").Offset(1).mass, rel=REL)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("L"), 1).mass, rel=REL)
     assert sk.redundant == []
 
 
@@ -389,7 +388,7 @@ def test_the_band_of_an_arc():
     assert area(sk, "b") == pytest.approx(16 * math.pi / 3 + math.pi, rel=REL)
     assert (sk.dof, sk.redundant) == (dof, [])
     sk.Update({"rb": 5})
-    assert area(sk, "b") == pytest.approx(sk.Wire("bend").Offset(1).mass, rel=REL)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("bend"), 1).mass, rel=REL)
 
 
 @pytest.mark.constraints
@@ -398,7 +397,7 @@ def test_the_band_of_an_arc_narrower_than_the_distance():
     sk.Arc(4, 120, id="bend")
     sk.Offset("bend", 5, id="w")
     assert "w.left" not in sk.wires and sk.wires["w.right"] == ["w.right.bend"]
-    assert area(sk, "w") == pytest.approx(sk.Wire("bend").Offset(5).mass, rel=REL)
+    assert area(sk, "w") == pytest.approx(offset_band(sk.Wire("bend"), 5).mass, rel=REL)
     assert sk.redundant == []
     with pytest.raises(ValueError, match="nothing is left on the left"):
         sk.Offset("bend", 5, both_sides=False)
@@ -571,7 +570,7 @@ def test_a_spline_gets_a_band_of_offset_curves():
     for g in (left, right):
         assert [foot_distance(BUMP, p) for p in g["path"]] == pytest.approx([0.4] * len(g["path"]), abs=1e-9)
     assert [g["kind"] for g in sk._Drawing() if g["id"] == "b.left.s"] == ["Spline"]
-    assert area(sk, "b") == pytest.approx(sk.Wire("s").Offset(0.4).mass, rel=1e-5)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("s"), 0.4).mass, rel=1e-5)
     edges = sk.Wire("b.left.s").edges
     assert len(edges) == 1 and isinstance(edges[0].edge, px.SplineEdge)
 
@@ -591,7 +590,7 @@ def test_the_offset_curves_follow_the_spline_and_the_distance():
     assert sk._Geometry("b.left.s")["start"] == pytest.approx(left_of(moved, 0, 0.3), abs=1e-12)
     path = sk._Geometry("b.right.s")["path"]
     assert [foot_distance(moved, p) for p in path] == pytest.approx([0.3] * len(path), abs=1e-9)
-    assert area(sk, "b") == pytest.approx(sk.Wire("s").Offset(0.3).mass, rel=1e-5)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("s"), 0.3).mass, rel=1e-5)
 
 
 @pytest.mark.constraints
@@ -605,7 +604,7 @@ def test_a_spline_tangent_to_a_line_needs_no_corner():
     assert sk.wires["b.left"] == ["b.left.Line.1", "b.left.Spline.1"]
     assert sk.wires["b.right"] == ["b.right.Line.1", "b.right.Spline.1"]
     assert sk._Geometry("b.left.Line.1")["end"] == sk._Geometry("b.left.Spline.1")["start"] == pytest.approx((4, 0.3), abs=1e-12)
-    assert area(sk, "b") == pytest.approx(sk.Wire("c").Offset(0.3).mass, rel=1e-5)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("c"), 0.3).mass, rel=1e-5)
     assert (sk.dof, sk.redundant) == (0, [])
 
 
@@ -790,7 +789,7 @@ def test_a_trimmed_spline_offsets_between_its_cuts():
         lo, hi = (mid, hi) if spline_at(BUMP, mid)[0] < 7 else (lo, mid)
     assert sk._Geometry("b.left.s")["start"] == pytest.approx(left_of(BUMP, 0, 0.3), abs=1e-9)
     assert sk._Geometry("b.left.s")["end"] == pytest.approx(left_of(BUMP, lo, 0.3), abs=1e-9)
-    assert area(sk, "b") == pytest.approx(sk.Wire("s").Offset(0.3).mass, rel=1e-5)
+    assert area(sk, "b") == pytest.approx(offset_band(sk.Wire("s"), 0.3).mass, rel=1e-5)
     assert sk.redundant == []
 
 

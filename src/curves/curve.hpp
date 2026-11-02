@@ -189,6 +189,12 @@ namespace planex2d {
             const P d = At(u, 1);
             return d / Norm(d);
         }
+        // signed along the curve's direction, a left turn positive
+        double Curvature(const S &u) const {
+            const P d1 = At(u, 1), d2 = At(u, 2);
+            const double speed = Norm(d1);
+            return Cross(d1, d2) / (speed * speed * speed);
+        }
         // the parameter nearest p: the best of 32 samples per point (or guess), then Newton steps
         S Project(const P &p, std::optional<S> guess = std::nullopt) const {
             const S end = params.back();
@@ -308,6 +314,56 @@ namespace planex2d {
     // a b-spline given by its data, checked; periodic, its knots one period (the first knot's copies to the last's, the
     // last as often as the first), unwrapped to its clamped form on the same parameters. Pole 1 goes where OCC puts it:
     // the first span starts degree + 1 - (the first knot's multiplicity) poles later
+    // knots for n poles of degree p when none are given: clamped (each end p + 1 times, the inner ones evenly between),
+    // or a periodic curve's one period (n + 1 knots evenly from 0 to 1), as BSplineCurve takes them
+    inline std::vector<double> UniformKnots(size_t n, size_t p, bool periodic) {
+        std::vector<double> k;
+        if (periodic) {
+            for (size_t i = 0; i <= n; ++i)
+                k.push_back((double)i / (double)n);
+            return k;
+        }
+        k.assign(p + 1, 0.0);
+        for (size_t i = 1; i + p < n; ++i)
+            k.push_back((double)i / (double)(n - p));
+        k.insert(k.end(), p + 1, 1.0);
+        return k;
+    }
+
+    // a curve by its poles, knots (flattened, as BSplineCurve takes them, checked there) and degree p, every pole one of
+    // the given ones: a periodic curve's poles wrapped around and its knots run on past the period (its range one period,
+    // not cut to it), so that the poles stay the points they are made from; its params the distinct knots of its range,
+    // where its pieces meet (S, P: as Curve)
+    template <class S, class P>
+    Curve<S, P> PoleCurve(const std::vector<P> &poles, const std::vector<double> &knots, size_t p, bool periodic) {
+        Curve<S, P> c;
+        c.degree = p;
+        c.closed = periodic;
+        std::vector<double> u;
+        if (!periodic) {
+            u = knots;
+            c.poles = poles;
+        } else {
+            const long n = (long)poles.size();
+            size_t first = 1;
+            while (first < knots.size() && knots[first] == knots[0])
+                ++first;
+            const double period = knots.back() - knots.front();
+            const long shift = (long)p + 1 - (long)first;
+            const auto wrap = [&](long j) { return (size_t)(((j % n) + n) % n); };
+            for (long j = -(long)p; j <= n + (long)p; ++j)
+                u.push_back(knots[wrap(j)] + (double)((j - (long)wrap(j)) / n) * period);
+            for (long j = -(long)p; j < n; ++j)
+                c.poles.push_back(poles[wrap(j + shift)]);
+        }
+        for (double k : u)
+            c.knots.push_back(S(k));
+        for (size_t i = p; i < c.poles.size() + 1; ++i)
+            if (i == p || u[i] != u[i - 1])
+                c.params.push_back(S(u[i]));
+        return c;
+    }
+
     inline Curve<double, Vertex> BSplineCurve(const BSplineData &b, bool periodic) {
         const auto fail = [](const std::string &why) { throw std::invalid_argument("invalid b-spline: " + why); };
         for (const Vertex &q : b.poles)

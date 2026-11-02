@@ -39,7 +39,10 @@ namespace planex2d {
         } else {
             double denom = 2.0 * (1.0 - Dot(ta, tb));
             double vt = Dot(v, ta + tb);
-            double d = (-vt + std::sqrt(vt * vt + denom * vv)) / denom;
+            // the root of denom d^2 + 2 vt d = vv without cancellation: with tangents nearly alike denom is rounding
+            // and (-vt + s) / denom is 0 / 0
+            double s = std::sqrt(vt * vt + denom * vv);
+            double d = vt >= 0.0 ? vv / (vt + s) : (s - vt) / denom;
             pm = (pa + ta * d + pb - tb * d) * 0.5;
         }
         if (Norm(pm - pa) <= tol || Norm(pb - pm) <= tol)

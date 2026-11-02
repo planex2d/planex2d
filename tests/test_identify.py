@@ -139,3 +139,39 @@ def test_remove_and_errors():
         f.Identify("left", "rest")
     with pytest.raises(TypeError, match="Copy"):
         px.Shape(f).faces[0].Identify("left", "right")
+
+
+def test_simplified_keeps_identified_sides_matched():
+    # a cell of two faces meeting at y = 0.302 on both sides; the run of two small edges around that junction is walked
+    # up on the right and down on the left
+    lower = px.FromPolyline([(0, 0), (1, 0), (1, 0.3), (1, 0.302), (0, 0.302), (0, 0.3)], closed=True).Face()
+    upper = px.FromPolyline([(0, 0.302), (1, 0.302), (1, 0.304), (1, 1), (0, 1), (0, 0.304)], closed=True).Face()
+    cell = px.Glue([lower, upper])
+    for e in cell.edges:
+        m = e.midpoint
+        e.name = {0.0: "left", 1.0: "right"}.get(m.x, {0.0: "bottom", 1.0: "top"}.get(m.y))
+    cell.Identify("left", "right", px.Translation(1, 0), name="periodic")
+    g = cell.Simplified(remove_edges_smaller=0.01)
+    sides = {side: sorted(round(p, 12) for e in g.edges if e.name == side for p in (e.start.y, e.end.y)) for side in ("left", "right")}
+    # each run of small edges goes to the mean of its vertices, 0.302, on both sides alike
+    assert sides["left"] == sides["right"] == [0, 0.302, 0.302, 1]
+    pairs = identified_points(g)
+    assert pairs and all(abs(b[0] - a[0]) == pytest.approx(1) and b[1] == pytest.approx(a[1], abs=1e-12) for a, b in pairs)
+
+
+def test_simplified_keeps_a_side_where_a_small_inner_edge_meets_it():
+    # the line between the two faces reaches the right side through a small edge, the left side directly
+    lower = px.FromPolyline([(0, 0), (1, 0), (1, 0.3), (0.9994, 0.3008), (0, 0.3)], closed=True).Face()
+    upper = px.FromPolyline([(0, 0.3), (0.9994, 0.3008), (1, 0.3), (1, 1), (0, 1)], closed=True).Face()
+    cell = px.Glue([lower, upper])
+    for e in cell.edges:
+        m = e.midpoint
+        e.name = {0.0: "left", 1.0: "right"}.get(m.x, {0.0: "bottom", 1.0: "top"}.get(m.y))
+    cell.Identify("left", "right", px.Translation(1, 0), name="periodic")
+    g = cell.Simplified(remove_edges_smaller=0.01)
+    right = [e for e in g.edges if e.name == "right"]
+    assert all(p.x == 1 for e in right for p in (e.start, e.end))
+    sides = {side: sorted(round(p, 12) for e in g.edges if e.name == side for p in (e.start.y, e.end.y)) for side in ("left", "right")}
+    assert sides["left"] == sides["right"] == [0, 0.3, 0.3, 1]
+    pairs = identified_points(g)
+    assert pairs and all(abs(b[0] - a[0]) == pytest.approx(1) and b[1] == pytest.approx(a[1], abs=1e-12) for a, b in pairs)

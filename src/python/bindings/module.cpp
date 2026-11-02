@@ -27,7 +27,7 @@ PYBIND11_MODULE(_planex, m) {
     config::state->warning_handler = WarnPython;
     // the OCC module shares these, see config::state
     m.attr("_state") = py::capsule(config::state, "planex._state");
-    m.attr("_occ_hooks") = py::capsule(occ, "planex._occ_hooks");
+    m.attr("_occ_hooks") = py::capsule(occHooks, "planex._occ_hooks");
     m.attr("_services") = py::capsule(&coreServices, "planex._services");
     m.attr("_version") = PLANEX_VERSION;
     m.attr("_layout") = Layout();

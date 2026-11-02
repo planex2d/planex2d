@@ -22,12 +22,14 @@
 namespace planex2d::sketch {
 
     // a spline (side 0) or its offset by side * d, along the spline's chord length t: its point (k = 0) and derivative
-    // (k = 1)
+    // (k = 1); a closed spline's runs on past its end (a piece over its seam)
     struct CurveEval {
         Curve<double, Vertex> f;
         double side = 0.0, d = 0.0;
 
         Vertex At(double t, size_t k) const {
+            if (f.closed && t > f.params.back())
+                t -= f.params.back();
             if (side == 0.0)
                 return f.At(t, k);
             const Vertex d1 = f.At(t, 1);
@@ -64,9 +66,15 @@ namespace planex2d::sketch {
             const double sense = tb > ta ? 1.0 : -1.0, same = 1e-9 * f.params.back();
             const auto ordered = [&](std::vector<double> &t) { std::sort(t.begin(), t.end(), [&](double x, double y) { return (x - y) * sense < 0.0; }); };
             std::vector<double> t{ta, tb};
-            for (double u : f.params)
+            const auto add = [&](double u) {
                 if ((u - ta) * sense > same && (tb - u) * sense > same)
                     t.push_back(u);
+            };
+            for (double u : f.params)
+                add(u);
+            // past a closed spline's seam: its first place (0) is its last
+            for (size_t k = 1; k < f.params.size(); ++k)
+                add(f.params[k] + f.params.back());
             ordered(t);
             const auto place = [&](size_t i) { return i == 0 ? a : i + 1 == t.size() ? b : At(t[i], 0); };
             const std::array<Vertex, 2> ends = EndDirections(ta, tb);
@@ -124,17 +132,22 @@ namespace planex2d::sketch {
     };
 
     // an offset curve as the biarc fit evaluates it, along its run from w = 0 at its start; a point's parameter from its
-    // foot on the spline
+    // foot on the spline; a piece over a closed spline's seam ends beyond the end
     struct OffsetRun {
         CurveEval g;
         bool reversed;
-        double from, to;
+        double from, to, end;
 
-        double T(double w) const { return reversed ? to - w : from + w; }
+        double T(double w) const {
+            const double t = reversed ? to - w : from + w;
+            return t > end ? t - end : t;
+        }
         Vertex At(double w) const { return g.At(T(w), 0); }
         Vertex Derivative(double w) const { return g.At(T(w), 1) * (reversed ? -1.0 : 1.0); }
         double Project(const Vertex &x, double wa, double wb) const {
-            const double t = g.f.Project(x, T(0.5 * (wa + wb)));
+            double t = g.f.Project(x, T(0.5 * (wa + wb)));
+            if (to > end && t < from)
+                t += end;
             return std::clamp(reversed ? to - t : t - from, std::min(wa, wb), std::max(wa, wb));
         }
     };
@@ -144,20 +157,22 @@ namespace planex2d::sketch {
     struct SplineSpan {
         SplinePiece piece;
         bool round;
-        Curve<double, Vertex> f;
+        CurveEval g;
         double from, to, end;
 
         double Wrap(double u) const { return u > end ? u - end : u; }
-        Vertex At(double u, size_t k) const { return f.At(Wrap(u), k); }
-        // the position of x along the element: the nearest of samples, then Newton steps
+        // k <= 1
+        Vertex At(double u, size_t k) const { return g.At(Wrap(u), k); }
+        // the position of x along the element: the nearest of samples, then Newton steps on its distance from the spline
+        // (an offset curve's foot is its spline's)
         double Along(const Vertex &x) const {
-            const size_t n = 64 * f.params.size();
+            const size_t n = 64 * g.f.params.size();
             double u = from;
             for (size_t k = 0; k <= n; ++k)
                 if (const double t = from + (to - from) * (double)k / (double)n; Norm(At(t, 0) - x) < Norm(At(u, 0) - x))
                     u = t;
             for (int i = 0; i < 30; ++i) {
-                const Vertex c = At(u, 0) - x, d1 = At(u, 1), d2 = At(u, 2);
+                const Vertex c = g.f.At(Wrap(u), 0) - x, d1 = g.f.At(Wrap(u), 1), d2 = g.f.At(Wrap(u), 2);
                 const double h = Dot(d1, d1) + Dot(c, d2);
                 if (!(h > 0.0))
                     break;

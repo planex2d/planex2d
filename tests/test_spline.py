@@ -5,7 +5,7 @@ import netgen.occ as occ
 import pytest
 
 import planex as px
-from helpers import area, point, polygon_area, rect
+from helpers import area, point, polygon_area, rect, offset_band
 
 POINTS = [(3, 2), (2, 1.5), (1, 2), (0, 1)]
 
@@ -65,12 +65,12 @@ def test_periodic_spline_is_one_closed_edge_and_two_in_occ():
 
 
 def test_periodic_spline_exports_the_periodic_curve():
-    # the C2 periodic cubic at chord length parameters through four points on the unit circle encloses 61/20,
-    # whichever point comes first (netgen's periodic interpolation depends on that)
+    # the periodic quintic at chord length parameters through four points on the unit circle encloses 50521/16128,
+    # whichever point comes first (one frequency: its B-spline coefficients are the points times 15/8)
     for k in range(4):
         p = px.QuickSketch().Spline(PERIODIC[k:] + PERIODIC[:k], periodic=True, start_from_localpos=False).Face()
-        assert polygon_area(p) == pytest.approx(3.05, rel=1e-12)
-        assert p.mass == pytest.approx(3.05, rel=1e-6)
+        assert polygon_area(p) == pytest.approx(50521 / 16128, rel=1e-12)
+        assert p.mass == pytest.approx(50521 / 16128, rel=1e-6)
 
 
 def test_spline_rotate():
@@ -113,7 +113,7 @@ def test_exported_spline_pieces_follow_the_original_curve():
 
 # a spline's offset is one spline per side, no longer arcs and lines from its approximation
 def test_spline_offset_is_one_spline_per_side():
-    trace = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire().Offset(0.1)
+    trace = offset_band(px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire(), 0.1)
     assert len(trace.splines) == 2
     assert not any(e.from_spline for e in trace.lines + trace.arcs)
     plain, fitted = trace.ToOCCFace(), trace.ToOCCFace(fit_splines=True)
@@ -121,7 +121,7 @@ def test_spline_offset_is_one_spline_per_side():
 
 
 def test_remove_small_edges_keeps_the_offset_splines():
-    trace = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire().Offset(0.1)
+    trace = offset_band(px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire(), 0.1)
     n = len(trace.splines)
     trace.RemoveSmallEdges(10)
     assert len(trace.splines) == n

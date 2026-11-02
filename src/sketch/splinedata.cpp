@@ -29,9 +29,16 @@ namespace planex2d::sketch {
         std::vector<Vertex> q, t;
         for (size_t p : points)
             q.push_back(g.Coords(p));
+        if (poled)
+            return PoleCurve<double, Vertex>(q, poled->knots, poled->degree, closed);
         for (size_t a : tangent)
             t.push_back({std::cos(g.values[a]), std::sin(g.values[a])});
-        return Interpolate(q, tangentAt, t, closed, style);
+        std::vector<TangentSetting<double>> settings;
+        for (size_t k : tangentAt) {
+            const size_t c = CurvatureAt(k);
+            settings.push_back({TensionAt(k), c == none ? std::nullopt : std::optional<double>(g.values[c])});
+        }
+        return Interpolate(q, tangentAt, t, closed, style, settings);
     }
     inline double SplineData::BlendSense(const Geometry &g, size_t i) const {
         const Element &arm = g.elements[blend->arms[i]];
@@ -46,6 +53,14 @@ namespace planex2d::sketch {
             out.push_back(g.Coords(points.front()));
             for (size_t k = 1; k + 1 < f.params.size(); ++k)
                 out.push_back(f.At(f.params[k]));
+            if (!closed)
+                out.push_back(g.Coords(points.back()));
+            return out;
+        }
+        if (poled) {
+            const Curve<double, Vertex> f = Interpolated(g);
+            for (size_t k = 0; k + 1 < f.params.size(); ++k)
+                out.push_back(k == 0 && !closed ? g.Coords(points.front()) : f.At(f.params[k]));
             if (!closed)
                 out.push_back(g.Coords(points.back()));
             return out;

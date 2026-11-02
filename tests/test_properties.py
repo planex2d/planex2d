@@ -6,6 +6,7 @@ import math
 import netgen.occ as occ
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 
@@ -54,7 +55,7 @@ def test_crossing_edges_keep_their_own_names():
 
 
 def test_offset_edges_inherit_the_drawn_properties():
-    face = px.Move((0, 0)).Line(2, name="trace", maxh=0.01).Wire().Offset(0.1).ToOCCFace()
+    face = offset_band(px.Move((0, 0)).Line(2, name="trace", maxh=0.01).Wire(), 0.1).ToOCCFace()
     assert {e.name for e in face.edges} == {"trace"}
     assert all(e.maxh == pytest.approx(0.01) for e in face.edges)
 
@@ -100,7 +101,7 @@ def test_edge_properties_can_be_set_through_the_edge_list():
 
 
 def test_setting_a_property_changes_only_that_edge():
-    off = px.Move((0, 0)).Line(2, name="trace").Wire().Offset(0.1)
+    off = offset_band(px.Move((0, 0)).Line(2, name="trace").Wire(), 0.1)
     off.edges[0].name = "cap"
     assert sorted(e.name for e in off.edges) == ["cap", "trace", "trace", "trace"]
     assert isinstance(off.Wire().edges[0].edge, (px.LineEdge, px.ArcEdge))
@@ -207,7 +208,7 @@ def test_cleanup_keeps_edges_with_a_partition():
 
 def test_offsets_drop_the_partition():
     w = px.Move((0, 0)).Line((2, 0), name="trace", partition=[0.5]).Wire()
-    o = w.Offset(0.1)
+    o = offset_band(w, 0.1)
     assert {e.name for e in o.edges} == {"trace"}
     assert all(e.partition is None for e in o.edges)
 

@@ -8,16 +8,17 @@ import pytest
 
 import planex as px
 
-ALL = ["Angle", "Arc", "ArcEdge", "Auto", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "Curve",
-       "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
-       "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "Flat", "FromBrep", "FromDXF", "FromKiCad", "FromLevelSet",
-       "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "GetTransformation", "Glue", "H", "Horizontal", "Intersect", "Intersect3d",
-       "Line", "LineEdge", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane", "PlanexWarning", "Plot",
-       "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "ResetIdCounters", "RigidGroup", "Rotation", "Round",
-       "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricCarriers", "SymmetricDifference", "Tangent",
-       "ToSVG", "ToShapely", "Translation", "Unify", "V", "Vertex", "VertexView", "Vertical", "VerticesView", "Wire",
-       "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad", "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m",
-       "mil", "mm", "origin", "um"]
+ALL = ["Angle", "Arc", "ArcEdge", "Auto", "Bottom", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound",
+       "Concentric", "Constraint", "Curvature", "CurvatureRadius", "Curve", "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView", "EdgesView",
+       "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FixH", "FixV", "Flat", "FromBrep", "FromCATPart", "FromDXF", "FromKiCad",
+       "FromLevelSet", "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "Front", "GetTransformation",
+       "Glue", "H", "Horizontal", "Intersect", "Intersect3d", "Isometric", "Left", "Line", "LineEdge", "Minimal", "Move", "OCCGeometry",
+       "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane", "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket",
+       "Project", "QuickSketch", "Radius", "Rear", "ResetIdCounters", "Right", "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet",
+       "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricCarriers", "SymmetricDifference", "Tangent", "ToSVG",
+       "ToShapely", "Top", "Translation", "Unify", "V", "Vertex", "VertexView", "Vertical", "VerticesView", "Wire", "Wires", "WorkPlane",
+       "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad", "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m", "mil", "mm", "origin",
+       "um"]
 NOT_IN_ALL = ["BSpline", "X", "Y", "Z", "config", "first", "h", "last", "v", "x", "y", "z"]
 SUBPACKAGES = ["debug", "measurements", "stackups", "types"]
 
@@ -35,8 +36,8 @@ def test_the_top_level_is_all_and_the_names_left_out_of_it_and_the_subpackages()
 
 
 def test_the_subpackages_show_only_their_names():
-    assert public(px.measurements) == ["Clearance", "Hausdorff", "HydraulicDiameter", "MaxThickness", "MinThickness",
-                                       "TorsionConstant"]
+    assert public(px.measurements) == ["Clearance", "ConvexHull", "EnclosingCircle", "EnclosingRectangle", "Hausdorff",
+                                       "HydraulicDiameter", "MaxThickness", "MinThickness", "TorsionConstant"]
     assert public(px.debug) == ["CheckShape", "ResetTimers", "StartTrace", "StopTrace", "Timers"]
     assert public(px.types) == ["Color", "Id", "Ids", "Plane", "Point", "Point3"]
     assert public(px.stackups) == ["jlc1080", "jlc1080a", "jlc1080b", "jlc1080c", "jlc2116", "jlc2116a", "jlc2116b",

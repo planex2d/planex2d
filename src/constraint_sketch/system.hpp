@@ -53,6 +53,8 @@ namespace planex2d::cs {
                 throw std::invalid_argument(std::string(KindName(c.kind)) + ": a length or radius must be positive");
             if (const char *outside = c.reference ? nullptr : SweepOutside(c, c.value))
                 throw std::invalid_argument(std::string("Angle: ") + outside);
+            if (c.kind == Kind::CurvatureRadius && !c.reference && (c.value == 0.0 || std::isnan(c.value)))
+                throw std::invalid_argument("CurvatureRadius: the radius is nonzero, math.inf for straight");
             if (c.kind == Kind::Distance && !c.reference && c.refs.size() == 2 && c.refs[0].IsPoint(*this) && c.refs[1].IsPoint(*this))
                 MovePointsApart(c);
             size_ = Size();
@@ -95,6 +97,13 @@ namespace planex2d::cs {
             Freeze(constraints[c], e);
         }
         void RemoveConstraint(size_t c) {
+            for (const auto &[spline, k] : constraints[c].madeCurvatures) {
+                SplineData &d = splines[spline];
+                held[d.curvature[k]] = 1;
+                d.curvature[k] = sketch::none;
+                if (std::all_of(d.curvature.begin(), d.curvature.end(), [](size_t u) { return u == sketch::none; }))
+                    d.curvature.clear();
+            }
             for (const auto &[spline, k] : constraints[c].madeTangents) {
                 SplineData &d = splines[spline];
                 const size_t t = (size_t)(std::find(d.tangentAt.begin(), d.tangentAt.end(), k) - d.tangentAt.begin());
@@ -117,8 +126,8 @@ namespace planex2d::cs {
         // a spline in a Tangent gets a tangent direction (an angle unknown) at the joint where it has none, so the
         // constraint turns it there instead of moving its points: it starts along the other element (two such
         // splines: along their bisector), so the spline bends to meet it and nothing else moves. So does a spline whose
-        // tangent line (id.tK) a constraint names, starting as it runs. Not a spline the constraints already determine
-        // (as CATIA): its shape stays, the other element turns
+        // tangent line (id.tK) a constraint names, starting as it runs. Not a spline the constraints already determine:
+        // its shape stays, the other element turns
         void GiveTangents(Constraint &c) {
             std::optional<ConstraintAnalysis> analysis;
             const auto free = [&](size_t element) {
@@ -127,10 +136,10 @@ namespace planex2d::cs {
                 const std::vector<size_t> u = elements[element].Values(*this);
                 return std::any_of(u.begin(), u.end(), [&](size_t k) { return !analysis->determined[k]; });
             };
-            // a fitted spline keeps its shape
+            // a fitted spline keeps its shape; a spline by its poles takes its tangents from them
             const auto lacks = [&](size_t element, size_t k) {
                 const SplineData &d = splines[elements[element].SplineIndex()];
-                return !d.fitted && !d.blend && std::find(d.tangentAt.begin(), d.tangentAt.end(), k) == d.tangentAt.end();
+                return !d.fitted && !d.blend && !d.poled && std::find(d.tangentAt.begin(), d.tangentAt.end(), k) == d.tangentAt.end();
             };
             const auto give = [&](size_t element, size_t k, const Vertex &t) {
                 const size_t spline = elements[element].SplineIndex();
@@ -148,6 +157,17 @@ namespace planex2d::cs {
             for (const Ref &r : c.refs)
                 if (r.part == Part::Tangent && lacks(r.element, r.index) && free(r.element))
                     give(r.element, r.index, direction({r.element}, r.PointAt(*this)));
+            if (c.kind == Kind::CurvatureRadius && c.refs.size() == 1 && c.refs[0].part == Part::Point) {
+                const Ref &r = c.refs[0];
+                const SplineData &d = splines[elements[r.element].SplineIndex()];
+                if (d.style != SplineStyle::Quintic || d.fitted || d.blend || d.poled)
+                    throw std::invalid_argument("CurvatureRadius: a curvature radius needs a spline of style 'quintic'");
+                if (lacks(r.element, r.index))
+                    give(r.element, r.index, direction({r.element}, r.PointAt(*this)));
+                if (d.CurvatureAt(r.index) == sketch::none)
+                    GiveCurvature(c, r.element, r.index, std::isinf(c.value) ? 0.0 : 1.0 / c.value);
+                return;
+            }
             if ((c.kind != Kind::Tangent && c.kind != Kind::Curvature) || c.refs.size() != 2)
                 return;
             const std::optional<size_t> joint = JointOf(c);
@@ -170,8 +190,22 @@ namespace planex2d::cs {
             const Vertex ta = direction(c.refs[0], *joint), tb = direction(c.refs[1], *joint) * sense, both = ta + tb;
             const Vertex dir = !at[1] ? tb : !at[0] ? ta : Norm(both) > 0.0 ? both * (1.0 / Norm(both)) : ta;
             for (size_t i = 0; i < 2; ++i)
-                if (at[i])
+                if (at[i]) {
                     give(c.refs[i].element, *at[i], i == 0 ? dir : dir * sense);
+                    if (c.kind == Kind::Curvature && splines[elements[c.refs[i].element].SplineIndex()].style == SplineStyle::Quintic)
+                        GiveCurvature(c, c.refs[i].element, *at[i], CurvatureAt({c.refs[i].element}, *joint));
+                }
+        }
+        void GiveCurvature(Constraint &c, size_t element, size_t k, double curvature) {
+            const size_t spline = elements[element].SplineIndex();
+            SplineData &d = splines[spline];
+            d.curvature.resize(d.points.size(), sketch::none);
+            d.curvature[k] = NewValue(curvature);
+            c.madeCurvatures.push_back({spline, k});
+        }
+        double CurvatureAt(const Ref &r, size_t point) {
+            const std::vector<size_t> none;
+            return Eval{*this, sharedCurves, values, none, size_}.CurvatureAt(r, point).v;
         }
         // a point on a spline, its distance from it, a line, circle or spline touching it away from its points: the
         // positions along the spline(s) become unknowns, started where the drawing comes closest
@@ -318,7 +352,7 @@ namespace planex2d::cs {
                     e.kind == ElementKind::OffsetCurve)
                     throw std::invalid_argument("RigidGroup: an axis, pattern, offset or offset curve cannot be part of it");
                 std::vector<size_t> p, o;
-                HeldOf(e, p, o);
+                HeldOf(e, Kind::Fix, p, o);
                 points.insert(points.end(), p.begin(), p.end());
                 others.insert(others.end(), o.begin(), o.end());
             }
@@ -363,15 +397,23 @@ namespace planex2d::cs {
                     return turn <= 0.0 ? turn + 360.0 : turn;
                 return turn >= 0.0 ? turn - 360.0 : turn;
             }
+            if (m.kind == Kind::CurvatureRadius && m.refs.size() == 1 && m.refs[0].part == Part::Point) {
+                const double k = e.CurvatureAt({m.refs[0].element}, m.refs[0].PointAt(*this)).v;
+                return k == 0.0 ? std::numeric_limits<double>::infinity() : 1.0 / k;
+            }
             std::vector<Dual> r;
             if (Residuals(m, e, r, JointOf(m)) != 1)
                 throw std::invalid_argument(std::string(KindName(c.kind)) + ": cannot measure this as a reference");
             return r[0].v;
         }
-        // what a Fix of a whole element holds: its points, and its other unknowns
-        void HeldOf(const Element &e, std::vector<size_t> &points, std::vector<size_t> &others) const {
+        // what a Fix of a whole element holds: its points, and its other unknowns; a FixH or FixV one coordinate of
+        // its points, and of a curve given by a formula also its turn
+        void HeldOf(const Element &e, Kind kind, std::vector<size_t> &points, std::vector<size_t> &others) const {
+            const bool all = kind == Kind::Fix;
             points.clear();
             others.clear();
+            if (!all && (e.kind == ElementKind::Axis || e.kind == ElementKind::Pattern || e.kind == ElementKind::Offset))
+                throw std::invalid_argument(std::string(KindName(kind)) + ": an axis, a pattern or an offset has no points to hold");
             switch (e.kind) {
             case ElementKind::Point:
                 points = {e.Point()};
@@ -381,11 +423,13 @@ namespace planex2d::cs {
                 break;
             case ElementKind::Circle:
                 points = {e.Center()};
-                others = {e.Radius()};
+                if (all)
+                    others = {e.Radius()};
                 break;
             case ElementKind::Arc:
                 points = {e.Center(), e.Start(), e.End()};
-                others = {e.Radius()};
+                if (all)
+                    others = {e.Radius()};
                 break;
             case ElementKind::Axis:
                 others = {e.AxisAngle(), e.AxisDistance()};
@@ -400,14 +444,15 @@ namespace planex2d::cs {
                 break;
             case ElementKind::Spline:
                 if (splines[e.SplineIndex()].blend)
-                    throw std::invalid_argument("Fix: a blend follows the elements it joins; fix them");
+                    throw std::invalid_argument(std::string(KindName(kind)) + ": a blend follows the elements it joins; fix them");
                 // a fitted spline: its frame's place and turn
                 if (const std::optional<sketch::FittedShape> &f = splines[e.SplineIndex()].fitted) {
                     points = {f->origin};
                     others = {f->angle};
                 } else {
                     points = splines[e.SplineIndex()].points;
-                    others = splines[e.SplineIndex()].tangent;
+                    if (all)
+                        others = splines[e.SplineIndex()].tangent;
                 }
                 if (const SplinePiece *piece = e.Piece(*this))
                     for (size_t u : {piece->from, piece->to})
@@ -415,7 +460,7 @@ namespace planex2d::cs {
                             others.push_back(u);
                 break;
             case ElementKind::OffsetCurve:
-                throw std::invalid_argument("Fix: an offset curve follows its source; fix its source and the offset's distance");
+                throw std::invalid_argument(std::string(KindName(kind)) + ": an offset curve follows its source; fix its source and the offset's distance");
             }
         }
 
@@ -605,6 +650,59 @@ namespace planex2d::cs {
             }
             return out;
         }
+        // per constraint Redundancies flags: the constraints it follows from, by the analysis's rows (a value equation
+        // stands for the dimension it keeps), and for a coincidence of points earlier ones merged, the merges between them
+        std::vector<std::vector<size_t>> Dependencies(const ConstraintAnalysis &a) const {
+            const size_t n = constraints.size();
+            std::vector<size_t> whose(a.partners.size(), sketch::none);
+            for (size_t c = 0; c < n; ++c)
+                whose[c] = c;
+            for (const auto &[row, c] : valueRows)
+                whose[row] = c;
+            std::vector<std::vector<size_t>> out(n);
+            const auto take = [&](size_t c, size_t row) {
+                for (size_t j : a.partners[row])
+                    if (whose[j] != sketch::none && whose[j] != c && std::find(out[c].begin(), out[c].end(), whose[j]) == out[c].end())
+                        out[c].push_back(whose[j]);
+            };
+            for (size_t c = 0; c < n; ++c)
+                take(c, c);
+            for (const auto &[row, c] : valueRows)
+                take(c, row);
+            // the merges so far: a forest of (point, point, constraint)
+            std::vector<std::array<size_t, 3>> merges;
+            DisjointSets groups(ownCoordsOf.size());
+            for (size_t c = 0; c < n; ++c) {
+                if (!IsMerge(constraints[c]))
+                    continue;
+                const size_t p = constraints[c].refs[0].PointAt(*this), q = constraints[c].refs[1].PointAt(*this);
+                if (groups.Find(p) == groups.Find(q))
+                    out[c] = MergesBetween(merges, p, q);
+                else {
+                    groups.Join(p, q);
+                    merges.push_back({p, q, c});
+                }
+            }
+            return out;
+        }
+        // the constraints of the merges on the way from point p to point q
+        std::vector<size_t> MergesBetween(const std::vector<std::array<size_t, 3>> &merges, size_t p, size_t q) const {
+            std::vector<size_t> via(ownCoordsOf.size(), sketch::none), reached{p};
+            std::vector<char> seen(ownCoordsOf.size(), 0);
+            seen[p] = 1;
+            for (size_t k = 0; k < reached.size(); ++k)
+                for (size_t m = 0; m < merges.size(); ++m)
+                    for (size_t side = 0; side < 2; ++side)
+                        if (const size_t next = merges[m][1 - side]; merges[m][side] == reached[k] && !seen[next]) {
+                            seen[next] = 1;
+                            via[next] = m;
+                            reached.push_back(next);
+                        }
+            std::vector<size_t> out;
+            for (size_t x = q; x != p && via[x] != sketch::none; x = merges[via[x]][merges[via[x]][0] == x ? 1 : 0])
+                out.push_back(merges[via[x]][2]);
+            return out;
+        }
         // the expression that drives the dimension c
         std::optional<size_t> DriverOf(size_t c) const {
             if (constraints[c].valueAt == sketch::none)
@@ -740,13 +838,15 @@ namespace planex2d::cs {
         }
 
 
-        // a Fix of an element that is no point or arc, and a rigid group: their rows are evaluated per held point and
-        // value, each with only its own unknowns (and the group's place), so that they take any number of points
+        // a Fix of an element that is no point or arc, a FixH or FixV of an element and a rigid group: their rows are
+        // evaluated per held point and value, each with only its own unknowns (and the group's place), so that they take
+        // any number of points
         bool IsPointwise(const Constraint &c) const {
-            return c.kind == Kind::RigidGroup ||
-                   (c.kind == Kind::Fix && c.refs.size() == 1 && !c.refs[0].IsPoint(*this) && !c.refs[0].IsArc(*this));
+            return c.kind == Kind::RigidGroup || (IsFix(c.kind) && c.refs.size() == 1 && !c.refs[0].IsPoint(*this) &&
+                                                  (c.kind != Kind::Fix || !c.refs[0].IsArc(*this)));
         }
-        // the blocks of a pointwise constraint: two rows per held point, one per held value, in the order of HeldRows
+        // the blocks of a pointwise constraint: two rows per held point (one of a FixH or FixV), one per held value, in
+        // the order of HeldRows
         std::vector<RowBlock> BlocksOf(const Constraint &c) const {
             std::vector<RowBlock> out;
             if ((c.reference && c.valueAt == sketch::none) || c.suspended)
@@ -759,8 +859,12 @@ namespace planex2d::cs {
                 out.push_back({rows, std::move(u)});
             };
             for (size_t p : c.heldPoints)
-                block(2, rigid ? std::vector<size_t>{coordsOf[p], coordsOf[p] + 1, c.params[0], c.params[1], c.params[2]}
-                               : std::vector<size_t>{coordsOf[p], coordsOf[p] + 1});
+                if (rigid)
+                    block(2, {coordsOf[p], coordsOf[p] + 1, c.params[0], c.params[1], c.params[2]});
+                else if (c.kind == Kind::Fix)
+                    block(2, {coordsOf[p], coordsOf[p] + 1});
+                else
+                    block(1, {coordsOf[p] + HeldCoordinate(c.kind)});
             for (size_t u : c.held)
                 block(1, rigid && isAngle[u] ? std::vector<size_t>{u, c.params[2]} : std::vector<size_t>{u});
             return out;
@@ -777,7 +881,7 @@ namespace planex2d::cs {
             for (size_t i = angles ? 2 : 0; i < c.refs.size(); ++i) {
                 const Ref &r = c.refs[i];
                 std::vector<size_t> u = elements[r.element].Values(*this);
-                if (r.part == Part::Start || r.part == Part::End || r.part == Part::Center || r.part == Part::Point) {
+                if (c.kind != Kind::CurvatureRadius && (r.part == Part::Start || r.part == Part::End || r.part == Part::Center || r.part == Part::Point)) {
                     const size_t p = r.PointAt(*this);
                     u = {coordsOf[p], coordsOf[p] + 1};
                 }
@@ -799,15 +903,26 @@ namespace planex2d::cs {
         }
 
         // a point that is an end of both (the same unknowns), as where a line or arc runs on into an arc; of a spline
-        // any of its points
+        // any of its points (JoinPoints)
         std::optional<size_t> Joint(const Ref &a, const Ref &b) const {
             if (a.part != Part::Whole || b.part != Part::Whole)
                 return std::nullopt;
-            for (size_t p : elements[a.element].PointsOn(*this))
-                for (size_t q : elements[b.element].PointsOn(*this))
+            for (size_t p : JoinPoints(elements[a.element]))
+                for (size_t q : JoinPoints(elements[b.element]))
                     if (coordsOf[p] == coordsOf[q])
                         return p;
             return std::nullopt;
+        }
+
+        // the points another element can join e at: of a spline by its poles its ends, its other poles lie off it (a
+        // periodic one's all)
+        std::vector<size_t> JoinPoints(const Element &e) const {
+            if (e.kind != ElementKind::Spline || !splines[e.SplineIndex()].poled)
+                return e.PointsOn(*this);
+            if (!e.IsPiece(*this) && splines[e.SplineIndex()].closed)
+                return {};
+            const std::array<size_t, 2> ends = e.Ends(*this);
+            return {ends[0], ends[1]};
         }
 
         bool HasEnd(const Ref &r, size_t point) const {
@@ -886,6 +1001,8 @@ namespace planex2d::cs {
                 return TangentRows(c, e, r, joint);
             case Kind::Curvature:
                 return CurvatureRows(c, e, r, joint);
+            case Kind::CurvatureRadius:
+                return CurvatureRadiusRows(c, e, r);
             case Kind::Equal:
                 return EqualRows(c, e, r);
             case Kind::Symmetric:
@@ -895,6 +1012,8 @@ namespace planex2d::cs {
             case Kind::Concentric:
                 return ConcentricRows(c, e, r);
             case Kind::Fix:
+            case Kind::FixH:
+            case Kind::FixV:
                 return FixRows(c, e, r);
             case Kind::Distance:
                 return DistanceRows(c, e, r);
@@ -1094,6 +1213,17 @@ namespace planex2d::cs {
             r[1] = (e.CurvatureAt(a, *joint) - e.CurvatureAt(b, *joint) * sign) * lever * lever;
             return 2;
         }
+        // the curvature of a spline at its point: 1 / the radius, 0 for math.inf (straight); the spline's own there when
+        // it is given one (GiveTangents)
+        std::optional<size_t> CurvatureRadiusRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
+            if (c.refs.size() != 1 || c.refs[0].part != Part::Point || elements[c.refs[0].element].kind != ElementKind::Spline)
+                return std::nullopt;
+            const Ref &a = c.refs[0];
+            const Dual inverse = c.valueAt == sketch::none ? Dual(std::isinf(c.value) ? 0.0 : 1.0 / c.value) : Dual(1.0) / e.Var(c.valueAt);
+            const Dual lever(e.lever);
+            r[0] = (e.CurvatureAt({a.element}, a.PointAt(*this)) - inverse) * lever * lever;
+            return 1;
+        }
         std::optional<size_t> EqualRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const {
             const std::vector<Ref> &q = c.refs;
             const size_t n = q.size();
@@ -1177,10 +1307,15 @@ namespace planex2d::cs {
                 return std::nullopt;
             if (a.IsPoint(*this)) {
                 const DualVector p = e.PointOf(a);
+                if (c.kind != Kind::Fix) {
+                    const size_t i = HeldCoordinate(c.kind);
+                    r[0] = (i == 0 ? p.x : p.y) - Dual(c.target[i]);
+                    return 1;
+                }
                 r[0] = p.x - Dual(c.target[0]);
                 r[1] = p.y - Dual(c.target[1]);
                 return 2;
-            } else if (a.IsArc(*this)) {
+            } else if (c.kind == Kind::Fix && a.IsArc(*this)) {
                 // its five values: the ends' own equations keep them on the circle, so only their angles; the
                 // target is held points (center, start, end), then the radius
                 const Round o = e.RoundOf(a);
@@ -1316,14 +1451,19 @@ namespace planex2d::cs {
             return std::nullopt;
         }
         std::optional<size_t> RigidGroupRows(const Constraint &c, const Eval &e, std::vector<Dual> &r) const { return AllHeldRows(c, e, r); }
-        // the k-th held point (two rows) or, after the points, held value (one row) of a Fix or a rigid group at its
-        // target; a rigid group's targets lie in its frame: params are the place of its first point and its turn
+        // the k-th held point (two rows, one of a FixH or FixV) or, after the points, held value (one row) of a Fix or a
+        // rigid group at its target; a rigid group's targets lie in its frame: params are the place of its first point
+        // and its turn
         size_t HeldRows(const Constraint &c, const Eval &e, size_t k, Dual *r) const {
             const size_t m = 2 * c.heldPoints.size();
             const bool rigid = c.kind == Kind::RigidGroup;
             if (k < c.heldPoints.size()) {
                 const DualVector p = e.At(c.heldPoints[k]);
                 const Dual lx(c.target[2 * k]), ly(c.target[2 * k + 1]);
+                if (c.kind == Kind::FixH || c.kind == Kind::FixV) {
+                    r[0] = c.kind == Kind::FixH ? p.x - lx : p.y - ly;
+                    return 1;
+                }
                 if (!rigid) {
                     r[0] = p.x - lx;
                     r[1] = p.y - ly;
@@ -1359,6 +1499,11 @@ namespace planex2d::cs {
             if (c.held.size() == 2 && n == 2) {
                 // a copied piece's end at the original's position along its spline
                 r[0] = e.Var(c.held[1]) - e.Var(c.held[0]);
+                return 1;
+            }
+            if (c.held.size() == 2 && n >= 3 && !isAngle[c.held[0]]) {
+                const Dual lever(e.lever);
+                r[0] = (e.Var(c.held[1]) - e.Var(c.held[0]) * Dual(q[2].IsLine(*this) ? -1.0 : 1.0)) * lever * lever;
                 return 1;
             }
             if (c.held.size() == 2 && n >= 3) {
@@ -1541,6 +1686,8 @@ namespace planex2d::cs {
                 FreezeSymmetric(c, e);
                 return;
             case Kind::Fix:
+            case Kind::FixH:
+            case Kind::FixV:
                 FreezeFix(c, e);
                 return;
             default:
@@ -1636,7 +1783,7 @@ namespace planex2d::cs {
                 const DualVector p = e.PointOf(c.refs[0]);
                 c.target = {p.x.v, p.y.v};
             } else {
-                HeldOf(elements[c.refs[0].element], c.heldPoints, c.held);
+                HeldOf(elements[c.refs[0].element], c.kind, c.heldPoints, c.held);
                 for (size_t p : c.heldPoints)
                     c.target.insert(c.target.end(), {values[coordsOf[p]], values[coordsOf[p] + 1]});
                 for (size_t u : c.held)

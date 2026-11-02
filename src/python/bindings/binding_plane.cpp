@@ -13,7 +13,7 @@ namespace {
 
 // a 3d point or direction: (x, y, z), a list or array of three numbers, a netgen Pnt, Vec or Dir
 bool IsXYZ(const py::handle &h) {
-    if (occ->point(h) || occ->direction(h))
+    if (occHooks->point(h) || occHooks->direction(h))
         return true;
     if (py::isinstance<py::str>(h) || py::isinstance<Wire>(h))
         return false;
@@ -283,6 +283,14 @@ void BindPlane(py::module_ &m) {
     m.attr("ZX") = AxisSystem({0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0});
     // the front plane: h = x, v = z, the normal h x v = -y
     m.attr("XZ") = AxisSystem({0.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {1.0, 0.0, 0.0});
+    // the planes of the standard views, seen from the side their normal points to, v up where the view stands beside the
+    // front view in first-angle projection (the bottom view above it: v toward the front)
+    m.attr("Front") = AxisSystem({0.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {1.0, 0.0, 0.0});
+    m.attr("Top") = AxisSystem({0.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+    m.attr("Right") = AxisSystem({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0});
+    m.attr("Left") = AxisSystem({0.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, -1.0, 0.0});
+    m.attr("Rear") = AxisSystem({0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0});
+    m.attr("Bottom") = AxisSystem({0.0, 0.0, 0.0}, {0.0, 0.0, -1.0}, {1.0, 0.0, 0.0});
 
     m.def("AxesOf", [](const py::object &axes, const std::string &call) { return AxesArg(axes, call); }, py::arg("axes"), py::arg("call") = "AxesOf",
           "AxesOf(axes: Plane | None, call: str = \"AxesOf\") -> Plane\n\n"
@@ -297,10 +305,10 @@ void BindPlane(py::module_ &m) {
           "    px._planex.AxesOf(face)");
     AddCopy<AxisSystem>(m, "Plane");
     // netgen's Axes where a Plane is taken, as py::implicitly_convertible<gp_Ax3, AxisSystem> would do: the OCC bindings
-    // tell them (occ->isAxes), the conversion stays in the core's own type registry
+    // tell them (occHooks->isAxes), the conversion stays in the core's own type registry
     py::detail::get_type_info(typeid(AxisSystem))->implicit_conversions.push_back([](PyObject *obj, PyTypeObject *type) -> PyObject * {
         static bool busy = false;
-        if (busy || !occ->isAxes(obj))
+        if (busy || !occHooks->isAxes(obj))
             return nullptr;
         busy = true;
         PyObject *plane = PyObject_CallOneArg(reinterpret_cast<PyObject *>(type), obj);

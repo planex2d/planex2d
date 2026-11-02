@@ -256,6 +256,60 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
           "    px.Glue([air, iron])\n"
           "    px.Glue([plate, px.Line((1, -1), (1, 3))])");
     m.def("_NextId", &NextId, py::arg("kind"), "for the Python layer: the next auto id of a kind");
+    m.def("_Propagated", [](const py::list &chains, const std::vector<size_t> &seeds, const py::object &propagate) {
+        const std::optional<Continuity> c = PropagationOf(propagate, "selection");
+        if (!c)
+            return seeds;
+        std::vector<EdgeList> edges;
+        std::optional<AxisSystem> axes;
+        for (const py::handle &h : chains)
+            edges.push_back(EdgesArg(py::reinterpret_borrow<py::object>(h), "selection", axes));
+        py::gil_scoped_release release;
+        return Propagated(edges, seeds, *c);
+    }, py::arg("chains"), py::arg("seeds"), py::arg("propagate"),
+          "for the selections: the indices of the chains (edges or wires) the seeds reach across their ends with the "
+          "continuity propagate=, the seeds first");
+    m.def("_MeasureAt", [](const py::list &items, const py::object &at) {
+        std::optional<AxisSystem> axes;
+        std::vector<EdgeList> parts;
+        for (const py::handle &h : items)
+            parts.push_back(EdgesArg(py::reinterpret_borrow<py::object>(h), "Measure(at=...)", axes));
+        Wire w(axes.value_or(AxisSystem()));
+        std::vector<size_t> item;
+        for (size_t k = 0; k < parts.size(); ++k)
+            for (const Edge &e : parts[k]) {
+                w.Add(e);
+                item.push_back(k);
+            }
+        return MeasureAt(ThingOf(w), at, py::none(), [&](size_t i) { return py::int_(item[i]); });
+    }, py::arg("items"), py::arg("at"),
+          "for the selections: Measure(at=...) along the chain of the items (edges or wires), edge the item's index");
+    m.def("_ConvexHull", [](const py::object &edges) {
+        std::optional<AxisSystem> axes;
+        const EdgeList list = EdgesArg(edges, "ConvexHull", axes);
+        return Face(ConvexHullOf(list).Boundary(axes.value_or(AxisSystem())));
+    }, py::arg("edges"), "for px.measurements.ConvexHull: the convex hull of the edges as a Face");
+    m.def("_EnclosingCircle", [](const py::object &edges) {
+        std::optional<AxisSystem> axes;
+        const EdgeList list = EdgesArg(edges, "EnclosingCircle", axes);
+        const auto [c, r] = EnclosingCircleOf(ConvexHullOf(list).Boundary(axes.value_or(AxisSystem())));
+        Wire w(axes.value_or(AxisSystem()));
+        w.Add(Circle(c, r));
+        return py::make_tuple(Face(std::move(w)), Tuple2(c), r);
+    }, py::arg("edges"), "for px.measurements.EnclosingCircle: (the disc, its center (h, v), its radius)");
+    m.def("_EnclosingRectangle", [](const py::object &edges) {
+        std::optional<AxisSystem> axes;
+        const EdgeList list = EdgesArg(edges, "EnclosingRectangle", axes);
+        const EnclosingRectangle r = EnclosingRectangleOf(ConvexHullOf(list).Boundary(axes.value_or(AxisSystem())));
+        const Vertex a = UnitVector(r.angle) * (0.5 * r.length), b = UnitVector(r.angle + 0.5 * std::numbers::pi) * (0.5 * r.width);
+        const std::array<Vertex, 4> corner{r.center - a - b, r.center + a - b, r.center + a + b, r.center - a + b};
+        Wire w(axes.value_or(AxisSystem()));
+        for (size_t k = 0; k < 4; ++k)
+            w.Add(Line(corner[k], corner[(k + 1) % 4]));
+        return py::make_tuple(Face(std::move(w)), Tuple2(r.center), Degrees(r.angle), r.length, r.width);
+    }, py::arg("edges"),
+          "for px.measurements.EnclosingRectangle: (the rectangle, its center (h, v), the direction of its longer side "
+          "in degrees, its length, its width)");
     m.def("_Thickness", [](const py::object &obj, size_t samples, bool ball, double corner, int refine) {
         FaceList faces;
         if (py::isinstance<Shape>(obj))

@@ -178,11 +178,16 @@ def _disc(c, r):
     return px.QuickSketch().Circle((c[0], c[1]), r).Face()
 
 
+def _band(wire, half):
+    """the region within half of a wire's edges: its offset on both sides as a Shape"""
+    return px.Shape([wire.Offset(half, both_sides=True)])
+
+
 def _stroke(a, b, w):
     """a straight track or line of width w with round ends"""
     if math.dist(a, b) <= 1e-12:
         return _disc(a, w / 2)
-    return px.Line(a, b).Offset(w / 2)
+    return _band(px.Line(a, b), w / 2)
 
 
 def _polygon(pts):
@@ -204,7 +209,7 @@ def _drawn(edges, filled, half):
     the region"""
     shapes = [_region(edges)] if filled and edges else []
     if half > 0:
-        shapes.extend(e.Offset(half) for e in edges)
+        shapes.extend(_band(e, half) for e in edges)
     elif half < 0 and shapes:
         shapes = [shapes[0].Offset(half)]
     return shapes
@@ -527,13 +532,13 @@ class _Board:
         else:
             a, m, b = (_Frame()(_pair(node, k)) for k in ("start", "mid", "end"))
             path = _arc(a, m, b)
-            self._copper(node, path.Offset(w / 2))
+            self._copper(node, _band(path, w / 2))
         mask = self._mask_of(node)
         if mask is None:
             return
         opening = w + 2 * max(_number(node, "solder_mask_margin", self.mask_margin) * MM, -w / 2)
         if opening > 0:
-            self._draw(mask, _stroke(a, b, opening) if node[0] == "segment" else path.Offset(opening / 2))
+            self._draw(mask, _stroke(a, b, opening) if node[0] == "segment" else _band(path, opening / 2))
 
     def _via(self, node):
         layers = [n for n in _first(node, "layers")[1:] if n in self.copper]
@@ -853,8 +858,8 @@ def _pad_shape(node, shape, size):
         if abs(w - h) <= 1e-12:
             return _disc((0.0, 0.0), w / 2)
         if w > h:
-            return px.Line((-(w - h) / 2, 0.0), ((w - h) / 2, 0.0)).Offset(h / 2)
-        return px.Line((0.0, -(h - w) / 2), (0.0, (h - w) / 2)).Offset(w / 2)
+            return _band(px.Line((-(w - h) / 2, 0.0), ((w - h) / 2, 0.0)), h / 2)
+        return _band(px.Line((0.0, -(h - w) / 2), (0.0, (h - w) / 2)), w / 2)
     if shape in ("rect", "roundrect"):
         corners = _chamfer_corners(node)
         if corners:
@@ -884,7 +889,7 @@ def _pad_shape(node, shape, size):
                     parts.append(_region(edges))
                 width = _width(item) * MM
                 if width > 0:
-                    parts.extend(e.Offset(width / 2) for e in edges)
+                    parts.extend(_band(e, width / 2) for e in edges)
         return px.Unify(parts)
     return None
 
@@ -931,9 +936,9 @@ def _drill(node, name):
         if abs(w - h) <= 1e-12:
             hole = _disc((0.0, 0.0), w / 2)
         elif w > h:
-            hole = px.Line((-(w - h) / 2, 0.0), ((w - h) / 2, 0.0)).Offset(h / 2)
+            hole = _band(px.Line((-(w - h) / 2, 0.0), ((w - h) / 2, 0.0)), h / 2)
         else:
-            hole = px.Line((0.0, -(h - w) / 2), (0.0, (h - w) / 2)).Offset(w / 2)
+            hole = _band(px.Line((0.0, -(h - w) / 2), (0.0, (h - w) / 2)), w / 2)
     elif values:
         d = float(values[0]) * MM
         if d <= 0:

@@ -6,6 +6,7 @@ dimension changes, h and v in each other, placement, the rigid body under constr
 the reserved ids, copies and what downstream calls do with a curve."""
 import math
 import random
+import warnings
 
 import numpy as np
 import pytest
@@ -184,6 +185,12 @@ def test_a_curve_at_the_pen_joins_its_chain_else_it_stands_alone():
     assert alone._PointElement("Line.1.end") != alone._PointElement("Curve.1.start")
 
 
+def along_curve(sk, n=16):
+    """n + 1 points evenly along Curve.1 (its drawn path takes as many points as the sketch's size asks)"""
+    length = sk.Measure("Curve.1")["length"]
+    return np.array([sk.Measure("Curve.1", at=length * k / n)["point_hv"] for k in range(n + 1)])
+
+
 def test_a_curve_is_a_rigid_body_fixed_by_default():
     sk = px.Sketch()
     sk.Vertex("anchor", (1, 2))
@@ -195,9 +202,9 @@ def test_a_curve_is_a_rigid_body_fixed_by_default():
     assert len(fix) == 1
     sk.Remove(fix[0])
     assert sk.dof == dof + 3
-    before = np.array(sk._Geometry("Curve.1")["path"])
+    before = along_curve(sk)
     sk.Constrain("Curve.1.start", "anchor", px.Coincident)
-    moved = np.array(sk._Geometry("Curve.1")["path"])
+    moved = along_curve(sk)
     assert moved == pytest.approx(before + (1, 2), abs=1e-12)
     # turned about its start by an angle on its chord, as a whole
     start, end = np.array(sk.Location("Curve.1.start")), np.array(sk.Location("Curve.1.end"))
@@ -207,7 +214,7 @@ def test_a_curve_is_a_rigid_body_fixed_by_default():
     turn = math.degrees(math.atan2(chord[1], chord[0])) + 30
     sk.Constrain(px.H, "chord", px.Angle, turn)
     c, s = math.cos(math.radians(30)), math.sin(math.radians(30))
-    turned = np.array(sk._Geometry("Curve.1")["path"])
+    turned = along_curve(sk)
     expected = (moved - start) @ np.array([[c, s], [-s, c]]) + start
     assert turned == pytest.approx(expected, abs=1e-10)
     assert math.dist(sk.Location("Curve.1.start"), sk.Location("Curve.1.end")) == pytest.approx(math.hypot(10, 10), abs=1e-12)
@@ -365,3 +372,27 @@ def test_a_curve_crossing_itself_gives_every_loop(ring, wheel, pen, loops, loop,
     areas = sorted(f.mass for f in spirograph(ring, wheel, pen).Shape().faces)
     assert len(areas) == loops + 1
     assert areas[:loops] == pytest.approx([loop] * loops, abs=0.01) and areas[-1] == pytest.approx(middle, abs=0.01)
+
+
+def wavy(t):
+    """a circle with 50 small waves round it: finer than a cubic through 4096 samples follows to 1e-10 of its size"""
+    r = 1 + 0.05 * math.sin(50 * t)
+    return r * math.cos(t), r * math.sin(t)
+
+
+def test_a_callable_s_fit_takes_its_target_from_tol():
+    with pytest.warns(px.PlanexWarning, match=r"with 4096 samples, not 1e-10; give tol= a looser target"):
+        px.Curve(wavy, (0, 2 * math.pi))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        curve = px.Curve(wavy, (0, 2 * math.pi), tol=1e-4)
+        sk = px.Sketch()
+        sk.Curve(wavy, (0, 2 * math.pi), tol=1e-4, id="ring")
+    t = 0.123
+    gap = curve.edges[0].Measure(at=wavy(t))["distance"]
+    assert gap < 3e-4
+    assert sk.Measure("ring")["length"] == pytest.approx(curve.Measure()["length"], rel=1e-9)
+    with pytest.raises(ValueError, match="tol= is for a callable point"):
+        px.Curve(("t", "t^2"), (0, 1), tol=1e-6)
+    with pytest.raises(ValueError, match="tol is a positive number"):
+        px.Curve(wavy, (0, 1), tol=0)

@@ -122,7 +122,7 @@ namespace planex2d {
             }
             Face &Simplify(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
                            const Cleanup &cleanup = config::state->cleanup) {
-                wire.Simplify(arcs, fit, cleanup);
+                wire = wire.Cleaned(arcs, fit, cleanup, SidesOf(ids));
                 return *this;
             }
             Face &RemoveSmallGaps(double tol) {
