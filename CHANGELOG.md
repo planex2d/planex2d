@@ -19,6 +19,8 @@
 - `Mirrored` leaves no constraint redundant: a point on the mirror axis joins its copy, and the coincidence that put
   that point on the axis repeats the join and is removed; before, it stayed and was drawn as over-constrained
   (`sk.Mirrored(["base", "flank", "eye"], px.V)` after `sk.Constrain("eye.end", "V", px.Coincident)`)
+- `Drawing.Center(id)` marks the center of a construction circle as asked, with lines across it or with `cross=True`
+  a short cross; before, it drew nothing for one (`px.Drawing(hook).Center("throat").Center("back", cross=True)`)
 
 ### Changed
 
