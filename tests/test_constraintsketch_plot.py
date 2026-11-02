@@ -52,7 +52,18 @@ def test_a_redundant_constraint_sign_is_pink():
         sk.Constrain("right", "left", px.Parallel)
     svg = px.ToSVG(sk, show_constraints=True)
     sign = re.search(r"<g class=\"sg\"><title>Parallel.1: .*?</g>", svg).group(0)
-    assert 'fill="#d6338c"' in sign
+    assert 'fill="#f783ac"' in sign
+    assert {c["id"]: c["state"] for c in sk._Constraints()}["Parallel.1"] == "redundant" and sk.status == "full"
+
+
+def test_a_contradicting_constraint_sign_is_red():
+    sk = plate()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sk.Constrain("bottom.start", "right", px.Distance, 6, id="wider")
+    assert sk.status == "over" and {c["id"]: c["state"] for c in sk._Constraints()}["wider"] == "over"
+    svg = px.ToSVG(sk, show_constraints=True)
+    assert 'fill="#e03131"' in re.search(r"<g class=\"sg\"><title>wider: .*?</g>", svg).group(0)
 
 
 def test_ends_and_directions():
@@ -113,11 +124,11 @@ def test_signs_of_redundant_constraints_are_pink_in_both_views():
         warnings.simplefilter("ignore")
         sk.Constrain("right", "left", px.Parallel)
     fig = sk.Plot(show_constraints=True, backend="plotly")
-    pink = [a for a in fig.layout.annotations if a.font.color == "#d6338c"]
+    pink = [a for a in fig.layout.annotations if a.font.color == "#f783ac"]
     assert any("Parallel.1" in a.hovertext for a in pink)
-    assert any(s.line.color == "#d6338c" for s in fig.layout.shapes)
+    assert any(s.line.color == "#f783ac" for s in fig.layout.shapes)
     svg = px.ToSVG(sk, show_constraints=True, show_ends=True)
-    assert re.search(r"<g class=\"sg\"><title>Perpendicular.1: [^<]*</title>(<path class=\"ld\"[^>]*>)?<path [^>]*stroke=\"#d6338c\"", svg)
+    assert re.search(r"<g class=\"sg\"><title>Perpendicular.1: [^<]*</title>(<path class=\"ld\"[^>]*>)?<path [^>]*stroke=\"#f783ac\"", svg)
     assert "<title>bottom.start</title>" in svg and "<title>bottom.end</title>" in svg
 
 

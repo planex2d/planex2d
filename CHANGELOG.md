@@ -9,6 +9,22 @@
 - `px.FromCATPart` keeps the sketch's coincidences when its dimensions change: a line or an arc that starts or ends
   on the sketch's origin, and two points made coincident in the .CATPart file (a line's end on a circle's center),
   stay together; before, they were drawn at the same place but came apart on `sk.Update`
+- `px.FromCATPart` reads a spline made tangent to a curve where the .CATPart file gives it no tangent arrow with the
+  tangent its points give it: the tangency fixes where the spline meets the curve, and the sketch reads as constrained
+  as it was saved; before, the spline got a tangent of its own there and its end could slide along the curve
+- `Trim` and `Split` leave no constraint redundant: where a cut ties a cut point to a cutter's end, the coincidence
+  that put that point on the element cut (the user's or an earlier cut's) repeats the tie and is removed, and the
+  sketch's degrees of freedom stay as they were; before, that coincidence stayed and was drawn as over-constrained
+  (`sk.Trim(("bore", (0, 10)))` after `sk.Constrain("key.end", "bore", px.Coincident)`)
+- `Mirrored` leaves no constraint redundant: a point on the mirror axis joins its copy, and the coincidence that put
+  that point on the axis repeats the join and is removed; before, it stayed and was drawn as over-constrained
+  (`sk.Mirrored(["base", "flank", "eye"], px.V)` after `sk.Constrain("eye.end", "V", px.Coincident)`)
+
+### Changed
+
+- The sketch plots tell a repeated constraint from a contradicting one: a constraint that repeats others (redundant,
+  the sketch still solves) is drawn light pink, one that contradicts others and the elements of an over-constrained
+  sketch red; before, both in one deep pink (`sk.Plot(show_constraints=True)`, `px.ToSVG(sk, show_constraints=True)`)
 
 ## v0.3.0
 

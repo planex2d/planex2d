@@ -258,6 +258,10 @@ class _Sketch:
         elif kind == "fix together":
             sk.RigidGroup([r for r, x in zip(refs, c["elements"]) if self.elements.get(x, {}).get("kind") != "point"],
                           **options)
+        elif kind == "tangent":
+            # a curve tangent to a spline itself: the spline keeps the tangent its points give it there (a tangent arrow
+            # read from the file is a tangent of its own, which turns)
+            sk._Constrain(*refs, px.Tangent, own_tangents=True, **options)
         elif kind in _SAME:
             if c["value"] is None and not c["reference"] and kind in _LENGTHS | {"angle"}:
                 self.left.append(f"the {kind} without its value left out")

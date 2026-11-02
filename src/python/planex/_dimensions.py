@@ -189,7 +189,7 @@ def Dimensions(sketch, everything=None):
         if not sides and any(everything.get(r, {}).get("kind") in ("Pattern", "Offset") for r in refs):
             continue
         name = None if c["id"].startswith((kind + ".", "Reference.")) else c["id"]
-        d = Dimension(c["id"], kind, value, bool(c.get("reference")), c["state"] == "over", name, refs=tuple(refs))
+        d = Dimension(c["id"], kind, value, bool(c.get("reference")), c["state"] != "ok", name, refs=tuple(refs))
         g0 = everything.get(refs[0]) if refs else None
         if kind == "Distance":
             if len(refs) == 1 and g0 is not None and g0["kind"] == "Line":

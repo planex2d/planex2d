@@ -198,8 +198,11 @@ namespace planex2d {
                                                 " follow it as it is; Split it with auto_constraint=True, or Remove them first");
             sketch::Undoable(*this, [&] {
                 const std::map<size_t, std::string> held = ValueHolders();
+                const size_t cut = RefOf(id).element, elementsBefore = s.elements.size();
                 CutPieces(id, cutterIds, nearPoint, reverse, trim, tied, call);
                 Prune(call, held);
+                if (tied)
+                    DropTakenOver(cut, elementsBefore);
                 if (const std::optional<std::string> wrong = OffsetProblem())
                     throw std::invalid_argument(call + ": " + *wrong);
             });
@@ -322,14 +325,16 @@ namespace planex2d {
         // symmetry line)
         void TieLastConstraintTo(const std::string &element) { companions[element].push_back(constraintIds.back()); }
         // refs: ids, "id.start" / ".end" / ".center" / ".mid"
+        // ownTangents: a Tangent that leaves the splines at the joint the tangents their points give them
         ConstraintSketch &Constrain(const std::vector<std::string> &refs, sketch::Kind kind, std::optional<double> value,
-                                    const std::optional<std::string> &id, bool reference = false) {
+                                    const std::optional<std::string> &id, bool reference = false, bool ownTangents = false) {
             if (value && !(kind == sketch::Kind::CurvatureRadius && std::isinf(*value)))
                 IsFinite(sketch::KindName(kind), {*value});
             cs::Constraint c{kind};
             for (const std::string &r : refs)
                 c.refs.push_back(RefOf(r));
             c.reference = reference;
+            c.ownTangents = ownTangents;
             if (reference && (!HasValue(kind) || value))
                 throw std::invalid_argument(Text(c) + (value ? ": a reference measures, it takes no value" : ": only dimensions can be references"));
             if (!reference && HasValue(kind) != value.has_value())
@@ -1533,10 +1538,14 @@ namespace planex2d {
                 callElements = s.elements.size();
                 removedInCall = 0;
                 touched.clear();
+                mirroredInCall.clear();
             }
         }
         void CallEnds() override {
             RelationsOfCall();
+            // after the relations, which join a point on the axis with its copy
+            for (const auto &[scope, axis] : std::exchange(mirroredInCall, {}))
+                DropOnAxisTakenOver(scope, RefOf(axis));
             RewriteExpressions();
             if (!offsetInfos.empty())
                 if (const std::optional<std::string> wrong = OffsetProblem())
@@ -1952,6 +1961,7 @@ namespace planex2d {
         }
         void MirrorMade(const std::string &scope, const std::vector<std::string> &given, const std::string &axis, bool tie, bool internal) override {
             mirrors[scope] = {given, axis, tie, internal};
+            mirroredInCall.push_back({scope, axis});
         }
         // the constraints among the originals (all they relate copied under prefix) as constraints of the copies, under
         // prefix: copies that are not tied keep the shape (flip: a mirror, an angle turns the other way)
@@ -2344,6 +2354,59 @@ namespace planex2d {
 
         // the implied constraints that are redundant now go, the last first: of two that are redundant only with each
         // other one stays
+        // a cut ties its cut points to the cutters' ends: a coincidence of a point there on the element cut or one of
+        // its pieces (the user's, an earlier cut's) repeats the tie and goes
+        void DropTakenOver(size_t cut, size_t elementsBefore) {
+            std::vector<size_t> pieces{cut};
+            for (size_t e = elementsBefore; e < s.elements.size(); ++e)
+                if (sketch::Ref{e}.IsCurve(s))
+                    pieces.push_back(e);
+            const auto piece = [&](const sketch::Ref &r) {
+                return r.part == sketch::Part::Whole && std::find(pieces.begin(), pieces.end(), r.element) != pieces.end();
+            };
+            const auto atAnEnd = [&](const sketch::Ref &r) {
+                const auto at = s.coordsOf[r.PointAt(s)];
+                for (size_t e : pieces)
+                    if (s.elements[e].kind != sketch::ElementKind::Circle)
+                        for (size_t end : s.elements[e].Ends(s))
+                            if (s.coordsOf[end] == at)
+                                return true;
+                return false;
+            };
+            DropRedundantCoincidences([&](const sketch::Ref &point, const sketch::Ref &on) { return piece(on) && atAnEnd(point); });
+        }
+        // a mirror joins a point on its axis with its copy: a coincidence of that point on the axis repeats the
+        // join and goes
+        void DropOnAxisTakenOver(const std::string &scope, const sketch::Ref &axis) {
+            std::vector<size_t> copies;
+            for (size_t e = 0; e < s.elements.size(); ++e)
+                if (s.elements[e].kind == sketch::ElementKind::Point && elementIds[e].starts_with(scope + "."))
+                    copies.push_back(s.elements[e].Point());
+            DropRedundantCoincidences([&](const sketch::Ref &point, const sketch::Ref &on) {
+                const Vertex at = Coords(point.PointAt(s));
+                return on.element == axis.element && on.part == sketch::Part::Whole &&
+                       std::any_of(copies.begin(), copies.end(), [&](size_t q) { return Coords(q).IsClose(at, Tol(s.Size())); });
+            });
+        }
+        // the redundant coincidences of a point and an element that matches(point, element) says go, one at a time
+        // (each removal can leave another needed)
+        template <class Matches> void DropRedundantCoincidences(const Matches &matches) {
+            for (;;) {
+                const std::vector<char> redundant = s.Redundancies(Analysis(false));
+                std::optional<std::string> drop;
+                for (size_t k = constraintIds.size(); k-- > 0 && !drop;) {
+                    const cs::Constraint &c = s.constraints[k];
+                    if (redundant[k] && c.kind == sketch::Kind::Coincident && c.refs.size() == 2)
+                        for (size_t i = 0; i < 2 && !drop; ++i)
+                            if (c.refs[i].IsPoint(s) && matches(c.refs[i], c.refs[1 - i]))
+                                drop = constraintIds[k];
+                }
+                if (!drop)
+                    return;
+                Remove(*drop);
+                impliedIds.erase(*drop);
+            }
+        }
         void DropRedundantImplied() {
             for (;;) {
                 const std::vector<char> redundant = s.Redundancies(Analysis());
@@ -2735,6 +2798,8 @@ namespace planex2d {
         std::map<std::string, cs::ChamferInfo> chamfers;
         std::map<std::string, cs::OffsetInfo> offsetInfos;
         std::map<std::string, cs::MirrorInfo> mirrors;
+        // the mirrors of the call that runs, (scope, axis): what their joins repeat goes when it ends
+        std::vector<std::pair<std::string, std::string>> mirroredInCall;
         // the sharp corners whose elements had a Fix (FixH, FixV): the corner is fixed too, under the id of the Fix and
         // .corner, with its kind
         std::vector<std::tuple<std::string, sketch::Ref, sketch::Kind>> fixedCorners;

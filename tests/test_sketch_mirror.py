@@ -125,3 +125,24 @@ def test_a_pattern_shows_one_tie_per_copy():
     sk["LinearPattern.1.count"] = 4
     sk.Update()
     assert list(sk.constraints["LinearPattern"]) == ["LinearPattern.1.1", "LinearPattern.1.2", "LinearPattern.1.3"]
+
+
+def test_a_mirror_takes_over_the_coincidence_that_puts_a_point_on_its_axis():
+    # a lifting lug's half: the eye's end on V, then mirrored at V: the end joins its copy, which holds it on V, and
+    # the coincidence goes
+    lug = px.Sketch(auto_constraint=True)
+    lug.Move((0, 0), dir=(1, 0)).Line(40, px.Horizontal, id="base")
+    lug.Turn(100).Line(60, id="flank")
+    lug.Arc(25, 75, id="eye")
+    lug.Constrain("base.start", "origin", px.Coincident)
+    lug.Constrain("eye.center", "V", px.Coincident)
+    lug.Constrain("eye.end", "V", px.Coincident, id="end_on_v")
+    lug.Constrain("eye.center", "H", px.Distance, 60, id="eye_height")
+    lug.Constrain("eye", px.Radius, 25, id="eye_r")
+    dof = lug.dof
+    lug.Mirrored(["base", "flank", "eye"], px.V, id="left")
+    assert (lug.dof, lug.redundant, "end_on_v" in {c["id"] for c in lug._Constraints()}) == (dof, [], False)
+    lug.Constrain("left.base.end", "base.end", px.Distance, 80, id="width")
+    lug.Update({"eye_height": 70})
+    assert lug.locations["eye.end"][0] == pytest.approx(0, abs=1e-9)
+    assert lug.locations["left.eye.end"] == pytest.approx(lug.locations["eye.end"], abs=1e-9)

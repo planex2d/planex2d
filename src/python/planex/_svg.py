@@ -71,7 +71,7 @@ def ToSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, s
     """The object as the text of an SVG picture in its plane coordinates, its faces filled.
 
     A sketch is drawn in its own look: every element in the color of its state (green fully constrained, black free,
-    pink over-constrained) with its id when hovered, construction dashed, in a frame with numbered ticks on a grid.
+    red over-constrained) with its id when hovered, construction dashed, in a frame with numbered ticks on a grid.
 
     Args:
         obj: a Face, Shape, Wire, Compound, sketch or DeformableShape.
@@ -115,7 +115,8 @@ def ToSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, s
             f'{body}</svg>')
 
 
-STATE = {"full": "#2b8a3e", "under": "black", "over": "#d6338c"}
+# a constraint that contradicts others red, one that repeats them light pink
+STATE = {"full": "#2b8a3e", "under": "black", "over": "#e03131", "redundant": "#f783ac"}
 PROJECTED = "#d4a017"
 
 
@@ -303,10 +304,11 @@ def _shown_constraints(sketch, show_constraints):
 
 
 def SketchSVG(sketch, size=SIZE, show_constraints=None, show_ends=False, show_direction=False):
-    """a sketch: every element in the color of its state (green fully constrained, black free, pink over-constrained;
+    """a sketch: every element in the color of its state (green fully constrained, black free, red over-constrained;
     all free while its constraints are disabled) with its id when hovered, construction dashed, in a frame with
-    numbered ticks on a light dashed grid; show_constraints adds a small sign per constraint (hover: what it is; not
-    while the constraints are disabled), show_ends a blue start and an orange end piece on every line and arc,
+    numbered ticks on a light dashed grid; show_constraints adds a small sign per constraint (hover: what it is; red
+    where it contradicts others, light pink where it repeats them; not while the constraints are disabled), show_ends
+    a blue start and an orange end piece on every line and arc,
     show_direction an arrow from start to end in their middle"""
     show_constraints = _shown_constraints(sketch, show_constraints)
     everything = {g["id"]: g for g in sketch._Drawing()}
@@ -605,7 +607,7 @@ def _signs(sketch, everything, k=None, font=10):
         kind, items = c["kind"], []
         if kind == "Coincident":
             places = [p for p in (point(r) for r in refs if r not in paths) if p is not None]
-            if places and c["state"] == "over":
+            if places and c["state"] != "ok":
                 occupy(places[0], (0.0, 0.0), (5.0, 5.0))
                 items.append(("circle", places[0], (0.0, 0.0)))
             elif places:
@@ -696,7 +698,7 @@ def _signs(sketch, everything, k=None, font=10):
                 p, n = middle(drawn[0])
                 items.append(label(p, n, value))
         if items:
-            groups.append({"title": c["id"] + ": " + c["text"], "colour": STATE["over"] if c["state"] == "over" else GLYPH,
+            groups.append({"title": c["id"] + ": " + c["text"], "colour": GLYPH if c["state"] == "ok" else STATE[c["state"]],
                            "items": items})
     centres = drafted["center lines"]
     if centres.lines or centres.arcs:

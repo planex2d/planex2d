@@ -207,7 +207,9 @@ def test_a_helper_call_costs_the_same_on_a_large_sketch():
             best = min(best, time.perf_counter() - t)
         return best
 
-    assert per_call(10_000) < 3 * per_call(10)
+    # a call that walked the sketch would be about 1000 times slower; 10 leaves room for the cache misses of a large
+    # sketch on a slow runner (3.2 on a macOS runner)
+    assert per_call(10_000) < 10 * per_call(10)
 
 
 @pytest.mark.parametrize("make", [px.QuickSketch, pytest.param(px.Sketch, marks=pytest.mark.constraints, id="Sketch")])
