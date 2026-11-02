@@ -8,6 +8,7 @@ import warnings
 
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 PIC = os.path.join(os.path.dirname(__file__), "data", "kicad", "pic_programmer.kicad_pcb")
@@ -235,7 +236,7 @@ def test_holes_named_pth_and_npth_are_drills(tmp_path):
 
 
 def test_non_round_holes_are_cutouts_of_the_outline(tmp_path):
-    slot = px.Line((0.009, 0.01), (0.011, 0.01)).Offset(0.0005)
+    slot = offset_band(px.Line((0.009, 0.01), (0.011, 0.01)), 0.0005)
     plate = rect(0.005, 0.005, 0.015, 0.015)
     plate.name = "SIG"
     path = written(tmp_path, {"F.Cu": plate, "Edge.Cuts": OUTLINE}, pth=slot)

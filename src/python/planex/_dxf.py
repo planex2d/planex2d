@@ -14,6 +14,7 @@ from ._units import cm, inch, m, mil, mm, um
 from ._auto import Auto, is_auto
 from ._fileunits import check_length, named, read_factor, write_factor
 from ._caller import warn
+from ._paths import with_extension
 
 if TYPE_CHECKING:
     from ._compound import Compound
@@ -91,7 +92,7 @@ def _splines(bs, s, plane):
             out.append(px._BSpline(pp, kk, bs.degree, ww, plane=plane))
         except (ValueError, RuntimeError):
             piece = type(bs)(pp, order=bs.degree + 1, knots=kk, weights=ww)
-            out.append(px._Spline([(p.x, p.y) for p in piece.approximate(16 * len(pp))], plane=plane))
+            out.append(px._Spline([(p.x, p.y) for p in piece.approximate(16 * len(pp))], plane=plane, style="averaged"))
     return out
 
 
@@ -285,7 +286,7 @@ def WriteDXF(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, 
 
     Args:
         obj: the Face, Shape, Wire, sketch or Compound to write, or a list of them.
-        path: the file to write.
+        path: the file to write; without an extension .dxf is added.
         unit: the length the file counts in, one DXF names (px.m, px.cm, px.mm, px.um, px.inch, px.mil, feet, ...).
         scale: what the model's numbers are multiplied by; px.Auto converts them from meters into unit, 1 writes them
             as they are (a model drawn in millimeter numbers: unit=px.mm, scale=1).
@@ -338,4 +339,4 @@ def WriteDXF(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound | list, 
     if renamed:
         warn("WriteDXF: names a DXF layer cannot have were written as " +
                       ", ".join(f"{a!r} -> {b!r}" for a, b in renamed.items()), px.PlanexWarning)
-    doc.saveas(str(path))
+    doc.saveas(with_extension(path, ".dxf"))

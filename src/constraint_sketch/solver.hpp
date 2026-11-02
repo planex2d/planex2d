@@ -327,8 +327,19 @@ namespace planex2d {
                 delta = -(J.transpose() * z);
             else
                 delta = -z;
-            if (pulling)
+            if (pulling) {
                 delta -= e;
+                // the damping leaves lambda (J J^T + lambda)^-1 (r - J e) of the constraints' change undone, far above the
+                // target when the change so far (e) is large; the same solve of what is left takes it to its square
+                z = r + J * delta;
+                if (!wide)
+                    z = Eigen::VectorXd(J.transpose() * z);
+                cholesky.Solve(z);
+                if (wide)
+                    delta -= J.transpose() * z;
+                else
+                    delta -= z;
+            }
             double step = 0.0, predicted = 0.0;
             for (size_t j = 0; j < n; ++j) {
                 const size_t u = eq.part.unknowns[j];

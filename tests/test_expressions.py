@@ -363,7 +363,7 @@ def test_names_the_sketch_knows():
 @pytest.mark.constraints
 def test_a_plain_equation_is_one_more_constraint():
     sk = plate()
-    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (ht/2 = w/4) is redundant (consistent) with w, ht")):
+    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.1 (ht/2 = w/4) follows from w, ht; remove one of them")):
         sk.Expression("ht/2 = w/4")
     assert sk.redundant == ["w", "ht", "Expression.1"]
     with pytest.raises(ValueError, match=re.escape("Update(w = 5): no solution, nothing changed")):
@@ -411,7 +411,7 @@ def test_chains_follow_and_a_cycle_is_redundant():
     assert [length(sk, n) for n in "ABC"] == pytest.approx([3, 2, 1], abs=TOL)
     sk.Update({"c": 1.5}, steps=3)
     assert [length(sk, n) for n in "ABC"] == pytest.approx([4, 3, 1.5], abs=TOL)
-    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.3 (c = b/2) is redundant (consistent) with Expression.2")):
+    with pytest.warns(px.PlanexWarning, match=re.escape("Expression.3 (c = b/2) follows from Expression.2; remove one of them")):
         sk.Expression("c = b/2")
     assert sk.dof == 1 and {"Expression.2", "Expression.3"} <= set(sk.redundant)
 
@@ -507,7 +507,7 @@ def test_strict_mode_and_sweeps():
     for w in (5, 6, 7):
         sk.Update({"w": w}, steps=2)
         assert length(sk, "left") == pytest.approx(w / 4, abs=TOL)
-    with pytest.warns(px.PlanexWarning, match="redundant"):
+    with pytest.warns(px.PlanexWarning, match="follows from"):
         sk.Expression("w = 4*ht")
     with pytest.raises(ValueError, match="mode='strict' and the sketch is not fully constrained"):
         sk.Face()

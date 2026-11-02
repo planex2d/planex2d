@@ -121,8 +121,9 @@ void AddOCCMethods(const py::module_ &m) {
            ExportDoc("ToOCCWires", "TopoDS_Shape", "The loops as an OCC compound of wires.", "face", false, true))
         .def("ToOCCFace", [](const Face &face, EXPORT_PARAMS) { return TypedShape(ToOCCFace(face, EXPORT_OPTIONS)); }, EXPORT_ARGS,
              ExportDoc("ToOCCFace", "TopoDS_Shape", "The face as an OCC face, or a compound if the export gives several.", "face", false));
-    face.def("Project", [](const Face &x, const py::object &shape) { return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), x.Axes())); }, py::arg("shape"), py::pos_only(),
-             ProjectDoc("face"));
+    face.def("Project", [](const Face &x, const py::object &shape, bool silhouette) {
+        return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), x.Axes(), silhouette));
+    }, py::arg("shape"), py::pos_only(), py::arg("silhouette") = false, ProjectDoc("face"));
     py::class_<Shape> shape = CoreClass<Shape>(m, "Shape");
     shape
         .def("ToOCCShape", [](const Shape &s, EXPORT_PARAMS) { return TypedShape(ToOCCShape(s, EXPORT_OPTIONS)); }, EXPORT_ARGS,
@@ -137,8 +138,9 @@ void AddOCCMethods(const py::module_ &m) {
             return CompoundOf(ToOCCWires(s.Edges(), approximation, EXPORT_OPTIONS));
         }, py::arg("approximation") = false, EXPORT_ARGS,
            ExportDoc("ToOCCWires", "TopoDS_Shape", "The connected wires of all edges as an OCC compound.", "shape", false, true));
-    shape.def("Project", [](const Shape &x, const py::object &shp) { return ToCore("WireList", ProjectedWires(ShapeArg(shp, "Project"), x.Axes())); }, py::arg("shape"), py::pos_only(),
-              ProjectDoc("shape"));
+    shape.def("Project", [](const Shape &x, const py::object &shp, bool silhouette) {
+        return ToCore("WireList", ProjectedWires(ShapeArg(shp, "Project"), x.Axes(), silhouette));
+    }, py::arg("shape"), py::pos_only(), py::arg("silhouette") = false, ProjectDoc("shape"));
     py::class_<Wire> wire = CoreClass<Wire>(m, "Wire");
     wire
         .def("ToOCCShape", [](const Wire &w, EXPORT_PARAMS) { return CompoundOf(ToOCCWires(w, false, WIRE_EXPORT_OPTIONS)); },
@@ -154,8 +156,9 @@ void AddOCCMethods(const py::module_ &m) {
              ExportDoc("ToOCCFace", "TopoDS_Shape",
                        "The faces of the closed wires of the edges, without removing internal edges: an OCC face, or a "
                        "compound of several.", "wire", true));
-    wire.def("Project", [](const Wire &x, const py::object &shape) { return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), x.Axes())); }, py::arg("shape"), py::pos_only(),
-             ProjectDoc("wire"));
+    wire.def("Project", [](const Wire &x, const py::object &shape, bool silhouette) {
+        return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), x.Axes(), silhouette));
+    }, py::arg("shape"), py::pos_only(), py::arg("silhouette") = false, ProjectDoc("wire"));
     py::class_<AxisSystem> plane = CoreClass<AxisSystem>(m, "Plane");
     plane
         .def("ToOCCAxes", [](const AxisSystem &a) { return ToOCC(a); }, "ToOCCAxes() -> occ.Axes\n\n"
@@ -171,7 +174,7 @@ void BindOCC(py::module_ &m) {
     options.disable_function_signatures();
     const std::string exportSignature = ExportSignature();
     const std::string exportArgs = ExportArgs("None takes px.config.remove_free_edges, False for a wire");
-    *occ = occHooks;
+    *occHooks = netgenHooks;
     config::state->spline_fitter = planex2d::OccFittedCurve;
     AddOCCMethods(m);
     m.def("_OccBSpline", [](const std::vector<Vertex> &poles, const std::vector<double> &knots, int degree, const std::vector<double> &weights,
@@ -218,23 +221,67 @@ void BindOCC(py::module_ &m) {
     }, py::arg("interfaces"), py::arg("region"), py::arg("z"), py::arg("names"), EXPORT_ARGS,
           "the region extruded between the interfaces at heights z (from the top), the interfaces' faces as the caps");
 
-    m.def("Project", [](const py::object &shape, const py::object &axes) {
-        return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), AxesArg(axes, "Project")));
+    m.def("Project", [](const py::object &shape, const py::object &axes, bool silhouette) {
+        return ToCore("WireList", ProjectedWires(ShapeArg(shape, "Project"), AxesArg(axes, "Project"), silhouette));
     },
-          py::arg("shape"), py::pos_only(), py::arg("plane") = py::none(),
-          "Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, plane: Plane | None = None) -> list[Wire]\n\n"
+          py::arg("shape"), py::pos_only(), py::arg("plane") = py::none(), py::arg("silhouette") = false,
+          Doc("Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, plane: Plane | None = None, silhouette: bool = False) -> list[Wire]\n\n"
           "The edges of the OCC shape projected straight onto the plane, as a list of clean wires.\n\n"
           "Lines stay lines, circles parallel to the plane stay arcs, other curves become exact splines; points (edges "
           "seen end-on, lone vertices) are left out with a warning, Sketch.Project keeps them.\n\n"
           "Args:\n"
           "    shape: an OCC shape, or a list of them (projected as one compound).\n"
           "    plane: the plane projected onto: a Plane, netgen Axes, a sketch, Shape, Face, Wire, Compound or planar OCC "
-          "shape; default the xy plane.\n\n"
+          "shape; default the xy plane.\n" + silhouetteArg + "\n"
           "Raises:\n"
-          "    TypeError: plane has another form.\n\n"
+          "    TypeError: plane has another form.\n"
+          "    ValueError: silhouette=True for a shape without faces.\n\n"
           "Examples:\n"
           "    px.Project(occ_shape)\n"
-          "    px.Project(occ_shape, plane=px.YZ)");
+          "    px.Shape(px.Project(shaft, plane=px.XZ, silhouette=True))"));
+
+    m.def("_ViewLines", [](const py::object &shape, const py::object &axes) {
+        const TopoDS_Shape s = ShapeArg(shape, "Drawing");
+        const AxisSystem a = AxesArg(axes, "Drawing");
+        ViewEdges v;
+        {
+            py::gil_scoped_release release;
+            v = ViewLines(s, a);
+        }
+        py::dict out;
+        out["visible"] = ToCore("WireList", WireList{v.visible});
+        out["hidden"] = ToCore("WireList", WireList{v.hidden});
+        out["smooth"] = ToCore("WireList", WireList{v.smooth});
+        return out;
+    }, py::arg("shape"), py::arg("plane"), "px.Drawing's view of a solid: its visible, hidden and smooth edges on the plane");
+    m.def("_Shading", [](const py::object &shape, const py::object &axes, double deflection) {
+        const TopoDS_Shape s = ShapeArg(shape, "Drawing");
+        const AxisSystem a = AxesArg(axes, "Drawing");
+        Shading sh;
+        {
+            py::gil_scoped_release release;
+            sh = ShadedTriangles(s, a, deflection);
+        }
+        py::list triangles;
+        for (const std::array<Vertex, 3> &t : sh.triangles)
+            triangles.append(py::make_tuple(Tuple2(t[0]), Tuple2(t[1]), Tuple2(t[2])));
+        return py::make_tuple(triangles, py::cast(sh.light));
+    }, py::arg("shape"), py::arg("plane"), py::arg("deflection"),
+          "px.Drawing's pictorial of a solid: the triangles facing the viewer, back to front, and their light");
+    m.def("_ShadedImage", [](const py::object &shape, const py::object &axes, double deflection, double pixel) {
+        const TopoDS_Shape s = ShapeArg(shape, "Drawing");
+        const AxisSystem a = AxesArg(axes, "Drawing");
+        ShadedImage im;
+        {
+            py::gil_scoped_release release;
+            im = Rasterized(ShadedTriangles(s, a, deflection), pixel);
+        }
+        py::array_t<double> light({(py::ssize_t)im.height, (py::ssize_t)im.width});
+        std::copy(im.light.begin(), im.light.end(), light.mutable_data());
+        return py::make_tuple(light, Tuple2(im.low));
+    }, py::arg("shape"), py::arg("plane"), py::arg("deflection"), py::arg("pixel"),
+          "px.Drawing's pictorial of a solid as an image: per pixel of size pixel the light of the nearest face (NaN for "
+          "none), its rows from the top, and the lower left corner");
 
     auto geometry = [](const TopoDS_Shape &shape, int dim) {
         return py::module_::import("netgen.occ").attr("OCCGeometry")(shape, py::arg("dim") = dim);
@@ -290,7 +337,7 @@ void BindOCC(py::module_ &m) {
           Doc(std::string("Pad(profile: Face | Shape | Sketch | QuickSketch, length: float | None = None, length2: float = 0.0, "
               "dir: Point3 | Auto = px.Auto, reverse: bool = False, until: Plane | Face | Shape | Sketch | QuickSketch | "
               "TopoDS_Shape | Sequence[TopoDS_Shape] | None = None, offset: float = 0.0) -> TopoDS_Shape\n\n"
-              "The profile extruded into an OCC solid, as CATIA's Pad.\n\n") + prismProperties + "\n\n"
+              "The profile extruded into an OCC solid.\n\n") + prismProperties + "\n\n"
               "Args:\n" + prismArgs +
               "Raises:\n"
               "    TypeError: profile or until has another form.\n"
@@ -319,7 +366,7 @@ void BindOCC(py::module_ &m) {
               "length2: float = 0.0, dir: Point3 | Auto = px.Auto, reverse: bool = False, until: SketchUntil | Plane | Face | "
               "Shape | Sketch | QuickSketch | TopoDS_Shape | Sequence[TopoDS_Shape] | None = None, offset: float = 0.0) "
               "-> TopoDS_Shape\n\n"
-              "The target solid minus the profile's prism, as CATIA's Pocket.\n\n"
+              "The target solid minus the profile's prism.\n\n"
               "The prism is the one px.Pad makes, by default against the profile's normal, into the material. The target's faces "
               "keep their properties; the prism's walls, floor and edges bring those of the profile as in px.Pad.\n\n"
               "Args:\n"

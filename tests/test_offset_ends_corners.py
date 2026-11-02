@@ -6,6 +6,7 @@ import time
 
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 D = 1.0
@@ -24,18 +25,18 @@ BANDS = 2 * D * 10 * 2 - D * D
 @pytest.mark.parametrize("ends, end_area", [(px.Round, math.pi * D * D), (px.Flat, 0.0), (px.Square, 4 * D * D)])
 @pytest.mark.parametrize("corners, corner_area", [(px.Round, math.pi * D * D / 4), (px.Sharp, D * D), (px.Chamfer, D * D / 2)])
 def test_an_open_chain_s_band_by_its_ends_and_corners(ends, end_area, corners, corner_area):
-    band = ell().Offset(D, ends=ends, corners=corners)
+    band = offset_band(ell(), D, ends=ends, corners=corners)
     assert len(band.faces) == 1
     assert band.mass == pytest.approx(BANDS + end_area + corner_area, rel=1e-12)
 
 
 def test_the_default_is_round_ends_and_corners():
-    assert ell().Offset(D).mass == pytest.approx(ell().Offset(D, ends=px.Round, corners=px.Round).mass, rel=1e-15)
-    assert ell().Offset(D).mass == pytest.approx(BANDS + math.pi * D * D * 1.25, rel=1e-12)
+    assert offset_band(ell(), D).mass == pytest.approx(offset_band(ell(), D, ends=px.Round, corners=px.Round).mass, rel=1e-15)
+    assert offset_band(ell(), D).mass == pytest.approx(BANDS + math.pi * D * D * 1.25, rel=1e-12)
 
 
 def test_flat_ends_end_square_on_the_chain_s_ends():
-    band = px.Move((0, 0)).Line((10, 0)).Wire().Offset(D, ends=px.Flat)
+    band = offset_band(px.Move((0, 0)).Line((10, 0)).Wire(), D, ends=px.Flat)
     assert band.mass == pytest.approx(20 * D, rel=1e-12)
     xs = [v.x for v in band.vertices]
     assert (min(xs), max(xs)) == pytest.approx((0, 10), abs=1e-12)
@@ -67,7 +68,7 @@ def test_shrinking_keeps_convex_corners_sharp_and_forms_the_reflex_one():
 def test_a_sharp_corner_has_no_limit():
     theta = math.radians(10)
     tip = (10 - 10 * math.cos(theta), 10 * math.sin(theta))
-    band = px.Move((0, 0)).Line((10, 0)).Line(tip).Wire().Offset(D, corners=px.Sharp)
+    band = offset_band(px.Move((0, 0)).Line((10, 0)).Line(tip).Wire(), D, corners=px.Sharp)
     # the outside of the corner at (10, 0) reaches d / sin(theta / 2) beyond it along the bisector
     far = max(math.dist((v.x, v.y), (10, 0)) for v in band.vertices)
     assert far == pytest.approx(D / math.sin(theta / 2), rel=1e-9)
@@ -75,7 +76,7 @@ def test_a_sharp_corner_has_no_limit():
 
 def test_an_arc_offset_beyond_its_radius_covers_its_centre():
     r, d = 1.0, 2.0
-    band = px.Arc(px.Vertex((r, 0)), px.Vertex((0, r)), px.Vertex((0, 0))).Offset(d)
+    band = offset_band(px.Arc(px.Vertex((r, 0)), px.Vertex((0, r)), px.Vertex((0, 0))), d)
     sector = px.Wires([px.Line((0, 0), (r + d, 0)), px.Arc((r + d, 0), (0, r + d), (0, 0)), px.Line((0, r + d), (0, 0))])[0].Face()
     caps = [px.QuickSketch().Circle((r, 0), d).Face(), px.QuickSketch().Circle((0, r), d).Face()]
     assert band.mass == pytest.approx(px.Unify([sector] + caps).mass, rel=1e-12)
@@ -83,7 +84,7 @@ def test_an_arc_offset_beyond_its_radius_covers_its_centre():
 
 def test_a_spline_s_offset_is_one_spline_per_side():
     w = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire()
-    trace = w.Offset(0.1)
+    trace = offset_band(w, 0.1)
     assert len(trace.splines) == 2 and len(trace.faces) == 1
     # a band 2 d wide along the wire, with the caps and the corner at the spline's end within d^2 terms
     assert abs(trace.mass - 0.2 * w.mass) < 0.05
@@ -91,7 +92,7 @@ def test_a_spline_s_offset_is_one_spline_per_side():
 
 def test_a_spline_offset_beyond_its_tightest_bend_is_still_one_region():
     hairpin = px.Spline([(0, 0), (2, 0.4), (2.2, 0.5), (2, 0.6), (0, 1)])
-    band = hairpin.Offset(0.5)
+    band = offset_band(hairpin, 0.5)
     assert len(band.faces) == 1 and band.mass > 0
 
 
@@ -103,9 +104,9 @@ def test_a_face_with_a_hole_grows_and_its_hole_shrinks():
 
 def test_wrong_forms_raise():
     with pytest.raises(ValueError, match="ends= is px.Round, px.Flat or px.Square"):
-        ell().Offset(D, ends=px.Sharp)
+        offset_band(ell(), D, ends=px.Sharp)
     with pytest.raises(ValueError, match="corners= is px.Round, px.Sharp or px.Chamfer"):
-        ell().Offset(D, corners=px.Flat)
+        offset_band(ell(), D, corners=px.Flat)
     with pytest.raises(ValueError, match="corners= is px.Round, px.Sharp or px.Chamfer"):
         px.Move((0, 0)).Rectangle(4, 4).Face().Offset(1, corners=px.Square)
 
@@ -114,13 +115,13 @@ def test_a_long_wire_offsets_in_one_cut():
     pts = [(i, (i % 7) * 0.3 + (i % 3) * 0.2) for i in range(501)]
     w = px.FromPolyline(pts)
     start = time.perf_counter()
-    band = w.Offset(0.1, corners=px.Sharp)
+    band = offset_band(w, 0.1, corners=px.Sharp)
     assert time.perf_counter() - start < 20
     assert len(band.faces) >= 1
 
 
 def test_a_spline_offset_shares_its_joints_and_exports_plainly():
-    trace = px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire().Offset(0.1)
+    trace = offset_band(px.Move((0, 3)).Line(1).Spline([(2, 3.5), (3, 3)], tangents={0: (1, 0)}).Line(1).Wire(), 0.1)
     assert not any(e.from_spline for e in trace.lines + trace.arcs)
     assert min(math.dist((e.start.x, e.start.y), (e.end.x, e.end.y)) for e in trace.edges) > 1e-3
     face = trace.ToOCCFace()

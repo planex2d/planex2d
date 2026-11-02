@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "curves/interpolate.hpp"
 #include "shape/shape.hpp"
 #include "shape/measure.hpp"
 #include "shape/relate.hpp"
@@ -39,7 +40,10 @@
 #include "core/parallel.hpp"
 #include "core/timer.hpp"
 #include "shape/thickness.hpp"
+#include "shape/hull.hpp"
 #include "wire/chain.hpp"
+#include "wire/propagation.hpp"
+#include "wire/along.hpp"
 #include "shape/fillet.hpp"
 
 namespace py = pybind11;
@@ -745,9 +749,9 @@ struct OCCHooks {
             NeedsOCC("a distance to something in another plane");
         };
 };
-// as config::state: the OCC module points occ at the core module's hooks, which it fills
+// as config::state: the OCC module points occHooks at the core module's hooks, which it fills
 inline OCCHooks moduleHooks;
-inline OCCHooks *occ = &moduleHooks;
+inline OCCHooks *occHooks = &moduleHooks;
 
 // the core's own thread pool and profiler for the OCC bindings, whose statics are their own (capsule _services)
 struct CoreServices {
@@ -767,9 +771,9 @@ inline py::tuple Layout() {
 inline std::optional<Vector3> XYZArg(const py::handle &h, const std::string &call) {
     if (h.is_none())
         return std::nullopt;
-    if (std::optional<Vector3> p = occ->point(h))
+    if (std::optional<Vector3> p = occHooks->point(h))
         return p;
-    if (std::optional<Vector3> d = occ->direction(h))
+    if (std::optional<Vector3> d = occHooks->direction(h))
         return d;
     try {
         const std::array<double, 3> a = h.cast<std::array<double, 3>>();
@@ -785,12 +789,12 @@ inline bool IsNumber(const py::handle &h) {
 
 // one 3d point (three numbers, or netgen's Pnt, Vec or Dir), not a list of them
 inline bool IsOneXYZ(const py::handle &h) {
-    if (occ->point(h) || occ->direction(h))
+    if (occHooks->point(h) || occHooks->direction(h))
         return true;
     if (!py::isinstance<py::sequence>(h) || py::isinstance<py::str>(h) || py::len(h) != 3)
         return false;
     for (const py::handle x : h)
-        if (py::isinstance<py::sequence>(x) || occ->point(x) || occ->direction(x))
+        if (py::isinstance<py::sequence>(x) || occHooks->point(x) || occHooks->direction(x))
             return false;
     return true;
 }
@@ -805,7 +809,7 @@ inline py::object ToHVOf(const AxisSystem &axes, const py::object &p) {
 }
 // a 3d point (x, y, z) as the plane's (h, v); anything else as it is
 inline py::object InPlane(const AxisSystem &axes, const py::handle &h, const std::string &call) {
-    std::optional<Vector3> p = occ->point(h);
+    std::optional<Vector3> p = occHooks->point(h);
     if (!p && (py::isinstance<py::tuple>(h) || py::isinstance<py::list>(h)) && py::len(h) == 3 && IsNumber(h[py::int_(0)]) &&
              IsNumber(h[py::int_(1)]) && IsNumber(h[py::int_(2)]))
         p = Vector3{h[py::int_(0)].cast<double>(), h[py::int_(1)].cast<double>(), h[py::int_(2)].cast<double>()};
@@ -827,7 +831,7 @@ inline Vertex HVArg(const AxisSystem &axes, const py::handle &h, const std::stri
     }
 }
 
-// style= of a spline: "averaged" or "clamped", None the config's; the old names raise naming the new
+// style= of a spline: "quintic", "averaged" or "clamped", None the config's; the old names raise naming the new
 inline SplineStyle StyleArg(const py::handle &h, const std::string &call) {
     if (h.is_none())
         return config::state->spline_style;
@@ -836,11 +840,26 @@ inline SplineStyle StyleArg(const py::handle &h, const std::string &call) {
         return SplineStyle::Averaged;
     if (v == "clamped")
         return SplineStyle::Clamped;
+    if (v == "quintic")
+        return SplineStyle::Quintic;
     if (v == "px" || v == "occ")
         throw py::value_error(call + ": style '" + v + "' is now '" + (v == "px" ? "averaged" : "clamped") + "'");
-    throw py::value_error(call + ": style " + py::repr(h).cast<std::string>() + "; it is 'averaged' or 'clamped'");
+    throw py::value_error(call + ": style " + py::repr(h).cast<std::string>() + "; it is 'quintic', 'averaged' or 'clamped'");
 }
-inline const char *StyleName(SplineStyle s) { return s == SplineStyle::Clamped ? "clamped" : "averaged"; }
+inline std::map<size_t, TangentSetting<double>> TangentSettingsArg(const std::optional<std::map<size_t, double>> &tensions,
+                                                                  const std::optional<std::map<size_t, double>> &radii, const std::string &call) {
+    std::map<size_t, TangentSetting<double>> out;
+    for (const auto &[i, t] : tensions.value_or(std::map<size_t, double>{}))
+        out[i].tension = t;
+    for (const auto &[i, r] : radii.value_or(std::map<size_t, double>{})) {
+        if (r == 0.0 || std::isnan(r))
+            throw py::value_error(call + ": the curvature radius at point " + std::to_string(i) + " is " + py::repr(py::float_(r)).cast<std::string>() +
+                                  "; it is nonzero, math.inf for straight");
+        out[i].curvature = std::isinf(r) ? 0.0 : 1.0 / r;
+    }
+    return out;
+}
+inline const char *StyleName(SplineStyle s) { return s == SplineStyle::Quintic ? "quintic" : s == SplineStyle::Clamped ? "clamped" : "averaged"; }
 
 inline AxisSystem AxesArg(const py::handle &h, const std::string &call);
 
@@ -866,7 +885,7 @@ inline AxisSystem AxesArg(const py::handle &h, const std::string &call) {
         return AxisSystem();
     if (IsA<AxisSystem>(h))
         return h.cast<AxisSystem>();
-    if (std::optional<AxisSystem> a = occ->axes(h, call))
+    if (std::optional<AxisSystem> a = occHooks->axes(h, call))
         return *a;
     if (IsA<Shape>(h))
         return h.cast<const Shape &>().Axes();
@@ -1196,7 +1215,7 @@ inline void CheckPlane(const S &s, const Wire &w, const std::string &call) {
 
 inline bool IsTarget(const py::handle &t) {
     return py::isinstance<py::str>(t) || IsA<EdgeView>(t) || IsA<Wire>(t) || IsA<Face>(t) || IsA<Shape>(t) ||
-           occ->isShape(t);
+           occHooks->isShape(t);
 }
 inline bool IsPoint(const py::handle &t) {
     if (IsTarget(t))
@@ -1229,7 +1248,7 @@ inline EdgeList TargetEdges(S &s, const py::handle &t, const std::string &call) 
                         : IsA<Face>(t) ? AsFace(t, copy).Edges() : t.cast<const Shape &>().Edges();
         CheckPlane(s, w, call);
         edges.assign(w.begin(), w.end());
-    } else if (std::optional<Projection> p = occ->projected(t, s.Axes(), false)) {
+    } else if (std::optional<Projection> p = occHooks->projected(t, s.Axes(), false)) {
         edges.assign(p->wire.begin(), p->wire.end());
         if (edges.empty())
             throw py::value_error(call + ": the shape projects to points only");
@@ -1692,6 +1711,28 @@ inline bool IsPlainAuto(const py::handle &h, const std::string &call, const std:
     if (!h.cast<const AutoValue &>().switched.empty())
         throw py::type_error(call + "(" + name + "=px.Auto({...})): there is nothing to switch here; px.Auto alone works it out");
     return true;
+}
+// px.Minimal: a selection takes what it names alone, without propagating
+struct MinimalValue {};
+// the module's one px.Minimal, the default of propagate=
+inline py::object PlainMinimal() { return py::module_::import("planex._planex").attr("Minimal"); }
+// propagate=: px.Minimal (none), px.Coincident, px.Tangent or px.Curvature
+inline std::optional<Continuity> PropagationOf(const py::handle &h, const std::string &call) {
+    if (IsA<MinimalValue>(h))
+        return std::nullopt;
+    if (py::isinstance<sketch::Kind>(h))
+        switch (h.cast<sketch::Kind>()) {
+            case sketch::Kind::Coincident:
+                return Continuity::Point;
+            case sketch::Kind::Tangent:
+                return Continuity::Tangent;
+            case sketch::Kind::Curvature:
+                return Continuity::Curvature;
+            default:
+                break;
+        }
+    throw py::value_error(call + "(propagate=" + py::repr(h).cast<std::string>() +
+                          "): px.Minimal, px.Coincident, px.Tangent or px.Curvature");
 }
 // a number, or px.Auto (none)
 inline std::optional<double> NumberOrAuto(const py::handle &h, const std::string &call, const std::string &name) {
@@ -2210,11 +2251,11 @@ inline std::optional<Planar> TargetInPlane(const AxisSystem &axes, const py::han
         if (t->axes.IsClose(axes))
             return t->AsPlanar();
         if (project)
-            return Planar{Wire(axes), occ->across(t->AsPlanar(), t->axes, axes)};
+            return Planar{Wire(axes), occHooks->across(t->AsPlanar(), t->axes, axes)};
         return std::nullopt;
     }
     if (project)
-        if (std::optional<Projection> p = occ->projected(target, axes, false)) {
+        if (std::optional<Projection> p = occHooks->projected(target, axes, false)) {
             if (p->wire.Empty() && p->points.size() == 1)
                 point = p->points.front().p;
             return Planar{Wire(axes), p->wire};
@@ -2242,7 +2283,7 @@ inline Pair3 NearestPair(const Thing &self, const py::handle &target, bool proje
             return Pair3Of(self.axes, NearestTo(s, *point));
         return Pair3Of(self.axes, NearestBetween(s, *t));
     }
-    return occ->nearest(s, self.point, self.axes, target);
+    return occHooks->nearest(s, self.point, self.axes, target);
 }
 
 inline void CheckComponents(const std::string &components) {
@@ -2780,6 +2821,49 @@ inline py::dict MeasureWith(const Thing &a, const py::object &to, bool project, 
     return MeasureBetween(a, py::cast(Shape(b.axes, b.faces, {b.edges})), b, project);
 }
 
+// the docstrings' lines on Measure(at=...)
+inline const char *AT_DOC = "    at: a place along the edges, one chain: a number its arc length from the start, a point ((h, v), or (x, y, z) "
+                            "on the plane) the place nearest it (of places equally near, the one with the smallest arc length). "
+                            "The dict then holds that place: point and point_hv, tangent and tangent_hv (unit, along the "
+                            "chain), normal and normal_hv (unit, to its left), curvature (a left turn positive), arc_length, "
+                            "distance (from the point given, 0 for a number) and edge (the edge it lies on; at a vertex the "
+                            "one that starts there).\n";
+inline const char *AT_RAISES = "; at= along several chains, or an arc length outside 0 to the length";
+
+// Measure(at=...): along the edges of t, one chain, the place at an arc length (a number) or nearest a point ((h, v)
+// or (x, y, z) on the plane); edgeOf gives the edge it lies on, by its index among t's edges, as Python names it
+template <class F>
+inline py::dict MeasureAt(const Thing &t, const py::handle &at, const py::object &to, F edgeOf) {
+    if (!to.is_none())
+        throw py::type_error("Measure(at=..., to=...): at= measures a place along this, to= the distance to a target; "
+                             "give one of them");
+    const MeasuredChain chain(t.edges.Edges(), "Measure(at=...)");
+    ChainPlace c;
+    double distance = 0.0;
+    if (IsNumber(at))
+        c = chain.AtLength(at.cast<double>());
+    else {
+        const Vertex p = HVArg(t.axes, at, "Measure(at=...)");
+        c = chain.Nearest(p);
+        distance = Norm(p - c.point);
+    }
+    const Vertex normal{-c.tangent.y, c.tangent.x};
+    const auto inSpace = [&](const Vertex &d) { return Tuple3(t.axes.XDirection() * d.x + t.axes.YDirection() * d.y); };
+    py::dict d;
+    d["type"] = "at";
+    d["point"] = Tuple3(t.axes.ToXYZ(c.point));
+    d["point_hv"] = Tuple2(c.point);
+    d["tangent"] = inSpace(c.tangent);
+    d["tangent_hv"] = Tuple2(c.tangent);
+    d["normal"] = inSpace(normal);
+    d["normal_hv"] = Tuple2(normal);
+    d["curvature"] = c.curvature;
+    d["arc_length"] = c.arcLength;
+    d["distance"] = distance;
+    d["edge"] = edgeOf(c.edge);
+    return d;
+}
+
 inline const char *DistanceDoc(const std::string &x) {
     // one signature line per form of the target, so a type checker knows the return (an @overload each in the stub)
     // the many points' form first: an OCC shape is Any to a type checker (netgen has no stubs) and would take them
@@ -2826,8 +2910,10 @@ inline const char *ClosestPointDoc(const std::string &x) {
                "    " + x + ".ClosestPoint([(0, 0), (5, 0)])");
 }
 
-inline const char *MeasureDoc(const std::string &x) {
-    return Doc("Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False) -> dict\n\n"
+// a wire's Measure takes at= (along)
+inline const char *MeasureDoc(const std::string &x, bool along = false) {
+    const std::string at = along ? ", at: float | Point | Point3 | None = None" : "";
+    return Doc("Measure(name: str | FaceView | EdgeView | None = None, to: str | Point | Point3 | Face | Shape | Wire | None = None, project: bool = False" + at + ") -> dict\n\n"
                "The measures of the faces and edges named name, or of the one with that id or selected, as a dict.\n\n"
                "Its keys: type, faces, area, edges, length, center (in 3d; of an arc or circle its center, with radius and "
                "angle), inertia, Ih, Iv, Ihv, I1, I2, principal_angle, bounding_box; with to also distance, du, dv, dx, "
@@ -2835,13 +2921,32 @@ inline const char *MeasureDoc(const std::string &x) {
                "Args:\n"
                "    name: a name, an id, or a selected face or edge; None measures all.\n"
                "    to: a name, or anything Distance takes: adds the distance to it.\n"
-               "    project: True projects a target of to in another plane into this one.\n\n"
+               "    project: True projects a target of to in another plane into this one.\n" +
+               (along ? std::string(AT_DOC) : std::string()) + "\n"
                "Raises:\n"
-               "    ValueError: no face or edge has that name or id.\n"
-               "    TypeError: name has another form.\n\n"
+               "    ValueError: no face or edge has that name or id" + (along ? std::string(AT_RAISES) : std::string()) + ".\n"
+               "    TypeError: name has another form" + (along ? std::string("; at= and to= are given together") : std::string()) + ".\n\n"
                "Examples:\n"
                "    " + x + ".Measure()\n"
-               "    " + x + ".Measure(\"iron\", to=\"air\")");
+               "    " + x + (along ? ".Measure(at=12.5)[\"point_hv\"]" : ".Measure(\"iron\", to=\"air\")"));
+}
+
+// the faces and edges a Measure call's name names: all (None), a name or an id, or a selected face or edge
+template <class T, class N>
+inline Thing MeasuredThing(const T &x, const py::object &name, N named) {
+    if (name.is_none())
+        return named(x, std::nullopt);
+    if (py::isinstance<py::str>(name)) {
+        const std::string n = name.cast<std::string>();
+        Thing t = named(x, n);
+        if (t.faces.empty() && t.edges.Empty())
+            throw py::value_error("Measure('" + n + "'): no face or edge has that name or id");
+        return t;
+    }
+    const std::optional<Thing> t = AsThing(name);
+    if (!t)
+        throw py::type_error("Measure: name is a name, an id or a selected face or edge, not " + py::repr(name).cast<std::string>());
+    return *t;
 }
 
 template <class T, class C, class F, class N>
@@ -2866,23 +2971,25 @@ inline void BindMeasures(C &cls, F thingOf, N named) {
            DistanceDoc(var))
         .def("ClosestPoint", [thingOf](const T &x, const py::object &point) { return ClosestPointOf(thingOf(x), point); },
              py::arg("point"), py::pos_only(), ClosestPointDoc(var))
-        .def("Measure", [thingOf, named](const T &x, const py::object &name, const py::object &to, bool project) {
-            const auto byName = [&](const std::string &n) { return named(x, n); };
-            if (name.is_none())
-                return MeasureWith(named(x, std::nullopt), to, project, byName);
-            if (py::isinstance<py::str>(name)) {
-                const std::string n = name.cast<std::string>();
-                Thing t = named(x, n);
-                if (t.faces.empty() && t.edges.Empty())
-                    throw py::value_error("Measure('" + n + "'): no face or edge has that name or id");
-                return MeasureWith(t, to, project, byName);
-            }
-            const std::optional<Thing> t = AsThing(name);
-            if (!t)
-                throw py::type_error("Measure: name is a name, an id or a selected face or edge, not " + py::repr(name).cast<std::string>());
-            return MeasureWith(*t, to, project, byName);
-        }, py::arg("name") = py::none(), py::arg("to") = py::none(), py::arg("project") = false,
-           MeasureDoc(var));
+        ;
+    if constexpr (std::is_same_v<T, Wire>)
+        cls.def("Measure", [named](const py::object &self, const py::object &name, const py::object &to, bool project,
+                                   const py::object &at) {
+            const T &x = self.cast<const T &>();
+            const Thing t = MeasuredThing(x, name, named);
+            if (at.is_none())
+                return MeasureWith(t, to, project, [&](const std::string &n) { return named(x, n); });
+            return MeasureAt(t, at, to, [&](size_t i) -> py::object {
+                if (name.is_none())
+                    return self.attr("edges")[py::int_(i)];
+                return IsA<EdgeView>(name) ? name : py::none();
+            });
+        }, py::arg("name") = py::none(), py::arg("to") = py::none(), py::arg("project") = false, py::arg("at") = py::none(),
+           MeasureDoc(var, true));
+    else
+        cls.def("Measure", [named](const T &x, const py::object &name, const py::object &to, bool project) {
+            return MeasureWith(MeasuredThing(x, name, named), to, project, [&](const std::string &n) { return named(x, n); });
+        }, py::arg("name") = py::none(), py::arg("to") = py::none(), py::arg("project") = false, MeasureDoc(var));
 }
 
 
@@ -2903,13 +3010,13 @@ inline Wire CutterIn(const AxisSystem &axes, const py::handle &h) {
             for (const Edge &e : part.cast<const Wire &>())
                 w->Add(e);
     }
-    else if (std::optional<Projection> p = occ->projected(h, axes, false))
+    else if (std::optional<Projection> p = occHooks->projected(h, axes, false))
         return p->wire;
     else
         throw py::type_error("a cutter is a Wire, Edge, Face, Shape, Sketch or an OCC shape");
     if (w->Axes().IsClose(axes))
         return *w;
-    return occ->across(Planar{Wire(w->Axes()), *w}, w->Axes(), axes);
+    return occHooks->across(Planar{Wire(w->Axes()), *w}, w->Axes(), axes);
 }
 
 struct TrimRule {
@@ -3109,6 +3216,7 @@ inline sketch::SymRef SymRefOf(S &s, const py::handle &t, const Vertex &nearPoin
 inline PyObject *planexWarning = nullptr;
 // px.config.default_sketch_type, what px.Move makes: px.QuickSketch, else px.Sketch
 inline bool quickSketchDefault = true;
+inline std::string drawingStandard = "DIN";
 
 // called from any thread, also from taskflow workers while the caller released the GIL; an "error" filter turns the
 // warning into the Python exception, unless a C++ exception is already unwinding

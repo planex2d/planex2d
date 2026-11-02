@@ -11,7 +11,7 @@ import planex as px
 @pytest.mark.parametrize("make", [px.QuickSketch, px.Sketch])
 def test_a_closed_spline_trimmed_by_a_chord_leaves_one_closed_outline(make):
     q = make()
-    q.Move((3, -10)).Spline([(20, 0), (15, 15), (0, 10), (-8, 2)], periodic=True, id="blob")
+    q.Move((3, -10)).Spline([(20, 0), (15, 15), (0, 10), (-8, 2)], periodic=True, id="blob", style="averaged")
     q.Move((-20, 4)).Line(50, 0, id="chord")
     q.Trim(("blob", (3, -10)), "chord")
     q.Trim(("chord", (-19, 4)))

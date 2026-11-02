@@ -7,6 +7,7 @@ import warnings
 
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 TOL = 1e-12
@@ -55,8 +56,8 @@ def test_a_fixed_ground_stays_while_the_crank_turns():
     sk = px.Sketch()
     sk.Move((0, 0), px.Fix).Line(1.0, 0.3, id="crank").Line(3.2, 1.0, id="coupler").Line(-0.2, -1.3, id="rocker")
     assert recorded(lambda: sk.Move("crank.start", px.Coincident).Line(4.0, 0.0, px.Fix, id="ground", construction=True)) == [
-        "Fix.2 makes Fix.1 redundant (consistent); remove it to keep the sketch minimal"]
-    assert sk.redundant == ["Fix.1"]
+        'Fix.1 ("Point.1", px.Fix) follows from Fix.2; remove one of them']
+    assert sk.redundant == ["Fix.1"] and sk.dependencies == {"Fix.1": ["Fix.2"]}
     sk.Constrain("rocker.end", "ground.end", px.Coincident)
     for name, value in (("crank", 1), ("coupler", 3.5), ("rocker", 3)):
         sk.Constrain(name, px.Distance, value)
@@ -179,7 +180,7 @@ def test_reading_the_solved_geometry():
 def test_no_warning_for_edges_of_no_length():
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        px.Spline([(0, 0), (350, 18), (750, 10), (1150, -60)]).Offset(12)
+        offset_band(px.Spline([(0, 0), (350, 18), (750, 10), (1150, -60)]), 12)
 
 
 def pulled_through(**options):
@@ -327,8 +328,7 @@ def fixed_line():
 @pytest.mark.constraints
 def test_a_fix_of_a_whole_line_names_the_fix_of_its_start_it_made_redundant():
     sk = fixed_line()
-    assert recorded(lambda: sk.Constrain("l", px.Fix)) == [
-        "Fix.2 makes Fix.1 redundant (consistent); remove it to keep the sketch minimal"]
+    assert recorded(lambda: sk.Constrain("l", px.Fix)) == ['Fix.1 ("l.start", px.Fix) follows from Fix.2; remove one of them']
     assert sk.redundant == ["Fix.1"] and sk.dof == 0
 
 
@@ -337,8 +337,7 @@ def test_a_rigid_group_names_the_constraints_it_made_redundant_once():
     sk = px.Sketch()
     sk.Move((1, 1)).Rectangle(3, 2, id="r")
     assert recorded(lambda: sk.RigidGroup("r", id="G")) == [
-        "G makes r.Perpendicular.1, r.Perpendicular.2, r.Perpendicular.3 redundant (consistent); remove them to keep the sketch "
-        "minimal"]
+        "r.Perpendicular.1, r.Perpendicular.2, r.Perpendicular.3 follow from G; remove them to keep the sketch minimal"]
     later = recorded(lambda: (sk.Constrain("r.Line.1.start", px.Fix), sk.Constrain(px.H, "r.Line.1", px.Angle, 30, id="turn"),
                               sk.Update({"turn": 45})))
     assert not [m for m in later if "redundant" in m]
@@ -354,7 +353,7 @@ def test_a_constraint_that_is_redundant_itself_gives_only_that_warning():
         sk.Constrain("l", px.Fix)
     messages = recorded(lambda: sk.Constrain("l.end", px.Fix))
     assert len(messages) == 1
-    assert messages[0].startswith("Fix.3 (") and messages[0].endswith(") is redundant (consistent) with Fix.1, Fix.2")
+    assert messages[0].startswith("Fix.3 (") and messages[0].endswith(") follows from Fix.2; remove one of them")
     assert sk.redundant == ["Fix.1", "Fix.2", "Fix.3"]
 
 

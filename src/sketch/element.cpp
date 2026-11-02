@@ -16,8 +16,9 @@
 namespace planex2d::sketch {
 
     inline size_t Element::Spline(const Geometry &g) const { return kind == ElementKind::OffsetCurve ? g.offsetCurves[OffsetCurveIndex()].spline : SplineIndex(); }
-    inline std::string Element::KindName(const Geometry &g) const { return IsFitted(g) ? "Curve" : ElementKindName(kind); }
+    inline std::string Element::KindName(const Geometry &g) const { return IsFitted(g) ? "Curve" : IsPoled(g) ? "BSpline" : ElementKindName(kind); }
     inline bool Element::IsFitted(const Geometry &g) const { return kind == ElementKind::Spline && g.splines[SplineIndex()].fitted.has_value(); }
+    inline bool Element::IsPoled(const Geometry &g) const { return kind == ElementKind::Spline && g.splines[SplineIndex()].poled.has_value(); }
     inline const SplinePiece *Element::Piece(const Geometry &g) const {
         return kind == ElementKind::Spline && PieceIndex() ? &g.pieces[PieceIndex() - 1] : nullptr;
     }
@@ -38,6 +39,11 @@ namespace planex2d::sketch {
         return {none, none};
     }
     inline std::array<Vertex, 2> Element::EndCoords(const Geometry &g) const {
+        // a periodic spline by its poles runs through none of them: its ends where its curve starts
+        if (kind == ElementKind::Spline && !IsPiece(g) && g.splines[SplineIndex()].poled && g.splines[SplineIndex()].closed) {
+            const Vertex start = SplinePoints(g).front();
+            return {start, start};
+        }
         const std::array<size_t, 2> ends = Ends(g);
         return {g.Coords(ends[0]), g.Coords(ends[1])};
     }
@@ -145,7 +151,7 @@ namespace planex2d::sketch {
         const SplineData &d = g.splines[SplineIndex()];
         for (size_t k = 0; k < d.points.size(); ++k)
             if (g.coordsOf[d.points[k]] == g.coordsOf[point])
-                return d.fitted ? (k == 0 ? f.params.front() : f.params.back()) : f.params[k];
+                return d.fitted || d.poled ? (k == 0 ? f.params.front() : f.params.back()) : f.params[k];
         return f.params.back();
     }
     inline Vertex Element::Origin(const Geometry &g) const {
@@ -184,19 +190,40 @@ namespace planex2d::sketch {
         out.push_back({to, ends[1]});
         return out;
     }
-    inline std::vector<Vertex> Element::SplinePath(const Geometry &g, size_t perPiece) const {
+    // the points of the curve at (a parameter to its point) after (a, pa) up to (b, pb): halved while the curve's middle
+    // lies farther than tol from the chord's middle, 10 times at most
+    template <class F>
+    inline void AddHalved(const F &at, double a, const Vertex &pa, double b, const Vertex &pb, double tol, int depth, std::vector<Vertex> &out) {
+        const double m = 0.5 * (a + b);
+        const Vertex pm = at(m);
+        if (depth < 10 && !pm.IsClose((pa + pb) * 0.5, tol)) {
+            AddHalved(at, a, pa, m, pm, tol, depth + 1, out);
+            AddHalved(at, m, pm, b, pb, tol, depth + 1, out);
+        } else
+            out.push_back(pb);
+    }
+    // the points of the curve at after the node from up to the node to, for drawing it within tol: in quarters first, so
+    // that a bend between two nodes is seen, each quarter halved where it needs it
+    template <class F>
+    inline void AddDrawn(const F &at, const std::pair<double, Vertex> &from, const std::pair<double, Vertex> &to, double tol, std::vector<Vertex> &out) {
+        double a = from.first;
+        Vertex pa = from.second;
+        for (int i = 1; i <= 4; ++i) {
+            const double b = i == 4 ? to.first : from.first + (to.first - from.first) * (double)i / 4.0;
+            const Vertex pb = i == 4 ? to.second : at(b);
+            AddHalved(at, a, pa, b, pb, tol, 0, out);
+            a = b;
+            pa = pb;
+        }
+    }
+    inline std::vector<Vertex> Element::SplinePath(const Geometry &g, double tol) const {
         const planex2d::Curve<double, Vertex> f = Curve(g);
         const double end = f.params.back();
+        const auto at = [&](double u) { return f.At(u > end ? u - end : u, 0); };
         const std::vector<std::pair<double, Vertex>> nodes = Nodes(g, f);
-        std::vector<Vertex> out;
-        for (size_t k = 0; k < nodes.size(); ++k) {
-            out.push_back(nodes[k].second);
-            if (k + 1 < nodes.size())
-                for (size_t i = 1; i < perPiece; ++i) {
-                    const double u = nodes[k].first + (nodes[k + 1].first - nodes[k].first) * (double)i / (double)perPiece;
-                    out.push_back(f.At(u > end ? u - end : u, 0));
-                }
-        }
+        std::vector<Vertex> out{nodes.front().second};
+        for (size_t k = 0; k + 1 < nodes.size(); ++k)
+            AddDrawn(at, nodes[k], nodes[k + 1], tol, out);
         return out;
     }
 
@@ -209,23 +236,34 @@ namespace planex2d::sketch {
         return e;
     }
     inline SplineSpan Element::Span(const Geometry &g) const {
-        const planex2d::Curve<double, Vertex> f = Curve(g);
-        const auto [from, to] = Range(g, f);
-        return {IsPiece(g) ? *Piece(g) : SplinePiece{}, g.splines[SplineIndex()].closed && !IsPiece(g), f, from, to, f.params.back()};
+        const CurveEval e = Evaluator(g);
+        if (kind == ElementKind::OffsetCurve) {
+            const OffsetCurveData &c = g.offsetCurves[OffsetCurveIndex()];
+            const auto [from, to] = c.Range(g, e.f);
+            return {c.range, IsClosed(g), e, from, to, e.f.params.back()};
+        }
+        const auto [from, to] = Range(g, e.f);
+        return {IsPiece(g) ? *Piece(g) : SplinePiece{}, g.splines[SplineIndex()].closed && !IsPiece(g), e, from, to, e.f.params.back()};
     }
     inline OffsetRun Element::Run(const Geometry &g) const {
         const OffsetCurveData &c = g.offsetCurves[OffsetCurveIndex()];
         const CurveEval e = Evaluator(g);
         const std::array<double, 2> range = c.Range(g, e.f);
-        return {e, c.reversed, range[0], range[1]};
+        return {e, c.reversed, range[0], range[1], e.f.params.back()};
     }
     inline std::vector<std::pair<double, Vertex>> Element::OffsetNodes(const Geometry &g, const OffsetRun &run) const {
         const std::array<size_t, 2> ends = Ends(g);
         const double same = 1e-9 * run.g.f.params.back();
         std::vector<double> inner;
-        for (double t : run.g.f.params)
+        const auto add = [&](double t) {
             if (t > run.from + same && t < run.to - same)
                 inner.push_back(run.reversed ? run.to - t : t - run.from);
+        };
+        for (double t : run.g.f.params)
+            add(t);
+        // past a closed spline's seam: its first place (0) is its last
+        for (size_t k = 1; k < run.g.f.params.size(); ++k)
+            add(run.g.f.params[k] + run.end);
         std::sort(inner.begin(), inner.end());
         std::vector<std::pair<double, Vertex>> out{{0.0, g.Coords(ends[0])}};
         for (double w : inner)
@@ -233,16 +271,13 @@ namespace planex2d::sketch {
         out.push_back({run.to - run.from, g.Coords(ends[1])});
         return out;
     }
-    inline std::vector<Vertex> Element::OffsetCurvePath(const Geometry &g, size_t perPiece) const {
+    inline std::vector<Vertex> Element::OffsetCurvePath(const Geometry &g, double tol) const {
         const OffsetRun run = Run(g);
+        const auto at = [&](double w) { return run.At(w); };
         const std::vector<std::pair<double, Vertex>> nodes = OffsetNodes(g, run);
-        std::vector<Vertex> out;
-        for (size_t k = 0; k < nodes.size(); ++k) {
-            out.push_back(nodes[k].second);
-            if (k + 1 < nodes.size())
-                for (size_t i = 1; i < perPiece; ++i)
-                    out.push_back(run.At(nodes[k].first + (nodes[k + 1].first - nodes[k].first) * (double)i / (double)perPiece));
-        }
+        std::vector<Vertex> out{nodes.front().second};
+        for (size_t k = 0; k + 1 < nodes.size(); ++k)
+            AddDrawn(at, nodes[k], nodes[k + 1], tol, out);
         return out;
     }
     inline std::vector<PrimitiveEdge> Element::OffsetCurveArcs(const Geometry &g, double *tolerance) const {
@@ -310,6 +345,9 @@ namespace planex2d::sketch {
         for (size_t point : d.points)
             AddPointValues(g, point, out);
         out.insert(out.end(), d.tangent.begin(), d.tangent.end());
+        for (size_t c : d.curvature)
+            if (c != none)
+                out.push_back(c);
         if (d.fitted) {
             AddPointValues(g, d.fitted->origin, out);
             out.push_back(d.fitted->angle);
@@ -369,6 +407,9 @@ namespace planex2d::sketch {
                     out.push_back({".arm" + std::to_string(i + 1) + part, coordinate});
         for (size_t k : d.tangentAt)
             out.push_back({".p" + std::to_string(k), "angle"});
+        for (size_t k = 0; k < d.curvature.size(); ++k)
+            if (d.curvature[k] != none)
+                out.push_back({".p" + std::to_string(k), "curvature"});
         if (const SplinePiece *piece = Piece(g))
             AddRangeNames(*piece, out);
     }

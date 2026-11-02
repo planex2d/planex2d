@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from ._auto import Auto, is_auto
 from ._fileunits import check_length, read_factor, write_factor
+from ._paths import with_extension
 from ._units import m
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ def WriteStep(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: 
 
     Args:
         obj: the Face, Shape, Wire, sketch or Compound to write.
-        path: the file to write.
+        path: the file to write; without an extension .step is added (.stp counts as STEP's own).
         unit: the length the file counts in, one STEP names: the meter with an SI prefix (px.m, px.cm, px.mm, px.um),
             the inch, foot or mil (px.inch, px.mil).
         scale: what the model's numbers are multiplied by; px.Auto converts them from meters into unit, 1 writes them
@@ -48,7 +49,7 @@ def WriteStep(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: 
     unit = check_length(unit, "WriteStep")
     factor = write_factor(unit, scale, "WriteStep")
     text = _StepText(obj.Shape() if isinstance(obj, sketch_types) else obj, unit, factor, **options)
-    with open(path, "w", encoding="ascii") as f:
+    with open(with_extension(path, ".step"), "w", encoding="ascii") as f:
         f.write(text)
 
 
@@ -62,7 +63,7 @@ def WriteBrep(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: 
 
     Args:
         obj: the Face, Shape, Wire, sketch or Compound to write.
-        path: the file to write.
+        path: the file to write; without an extension .brep is added.
         scale: what the model's numbers are multiplied by; px.Auto is 1.
         options: the export options (fit_splines, fit_arcs, remove_edges_smaller, ...), as for obj.ToOCCShape.
 
@@ -78,7 +79,7 @@ def WriteBrep(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: 
     from ._sketches import sketch_types
     factor = write_factor(1.0, scale, "WriteBrep")
     text = _BrepText(obj.Shape() if isinstance(obj, sketch_types) else obj, factor, **options)
-    with open(path, "w", encoding="ascii") as f:
+    with open(with_extension(path, ".brep"), "w", encoding="ascii") as f:
         f.write(text)
 
 

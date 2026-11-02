@@ -11,6 +11,7 @@
 #include <optional>
 #include <queue>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -19,23 +20,28 @@
 namespace planex2d {
 
     // at: on the boundary, other: where the disc or ray ends, centre: of the disc (the ray's midpoint), in the middle
-    // of the wall
+    // of the wall; walked: the disc of a corner or a bend, grown to the wall it leads to
     struct ThicknessSample {
         Vertex at, other, centre;
         double thickness;
+        bool walked = false;
     };
 
     // the wall thickness at a point of a region's boundary: the diameter of the largest disc inside it that touches
-    // there (ball), or the distance along the inward normal to the boundary it meets (ray). A convex corner sharper
-    // than corner degrees holds a disc (a ray: as the disc of its half length around its middle) in its wedge when
-    // every point where it touches the boundary lies within 2.2 r / tan(angle / 2) of the corner; such a sample counts
-    // as the corner's, not as a wall's
+    // there (ball), or the distance along the inward normal to the boundary it meets (ray). A disc is a wall's where
+    // the points it touches lie more than 90 degrees apart around its center (two sides face each other); a disc of a
+    // corner or a bend, whose touching points lie closer together, grows along the medial axis to the first disc that
+    // is a wall's, and that is its thickness. A convex corner sharper than corner degrees holds a disc (a ray: as the
+    // disc of its half length around its middle) in its wedge when every point where it touches the boundary lies
+    // within 2.2 r / tan(angle / 2) of the corner; such a sample counts as the corner's, not as a wall's
     class ThicknessProbe {
         private:
             const Wire &region;
             bool ball, exact = false;
             size_t n;
-            double size, tol, nudge, slack;
+            double size, tol, nudge, slack, ridgeSlack;
+            // the farthest a spline's approximation lies from its exact curve (0 without splines)
+            double deviation = 0.0;
             Grid grid;
             std::vector<uint32_t> nearby;
             // a convex corner sharper than corner degrees: its point and the distance from it, in disc radii, within
@@ -55,12 +61,21 @@ namespace planex2d {
                 Vertex normals[2];
             };
             std::vector<ReflexCorner> reflex;
+            // a point where a disc touches the boundary, and the edge there
+            struct Contact {
+                Vertex at;
+                uint32_t edge;
+            };
+            // the wall a disc between two lines leads to, by the lines: every disc between them grows along the same
+            // ridge
+            std::map<std::pair<uint32_t, uint32_t>, std::pair<Vertex, double>> walls;
 
             // the point of edge j nearest p: on its lines and arcs (a spline's approximation, where the samples lie),
             // or on the exact curves for the final sample
             Nearest Near(size_t j, const Vertex &p) const {
-                if (exact)
-                    return NearestOnEdge(region[j], p);
+                return exact ? NearestOnEdge(region[j], p) : Approximated(j, p);
+            }
+            Nearest Approximated(size_t j, const Vertex &p) const {
                 Nearest m;
                 std::visit([&](const auto &x) { ForEachPart(x, [&](const auto &q) { m.Take(q.NearestPoint(p), p); }); },
                            region[j]);
@@ -117,15 +132,155 @@ namespace planex2d {
                         return true;
                 return false;
             }
-            // the points where the disc of radius r around c touches the boundary, on the pieces Near measures
-            std::vector<Vertex> Contacts(const Vertex &c, double r) {
-                nearby.clear();
-                grid.InBox(BBox::Of(c, c).Grown(r + 2.0 * slack), nearby);
+            static std::vector<Vertex> PointsOf(const std::vector<Contact> &touch) {
                 std::vector<Vertex> out;
-                for (uint32_t j : nearby)
-                    if (const Nearest m = Near(j, c); m.d <= r + slack)
-                        out.push_back(m.a);
+                for (const Contact &q : touch)
+                    out.push_back(q.at);
                 return out;
+            }
+            // where the disc of radius r around c touches a line or an arc of edge j, to within: an arc around c along
+            // all of it, as its ends and its middle (more than 90 degrees apart exactly when it sweeps more)
+            template <class P>
+            void Touch(const P &part, const Vertex &c, double r, double within, uint32_t j,
+                       std::vector<Contact> &out) const {
+                if constexpr (std::is_same_v<P, Arc>)
+                    if (part.Center().IsClose(c, within) && std::abs(part.Radius() - r) <= within) {
+                        for (const Vertex &q : {part.Start(), part.MidPoint(), part.End()})
+                            out.push_back({q, j});
+                        return;
+                    }
+                if (const Vertex q = part.NearestPoint(c); Norm(q - c) <= r + within)
+                    out.push_back({q, j});
+            }
+            // the points where the disc of radius r around c touches the boundary to within, on the pieces Near
+            // measures
+            std::vector<Contact> Contacts(const Vertex &c, double r, double within) {
+                nearby.clear();
+                grid.InBox(BBox::Of(c, c).Grown(r + 2.0 * within), nearby);
+                std::vector<Contact> out;
+                for (uint32_t j : nearby) {
+                    if (exact && std::holds_alternative<Spline>(region[j])) {
+                        if (const Nearest m = Near(j, c); m.d <= r + within)
+                            out.push_back({m.a, j});
+                        continue;
+                    }
+                    std::visit(
+                        [&](const auto &x) { ForEachPart(x, [&](const auto &q) { Touch(q, c, r, within, j, out); }); },
+                        region[j]);
+                }
+                return out;
+            }
+            // two of the touching points lie more than 90 degrees apart around c: sides that face each other, a wall
+            static bool IsFacing(const Vertex &c, const std::vector<Contact> &touch) {
+                for (size_t i = 0; i < touch.size(); ++i)
+                    for (size_t k = i + 1; k < touch.size(); ++k) {
+                        const Vertex a = touch[i].at - c, b = touch[k].at - c;
+                        if (Dot(a, b) < -1e-9 * Norm(a) * Norm(b))
+                            return true;
+                    }
+                return false;
+            }
+            // the point of the ridge of the distance to the boundary (the medial axis) on the segment c - h w to
+            // c + h w, where that distance is largest (golden section), and the distance
+            std::pair<Vertex, double> Ridge(const Vertex &c, const Vertex &w, double h) {
+                const double g = (std::sqrt(5.0) - 1.0) / 2.0;
+                double a = -h, b = h;
+                double x = b - g * (b - a), y = a + g * (b - a);
+                double fx = Clearance(c + w * x), fy = Clearance(c + w * y);
+                for (int it = 0; it < 60 && b - a > 1e-14 * size; ++it)
+                    if (fx > fy) {
+                        b = y;
+                        y = x;
+                        fy = fx;
+                        x = b - g * (b - a);
+                        fx = Clearance(c + w * x);
+                    } else {
+                        a = x;
+                        x = y;
+                        fx = fy;
+                        y = a + g * (b - a);
+                        fy = Clearance(c + w * y);
+                    }
+                const Vertex m = c + w * (0.5 * (a + b));
+                return {m, Clearance(m)};
+            }
+            // the two lines a disc touches, when it touches two lines only: every disc between them grows along the
+            // same ridge, to the same wall (on the approximations: a wall found there may touch a spline's
+            // approximation only)
+            std::optional<std::pair<uint32_t, uint32_t>> LinesOf(const std::vector<Contact> &touch) const {
+                if (exact || touch.size() != 2 || touch[0].edge == touch[1].edge ||
+                    !std::holds_alternative<Line>(region[touch[0].edge]) ||
+                    !std::holds_alternative<Line>(region[touch[1].edge]))
+                    return std::nullopt;
+                return std::minmax(touch[0].edge, touch[1].edge);
+            }
+            // from the disc (c, r) whose touching points (touch) do not face each other: along the ridge it lies on,
+            // growing, away from its two touching points farthest apart, the first disc whose touching points do, or
+            // the disc where the ridge grows no more (the largest around, touching all round); the steps stay within a
+            // quarter of the radius, so the ridge's search stays inside. It ends at a pair of lines whose wall is
+            // known, and collects the pairs it passes in passed
+            std::optional<std::pair<Vertex, double>> FacingAlong(Vertex c, double r, std::vector<Contact> touch,
+                                                                 std::vector<std::pair<uint32_t, uint32_t>> &passed) {
+                double h = 0.05 * r + 1e-6 * size;
+                for (int step = 0; step < 400 && !touch.empty(); ++step) {
+                    if (const std::optional<std::pair<uint32_t, uint32_t>> lines = LinesOf(touch)) {
+                        if (const auto known = walls.find(*lines); known != walls.end())
+                            return known->second;
+                        if (passed.empty() || passed.back() != *lines)
+                            passed.push_back(*lines);
+                    }
+                    Vertex grow = c - touch[0].at;
+                    double widest = 2.0;
+                    for (size_t i = 0; i < touch.size(); ++i)
+                        for (size_t k = i + 1; k < touch.size(); ++k) {
+                            const Vertex a = Normalized(c - touch[i].at), b = Normalized(c - touch[k].at);
+                            if (Dot(a, b) < widest) {
+                                widest = Dot(a, b);
+                                grow = a + b;
+                            }
+                        }
+                    grow = Normalized(grow);
+                    const Vertex across{-grow.y, grow.x};
+                    h = std::min(h, 0.25 * r);
+                    const auto [next, grown] = Ridge(c + grow * h, across, 2.0 * h);
+                    if (grown <= r) {
+                        h *= 0.5;
+                        if (h < 1e-12 * size)
+                            return std::pair{c, r};
+                        continue;
+                    }
+                    std::vector<Contact> reached = Contacts(next, grown, ridgeSlack);
+                    if (IsFacing(next, reached)) {
+                        double lo = 0.0, hi = h;
+                        std::pair<Vertex, double> first{next, grown};
+                        for (int it = 0; it < 30; ++it) {
+                            const double m = 0.5 * (lo + hi);
+                            const auto [cm, rm] = Ridge(c + grow * m, across, 2.0 * m);
+                            if (IsFacing(cm, Contacts(cm, rm, ridgeSlack))) {
+                                hi = m;
+                                first = {cm, rm};
+                            } else
+                                lo = m;
+                        }
+                        return first;
+                    }
+                    c = next;
+                    r = grown;
+                    touch = std::move(reached);
+                    h *= 1.5;
+                }
+                return std::nullopt;
+            }
+            // the wall the disc (c, r) of a corner or a bend leads to, and the wall of every pair of lines its walk
+            // passes
+            std::optional<std::pair<Vertex, double>> WallOf(const Vertex &c, double r,
+                                                            const std::vector<Contact> &touch) {
+                std::vector<std::pair<uint32_t, uint32_t>> passed;
+                const std::optional<std::pair<Vertex, double>> wall = FacingAlong(c, r, touch, passed);
+                if (wall)
+                    for (const std::pair<uint32_t, uint32_t> &lines : passed)
+                        walls[lines] = *wall;
+                return wall;
             }
             // a reflex corner's inward normals at it, each away from the other edge: the disc touching there leans
             // anywhere between them
@@ -173,10 +328,27 @@ namespace planex2d {
                     const double r = 0.5 * (lo + hi);
                     (IsDiscInside(p + inward * r, r) ? lo : hi) = r;
                 }
-                const auto [other, j] = Touching(p + inward * lo, lo, p);
-                if (j == n || (!sharp.empty() && IsHeld(Contacts(p + inward * lo, lo), lo)))
+                const Vertex c = p + inward * lo;
+                const std::vector<Contact> touch = Contacts(c, lo, slack);
+                if (IsFacing(c, touch)) {
+                    const auto [other, j] = Touching(c, lo, p);
+                    if (j == n || (!sharp.empty() && IsHeld(PointsOf(touch), lo)))
+                        return std::nullopt;
+                    return ThicknessSample{p, other.a, c, 2.0 * lo};
+                }
+                // a corner's or a bend's disc: the wall it leads to, seen from p
+                const std::optional<std::pair<Vertex, double>> wall = WallOf(c, lo, touch);
+                if (!wall)
                     return std::nullopt;
-                return ThicknessSample{p, other.a, p + inward * lo, 2.0 * lo};
+                const auto &[centre, r] = *wall;
+                const std::vector<Contact> reached = Contacts(centre, r, ridgeSlack);
+                if (!sharp.empty() && IsHeld(PointsOf(reached), r))
+                    return std::nullopt;
+                Vertex farthest = reached.front().at;
+                for (const Contact &q : reached)
+                    if (Norm(q.at - p) > Norm(farthest - p))
+                        farthest = q.at;
+                return ThicknessSample{p, farthest, centre, 2.0 * r, true};
             }
             // the boundary point nearest c that is not near p, with its edge
             std::pair<Nearest, size_t> Touching(const Vertex &c, double r, const Vertex &p) {
@@ -210,6 +382,12 @@ namespace planex2d {
                 nudge = 1e-9 * size;
                 // 1e-9: a disc's radius from the halving in From is good to 1e-14 of the size; touching within this
                 slack = 1e-9 * size;
+                // 1e-11: a point of a ridge from its golden section is good to about 1e-13 of the size; the first disc
+                // along it that faces comes before the wall by this
+                ridgeSlack = 1e-11 * size;
+                for (const Edge &e : region)
+                    if (const Spline *s = std::get_if<Spline>(&e))
+                        deviation = std::max(deviation, s->ApproximationTol());
                 if (corner > 0.0)
                     FindSharpCorners(corner);
                 if (ball)
@@ -272,16 +450,30 @@ namespace planex2d {
                     }
                 return best;
             }
-            // the distance from c to the boundary: the nearest edge within a box grown until one lies within it
+            // the distance from c to the boundary: the nearest edge within a box grown until one lies within it (the
+            // grid's cells reach past the box, so an edge they return farther than the box is not yet the nearest), on
+            // the approximations; on the exact curves only the edges whose approximation comes that near, to twice its
+            // deviation
             double Clearance(const Vertex &c) {
                 double d = std::numeric_limits<double>::infinity();
-                for (double r = 0.01 * size; d > r && r < 8.0 * size; r *= 4.0) {
+                for (double r = 0.01 * size; r < 8.0 * size; r *= 4.0) {
                     nearby.clear();
                     grid.InBox(BBox::Of(c, c).Grown(r), nearby);
                     for (uint32_t j : nearby)
-                        d = std::min(d, Near(j, c).d);
+                        d = std::min(d, Approximated(j, c).d);
+                    if (d <= r)
+                        break;
                 }
-                return d;
+                if (!exact)
+                    return d;
+                const double within = d + 2.0 * deviation;
+                nearby.clear();
+                grid.InBox(BBox::Of(c, c).Grown(within), nearby);
+                double e = std::numeric_limits<double>::infinity();
+                for (uint32_t j : nearby)
+                    if (Approximated(j, c).d <= within)
+                        e = std::min(e, Near(j, c).d);
+                return e;
             }
             // the largest disc inside, up to 1e-3 of the size: its center, the point inside farthest from the boundary
             // (found as polylabel finds the pole of inaccessibility: cells over the box, split while a point in one
@@ -330,8 +522,8 @@ namespace planex2d {
             }
     };
 
-    // samples spread along the boundary by length; refine: -1 the thinnest sample, 1 the thickest, refined along its
-    // edge by golden section (appended last)
+    // samples spread along the boundary by length; refine: -1 the thinnest, its candidates refined along their edges,
+    // 1 the thickest, refined along its edge, by golden section (appended last)
     inline std::vector<ThicknessSample> Thickness(const Wire &region, size_t samples, bool ball, double corner, int refine = 0) {
         std::vector<ThicknessSample> out;
         if (region.Empty())
@@ -344,6 +536,8 @@ namespace planex2d {
         size_t best = 0, bestEdge = 0;
         double bestT = 0.0;
         auto better = [&](double a, double b) { return refine < 0 ? a < b : a > b; };
+        // per sample: its edge and the fraction of it
+        std::vector<std::pair<size_t, double>> at;
         for (size_t i = 0; i < region.Size(); ++i)
             for (size_t k = 0, n = count(i); k < n; ++k) {
                 const double t = ((double)k + 0.5) / (double)n;
@@ -356,10 +550,70 @@ namespace planex2d {
                     bestT = t;
                 }
                 out.push_back(*s);
+                at.push_back({i, t});
             }
         if (refine == 0 || out.empty())
             return out;
-        // golden section within a sample spacing either side of the best sample, on its edge
+        const bool spline =
+            std::any_of(region.begin(), region.end(), [](const Edge &e) { return std::holds_alternative<Spline>(e); });
+        const double g = (std::sqrt(5.0) - 1.0) / 2.0;
+        // the thinnest: every local minimum within 1.5 times the thinnest sample refined along its edge, so that a thin
+        // wall between samples is found (a sample walked to its wall is its wall already)
+        if (refine < 0) {
+            std::vector<size_t> candidates;
+            for (size_t j = 0; j < out.size(); ++j) {
+                const double v = out[j].thickness, margin = 1e-9 * v;
+                const bool dip = (j == 0 || v < out[j - 1].thickness - margin) && (j + 1 == out.size() || v < out[j + 1].thickness - margin);
+                if (!out[j].walked && v <= 1.5 * out[best].thickness && (j == best || dip))
+                    candidates.push_back(j);
+            }
+            // golden section on edge e from the bracket [a, b] for steps, the sample j's value where none is found
+            const auto narrowed = [&](size_t j, size_t e, double &a, double &b, int steps) {
+                const auto value = [&](double u) {
+                    const std::optional<ThicknessSample> x = probe.At(e, u);
+                    return x ? x->thickness : out[j].thickness;
+                };
+                for (int it = 0; it < steps && b - a > 1e-15; ++it) {
+                    const double c = b - g * (b - a), d = a + g * (b - a);
+                    if (value(c) < value(d))
+                        b = d;
+                    else
+                        a = c;
+                }
+            };
+            ThicknessSample result = out[best];
+            size_t edge = bestEdge, winner = best;
+            double where = bestT, lo = 0.0, hi = 0.0;
+            // 20 steps take the bracket of two sample spacings to 1e-4 of one; the thinnest found then goes on to rounding
+            // (it may lie at a knife edge's tip, at the end of its edge)
+            for (size_t j : candidates) {
+                const auto [e, t] = at[j];
+                double a = std::max(0.0, t - 1.0 / (double)count(e)), b = std::min(1.0, t + 1.0 / (double)count(e));
+                narrowed(j, e, a, b, 20);
+                if (const std::optional<ThicknessSample> x = probe.At(e, 0.5 * (a + b)); x && x->thickness < result.thickness) {
+                    result = *x;
+                    edge = e;
+                    where = 0.5 * (a + b);
+                    winner = j;
+                    lo = a;
+                    hi = b;
+                }
+            }
+            if (hi > lo) {
+                narrowed(winner, edge, lo, hi, 60);
+                if (const std::optional<ThicknessSample> x = probe.At(edge, 0.5 * (lo + hi)); x && x->thickness <= result.thickness) {
+                    result = *x;
+                    where = 0.5 * (lo + hi);
+                }
+            }
+            // the result on the exact curves where the region has a spline
+            if (spline)
+                if (const std::optional<ThicknessSample> x = probe.ExactAt(edge, where))
+                    result = *x;
+            out.push_back(result);
+            return out;
+        }
+        // the thickest: golden section within a sample spacing either side of the best sample, on its edge
         std::optional<size_t> atCorner;
         size_t edge = bestEdge;
         double a = std::max(0.0, bestT - 1.0 / (double)count(edge));
@@ -384,11 +638,9 @@ namespace planex2d {
                 }
             }
         auto sample = [&](double t) { return atCorner ? probe.AtCorner(*atCorner, t) : probe.At(edge, t); };
-        const double g = (std::sqrt(5.0) - 1.0) / 2.0;
         auto value = [&](double t) {
             const std::optional<ThicknessSample> s = sample(t);
-            const double v = s ? s->thickness : out[best].thickness;
-            return refine < 0 ? v : -v;
+            return -(s ? s->thickness : out[best].thickness);
         };
         for (int it = 0; it < 80 && b - a > 1e-15; ++it) {
             const double c = b - g * (b - a), d = a + g * (b - a);
@@ -402,8 +654,6 @@ namespace planex2d {
         ThicknessSample result = refined ? *s : out[best];
         // the result on the exact curves where the region has a spline; a sample at a reflex corner stays, its point is
         // the vertex, which the approximation sets
-        const bool spline =
-            std::any_of(region.begin(), region.end(), [](const Edge &e) { return std::holds_alternative<Spline>(e); });
         if (spline && !(refined && atCorner))
             if (const std::optional<ThicknessSample> x =
                     refined ? probe.ExactAt(edge, 0.5 * (a + b)) : probe.ExactAt(bestEdge, bestT))

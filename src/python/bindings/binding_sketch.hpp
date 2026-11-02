@@ -272,7 +272,7 @@ inline std::optional<Vertex> StartArg(const py::handle &h, const std::string &ca
     const bool sequence = py::isinstance<py::tuple>(h) || py::isinstance<py::list>(h) || py::isinstance<py::array>(h);
     if (IsObjectList(h))
         return std::nullopt;
-    if (occ->point(h) || (sequence && py::len(h) == 3))
+    if (occHooks->point(h) || (sequence && py::len(h) == 3))
         return PointArg(AxisSystem(), h, call);
     if (sequence || IsA<Vertex>(h))
         return PointArg(h, call);
@@ -317,7 +317,7 @@ inline void GeometryOf(const py::handle &h, const AxisSystem &axes, std::vector<
         out.push_back({{AsFace(h, copy).Edges(), {}}, false});
     else if (IsA<Shape>(h))
         out.push_back({{h.cast<const Shape &>().Edges(), {}}, false});
-    else if (std::optional<Projection> p = occ->projected(h, axes, true))
+    else if (std::optional<Projection> p = occHooks->projected(h, axes, true))
         out.push_back({std::move(*p), true});
     else if (py::hasattr(h, "parts"))
         for (const py::handle &part : h.attr("parts"))
@@ -349,7 +349,7 @@ inline Wire OneGeometry(const py::object &geometry, const std::string &call) {
     if (py::isinstance<py::list>(geometry) || py::isinstance<py::tuple>(geometry) || py::hasattr(geometry, "parts"))
         throw py::type_error(call + ": one Wire, Face or Shape; the edges of a list or compound may overlap, glue them into one "
                                     "shape first: sk." + call + "(px.Glue(parts))");
-    if (occ->isShape(geometry))
+    if (occHooks->isShape(geometry))
         throw py::type_error(call + ": an OCC shape is projected in: sk.Project(shape, construction=False)");
     throw py::type_error(call + ": a Wire, Face or Shape, not " + py::str(py::type::of(geometry).attr("__name__")).cast<std::string>());
 }
@@ -491,7 +491,30 @@ inline Wire OneSketchWire(S &s, bool unify, const std::string &call) {
                               " wires; sk.Wires() returns them as a list");
     return std::move(wires.front());
 }
-inline const std::vector<std::string> OptionKeys = {"id", "name", "maxh", "col", "minh", "hpref", "layer", "partition", "construction"};
+// the element local (or a wire id's elements) and the lines, arcs, circles and splines that continue it with the
+// continuity c, drawn ones from a drawn element, construction ones from a construction element
+template <class S>
+inline Wire PropagatedWire(S &s, const std::string &local, Continuity c) {
+    std::vector<std::string> ids = s.Expanded({local});
+    const size_t seeds = ids.size();
+    const bool construction = s.IsConstruction(ids.front());
+    for (const auto &[kind, of] : s.Elements())
+        if (kind == "Line" || kind == "Arc" || kind == "Circle" || kind == "Spline" || kind == "BSpline" || kind == "Curve")
+            for (const std::string &id : of)
+                if (s.IsConstruction(id) == construction &&
+                    std::find(ids.begin(), ids.begin() + (long)seeds, id) == ids.begin() + (long)seeds)
+                    ids.push_back(id);
+    std::vector<EdgeList> chains;
+    for (const std::string &id : ids)
+        chains.push_back(s.ElementWire(id).Edges());
+    std::vector<size_t> from(seeds);
+    std::iota(from.begin(), from.end(), 0);
+    std::vector<std::string> reached;
+    for (size_t k : Propagated(chains, from, c))
+        reached.push_back(ids[k]);
+    return s.ElementsWire(reached);
+}
+inline const std::vector<std::string> OptionKeys ={"id", "name", "maxh", "col", "minh", "hpref", "layer", "partition", "construction"};
 template <class S>
 inline py::dict HelpersOf(S &s, const py::dict &kw, const std::string &call, const std::vector<const char *> &helpers) {
     py::dict out;
@@ -1038,10 +1061,37 @@ inline Thing NamedInSketch(S &s, const std::optional<std::string> &given) {
     return {s.Axes(), {}, std::move(named), {}};
 }
 
-// a spline's points, whether it is closed, its given tangents (unit, by point index) and points along it
+// the element that edge i of what id names in the sketch belongs to (id an element or a wire id), None for edges taken
+// by a name or the whole sketch
+template <class S>
+inline py::object ElementOfEdge(S &s, const std::optional<std::string> &id, size_t i) {
+    if (!id)
+        return py::none();
+    const std::string name = LocalId(s, *id, "Measure");
+    if (!s.IsWire(name) && !s.IsElement(name))
+        return py::none();
+    for (const std::string &e : s.Expanded({name})) {
+        const size_t n = s.ElementWire(e).Size();
+        if (i < n)
+            return py::str(e);
+        i -= n;
+    }
+    return py::none();
+}
+
+// how closely sketch curves are drawn: 2e-4 of the size of the box around the sketch's points, as the plots draw
+// projected outlines
+inline double DrawingTol(const sketch::Geometry &g) {
+    BBox box;
+    for (size_t p = 0; p < g.coordsOf.size(); ++p)
+        box.Grow(g.Coords(p));
+    return 2e-4 * NormInf(box.Size());
+}
+
+// a spline's points, whether it is closed, its given tangents (unit, by point index) and points along it within tol
 // (a curve's points: its ends)
 template <class S>
-inline void SplineGeometry(const S &s, const sketch::Element &e, py::dict &out) {
+inline void SplineGeometry(const S &s, const sketch::Element &e, double tol, py::dict &out) {
     const auto &g = s.Geometry();
     const Curve<double, Vertex> f = e.Curve(g);
     py::list points, path;
@@ -1051,7 +1101,7 @@ inline void SplineGeometry(const S &s, const sketch::Element &e, py::dict &out) 
     else
         for (const Vertex &p : e.SplinePoints(g))
             points.append(Tuple2(p));
-    for (const Vertex &p : e.SplinePath(g))
+    for (const Vertex &p : e.SplinePath(g, tol))
         path.append(Tuple2(p));
     py::dict tangents;
     for (size_t k : f.tangentAt)
@@ -1075,12 +1125,13 @@ inline void SplineGeometry(const S &s, const sketch::Element &e, py::dict &out) 
     }
 }
 
-// an offset curve as a spline without points of its own: its path, ends, style and the spline it is the offset of
+// an offset curve as a spline without points of its own: its path within tol, ends, style and the spline it is the
+// offset of
 template <class S>
-inline void OffsetCurveGeometry(const S &s, const sketch::Element &e, py::dict &out) {
+inline void OffsetCurveGeometry(const S &s, const sketch::Element &e, double tol, py::dict &out) {
     const auto &g = s.Geometry();
     py::list path;
-    for (const Vertex &p : e.OffsetCurvePath(g))
+    for (const Vertex &p : e.OffsetCurvePath(g, tol))
         path.append(Tuple2(p));
     const std::array<Vertex, 2> ends = e.EndCoords(g);
     out["points"] = py::list();
@@ -1136,10 +1187,10 @@ inline py::dict ElementGeometry(S &s, const std::string &id) {
         out["d"] = d;
         break;
     case sketch::ElementKind::Spline:
-        SplineGeometry(s, e, out);
+        SplineGeometry(s, e, DrawingTol(s.Geometry()), out);
         break;
     case sketch::ElementKind::OffsetCurve:
-        OffsetCurveGeometry(s, e, out);
+        OffsetCurveGeometry(s, e, DrawingTol(s.Geometry()), out);
         break;
     case sketch::ElementKind::Pattern:
     case sketch::ElementKind::Offset:
@@ -1476,13 +1527,14 @@ py::list DrawingOf(S &s) {
     if constexpr (HasConstraints<S>)
         for (const auto &[id, state] : s.States())
             states[id] = state;
+    const double tol = DrawingTol(s.Geometry());
     for (const auto &[kind, ids] : s.Elements())
         for (const std::string &id : ids) {
             const auto [e, radius, angle, d] = s.ElementOf(id);
             py::dict g;
             g["id"] = id;
-            // a curve draws as the spline it is
-            g["kind"] = kind == "Curve" ? "Spline" : kind;
+            // a curve and a b-spline draw as the splines they are
+            g["kind"] = kind == "Curve" || kind == "BSpline" ? "Spline" : kind;
             g["state"] = states.contains(id) ? states[id] : std::string("under");
             g["construction"] = s.IsConstruction(id);
             g["projected"] = e.IsHeld(s.Geometry());
@@ -1503,9 +1555,9 @@ py::list DrawingOf(S &s) {
                 g["normal_angle"] = angle;
                 g["d"] = d;
             } else if (e.kind == sketch::ElementKind::Spline)
-                SplineGeometry(s, e, g);
+                SplineGeometry(s, e, tol, g);
             else if (e.kind == sketch::ElementKind::OffsetCurve)
-                OffsetCurveGeometry(s, e, g);
+                OffsetCurveGeometry(s, e, tol, g);
             out.append(g);
         }
     return out;
@@ -1745,7 +1797,8 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    dh: the move along h from the pen; with dv.\n"
                  "    dv: the move along v from the pen.\n"
                  "    l: the move along the pen's direction.\n"
-                 "    flags: px.Coincident (the start shares the point it moves to), px.Fix (the start is fixed).\n"
+                 "    flags: px.Coincident (the start shares the point it moves to), px.Fix (the start is fixed), px.FixH or "
+                 "px.FixV (its h or v is).\n"
                  "    dir: the drawing direction (dh, dv) from there, or sk.pen (its direction); default: it stays.\n\n"
                  "Raises:\n"
                  "    TypeError: another form of arguments, or an unknown keyword.\n"
@@ -1780,7 +1833,7 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    start: the start of the two-end form, read as to.\n"
                  "    end: the end of the two-end form, read as to.\n"
                  "    ends: start and end, or a single start with until=, or a length l, then the flags.\n"
-                 "    flags: px.Horizontal, px.Vertical, px.Fix (of the line); px.Tangent, px.Perpendicular, "
+                 "    flags: px.Horizontal, px.Vertical, px.Fix, px.FixH, px.FixV (of the line); px.Tangent, px.Perpendicular, "
                  "px.Parallel, px.Equal (with the element before it).\n"
                  "    until: the end: px.first / px.last until the first / last line, arc, circle or spline ahead (the "
                  "start not counted), or a target; with an element as to, px.first / px.last picks the first or last "
@@ -2071,7 +2124,7 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "along +h.\n\n"
                  "Args:\n"
                  "    r: the radius; in the helper form at most one radius, then the flags.\n"
-                 "    flags: px.Fix.\n"
+                 "    flags: px.Fix, px.FixH, px.FixV.\n"
                  "    center: the center, a point (h, v) or (x, y, z) on the plane; center= also a point id.\n"
                  "    concentric: a point id or an arc whose center is the circle's.\n"
                  "    coincident: an arc or circle whose radius the circle takes.\n"
@@ -2092,9 +2145,9 @@ inline void BindDrawing(py::class_<S> &sketch) {
         .def("Spline", [](S &s, const py::args &args, const py::kwargs &kw) -> S & {
             const CallArgs a = Split(args, "Spline");
             const AutoScope<S> scope(s, a.autoFlag, "Spline");
-            HelpersOf(s, kw, "Spline", {"periodic", "tol", "tangents", "start_from_localpos", "style"});
+            HelpersOf(s, kw, "Spline", {"periodic", "tol", "tangents", "start_from_localpos", "style", "tensions", "curvature_radii"});
             if (a.values.size() != 1)
-                throw py::type_error("Spline(points), then flags; periodic=, tangents=, start_from_localpos=, style=");
+                throw py::type_error("Spline(points), then flags; periodic=, tangents=, start_from_localpos=, style=, tensions=, curvature_radii=");
             std::vector<Vertex> points;
             for (const py::handle &p : a.values[0])
                 points.push_back(PointArg(s.Axes(), p, "Spline"));
@@ -2102,44 +2155,98 @@ inline void BindDrawing(py::class_<S> &sketch) {
             if (kw.contains("tangents") && !kw["tangents"].is_none())
                 for (const auto &[k, t] : kw["tangents"].cast<py::dict>())
                     tangents[k.cast<size_t>()] = PointArg(s.Axes(), t, "Spline");
+            const auto numbers = [&](const char *key) {
+                return kw.contains(key) && !kw[key].is_none() ? std::optional(kw[key].cast<std::map<size_t, double>>()) : std::nullopt;
+            };
             s.Spline(points, KwOpt<bool>(kw, "periodic").value_or(false), tangents, KwOpt<bool>(kw, "start_from_localpos").value_or(true),
-                     a.flags, OptionsOf(kw), StyleArg(kw.contains("style") ? py::object(kw["style"]) : py::none(), "Spline"));
+                     a.flags, OptionsOf(kw), StyleArg(kw.contains("style") ? py::object(kw["style"]) : py::none(), "Spline"),
+                     TangentSettingsArg(numbers("tensions"), numbers("curvature_radii"), "Spline"));
             return s;
         }, ref,
              Doc("Spline(points: list[tuple[float, float]], /, *flags: Constraint, periodic: bool = False, "
                  "tangents: dict[int, tuple[float, float]] | None = None, start_from_localpos: bool = True, "
-                 "style: str | None = None, tol: float | None = None, **options) -> " + sk + "\n\n"
+                 "style: str | None = None, tensions: dict[int, float] | None = None, curvature_radii: dict[int, float] | None = None, "
+                 "tol: float | None = None, **options) -> " + sk + "\n\n"
                  "Draw a spline from the pen's position through points; its points are point elements.\n\n"
                  "Args:\n"
                  "    points: the points (h, v) it passes, after the start.\n"
-                 "    flags: px.Fix; px.Tangent (with the element before it).\n"
+                 "    flags: px.Fix, px.FixH, px.FixV; px.Tangent (with the element before it).\n"
                  "    periodic: closed back to its start.\n"
                  "    tangents: {index: (dh, dv)}, directions at some of the points, index 0 the start; they become "
                  "angle unknowns.\n"
                  "    start_from_localpos: False starts at the first point instead of the pen's position.\n"
-                 "    style: 'averaged' (planex's: closed without tangents the C2 periodic cubic) or 'clamped' (OCC's "
-                 "Geom2dAPI_Interpolate, netgen's splines; a sketch keeps tangent directions only, so two points with "
-                 "one tangent of another length than 1 differ from netgen's); default config.spline_style.\n"
+                 "    style: 'quintic' (the least change of curvature; a tangent is an arrow the curve follows), 'averaged' "
+                 "(planex's cubic: closed without tangents the C2 periodic cubic) or 'clamped' (OCC's Geom2dAPI_Interpolate, "
+                 "netgen's splines; a sketch keeps tangent directions only, so two points with one tangent of another length "
+                 "than 1 differ from netgen's); default config.spline_style.\n"
+                 "    tensions: {index of a point with a tangent: its tension}, positive, 1 the tangent's own length; kept "
+                 "with the spline.\n"
+                 "    curvature_radii: {index of a point with a tangent: the radius of curvature there}, positive bending "
+                 "left of the tangent, math.inf straight; style 'quintic' only; in a px.Sketch each a dimension "
+                 "(px.CurvatureRadius, 'CurvatureRadius.1') sk.Update changes.\n"
                  "    tol: ignored.\n"
                  "    options: id= (the spline's id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, "
                  "partition=, construction=.\n\n"
                  "Raises:\n"
-                 "    TypeError: not one list of points, a point that is no (h, v), or an unknown keyword.\n\n"
+                 "    TypeError: not one list of points, a point that is no (h, v), or an unknown keyword.\n"
+                 "    ValueError: a tension or curvature radius at a point without a tangent; a tension not positive; a "
+                 "curvature radius zero, or with another style than 'quintic'.\n\n"
                  "Examples:\n"
                  "    sk.Spline([(5, 2), (10, 0)])\n"
-                 "    sk.Spline([(5, 2), (10, 0), (5, -2)], periodic=True, tangents={0: (0, 1)})"))
+                 "    sk.Spline([(5, 2), (10, 0), (5, -2)], periodic=True, tangents={0: (0, 1)})\n"
+                 "    sk.Spline([(0, 0), (20, 10), (40, 0)], start_from_localpos=False, tangents={1: (1, 0)}, "
+                 "curvature_radii={1: -30}, style=\"quintic\")"))
+        .def("BSpline", [](S &s, const py::args &args, const py::kwargs &kw) -> S & {
+            const CallArgs a = Split(args, "BSpline");
+            const AutoScope<S> scope(s, a.autoFlag, "BSpline");
+            HelpersOf(s, kw, "BSpline", {"knots", "degree", "periodic"});
+            if (a.values.empty() || a.values.size() > 3)
+                throw py::type_error("BSpline(poles, knots=None, degree=3), then flags; periodic=");
+            std::vector<Vertex> poles;
+            for (const py::handle &p : a.values[0])
+                poles.push_back(PointArg(s.Axes(), p, "BSpline"));
+            const py::object knots = a.values.size() > 1 ? a.values[1] : kw.contains("knots") ? py::object(kw["knots"]) : py::none();
+            const py::object degree = a.values.size() > 2 ? a.values[2] : kw.contains("degree") ? py::object(kw["degree"]) : py::int_(3);
+            s.BSpline(poles, knots.is_none() ? std::nullopt : std::optional(knots.cast<std::vector<double>>()), degree.cast<size_t>(),
+                      KwOpt<bool>(kw, "periodic").value_or(false), a.flags, OptionsOf(kw));
+            return s;
+        }, ref,
+             Doc("BSpline(poles: list[tuple[float, float]], knots: list[float] | None = None, degree: int = 3, /, *flags: Constraint, "
+                 "periodic: bool = False, **options) -> " + sk + "\n\n"
+                 "Draw a spline by its control points (poles): it starts at the first pole and ends at the last, between "
+                 "them the poles pull it. It goes on from the pen if the pen is at the first pole, else it starts a chain of "
+                 "its own. The poles are point elements ('<id>.p0', ...), the legs of the control polygon "
+                 "between them construction lines ('<id>.leg.0' from the first pole, ...): constraints on them shape the "
+                 "spline (a leg Horizontal: the tangent at that end horizontal) and move only the poles they need. Its "
+                 "kind is BSpline (ids 'BSpline.1', ...).\n\n"
+                 "Args:\n"
+                 "    poles: the control points (h, v), degree + 1 at least.\n"
+                 "    knots: as px.BSpline takes them; None: clamped and uniform (a periodic one: one period, evenly).\n"
+                 "    degree: the degree, 3 a cubic.\n"
+                 "    flags: px.Fix, px.FixH, px.FixV; px.Tangent (with the element before it).\n"
+                 "    periodic: closed, the poles wrapped around (a leg back to the first pole).\n"
+                 "    options: id= (the spline's id), and its properties name=, maxh=, minh=, hpref=, layer=, col=, "
+                 "partition=, construction=.\n\n"
+                 "Raises:\n"
+                 "    ValueError: fewer than degree + 1 poles, or knots that do not fit the poles and the degree.\n"
+                 "    TypeError: a pole that is no (h, v), or an unknown keyword.\n\n"
+                 "Examples:\n"
+                 "    sk.BSpline([(0, 0), (3, 4), (7, 4), (10, 0)])\n"
+                 "    sk.BSpline([(0, 0), (4, 3), (8, 0), (4, -3)], periodic=True, id=\"cam\")"))
         .def("Curve", [](S &s, const py::args &args, const py::kwargs &kw) -> S & {
             const CallArgs a = Split(args, "Curve");
             const AutoScope<S> scope(s, a.autoFlag, "Curve");
-            HelpersOf(s, kw, "Curve", {});
+            HelpersOf(s, kw, "Curve", {"tol"});
             if (a.values.size() != 2)
                 throw py::type_error("Curve(point, range), then flags: the point (h, v) as two expressions in t or a callable t -> (h, v), "
                                      "the range (t0, t1)");
             const std::string text = CurveText("Curve", a.values[0], a.values[1]);
+            const std::optional<double> tol = KwOpt<double>(kw, "tol");
             if (IsCurveCallable(a.values[0])) {
-                s.Curve(CallableShape(a.values[0], a.values[1], text), std::nullopt, a.flags, OptionsOf(kw));
+                s.Curve(CallableShape(a.values[0], a.values[1], text, tol), std::nullopt, a.flags, OptionsOf(kw));
                 return s;
             }
+            CheckFormulaTol(tol, text);
             sketch::CurveFormula f = ParsedCurve(a.values[0], a.values[1], text, CurveNames(s));
             if constexpr (HasConstraints<S>)
                 s.CurveDimensions(f);
@@ -2148,25 +2255,28 @@ inline void BindDrawing(py::class_<S> &sketch) {
             return s;
         }, ref,
              Doc("Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float | str, float | str], /, *flags: Constraint, "
-                 "**options) -> " + sk + "\n\n"
+                 "tol: float | None = None, **options) -> " + sk + "\n\n"
                  "Draw a parametric curve, the spline fitted to it to about 1e-12 of its size, where its formula puts it.\n\n"
                  "The point is (h, v) as two expressions in the parameter t: numbers, units, pi, + - * / ^, sqrt, abs, min, max, "
                  "sin, cos, tan, asin, acos, atan2 (angles in degrees, t too where it is an angle), exp, log (natural), sinh, cosh, tanh, asinh, acosh, "
                  "atanh" +
                  (HasConstraints<S> ? std::string(", the ids of driving dimensions (the curve refits when they change)") : std::string()) +
                  ", and h in v or v in h (the other coordinate at the same t). Or a callable t -> (h, v), a tuple, list or "
-                 "array, called once per t while the curve is drawn (then fitted by a cubic to 1e-10 of its size). The curve "
+                 "array, called once per t while the curve is drawn (then fitted by a cubic to within tol of its size). The curve "
                  "goes on from the pen if the pen is at its start, else it starts on its own; the pen goes to its end. Its end "
                  "at its start closes it (smooth there where the formula is periodic). " +
                  (HasConstraints<S> ? std::string("It moves and turns as one (3 degrees of freedom), fixed by default (a Fix you may "
-                                                  "remove); its references are the curve, .start and .end. ")
+                                                  "remove; px.FixH or px.FixV in its place holds that coordinate and its turn); its "
+                                                  "references are the curve, .start and .end. ")
                                     : std::string("Its references are the curve, .start and .end. ")) +
                  "Copies, mirrors, patterns, offsets and trims take the fitted spline. h, v and t are no ids.\n\n"
                  "Args:\n"
                  "    point: (h, v), two expressions in t, (\"t\", \"0.1*t^2\") for v = 0.1 h^2; or a callable t -> (h, v).\n"
                  "    range: (t0, t1), numbers" +
                  (HasConstraints<S> ? std::string(" or expressions of driving dimensions") : std::string()) + "; a callable's numbers.\n"
-                 "    flags: px.Tangent (with the element before it), px.Fix.\n"
+                 "    flags: px.Tangent (with the element before it), px.Fix, px.FixH, px.FixV.\n"
+                 "    tol: a callable's fit, how closely the cubic passes the curve relative to its size; default 1e-10, larger "
+                 "for a curve with fine detail that 4096 samples do not fit to 1e-10.\n"
                  "    options: id= (the curve's id, default Curve.N), and its properties name=, maxh=, minh=, hpref=, layer=, "
                  "col=, partition=, construction=.\n\n"
                  "Raises:\n"
@@ -2176,7 +2286,7 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  (HasConstraints<S> ? std::string("a driven or reference dimension, a measure of the solved geometry, ")
                                     : std::string("any dimension, ")) +
                  "an unknown id), h and v using each other or a coordinate itself, a formula out of its domain in the range, an "
-                 "empty range, a curve of no length.\n\n"
+                 "empty range, a curve of no length, tol= with a formula or a tol that is no positive number.\n\n"
                  "Examples:\n"
                  "    sk.Curve((\"t\", \"0.1*t^2\"), (0, 10))\n"
                  "    sk.Curve((\"10*(1 - cos(t))/2\", \"sqrt(h)\"), (0, 180), id=\"airfoil\")"))
@@ -2396,28 +2506,36 @@ inline void BindDrawing(py::class_<S> &sketch) {
         .def("_Spans", &S::Spans, "for the selections: the cut elements kept as the spans of their pieces (Line.3 of Line.3.1, ...)")
         .def("_Properties", &SketchProperties<S>, py::arg("ids"), py::arg("field"),
              "test hook of the selections' properties: the values of field of the elements ids name that take it")
-        .def("Measure", NamingIds("Measure", +[](S &s, const py::object &name, const py::object &to, bool project) {
+        .def("Measure", NamingIds("Measure", +[](S &s, const py::object &name, const py::object &to, bool project,
+                                                 const py::object &at) {
             const std::optional<std::string> id = name.is_none() ? std::nullopt : std::optional(RefIn(s, name, "Measure"));
             const py::object target = py::isinstance<py::str>(to) ? py::str(RefIn(s, to, "Measure")) : to;
+            if (!at.is_none())
+                return MeasureAt(id ? NamedInSketch(s, id) : Thing{s.Axes(), {}, s.Edges(), {}}, at, target,
+                                 [&](size_t i) { return ElementOfEdge(s, id, i); });
             return MeasureWith(NamedInSketch(s, id), target, project,
                                [&](const std::string &n) { return NamedInSketch(s, n); });
-        }), py::arg("name") = py::none(), py::arg("to") = py::none(), py::arg("project") = false,
-           "Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False) -> dict\n\n"
-           "Measure an element, a point or named edges as Shape.Measure does, alone or against a target.\n\n"
-           "Args:\n"
-           "    name: an element's id, a point ('Line.1.end') or a name the edges carry (drawn and construction); "
-           "default the region of Face()/Shape() and all drawn edges.\n"
-           "    to: an id, a name, or anything Distance takes (also OCC shapes).\n"
-           "    project: measure to the target projected into the sketch's plane.\n\n"
-           "Returns:\n"
-           "    Without to: type, faces, area, edges, length, bounding_box, and where it has mass center, inertia, Ih, "
-           "Iv, Ihv, I1, I2, principal_angle (a circle or arc also radius and angle). With to: distance, du, dv, dx, dy, "
-           "dz, points (the nearest pair) and, for two lines, angle.\n\n"
-           "Raises:\n"
-           "    ValueError: no element, point or edge has the name.\n\n"
-           "Examples:\n"
-           "    sk.Measure(\"Line.1\")[\"length\"]\n"
-           "    sk.Measure(\"Circle.1\", to=\"Line.2\")[\"distance\"]")
+        }), py::arg("name") = py::none(), py::arg("to") = py::none(), py::arg("project") = false, py::arg("at") = py::none(),
+           Doc(std::string("Measure(name: Id | None = None, to: Point | Point3 | Shape | Id | None = None, project: bool = False, "
+                           "at: float | Point | Point3 | None = None) -> dict\n\n"
+                           "Measure an element, a point or named edges as Shape.Measure does, alone or against a target.\n\n"
+                           "Args:\n"
+                           "    name: an element's id, a point ('Line.1.end') or a name the edges carry (drawn and construction); "
+                           "default the region of Face()/Shape() and all drawn edges.\n"
+                           "    to: an id, a name, or anything Distance takes (also OCC shapes).\n"
+                           "    project: measure to the target projected into the sketch's plane.\n") +
+               AT_DOC +
+               "    (In a sketch, edge is the element's id; None for edges taken by a name.)\n\n"
+               "Returns:\n"
+               "    Without to: type, faces, area, edges, length, bounding_box, and where it has mass center, inertia, Ih, "
+               "Iv, Ihv, I1, I2, principal_angle (a circle or arc also radius and angle). With to: distance, du, dv, dx, dy, "
+               "dz, points (the nearest pair) and, for two lines, angle. With at: the place's keys.\n\n"
+               "Raises:\n"
+               "    ValueError: no element, point or edge has the name" + AT_RAISES + ".\n"
+               "    TypeError: at= and to= are given together.\n\n"
+               "Examples:\n"
+               "    sk.Measure(\"Line.1\")[\"length\"]\n"
+               "    sk.Measure(\"Chain.1\", at=12.5)[\"point_hv\"]"))
         .def("SymmetryLine", &AddSymmetryLine<S>, py::arg("a"), py::arg("b"), py::pos_only(), py::kw_only(), py::arg("reverse") = false,
              py::arg("id") = py::none(), ref,
              Doc("SymmetryLine(a: Point | Id, b: Point | Id, /, *, reverse: bool = False, id: str | None = None) -> " + sk + "\n\n"
@@ -2669,6 +2787,36 @@ inline void BindDrawing(py::class_<S> &sketch) {
             return s;
         }, py::arg("at"), py::arg("d"), py::pos_only(), py::arg("d2") = py::none(), py::arg("angle") = py::none(),
              py::arg("reverse") = false, py::kw_only(), py::arg("id") = py::none(), ref, SketchCornerDoc(true, sk, HasConstraints<S>))
+        .def("Extend", [](S &s, const py::object &a, const py::object &b) -> S & {
+            Prepare(s, py::make_tuple(a, b));
+            NamingTheCall([&] {
+                const std::string id = RefIn(s, a, "Extend");
+                if (IsNumber(b))
+                    s.Extend(id, {}, b.cast<double>());
+                else
+                    s.Extend(id, CutterIds(s, b, "Extend"), std::nullopt);
+            }, [&] { return CallText("Extend", {{"a", a}, {"b", b}}); });
+            return s;
+        }, py::arg("a"), py::arg("b"), py::pos_only(), ref,
+             Doc("Extend(a: Id, b: Ids | float, /) -> " + sk + "\n\n"
+                 "Lengthen a line along its line or an arc along its circle, to where it first meets b or by the length b.\n\n"
+                 "The end moves: of an element given whole the end nearer b, else the end given ('Line.3.end'), which a "
+                 "length needs. What holds that end keeps holding it" +
+                 (HasConstraints<S> ? std::string(" (a constraint that keeps it where it is, such as a length dimension, "
+                                                  "raises); with auto_constraint the new end lies on b, as a drawn end would")
+                                    : std::string()) +
+                 ". An end another element shares stays: Extend lengthens free ends.\n\n"
+                 "Args:\n"
+                 "    a: the line or arc, or one of its ends.\n"
+                 "    b: what to extend to (an element, an axis, several, or a selection), or the length to add along "
+                 "the line or arc.\n\n"
+                 "Raises:\n"
+                 "    ValueError: a is no line or arc or end of one, its end is shared, a length with a whole element, a "
+                 "length not above 0, an arc that would close, a b it does not meet" +
+                 (HasConstraints<S> ? std::string(", constraints that keep the end where it is") : std::string()) + ".\n\n"
+                 "Examples:\n"
+                 "    sk.Extend(\"Line.3\", \"Arc.2\")\n"
+                 "    sk.Extend(\"Line.3.end\", 5)"))
         .def("Trim", [](S &s, const py::object &a, const py::object &b, bool reverse, const py::kwargs &kw) -> S & {
             NoMoreKeywords(kw, "Trim", "the point goes with the element: Trim((a, point), b) trims the piece of a nearest it");
             Prepare(s, py::make_tuple(a, b));
@@ -2896,35 +3044,45 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "Examples:\n"
                  "    sk.Add(face)\n"
                  "    sk.Add(px.Glue(px.FromDXF(\"part.dxf\")))"))
-        .def("Wire", NamingIds("Wire", +[](S &s, const py::object &element, bool unify) -> Wire {
+        .def("Wire", NamingIds("Wire", +[](S &s, const py::object &element, bool unify, const py::object &propagate) -> Wire {
+            const std::optional<Continuity> continuity = PropagationOf(propagate, "Wire");
             if (element.is_none()) {
+                if (continuity)
+                    throw py::value_error("Wire(propagate=...): propagates from an element; give its id, "
+                                          "sk.Wire(id, propagate=...)");
                 s.RequireFull("Wire()");
                 return OneSketchWire(s, unify, unify ? "Wire()" : "Wire(unify=False)");
             }
             Prepare(s, element);
             s.RequireFull("Wire()");
             const std::string local = RefIn(s, element, "Wire"), call = "Wire('" + local + "')";
-            const Wire w = s.ElementWire(local);
+            const Wire w = continuity ? PropagatedWire(s, local, *continuity) : s.ElementWire(local);
             Wire chain = OrderChain(w.Edges(), w.Axes(), w.Edges().JoinTol(std::nullopt), call, "sk.Wires() gives the chains");
             chain.CheckChain(call);
             return chain;
         }), py::arg("element") = py::none(), py::pos_only(), py::kw_only(), py::arg("unify") = true,
-           "Wire(element: Id | None = None, /, *, unify: bool = True) -> Wire\n\n"
+           py::arg("propagate") = PlainMinimal(),
+           "Wire(element: Id | None = None, /, *, unify: bool = True, propagate: Constraint | MinimalType = px.Minimal) "
+           "-> Wire\n\n"
            "The drawn edges as one Wire, its ends within rounding joined; construction elements take no part. With "
            "element, that element's solved edges (a line or arc one edge, a circle one circle edge, a spline its "
-           "pieces) or a wire id's elements in one chain.\n\n"
+           "pieces) or a wire id's elements in one chain, and with propagate= the elements that continue it.\n\n"
            "Args:\n"
            "    element: an element, or a wire id (Chain.1, an id_wire); None the whole sketch.\n"
            "    unify: for the whole sketch: True cuts the drawn edges at crossings and T-junctions, keeps an "
            "overlapping stretch once and merges the pieces on one carrier where nothing else meets (as wire + wire); "
-           "False keeps every drawn element uncut.\n\n"
+           "False keeps every drawn element uncut.\n"
+           "    propagate: px.Minimal the element alone; px.Coincident, px.Tangent or px.Curvature also the elements "
+           "that continue it across its ends, meeting there (tangentially, with equal curvature too: directions "
+           "within 1e-9 rad, curvatures within 1e-9 relative), up to where two or more would (a branch): always one "
+           "chain. Construction elements continue construction elements only.\n\n"
            "Raises:\n"
            "    ValueError: nothing is drawn, the edges form several wires (sk.Wires() returns them as a list), or, "
-           "with unify=False or an element, the chain crosses, touches or overlaps itself; in mode='strict' while "
-           "the sketch can still move.\n\n"
+           "with unify=False or an element, the chain crosses, touches or overlaps itself; propagate= is no "
+           "continuity or given without an element; in mode='strict' while the sketch can still move.\n\n"
            "Examples:\n"
            "    sk.Wire()\n"
-           "    sk.Wire(\"Chain.1\")")
+           "    sk.Wire(\"Line.3\", propagate=px.Tangent)")
         .def("Wires", [](S &s, bool unify) {
             s.RequireFull("Wires()");
             return s.Wires(unify, unify ? "Wires()" : "Wires(unify=False)");

@@ -200,6 +200,97 @@ def HydraulicDiameter(*args: Any) -> Callable:
     return hydraulic_diameter
 
 
+def _hull_edges(obj, call):
+    """the edges a hull is taken of: a face's or shape's wires, a wire or an edge, a sketch's drawn edges"""
+    if isinstance(obj, px.FaceView):
+        obj = obj.Copy()
+    if isinstance(obj, (px.Face, px.Shape)):
+        return list(obj.wires)
+    if isinstance(obj, (px.Wire, px.EdgeView)):
+        return obj
+    if isinstance(obj, sketch_types):
+        return obj.Wires(unify=False)
+    raise TypeError("%s: of a Face, Shape, Wire, edge or sketch, not a %s" % (call, type(obj).__name__))
+
+
+def _no_arguments(args, name):
+    if args:
+        raise TypeError("%s() takes no arguments: the measurement is %s(), obj.Measure(px.measurements.%s())"
+                        % (name, name, name))
+
+
+def ConvexHull(*args: Any) -> Callable:
+    """A measurement: the convex hull of the edges as a Face, exact with arcs (a spline by its approximation).
+
+    Returns:
+        the measurement f(obj), for obj.Measure(f) of a face, shape, wire, edge or sketch; it gives the Face.
+
+    Raises:
+        TypeError: given an object: the measurement is ConvexHull(), with brackets.
+        ValueError (from f): the hull has no area (a point, or points on a line).
+
+    Examples:
+        shape.Measure(px.measurements.ConvexHull())
+        sk.Measure(px.measurements.ConvexHull(), id="hull")
+    """
+    _no_arguments(args, "ConvexHull")
+
+    def convex_hull(obj: Any, plot: bool = False, **_: Any) -> Any:
+        return px._ConvexHull(_hull_edges(obj, "ConvexHull"))
+
+    return convex_hull
+
+
+def EnclosingCircle(*args: Any) -> Callable:
+    """A measurement: the smallest circle around the edges.
+
+    Returns:
+        the measurement f(obj), for obj.Measure(f) of a face, shape, wire, edge or sketch; it gives a dict: face (the
+        disc), center (x, y, z), center_hv (h, v), radius.
+
+    Raises:
+        TypeError: given an object: the measurement is EnclosingCircle(), with brackets.
+        ValueError (from f): the edges have no area around them (a point, or points on a line).
+
+    Examples:
+        part.Measure(px.measurements.EnclosingCircle())["radius"]
+        sk.Measure(px.measurements.EnclosingCircle(), id="stock")
+    """
+    _no_arguments(args, "EnclosingCircle")
+
+    def enclosing_circle(obj: Any, plot: bool = False, **_: Any) -> dict:
+        face, center, radius = px._EnclosingCircle(_hull_edges(obj, "EnclosingCircle"))
+        return {"face": face, "center": tuple(face.ToXYZ(center)), "center_hv": center, "radius": radius}
+
+    return enclosing_circle
+
+
+def EnclosingRectangle(*args: Any) -> Callable:
+    """A measurement: the rectangle of least area around the edges, at any angle.
+
+    Returns:
+        the measurement f(obj), for obj.Measure(f) of a face, shape, wire, edge or sketch; it gives a dict: face (the
+        rectangle), center (x, y, z), center_hv (h, v), length and width (length >= width), angle (of the longer side
+        from h, in degrees, in (-90, 90]).
+
+    Raises:
+        TypeError: given an object: the measurement is EnclosingRectangle(), with brackets.
+        ValueError (from f): the edges have no area around them (a point, or points on a line).
+
+    Examples:
+        part.Measure(px.measurements.EnclosingRectangle())["length"]
+        sk.Measure(px.measurements.EnclosingRectangle(), id="blank")
+    """
+    _no_arguments(args, "EnclosingRectangle")
+
+    def enclosing_rectangle(obj: Any, plot: bool = False, **_: Any) -> dict:
+        face, center, angle, length, width = px._EnclosingRectangle(_hull_edges(obj, "EnclosingRectangle"))
+        return {"face": face, "center": tuple(face.ToXYZ(center)), "center_hv": center, "length": length,
+                "width": width, "angle": angle}
+
+    return enclosing_rectangle
+
+
 def _region(obj):
     """faces to measure: a face or shape itself, a sketch's region"""
     if isinstance(obj, (px.Face, px.Shape, px.FaceView)):
@@ -228,7 +319,7 @@ def _warn_corner_pinch(obj, method, samples, value, at):
     region = _region(obj)
     away = px._Thickness(region, samples, method == "ball", 179.999, -1)
     corners = _convex_corners(region)
-    if not away or not corners or min(s[4] for s in away) <= 2.0 * value:
+    if not corners or (away and min(s[4] for s in away) <= 2.0 * value):
         return
     point, angle = min(corners, key=lambda c: math.dist(c[0], at))
     warn("MinThickness: the minimum %.4g is the tip of the corner at (%.6g, %.6g) (%.4g degrees); "
@@ -266,14 +357,18 @@ def _thickness(method, statistic, samples, ignore_corners, label):
 def MinThickness(method: str = "ball", samples: int = 400, ignore_corners: float | None = None) -> Callable:
     """A measurement: the thinnest wall of the faces; px.PlotField draws it.
 
-    A sharp corner is infinitely thin: without ignore_corners a warning says when the minimum is such a corner's tip
-    and which value leaves it out.
+    A wall is where two sides face each other: a disc counts where the points it touches lie more than 90 degrees
+    apart around its center. At a convex corner or bend the disc touching there grows along the medial axis to the
+    wall it leads to, so corners, bends and outlines drawn as lines measure their walls at any resolution. A knife
+    edge sharper than 90 degrees is infinitely thin: without ignore_corners a warning says when the minimum is such a
+    corner's tip and which value leaves it out.
 
     Args:
-        method: "ball": at each sample the diameter of the largest disc inside that touches the boundary there;
-            "ray": the distance along the inward normal to the other side, which never finds less than the disc and can
-            miss thin spots at tapers.
-        samples: the number of samples along the boundary.
+        method: "ball": at each sample the diameter of the largest disc inside that touches the boundary there (at a
+            corner or bend, of the wall it leads to); "ray": the distance along the inward normal to the other side,
+            which never finds less than the disc and can miss thin spots at tapers.
+        samples: the number of samples along the boundary, spread by length; every sample thinner than its neighbours
+            (within 1.5 times the thinnest) is refined along its edge, so a thin wall between samples is found.
         ignore_corners: leaves out where a convex corner sharper than this many degrees holds the disc (or the ray) in
             its wedge: every point where it touches the boundary lies within 2.2 r / tan(angle / 2) of the corner, r
             its radius (half the ray's length). On a tapered edge, such as an airfoil's trailing edge, that is the

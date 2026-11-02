@@ -5,6 +5,7 @@
 classes; without it planex has the same names, stand-ins that raise naming what is missing; with it the core's
 settings, warnings and hooks are the OCC module's too."""
 import json
+import os
 import subprocess
 import sys
 
@@ -17,7 +18,7 @@ WITHOUT_OCC = "import sys\nsys.modules['netgen'] = sys.modules['ngsolve'] = sys.
 NAMES = """
 import json
 import planex as px
-names = {"px": [n for n in dir(px) if n != "_planex_occ"], "_planex": dir(px._planex)}
+names = {"px": [n for n in dir(px) if n not in ("_planex_occ", "_occbuild")], "_planex": dir(px._planex)}
 for cls in px._occ.METHODS:
     if hasattr(px._planex, cls):
         names[cls] = dir(getattr(px._planex, cls))
@@ -114,3 +115,49 @@ def test_the_occ_bindings_refuse_a_core_of_another_version_or_other_sources():
     assert _run(REFUSE.format(module=module, name="_layout", value="(1,)")).strip() == (
         f"planex's OCC bindings (planex2d {version}) are built from other sources than this planex2d's core: build both "
         "from the same sources")
+
+
+# what an import of planex says and leaves when its OCC bindings do not fit: the warning, whether the bindings are
+# loaded, what an OCC call raises
+UNFIT = """
+import sys
+import warnings
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always")
+    import planex as px
+for w in caught:
+    if issubclass(w.category, px.PlanexWarning):
+        print(type(w.message).__name__, w.message)
+print(sys.modules.get("planex._planex_occ") is not None)
+try:
+    px.Pad(px.Face([px.FromPolyline([(0, 0), (1, 0), (1, 1)], closed=True)]), 1)
+except ImportError as e:
+    print(type(e).__name__, e)
+"""
+
+
+@pytest.mark.subprocess
+def test_a_planex2d_occ_that_does_not_fit_leaves_planex_importable_with_a_warning(tmp_path):
+    pytest.importorskip("netgen")
+    why = "planex2d-occ 0.0.1 has no module for netgen 9.9: pip install --upgrade planex2d[occ]"
+    (tmp_path / "planex_occ").mkdir()
+    (tmp_path / "planex_occ" / "__init__.py").write_text(f"raise ImportError({why!r})\n")
+    code = "import sys\nsys.modules['planex._planex_occ'] = None\n" + UNFIT
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
+                         env={**os.environ, "PYTHONPATH": str(tmp_path)}).stdout
+    assert out.splitlines() == ["PlanexWarning planex's OCC integration is not loaded: " + why, "False",
+                                "_OCCMissing Pad needs planex's OCC integration: " + why]
+
+
+@pytest.mark.subprocess
+def test_a_build_for_another_netgen_leaves_its_bindings_unloaded_with_a_warning():
+    built = _occ._built_netgen()
+    if built is None:
+        pytest.skip("not a build from source that recorded its netgen")
+    code = ("import importlib.metadata as m\nreal = m.version\n"
+            "m.version = lambda name: '0.0.1' if name == 'netgen-mesher' else real(name)\n") + UNFIT
+    why = (f"this planex's OCC bindings are built for netgen {built}, netgen 0.0.1 is installed: pip install "
+           "--no-build-isolation --force-reinstall planex2d builds them for it")
+    unfit = "planex's OCC integration is not loaded: "
+    assert _run(code).splitlines() == ["PlanexWarning " + unfit + why, "False",
+                                       "_OCCMissing Pad needs planex's OCC integration: " + why]

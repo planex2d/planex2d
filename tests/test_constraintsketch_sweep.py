@@ -103,7 +103,7 @@ def test_both_ends_and_the_radius_make_the_sweep_redundant():
     sk.Constrain("bend.end", px.Fix)
     sk.Constrain("bend", px.Radius, 1, id="r")
     assert sk.dof == 0
-    with pytest.warns(px.PlanexWarning, match=re.escape('sw ("bend", px.Angle, 90) is redundant (consistent)')):
+    with pytest.warns(px.PlanexWarning, match=re.escape('sw ("bend", px.Angle, 90) follows from Fix.1, Fix.2, r; remove one of them')):
         sk.Constrain("bend", px.Angle, 90, id="sw")
     assert "sw" in sk.redundant
     with pytest.warns(px.PlanexWarning, match="no solution"):

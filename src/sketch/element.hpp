@@ -60,11 +60,13 @@ namespace planex2d::sketch {
             p[kind == ElementKind::Line ? 1 : 3] = end;
         }
         void SetPieceIndex(size_t piece) { p[1] = piece; }
+        void SetOffsetCurveIndex(size_t curve) { p[0] = curve; }
 
         size_t Spline(const Geometry &g) const;
-        // its kind as the ids and sk.elements name it: a fitted spline is a Curve
+        // its kind as the ids and sk.elements name it: a fitted spline is a Curve, a spline by its poles a BSpline
         std::string KindName(const Geometry &g) const;
         bool IsFitted(const Geometry &g) const;
+        bool IsPoled(const Geometry &g) const;
         const SplinePiece *Piece(const Geometry &g) const;
         bool IsPiece(const Geometry &g) const { return Piece(g) != nullptr; }
         std::array<size_t, 2> Ends(const Geometry &g) const;
@@ -98,8 +100,8 @@ namespace planex2d::sketch {
         std::array<double, 2> Range(const Geometry &g, const planex2d::Curve<double, Vertex> &f) const;
         // the points it runs through with their chord lengths, from its start to its end
         std::vector<std::pair<double, Vertex>> Nodes(const Geometry &g, const planex2d::Curve<double, Vertex> &f) const;
-        // every point it runs through among them exactly
-        std::vector<Vertex> SplinePath(const Geometry &g, size_t perPiece = 16) const;
+        // for drawing it: within tol of the curve, every point it runs through among them exactly
+        std::vector<Vertex> SplinePath(const Geometry &g, double tol) const;
         // a spline, or an offset curve along its spline
         CurveEval Evaluator(const Geometry &g) const;
         SplineSpan Span(const Geometry &g) const;
@@ -107,8 +109,8 @@ namespace planex2d::sketch {
         OffsetRun Run(const Geometry &g) const;
         // the places an offset curve runs through, along its run (w): its end points and its spline's points between
         std::vector<std::pair<double, Vertex>> OffsetNodes(const Geometry &g, const OffsetRun &run) const;
-        // its ends and its places over its spline's points among them exactly
-        std::vector<Vertex> OffsetCurvePath(const Geometry &g, size_t perPiece = 16) const;
+        // for drawing it: within tol of the curve, its ends and its places over its spline's points among them exactly
+        std::vector<Vertex> OffsetCurvePath(const Geometry &g, double tol) const;
         // an offset curve's arcs and lines within spline_tol (atol, if asked) of the exact curve, along its run
         std::vector<PrimitiveEdge> OffsetCurveArcs(const Geometry &g, double *tolerance = nullptr) const;
 

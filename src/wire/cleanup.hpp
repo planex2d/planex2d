@@ -257,10 +257,9 @@ namespace planex2d {
         }, e);
     }
 
-    // per small edge, the length of the run of small edges it lies in (small edges meeting at their ends)
-    inline std::vector<double> SmallRunLengths(const EdgeList &edges, const std::vector<Vertex> &pts, Grid &grid,
-                                               const std::vector<bool> &isSmall) {
-        const size_t n = edges.size();
+    // per small edge, the run of small edges it lies in (small edges meeting at their ends), as one edge of it
+    inline std::vector<size_t> SmallRuns(const std::vector<Vertex> &pts, Grid &grid, const std::vector<bool> &isSmall) {
+        const size_t n = isSmall.size();
         std::vector<size_t> run(n);
         for (size_t i = 0; i < n; ++i)
             run[i] = i;
@@ -277,18 +276,27 @@ namespace planex2d {
                     run[root(j / 2)] = root(k / 2);
             });
         }
+        for (size_t i = 0; i < n; ++i)
+            run[i] = root(i);
+        return run;
+    }
+    // per small edge, the length of the run of small edges it lies in
+    inline std::vector<double> SmallRunLengths(const EdgeList &edges, const std::vector<Vertex> &pts, Grid &grid,
+                                               const std::vector<bool> &isSmall) {
+        const size_t n = edges.size();
+        const std::vector<size_t> run = SmallRuns(pts, grid, isSmall);
         std::vector<double> total(n, 0.0);
         for (size_t i = 0; i < n; ++i)
             if (isSmall[i])
-                total[root(i)] += LengthOf(edges[i]);
+                total[run[i]] += LengthOf(edges[i]);
         std::vector<double> length(n, 0.0);
         for (size_t i = 0; i < n; ++i)
             if (isSmall[i])
-                length[i] = total[root(i)];
+                length[i] = total[run[i]];
         return length;
     }
 
-    inline void Wire::RemoveSmallEdges(double tol, bool splinePieces) {
+    inline void Wire::RemoveSmallEdges(double tol, bool splinePieces, const std::vector<std::string> &sides) {
         static Timer t("planex RemoveSmallEdges");
         Region reg(t);
         size_t n = edges.size();
@@ -307,8 +315,7 @@ namespace planex2d {
             return;
         std::vector<Vertex> pts = Endpoints();
         Grid grid = Grid::Of(pts, 0.0);
-        // each small edge goes to its midpoint, one after the other, so a run of them shrinks to one point: a spline's
-        // pieces go only where their whole run is no longer than tol
+        // a spline's pieces go only where their whole run is no longer than tol
         if (splinePieces) {
             const std::vector<double> run = SmallRunLengths(edges, pts, grid, isSmall);
             for (size_t i = 0; i < n; ++i)
@@ -324,18 +331,44 @@ namespace planex2d {
             for (size_t j : at)
                 Move(pts, grid, j, to);
         };
+        const std::vector<size_t> run = SmallRuns(pts, grid, isSmall);
+        std::vector<bool> onSide(n);
+        for (size_t i = 0; i < n; ++i)
+            onSide[i] = !isSmall[i] && std::find(sides.begin(), sides.end(), NameOf(PropsOf(edges[i]))) != sides.end();
+        auto endsSide = [&](const Vertex &p) {
+            bool found = false;
+            grid.ForCell(p, [&](size_t j) { found = found || (onSide[j / 2] && pts[j] == p); });
+            return found;
+        };
+        std::vector<std::vector<Vertex>> corners(n);
+        std::vector<size_t> edgesOf(n, 0);
         for (size_t i = 0; i < n; ++i) {
             if (!isSmall[i])
                 continue;
             removed[i] = true;
-            Vertex a = pts[2 * i], b = pts[2 * i + 1];
-            if (a == b) {
-                Warning() << "chain of small edges collapsed at (" << a.x << ", " << a.y << ")";
+            ++edgesOf[run[i]];
+            std::vector<Vertex> &c = corners[run[i]];
+            for (const Vertex &p : {pts[2 * i], pts[2 * i + 1]})
+                if (std::find(c.begin(), c.end(), p) == c.end())
+                    c.push_back(p);
+        }
+        for (size_t r = 0; r < n; ++r) {
+            if (corners[r].empty())
                 continue;
+            Vertex all, ends;
+            size_t held = 0;
+            for (const Vertex &p : corners[r]) {
+                all = all + p;
+                if (endsSide(p)) {
+                    ends = ends + p;
+                    ++held;
+                }
             }
-            Vertex m = (a + b) * 0.5;
-            moveAll(a, m);
-            moveAll(b, m);
+            const Vertex m = held > 0 ? ends / (double)held : all / (double)corners[r].size();
+            if (edgesOf[r] >= corners[r].size())
+                Warning() << "chain of small edges collapsed at (" << m.x << ", " << m.y << ")";
+            for (const Vertex &p : corners[r])
+                moveAll(p, m);
         }
         for (size_t i = 0; i < n; ++i)
             if (!removed[i] && !IsClosedEdge(edges[i]) && pts[2 * i] == pts[2 * i + 1]) {
@@ -362,18 +395,18 @@ namespace planex2d {
         Erase(removed);
     }
 
-    inline Wire Wire::Cleaned(const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup) const {
+    inline Wire Wire::Cleaned(const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup, const std::vector<std::string> &sides) const {
         Wire w = *this;
         w.RemoveSmallGaps(cleanup.close_gaps_smaller);
         // edges below the merge tolerance go first: lines merged across them can change which loops there are
-        w.RemoveSmallEdges(std::min(cleanup.remove_edges_smaller, cleanup.merge_collinear_closer));
+        w.RemoveSmallEdges(std::min(cleanup.remove_edges_smaller, cleanup.merge_collinear_closer), false, sides);
         w.MergeCollinearEdges(cleanup.merge_collinear_closer);
         if (arcs.enabled)
             w.FitArcs(arcs);
         if (fit.enabled)
             w.FitSplines(fit);
         // what is left goes to OCC as it is, OCC takes no edge shorter than its precision
-        w.RemoveSmallEdges(cleanup.remove_edges_smaller, true);
+        w.RemoveSmallEdges(cleanup.remove_edges_smaller, true, sides);
         if (cleanup.remove_free_edges)
             w.RemoveFreeEdges();
         return w;

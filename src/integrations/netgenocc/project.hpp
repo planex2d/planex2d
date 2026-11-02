@@ -237,6 +237,18 @@ namespace planex2d {
         return tol;
     }
 
+    // projected edges cut where they cross, those falling together once: neighbouring edges end in the same projected
+    // point up to rounding (tol, OCC's)
+    inline void ArrangeProjected(Wire &w, double tol) {
+        w.RemoveSmallGaps(tol);
+        std::vector<CutState> state(w.Size());
+        Arrange(w, state);
+        // a crossing cut near an end leaves a piece shorter than OCC's tolerance: it goes, its neighbours meet again
+        w.Erase(EpsEdges(w, tol, [](size_t) { return true; }));
+        w.RemoveSmallGaps(tol);
+        w.MergeOnCarriers();
+    }
+
     // straight onto the plane of axes, in its coordinates. Lines stay lines, circles parallel to the plane stay arcs,
     // other curves become exact splines (a parallel projection maps a b-spline's poles, weights stay). A curve seen
     // edge-on becomes the segment it covers, an edge seen end-on a point. Edges that fall onto each other stay once
@@ -270,14 +282,7 @@ namespace planex2d {
         std::stable_sort(projected.begin(), projected.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
         for (auto &[height, e] : projected)
             out.wire.Add(std::move(e));
-        // neighbouring edges end in the same projected point, up to rounding
-        out.wire.RemoveSmallGaps(tol);
-        std::vector<CutState> state(out.wire.Size());
-        Arrange(out.wire, state);
-        // a crossing cut near an end leaves a piece shorter than OCC's tolerance: it goes, its neighbours meet again
-        out.wire.Erase(EpsEdges(out.wire, tol, [](size_t) { return true; }));
-        out.wire.RemoveSmallGaps(tol);
-        out.wire.MergeOnCarriers();
+        ArrangeProjected(out.wire, tol);
         // a point at a vertex of the projected edges adds nothing (the side edges of a prism seen end-on)
         out.points = PointsOffEdges(std::move(out.points), out.wire, tol);
         return out;

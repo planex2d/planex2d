@@ -69,6 +69,14 @@ namespace planex2d {
             if (std::none_of(a.begin(), a.end(), [&](const Identification &j) { return j.name == i.name; }))
                 a.push_back(i);
     }
+    inline std::vector<std::string> SidesOf(const Identifications &ids) {
+        std::vector<std::string> sides;
+        for (const Identification &i : ids) {
+            sides.push_back(i.from);
+            sides.push_back(i.to);
+        }
+        return sides;
+    }
     // after the plane's points move by motion
     inline void MoveIdentifications(Identifications &ids, const Affine2 &motion) {
         for (Identification &i : ids)

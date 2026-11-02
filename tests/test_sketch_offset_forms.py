@@ -5,6 +5,7 @@ import math
 
 import pytest
 
+from helpers import offset_band
 import planex as px
 
 BOTH = [px.QuickSketch, pytest.param(px.Sketch, marks=pytest.mark.constraints)]
@@ -30,7 +31,7 @@ def ell_wire():
 @pytest.mark.parametrize("corners", [px.Round, px.Sharp, px.Chamfer])
 def test_a_sketch_band_has_the_wire_band_s_area(make, ends, corners):
     sk = ell(make).Offset(["a", "b"], 1, ends=ends, corners=corners, id="w", construction=False)
-    assert sk.Face().mass == pytest.approx(ell_wire().Offset(1, ends=ends, corners=corners).mass, rel=1e-9)
+    assert sk.Face().mass == pytest.approx(offset_band(ell_wire(), 1, ends=ends, corners=corners).mass, rel=1e-9)
 
 
 @pytest.mark.parametrize("make", BOTH)
@@ -62,7 +63,7 @@ def test_a_sharp_corner_beside_an_arc_runs_on_straight(make):
     sk = line_arc(make).Offset(["a", "c"], 1, corners=px.Sharp, id="w", construction=False)
     w = line_arc(None).Wire()
     assert any(i.endswith(".before") or i.endswith(".after") for i in ids(sk))
-    assert sk.Face().mass == pytest.approx(w.Offset(1, corners=px.Sharp).mass, rel=1e-9)
+    assert sk.Face().mass == pytest.approx(offset_band(w, 1, corners=px.Sharp).mass, rel=1e-9)
 
 
 @pytest.mark.parametrize("make", BOTH)
@@ -81,7 +82,7 @@ def test_the_forms_follow_a_new_distance(ends, corners):
     sk.Offset(["a", "b"], 1, ends=ends, corners=corners, id="w", construction=False)
     sk["w.d"] = 2
     sk.Update()
-    assert sk.Face().mass == pytest.approx(ell_wire().Offset(2, ends=ends, corners=corners).mass, rel=1e-9)
+    assert sk.Face().mass == pytest.approx(offset_band(ell_wire(), 2, ends=ends, corners=corners).mass, rel=1e-9)
 
 
 @pytest.mark.constraints
@@ -91,7 +92,7 @@ def test_spurs_follow_a_new_distance():
     sk["w.d"] = 0.5
     sk.Update()
     w = line_arc(None).Wire()
-    assert sk.Face().mass == pytest.approx(w.Offset(0.5, ends=px.Square, corners=px.Sharp).mass, rel=1e-9)
+    assert sk.Face().mass == pytest.approx(offset_band(w, 0.5, ends=px.Square, corners=px.Sharp).mass, rel=1e-9)
 
 
 def test_one_side_has_no_caps_whatever_the_ends():

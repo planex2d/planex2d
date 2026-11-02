@@ -168,6 +168,16 @@ if(PLANEX_WITH_OCC)
     if(PLANEX_CORE)
         # a development build: the libraries where this machine has them
         set_target_properties(_planex_occ PROPERTIES INSTALL_RPATH "${NETGEN_LIBRARY_DIR};${OpenCASCADE_LIBRARY_DIR}")
+        # the netgen the bindings are compiled against, from pip's metadata (empty without it): under another one planex
+        # leaves them unloaded and says how to build them again
+        execute_process(COMMAND ${Python3_EXECUTABLE} -c
+                "import importlib.metadata as m; print(m.version('netgen-mesher'))"
+            OUTPUT_VARIABLE planex_netgen_version OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_occbuild.py
+             "# SPDX-FileCopyrightText: 2026 Sebastian Hirnschall\n# SPDX-License-Identifier: LGPL-2.1-or-later\n\n"
+             "# the netgen-mesher version this planex's OCC bindings are compiled against\n"
+             "NETGEN = \"${planex_netgen_version}\"\n")
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/_occbuild.py DESTINATION planex)
     else()
         # planex2d-occ: the module at PLANEX_OCC_DESTINATION in site-packages finds netgen's and OpenCASCADE's libraries
         # where their wheels put them (site-packages/netgen_mesher.libs or netgen, and <prefix>/lib two levels above

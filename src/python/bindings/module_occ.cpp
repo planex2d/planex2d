@@ -58,7 +58,7 @@ PYBIND11_MODULE(_planex_occ, m) {
                                "this planex2d's core: build both from the same sources");
     m.attr("_core_version") = PLANEX_VERSION;
     config::state = core.attr("_state").cast<py::capsule>().get_pointer<config::State>();
-    occ = core.attr("_occ_hooks").cast<py::capsule>().get_pointer<OCCHooks>();
+    occHooks = core.attr("_occ_hooks").cast<py::capsule>().get_pointer<OCCHooks>();
     const auto *services = core.attr("_services").cast<py::capsule>().get_pointer<CoreServices>();
     executorOf = services->executor;
     Profiler::of = services->profiler;

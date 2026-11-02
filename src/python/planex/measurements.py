@@ -7,6 +7,8 @@ A measurement is a callable f(obj, **params) returning its value. One that can b
 samples=n) and then returns {"points": [(h, v), ...], "values": [...], "label": ..., "value": ..., "marks": [...]}
 for px.PlotField(f, obj); with "discs": [(h, v, r, value), ...] a point inside takes the largest value of the
 discs covering it instead of the interpolation."""
-from ._measurements import Clearance, Hausdorff, HydraulicDiameter, MaxThickness, MinThickness, TorsionConstant
+from ._measurements import (Clearance, ConvexHull, EnclosingCircle, EnclosingRectangle, Hausdorff, HydraulicDiameter,
+                            MaxThickness, MinThickness, TorsionConstant)
 
-__all__ = ["Clearance", "Hausdorff", "HydraulicDiameter", "MaxThickness", "MinThickness", "TorsionConstant"]
+__all__ = ["Clearance", "ConvexHull", "EnclosingCircle", "EnclosingRectangle", "Hausdorff", "HydraulicDiameter",
+           "MaxThickness", "MinThickness", "TorsionConstant"]

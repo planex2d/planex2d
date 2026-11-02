@@ -5,7 +5,7 @@ import pytest
 from netgen import occ
 
 import planex as px
-from helpers import ends, point, polygon_area, seg, square
+from helpers import ends, point, polygon_area, seg, square, offset_band
 
 
 def test_wires_are_the_connected_ones_and_wire_takes_one():
@@ -74,7 +74,7 @@ def test_wire_exports_take_the_cleanup_options():
 def test_wires_and_polygons_keep_their_axes():
     axes = occ.Axes((0, 0, 1), occ.Z, occ.X)
     wp = px.QuickSketch(axes).Rectangle(1, 1)
-    for shape in (wp.Wire().ToOCCWire(), wp.Face().Wire().ToOCCWire(), wp.Face().ToOCCFace(), wp.Wire().Offset(0.1).ToOCCFace()):
+    for shape in (wp.Wire().ToOCCWire(), wp.Face().Wire().ToOCCWire(), wp.Face().ToOCCFace(), offset_band(wp.Wire(), 0.1).ToOCCFace()):
         assert all(v.p.z == pytest.approx(1) for v in shape.vertices)
     with pytest.raises(ValueError, match="different planes"):
         wp.Wire() + px.Move((0, 0)).Rectangle(1, 1).Wire()

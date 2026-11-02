@@ -116,7 +116,6 @@ def ToSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, s
 
 
 STATE = {"full": "#2b8a3e", "under": "black", "over": "#d6338c"}
-# projected geometry (Sketch.Project), CATIA's yellow darkened to read on white
 PROJECTED = "#d4a017"
 
 
@@ -263,7 +262,7 @@ def _drafting(sketch, everything, k, font):
     # the centre lines first: the radii, diameters and leaders keep clear of them
     centres = dims.CenterLines({i: g for i, g in everything.items() if g["kind"] != "Axis"}, found, mm, outline)
     layout.drawn.append(centres)
-    out = {d.id: layout.Draw(d) for d in sorted(found, key=lambda d: (d.kind != "linear", d.span))}
+    out = {d.id: layout.Draw(d) for d in dims.Ordered(found)}
     out["center lines"] = centres
     return out, mm
 
@@ -665,9 +664,11 @@ def _signs(sketch, everything, k=None, font=10):
             p = center(refs[0])
             occupy(p, (0.0, 0.0), (6.0, 6.0))
             items.append(("text", p, (0.0, 0.0), "◎", 0))
-        elif kind == "Fix" and drawn:
+        elif kind in ("Fix", "FixH", "FixV") and drawn:
             p, n = middle(drawn[0]) if drawn[0] in paths else (center(drawn[0]), (0.0, 1.0))
             items.append(("anchor", p, spot(p, n, (7.0, 8.0))))
+            if kind != "Fix":
+                items.append(label(p, n, kind[3]))
         elif c["id"] in drafted:
             items.append(("drafting", drafted[c["id"]], mm, font))
         elif c["value"] is not None:

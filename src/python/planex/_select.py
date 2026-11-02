@@ -23,7 +23,7 @@ from ._sketches import Sketch, sketch_types
 
 if TYPE_CHECKING:
     from ._compound import Compound
-    from ._planex import Vertex
+    from ._planex import Constraint, MinimalType, Vertex
 
 
 class _Owners:
@@ -680,6 +680,34 @@ def _matches(item, key):
 NEAR = ("near", "nearh", "nearv", "nearx", "neary", "nearz")
 
 
+def _propagated(among, chosen, propagate):
+    """chosen and the edges among the others that continue them across their ends with propagate's continuity, a
+    sketch's drawn elements drawn ones and its construction elements construction ones"""
+    if propagate is px.Minimal:
+        return chosen
+    if not isinstance(propagate, px.Constraint) or propagate not in (px.Coincident, px.Tangent, px.Curvature):
+        raise ValueError("selection(propagate=%r): px.Minimal, px.Coincident, px.Tangent or px.Curvature" % (propagate,))
+    groups = {}
+    for i in among:
+        if isinstance(i, px.EdgeView):
+            groups.setdefault(False, []).append(i)
+        elif isinstance(i, SketchElement) and not isinstance(i, SketchPoint):
+            groups.setdefault(bool(i.construction), []).append(i)
+    out = list(chosen)
+    taken = {id(i) for i in out}
+    for group in groups.values():
+        index = {id(i): k for k, i in enumerate(group)}
+        seeds = [index[id(i)] for i in chosen if id(i) in index]
+        if not seeds:
+            continue
+        chains = [i.sketch.Wire(i.local) if isinstance(i, SketchElement) else i for i in group]
+        for k in px._Propagated(chains, seeds, propagate):
+            if id(group[k]) not in taken:
+                taken.add(id(group[k]))
+                out.append(group[k])
+    return out
+
+
 class Selection:
     """Elements of an object, chosen: edges, faces, vertices, sketch elements and points.
 
@@ -720,8 +748,9 @@ class Selection:
             return Selection(self._items[j] for j in k)
         return self._items[k]
 
-    def __call__(self, *keys: Any, name: str | None = None, kind: str | None = None, **near: Any) -> Selection:
-        """The elements the keys name, of that name and kind, nearest to a point.
+    def __call__(self, *keys: Any, name: str | None = None, kind: str | None = None,
+                 propagate: Constraint | MinimalType = px.Minimal, **near: Any) -> Selection:
+        """The elements the keys name, of that name and kind, nearest to a point, and those that continue them.
 
         Args:
             keys: what to keep: an index or a list of indices; an id ("Line.3", "Shape.1.Line.3"; a negative number
@@ -729,23 +758,28 @@ class Selection:
                 one part, ** any number); a point an element's id names ("Line.3.end", "Line.3.mid", "Arc.2.center");
                 or an element. Several keys keep the elements of each, once.
             name: keeps the elements with this name; several joined by | ("web|flange").
-            kind: keeps the elements of this kind: "line", "arc", "circle", "spline", "face", "vertex", "point";
-                several joined by | ("arc|circle").
+            kind: keeps the elements of this kind: "line", "arc", "circle", "spline", "bspline", "face", "vertex",
+                "point"; several joined by | ("arc|circle").
             near: near=point keeps the element nearest to the point ((h, v), (x, y, z), or the center of an element or
                 a one-element selection): its distance to the element itself, so a line through the point is at 0 and
                 an arc at its distance from the arc, not from its circle's center; of elements equally near, the one
                 whose center is nearest, and an element before a point (a circle by its center: kind="circle",
                 near=center). nearh=, nearv=, nearx=, neary=, nearz= the one whose center is nearest to that
                 coordinate.
+            propagate: px.Minimal (the default) keeps the chosen elements alone; px.Coincident, px.Tangent or
+                px.Curvature adds the edges of this selection that continue them across their ends, meeting there
+                (tangentially, with equal curvature too: directions within 1e-9 rad, curvatures within 1e-9
+                relative), up to where two or more would (a branch). A sketch's construction elements continue
+                construction elements only.
 
         Raises:
             ValueError: an id names no element here (the error names the closest ids), a negative number is out of
-                range, or near= is a selection of several elements.
+                range, near= is a selection of several elements, or propagate= is no continuity.
             TypeError: an unknown keyword.
 
         Examples:
             shape.edges("Line.3", "Line.5")
-            shape.edges(kind="arc", near=(0, 10))
+            shape.edges(kind="arc", near=(0, 10), propagate=px.Tangent)
         """
         unknown = set(near) - set(NEAR)
         if unknown:
@@ -797,7 +831,7 @@ class Selection:
                 tied = [i for c, i in centres if c <= nearest + tol]
             # equally near (a line and its end point): not the point
             items = [next((i for i in tied if _kind(i) not in ("point", "vertex")), tied[0])]
-        return Selection(items)
+        return Selection(_propagated(self._items, items, propagate))
 
     def Min(self, key: str | Coordinate | Any) -> Selection:
         """The element with the smallest value of key, as a selection of one (none if it is empty).
@@ -930,18 +964,25 @@ class Selection:
         return self._items[0]
 
     def Measure(self, *args: Any, **kwargs: Any) -> dict:
-        """The measures of the one selected element, as its Measure.
+        """The measures of the one selected element, as its Measure; with at= of several edges, along their chain.
 
         Args:
             args: the arguments of the element's Measure.
-            kwargs: its keyword arguments.
+            kwargs: its keyword arguments; at= (an arc length, or a point) with several edges measures the place along
+                the chain they form, edge the selected element it lies on.
 
         Raises:
-            ValueError: the selection does not hold exactly one element.
+            ValueError: the selection does not hold exactly one element (with at=: its edges do not form one chain).
 
         Examples:
             shape.edges("Line.3").Measure()
+            face.edges(near=(2, 0), propagate=px.Tangent).Measure(at=5.0)
         """
+        if kwargs.get("at") is not None and len(self._items) > 1 and not args and set(kwargs) == {"at"}:
+            items = self._items
+            found = px._MeasureAt(self._edge_parts("Measure"), kwargs["at"])
+            found["edge"] = items[found["edge"]]
+            return found
         return self._one("Measure").Measure(*args, **kwargs)
 
     def Distance(self, *args: Any, **kwargs: Any) -> Any:
@@ -1120,12 +1161,13 @@ def add_selectors():
         return list(found.values())
 
     def sketch_call(self, *a, **k):
-        if a:
+        # a selection that propagates looks at every element
+        if a and k.get("propagate", px.Minimal) is px.Minimal:
             items = direct(self, a)
             if items is not None:
                 return Selection(items)(**k)
         items = [SketchPoint(self, i) if kind == "Point" else SketchElement(self, i, kind)
-                 for kind, ids in self.elements.items() if kind in ("Point", "Line", "Arc", "Circle", "Spline", "Curve")
+                 for kind, ids in self.elements.items() if kind in ("Point", "Line", "Arc", "Circle", "Spline", "BSpline", "Curve")
                  for i in ids if i not in ("origin", "px.origin")]
         a = [from_end(self, key) for key in a]
         # the points of a cut element (Line.3.end), which is the span of its pieces and no element of its own here

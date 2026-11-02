@@ -51,6 +51,9 @@ namespace planex2d::cs {
         // the free unknowns of a spline, sorted
         static std::vector<size_t> UnknownsOf(const sketch::Geometry &g, const SplineData &d) {
             std::vector<size_t> out(d.tangent);
+            for (size_t c : d.curvature)
+                if (c != sketch::none)
+                    out.push_back(c);
             for (size_t p : d.points) {
                 out.push_back(g.coordsOf[p]);
                 out.push_back(g.coordsOf[p] + 1);
@@ -103,8 +106,15 @@ namespace planex2d::cs {
                 return Store(of, Placed(*d.fitted));
             if (d.blend)
                 return Store(of, Blended(d));
+            if (d.poled) {
+                std::vector<DualVector> poles;
+                for (size_t p : d.points)
+                    poles.push_back(At(p));
+                return Store(of, PoleCurve<Dual, DualVector>(poles, d.poled->knots, d.poled->degree, d.closed));
+            }
             if (std::all_of(d.points.begin(), d.points.end(), [&](size_t p) { return s.held[s.coordsOf[p]] && s.held[s.coordsOf[p] + 1]; }) &&
-                std::all_of(d.tangent.begin(), d.tangent.end(), [&](size_t a) { return bool(s.held[a]); })) {
+                std::all_of(d.tangent.begin(), d.tangent.end(), [&](size_t a) { return bool(s.held[a]); }) &&
+                std::all_of(d.curvature.begin(), d.curvature.end(), [&](size_t c) { return c == sketch::none || s.held[c]; })) {
                 // held for good (projected): its values, no derivatives
                 return Store(of, Converted(d.Interpolated(s), [](double k) { return Dual(k); }));
             }
@@ -157,7 +167,12 @@ namespace planex2d::cs {
                 const Dual angle = Var(a);
                 t.push_back({Cos(angle), Sin(angle)});
             }
-            return Interpolate<Dual>(q, d.tangentAt, t, d.closed, [](const DualVector &v) { return Norm(v); }, d.style);
+            std::vector<TangentSetting<Dual>> settings;
+            for (size_t k : d.tangentAt) {
+                const size_t c = d.CurvatureAt(k);
+                settings.push_back({Dual(d.TensionAt(k)), c == sketch::none ? std::nullopt : std::optional<Dual>(Var(c))});
+            }
+            return Interpolate<Dual>(q, d.tangentAt, t, d.closed, [](const DualVector &v) { return Norm(v); }, d.style, settings);
         }
         // the shared curve, whose derivatives run over the spline's own unknowns, with them over this constraint's
         Curve<Dual, DualVector> Remapped(const Curve<Dual, DualVector> &g, const std::vector<size_t> &own) const {
@@ -242,7 +257,7 @@ namespace planex2d::cs {
             const std::vector<Dual> &u = CurveOf(e).params;
             for (size_t k = 0; k < d.points.size(); ++k)
                 if (s.coordsOf[d.points[k]] == s.coordsOf[point])
-                    return d.fitted ? (k == 0 ? u.front() : u.back()) : u[k];
+                    return d.fitted || d.poled ? (k == 0 ? u.front() : u.back()) : u[k];
             return u.back();
         }
         // the curvature of a line, arc, circle, spline or offset curve at one of its points, signed along TangentAt (a
@@ -273,7 +288,11 @@ namespace planex2d::cs {
                 return At(r.PointAt(s));
             if (e.kind == ElementKind::OffsetCurve) {
                 const std::array<Dual, 2> t = OffsetRange(e);
-                return CurveAt(e, (t[0] + t[1]) * Dual(0.5), 0);
+                const Dual end = CurveOf(e).params.back();
+                Dual mid = (t[0] + (t[1].v < t[0].v ? t[1] + end : t[1])) * Dual(0.5);
+                if (mid.v > end.v)
+                    mid = mid - end;
+                return CurveAt(e, mid, 0);
             }
             if (e.kind == ElementKind::Spline) {
                 const Dual end = CurveOf(e).params.back();
@@ -340,6 +359,9 @@ namespace planex2d::cs {
         }
         for (size_t a : d.tangent)
             inputs.push_back(x[a]);
+        for (size_t c : d.curvature)
+            if (c != sketch::none)
+                inputs.push_back(x[c]);
         if (k.unknowns != own || k.inputs != inputs) {
             const size_t outer = active;
             k.curve = Eval{g, *this, x, own, scale}.Interpolated(d);

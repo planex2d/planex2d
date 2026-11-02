@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -23,16 +24,21 @@ namespace planex2d::sketch {
     enum class Kind {
         Coincident, Horizontal, Vertical, Parallel, Perpendicular, Tangent, Equal, Symmetric, Concentric, Fix,
         Distance, Radius, Diameter, Angle, SymmetricCarriers, OnCircle, Copy, RigidGroup, Expression, Value, Offset, OnCurve, Parameter,
-        Curvature
+        Curvature, FixH, FixV, CurvatureRadius
     };
 
     inline const char *KindName(Kind k) {
         constexpr const char *names[] = {"Coincident", "Horizontal", "Vertical", "Parallel", "Perpendicular", "Tangent",
                                          "Equal", "Symmetric", "Concentric", "Fix", "Distance", "Radius", "Diameter",
                                          "Angle", "SymmetricCarriers", "OnCircle", "Copy", "RigidGroup", "Expression", "Value",
-                                         "Offset", "OnCurve", "Parameter", "Curvature"};
+                                         "Offset", "OnCurve", "Parameter", "Curvature", "FixH", "FixV",
+                                         "CurvatureRadius"};
         return names[(size_t)k];
     }
+
+    inline bool IsFix(Kind k) { return k == Kind::Fix || k == Kind::FixH || k == Kind::FixV; }
+    // the coordinate a FixH (h) or FixV (v) holds
+    inline size_t HeldCoordinate(Kind k) { return k == Kind::FixV ? 1 : 0; }
 
     // the ties of an offset, of its point j (the first reference) to source element x (the second) at distance d (its
     // side the sign, +1 to the left of x): Point: j = p + d n, n x's unit normal at its point p (the third); Foot: j on
@@ -85,10 +91,20 @@ namespace planex2d::sketch {
             return Added({ElementKind::Axis, {NewValue(a, true, hold), NewValue(d, false, hold)}});
         }
         size_t AddSpline(const std::vector<size_t> &points, const std::vector<size_t> &tangentAt, const std::vector<double> &angles,
-                         bool closed, SplineStyle style = SplineStyle::Averaged) {
+                         bool closed, SplineStyle style = SplineStyle::Averaged, const std::map<size_t, TangentSetting<double>> &settings = {}) {
             SplineData d{points, tangentAt, {}, closed, style};
             for (double a : angles)
                 d.tangent.push_back(NewValue(a, true));
+            for (const auto &[k, setting] : settings) {
+                if (setting.tension != 1.0) {
+                    d.tension.resize(points.size(), 1.0);
+                    d.tension[k] = setting.tension;
+                }
+                if (setting.curvature) {
+                    d.curvature.resize(points.size(), none);
+                    d.curvature[k] = NewValue(*setting.curvature);
+                }
+            }
             splines.push_back(std::move(d));
             // raises for points and tangents that give no spline
             splines.back().Interpolated(*this);
@@ -108,6 +124,21 @@ namespace planex2d::sketch {
             splines.push_back({{start, end}, {}, {}, false, SplineStyle::Averaged, std::nullopt, b});
             return Added({ElementKind::Spline, {splines.size() - 1}});
         }
+        // a spline by its poles, the points (a closed one periodic), knots and degree; raises for ones that give no
+        // b-spline. Its knots start at 0, as the elements' ranges take them
+        size_t AddPoledSpline(const std::vector<size_t> &points, std::vector<double> knots, size_t degree, bool closed) {
+            std::vector<Vertex> q;
+            for (size_t p : points)
+                q.push_back(Coords(p));
+            BSplineCurve({q, knots, {}, (int)degree}, closed);
+            const double first = knots.front();
+            for (double &k : knots)
+                k -= first;
+            SplineData d{points, {}, {}, closed};
+            d.poled = PoleShape{std::move(knots), degree};
+            splines.push_back(std::move(d));
+            return Added({ElementKind::Spline, {splines.size() - 1}});
+        }
         size_t AddSplinePiece(size_t spline, const SplinePiece &piece) {
             pieces.push_back(piece);
             return Added({ElementKind::Spline, {spline, pieces.size()}});
@@ -123,12 +154,37 @@ namespace planex2d::sketch {
             return Added({ElementKind::OffsetCurve, {offsetCurves.size() - 1}});
         }
 
+        // the spline (its index in splines) whose control polygon has line e as a leg, e joining two neighbouring poles of
+        // a b-spline; none for every other element
+        size_t LegOf(const Element &e) const {
+            if (e.kind != ElementKind::Line)
+                return none;
+            for (size_t i = 0; i < splines.size(); ++i) {
+                const SplineData &d = splines[i];
+                if (!d.poled)
+                    continue;
+                const size_t n = d.points.size();
+                for (size_t k = 0; k + 1 < n + (d.closed ? 1 : 0); ++k) {
+                    const size_t a = d.points[k], b = d.points[(k + 1) % n];
+                    if ((e.Start() == a && e.End() == b) || (e.Start() == b && e.End() == a))
+                        return i;
+                }
+            }
+            return none;
+        }
+
         double Size() const {
             double s = 0.0;
             for (size_t u = 0; u < values.size(); ++u)
-                if (!isAngle[u])
+                if (!isAngle[u] && !IsCurvature(u))
                     s = std::max(s, std::abs(values[u]));
             return s > 0.0 ? s : 1.0;
+        }
+        bool IsCurvature(size_t u) const {
+            for (const SplineData &d : splines)
+                if (std::find(d.curvature.begin(), d.curvature.end(), u) != d.curvature.end())
+                    return true;
+            return false;
         }
 
         void RemoveElement(size_t element);

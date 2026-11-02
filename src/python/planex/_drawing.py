@@ -6,6 +6,7 @@ dimensions, and px.Sheet, views at one scale on a DIN sheet, written as SVG and 
 from __future__ import annotations
 
 import datetime
+import functools
 import importlib
 import io
 import math
@@ -18,6 +19,7 @@ import numpy as np
 from . import _dimensions as dims
 from ._auto import Auto, is_auto
 from ._dimensions import ARROW, HEIGHT, NARROW, WIDE
+from ._paths import with_extension
 
 if TYPE_CHECKING:
     from ._planex import Plane
@@ -88,15 +90,66 @@ def _paths(everything):
 
 
 class _Sketched:
-    """one sketch of a view: its drawing by id, its outline (the curves not construction) in the view's coordinates"""
+    """one sketch of a view: its drawing by id in its own coordinates (everything) and with its places in the view's
+    (seen), its outline (the curves not construction) in the view's coordinates"""
 
     def __init__(self, sketch, to_view):
         self.sketch = sketch
         self.everything = {g["id"]: g for g in sketch._Drawing()}
         self.to_view = to_view
         self.flat = to_view is _same
+        o, h, v = to_view([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)])
+        # seen from behind: the sketch's counterclockwise is clockwise in the view
+        self.mirrored = (h - o)[0] * (v - o)[1] - (h - o)[1] * (v - o)[0] < 0
+        self.seen = self.everything if self.flat else {i: self._seen(g) for i, g in self.everything.items()}
         paths = _paths(self.everything)
         self.outline = [to_view(p) for i, p in paths.items() if not self.everything[i]["construction"]]
+        self.ids, self.shared = set(self.everything) - {"H", "V"}, set()
+
+    def key(self, i):
+        """the view's key of this sketch's element or dimension i: its full id where another sketch of the view has i
+        too"""
+        return f"{self.sketch.id}.{i}" if i in self.shared else i
+
+    def along(self, u):
+        """a direction of the sketch in the view's coordinates"""
+        o, w = self.to_view([(0.0, 0.0), tuple(u)])
+        return dims._unit(w - o)
+
+    def dimension(self, d):
+        """a dimension of the sketch in the view's coordinates; an angle's sides swapped when seen from behind"""
+        if self.flat:
+            return d
+        for key in ("u", "a", "b"):
+            if getattr(d, key) is not None:
+                setattr(d, key, self.along(getattr(d, key)))
+        for key in ("p", "q", "c"):
+            if getattr(d, key) is not None:
+                setattr(d, key, self.to_view(getattr(d, key)))
+        if d.lines != (None, None):
+            d.lines = tuple(None if l is None else (self.to_view(l[0]), self.to_view(l[1])) for l in d.lines)
+        if self.mirrored and d.kind == "angle":
+            d.a, d.b, d.legs = d.b, d.a, d.legs[::-1]
+        return d
+
+    def _seen(self, g):
+        out = dict(g)
+        for key in ("point", "start", "end", "center"):
+            if key in g:
+                out[key] = self.to_view(g[key])
+        for key in ("path", "points"):
+            if g.get(key):
+                out[key] = self.to_view(g[key])
+        if "fillet" in g:
+            out["fillet"] = {**g["fillet"], "center": self.to_view(g["fillet"]["center"])}
+        if "ccw" in g:
+            out["ccw"] = g["ccw"] != self.mirrored
+        if g["kind"] == "Axis":
+            t = math.radians(g["normal_angle"])
+            n = np.array([math.cos(t), math.sin(t)])
+            m = self.along(n)
+            out["normal_angle"], out["d"] = math.degrees(math.atan2(m[1], m[0])), float(m @ self.to_view(n * g["d"]))
+        return out
 
 
 def _same(pts):
@@ -110,58 +163,245 @@ def _mapper(plane, view):
         return _same
 
     def to_view(pts):
-        pts = np.atleast_2d(np.asarray(pts, float))
-        xyz = [plane.ToXYZ(tuple(p[:2])) for p in pts]
+        pts = np.asarray(pts, float)
+        xyz = [plane.ToXYZ(tuple(p[:2])) for p in np.atleast_2d(pts)]
         out = np.array([view.ToHV(tuple(q)) for q in xyz])
-        return out if np.ndim(pts) > 1 else out[0]
+        return out if pts.ndim > 1 else out[0]
 
     return to_view
 
 
+class _Pictorial:
+    """a pictorial view's direction (px.Isometric): seen along the plane whose normal points from the part to the
+    viewer, h to the right on the paper"""
+
+    def __init__(self, name, normal, h):
+        self.name, self.normal, self.h = name, normal, h
+
+    def __repr__(self):
+        return "px." + self.name
+
+    @property
+    def plane(self):
+        import planex as px
+
+        return px.Plane(normal=self.normal, axis=self.h)
+
+
+# the true isometric from the front right, the vertical up
+Isometric = _Pictorial("Isometric", (1, -1, 1), (1, 1, 0))
+VIEWS = {"front": "Front view", "top": "Top view", "left": "Left view", "right": "Right view", "rear": "Rear view",
+         "bottom": "Bottom view"}
+# a pictorial's faces: light grey, darker the more a face turns from the light
+SHADE = 0.86
+# a pictorial's image: pixels per mm on paper (about 200 dpi)
+PIXELS = 8
+STANDARDS = ("DIN", "ASME")
+
+
+def _standard(value, call):
+    """a drawing standard given, or px.config.drawing_standard for None"""
+    import planex as px
+
+    if value is None:
+        return px.config.drawing_standard
+    if value not in STANDARDS:
+        raise ValueError(f"{call}: standard {value!r}; it is 'DIN' or 'ASME'")
+    return value
+
+
+def _is_solid(obj):
+    try:
+        from netgen.occ import TopoDS_Shape
+    except ImportError:
+        return False
+    return isinstance(obj, TopoDS_Shape)
+
+
+class _Solid:
+    """an OCC solid seen along a drawing's plane: its edges and fold lines visible (wide), hidden (narrow dashed) and
+    smooth (narrow, visible only) as polylines in the view's coordinates, and as wires for an exact DXF; a section's cut
+    faces as one region (the part cut at the plane, the material behind it kept); a pictorial's shaded triangles"""
+
+    def __init__(self, shape, plane, pictorial, section, hidden):
+        import planex as px
+        from netgen.occ import HalfSpace, Pnt, Vec
+
+        a, b = shape.bounding_box
+        self.size = math.dist((a.x, a.y, a.z), (b.x, b.y, b.z))
+        tol = 2e-4 * self.size
+        self.region = None
+        if section:
+            normal = np.asarray(tuple(plane.normal), float)
+            origin = np.asarray(tuple(plane.origin), float)
+            shape = shape * HalfSpace(Pnt(*origin), Vec(*normal))
+            # the cut's faces lie on the plane up to OCC's intersection, about 1e-7 off: far within this
+            near = 1e-6 * self.size
+            cut = [f for f in shape.faces
+                   if all(abs(float(np.dot(np.asarray(tuple(v.p), float) - origin, normal))) <= near for v in f.vertices)
+                   and abs(float(np.dot(np.asarray(tuple(f.center), float) - origin, normal))) <= near]
+            if cut:
+                self.region = px.Shape(px.Project(cut, plane))
+        self.wires = px._planex._ViewLines(shape, plane)
+
+        def runs(wires):
+            return [np.asarray(run, float) for w in wires for e in w.edges for run in e.Wire().Polylines(tol)]
+
+        self.visible = runs(self.wires["visible"])
+        self.hidden = runs(self.wires["hidden"]) if hidden and not section and not pictorial else []
+        self.smooth = runs(self.wires["smooth"])
+        self.pictorial, self._shape, self._plane = pictorial, shape, plane
+
+    @functools.cached_property
+    def shading(self):
+        """the triangles facing the viewer, back to front, and their light; None for a view that is no pictorial"""
+        import planex as px
+
+        return px._planex._Shading(self._shape, self._plane, 2e-3 * self.size) if self.pictorial else None
+
+    def image(self, pixel):
+        """the pictorial as an image of pixels of size pixel: the light of the nearest face, NaN for none, rows from the
+        top, and its lower left corner"""
+        import planex as px
+
+        return px._planex._ShadedImage(self._shape, self._plane, 2e-3 * self.size, pixel)
+
+    def strokes(self, mm):
+        """the smooth edges, stopped short of the outline, and a section's hatching at 45 degrees, at the scale mm
+        drawing units per paper mm"""
+        out = dims.Strokes("solid")
+        for run in self.smooth:
+            out.lines += _shortened(run, SHORT * mm)
+        if self.region is not None:
+            out.lines += _hatching(self.region.Polylines(1e-3 * self.size), HATCH * mm)
+        return out
+
+
+# smooth edges stop this far short of the outline (DIN's Lichtkanten, as far as known), sections are hatched this far
+# apart, a cutting line runs this far past the outline with wide ends this long, in mm on paper
+SHORT, HATCH, CUT_OVER, CUT_END = 1.0, 2.5, 5.0, 6.0
+
+
+def _greys(light):
+    """a pictorial's face greys (1 white) by how squarely the faces face the light"""
+    return np.clip(SHADE * (0.62 + 0.38 * np.asarray(light, float)), 0, 1)
+
+
+def _shortened(run, by):
+    """a polyline's segments with by taken off at both ends; nothing of one shorter than three times by"""
+    seg = np.linalg.norm(np.diff(run, axis=0), axis=1)
+    total = float(seg.sum())
+    if total <= 3 * by:
+        return []
+    at = np.concatenate([[0.0], np.cumsum(seg)])
+    keep = np.linspace(by, total - by, max(2, len(run)))
+    pts = np.column_stack([np.interp(keep, at, run[:, 0]), np.interp(keep, at, run[:, 1])])
+    return [(pts[k], pts[k + 1], "thin") for k in range(len(pts) - 1)]
+
+
+def _hatching(loops, step):
+    """45-degree lines step apart across the region the loops bound (even-odd: holes stay empty)"""
+    loops = [np.asarray(loop, float) for loop in loops if len(loop) > 2]
+    if not loops:
+        return []
+    pts = np.concatenate(loops)
+    # along u = (1, 1)/sqrt(2), lines at s = constant on the normal (-1, 1)/sqrt(2)
+    s_all = (pts[:, 1] - pts[:, 0]) / math.sqrt(2)
+    out = []
+    for s in np.arange(math.floor(s_all.min() / step) * step + step / 2, s_all.max(), step):
+        cuts = []
+        for loop in loops:
+            closed = np.vstack([loop, loop[:1]])
+            sa = (closed[:-1, 1] - closed[:-1, 0]) / math.sqrt(2)
+            sb = (closed[1:, 1] - closed[1:, 0]) / math.sqrt(2)
+            for k in np.nonzero((sa < s) != (sb < s))[0]:
+                t = (s - sa[k]) / (sb[k] - sa[k])
+                p = closed[k] + t * (closed[k + 1] - closed[k])
+                cuts.append(float(p[0] + p[1]) / math.sqrt(2))
+        cuts.sort()
+        for a, b in zip(cuts[0::2], cuts[1::2]):
+            out.append((np.array([a - s, a + s]) / math.sqrt(2), np.array([b - s, b + s]) / math.sqrt(2), "thin"))
+    return out
+
+
 class Drawing:
-    """A dimensioned drawing of a constraint sketch after DIN practice (DIN ISO 129-1).
+    """A dimensioned drawing after DIN practice (DIN ISO 129-1): a constraint sketch, or a view of a solid.
 
     The drawing keeps the sketch by reference: its outline, center lines and its own dimension constraints are drawn
-    as a drafting drawing (extension and dimension lines, closed arrows, values above the lines with a decimal comma,
+    as a drafting drawing (extension and dimension lines, closed arrows, values above the lines with a decimal comma or,
+    standard="ASME", a decimal point,
     radii and diameters on leaders, equal features once with n×), laid out automatically; Place moves single
-    dimensions, Update draws the sketch anew after it changed. Shown in a notebook by itself; ToSVG, WriteSVG and
-    WritePDF give it on a sheet of its own (px.Sheet for several views).
+    dimensions, Update draws the sketch anew after it changed. A view of an OCC solid shows it projected along a plane
+    (its visible edges and the fold lines of curved faces wide, hidden edges narrow and dashed, smooth edges where faces
+    meet tangentially narrow and short of the outline), cut there as a section (the cut faces hatched), or as a shaded
+    pictorial; Add(sk) puts a sketch's dimensions on it. Shown in a notebook by itself; ToSVG, WriteSVG and WritePDF
+    give it on a sheet of its own (px.Sheet for several views).
 
     Args:
-        sketch: the constraint sketch (px.Sketch) the drawing shows.
-        unit: the length one unit of the sketch stands for (px.m, the default, as planex's geometry; px.mm for a
-            sketch drawn in millimeter numbers); the values are written in millimeters.
+        sketch: the constraint sketch (px.Sketch) the drawing shows, or an OCC solid.
+        plane: for a solid, what it is seen along: px.Front, px.Top, px.Left, px.Right, px.Rear, px.Bottom, any px.Plane
+            (an auxiliary view; the viewer on the side its normal points to), or px.Isometric for a pictorial.
+        unit: the length one unit of the sketch or solid stands for (px.m, the default, as planex's geometry; px.mm for
+            one drawn in millimeter numbers); the values are written in millimeters.
         names: True writes a named dimension as "w = 60" (the plot's way); default the value alone.
-        view_name: the view's name written above it, as ViewName's.
+        view_name: the view's name written above it, as ViewName's; a solid's view names itself unless given
+            ("Front view", "Top view", "Left view", "Right view", "Rear view", "Bottom view", "Isometric view",
+            "Section view", "Auxiliary view" for another plane), "" for none; a section's letters are its name's
+            ("Section view B-B" or "B-B").
+        section: True cuts the solid at the plane and shows the material behind it, the cut faces hatched and no hidden
+            edges.
+        hidden: False leaves a solid's hidden edges out.
+        standard: "DIN" or "ASME", as px.Sheet's, for the drawing on a sheet of its own; on a px.Sheet the sheet's
+            counts. Default px.config.drawing_standard.
 
     Raises:
-        TypeError: sketch is not a px.Sketch.
+        TypeError: sketch is neither a px.Sketch nor an OCC solid; a solid without a plane, or a sketch with one.
+        ValueError: section=True with a sketch or a pictorial; standard is neither "DIN" nor "ASME".
 
     Examples:
         dw = px.Drawing(sk, unit=px.mm)
-        dw.Place("w", 15).WritePDF("plate.pdf")
+        px.Sheet(px.Drawing(part, px.Front, unit=px.mm).Add(sk), px.Drawing(part, px.Isometric, unit=px.mm))
     """
 
-    def __init__(self, sketch, /, unit: float | None = None, names: bool = False, view_name: str | None = None):
+    def __init__(self, sketch, plane=None, /, unit: float | None = None, names: bool = False, view_name: str | None = None,
+                 section: bool = False, hidden: bool = True, standard: str | None = None):
         import planex as px
 
-        if not isinstance(sketch, px.Sketch):
-            raise TypeError("Drawing: a px.Sketch (a QuickSketch has no dimensions; px.Sketch(qs, copy=True) converts it)")
+        self._standard = None if standard is None else _standard(standard, "Drawing")
+        self._solid = None
+        if isinstance(sketch, px.Sketch):
+            if plane is not None:
+                raise TypeError("Drawing(sketch, plane): a sketch is seen on its own plane; a plane goes with an OCC solid")
+            if section:
+                raise ValueError("Drawing(sketch, section=True): a section cuts an OCC solid")
+            self._plane, self._sketches = px.Plane(sketch), [sketch]
+        elif _is_solid(sketch):
+            if plane is None:
+                raise TypeError("Drawing(solid, plane): the plane it is seen along: px.Front, px.Top, ..., a px.Plane or "
+                                "px.Isometric")
+            pictorial = isinstance(plane, _Pictorial)
+            if pictorial and section:
+                raise ValueError("Drawing(solid, px.Isometric, section=True): a section is a view along a plane")
+            self._plane, self._sketches = plane.plane if pictorial else px.Plane(plane), []
+            self._solid = _Solid(sketch, self._plane, pictorial, section, hidden)
+            if view_name is None:
+                view_name = plane.name + " view" if pictorial else "Section view" if section else VIEWS.get(_side(self._plane), "Auxiliary view")
+        else:
+            raise TypeError("Drawing: a px.Sketch (a QuickSketch has no dimensions; px.Sketch(qs, copy=True) converts "
+                            "it), or an OCC solid with the plane it is seen along")
         self.unit = px.m if unit is None else float(unit)
         if not self.unit > 0:
             raise ValueError("Drawing: unit is a positive length (px.mm, px.m, ...)")
         self.names = names
-        self._sketches = [sketch]
         self._places, self._centers, self._axes, self._lines, self._measures = {}, {}, [], [], []
         self._view_name, self._callouts, self._hidden = view_name, [], []
+        self._section, self._cuts = section, []
         self.Update()
 
     @property
     def plane(self) -> Plane:
-        """The plane the view is seen on: its first sketch's."""
-        import planex as px
-
-        return px.Plane(self._sketches[0])
+        """The plane the view is seen on: its first sketch's, or the one its solid is seen along."""
+        return self._plane
 
     def Update(self) -> Drawing:
         """Reads the sketches anew (after their dimensions or geometry changed); the places given stay.
@@ -173,18 +413,24 @@ class Drawing:
 
         view = self.plane
         self._sketched = [_Sketched(sk, _mapper(px.Plane(sk), view)) for sk in self._sketches]
+        found = [dims.Dimensions(s.sketch, s.everything) for s in self._sketched]
+        self._owners = {}
+        for s, ds in zip(self._sketched, found):
+            s.ids |= {d.id for d in ds}
+            for i in s.ids:
+                self._owners.setdefault(i, []).append(s)
         self._dims = []
-        for s in self._sketched:
-            for d in dims.Dimensions(s.sketch, s.everything):
-                for key in ("p", "q", "c"):
-                    if getattr(d, key) is not None:
-                        setattr(d, key, s.to_view(getattr(d, key)))
-                if d.lines != (None, None):
-                    d.lines = tuple(None if l is None else (s.to_view(l[0]), s.to_view(l[1])) for l in d.lines)
+        for s, ds in zip(self._sketched, found):
+            s.shared = {i for i in s.ids if len(self._owners[i]) > 1}
+            for d in ds:
+                d = s.dimension(d)
+                d.id, d.refs = s.key(d.id), tuple(s.key(r) for r in d.refs)
+                d.element = None if d.element is None else s.key(d.element)
                 self._dims.append(d)
         known = {d.id for d in self._dims}
         for i in self._places:
             if i not in known:
+                self._key(i, "Drawing")
                 raise ValueError(f"Drawing: '{i}' is no dimension of the drawing's sketches; they have "
                                  + ", ".join(sorted(known)))
         for key in self._hidden:
@@ -216,7 +462,8 @@ class Drawing:
         """Puts one dimension where it goes instead of where the automatic layout would.
 
         Args:
-            id: the dimension constraint's id.
+            id: the dimension constraint's id; one that two of the view's sketches have by its full id, the sketch's id
+                first ("Sketch.2.Distance.1").
             place: a length or distance: the offset of its dimension line from the measured points, + away from the
                 part's middle, - towards it (measured points on both sides of the middle: + along the drawing's x for
                 a vertical one, its y for a horizontal one); a radius or diameter: the direction of its line, an angle
@@ -234,12 +481,14 @@ class Drawing:
             suffix: written after the value, e.g. "EQS".
 
         Raises:
-            ValueError: id is no dimension of the drawing; a direction is no angle or compass string.
+            ValueError: id is no dimension of the drawing, or one that two of its sketches have; a direction is no
+                angle or compass string.
 
         Examples:
             dw.Place("w", 15)
             dw.Place("hole", "ne", leader=True)
         """
+        id = self._key(id, "Drawing.Place")
         if id not in {d.id for d in self._dims}:
             raise ValueError(f"Drawing.Place: '{id}' is no dimension of the drawing's sketches; they have "
                              + ", ".join(sorted(d.id for d in self._dims)))
@@ -263,18 +512,22 @@ class Drawing:
 
         Args:
             ids: the dimension constraints' ids, or patterns as the sketch's selections take them (* one part of an
-                id, ** any number: "Fillet.*.r").
+                id, ** any number: "Fillet.*.r"); one that two of the view's sketches have by its full id, the
+                sketch's id first ("Sketch.2.Distance.1").
 
         Raises:
-            ValueError: an id without a pattern is no dimension of the drawing.
+            ValueError: an id without a pattern is no dimension of the drawing, or one that two of its sketches have.
 
         Examples:
             dw.Hide("length")
             dw.Hide("Fillet.2.r", "Fillet.3.r", "Fillet.4.r").Place("Fillet.1.r", count=4)
         """
-        for key in ids:
+        from ._select import _is_glob
+
+        keys = [key if _is_glob(key) else self._key(key, "Drawing.Hide") for key in ids]
+        for key in keys:
             self._hides(key, "Drawing.Hide")
-        self._hidden.extend(ids)
+        self._hidden.extend(keys)
         return self
 
     def _hides(self, key, call):
@@ -284,7 +537,7 @@ class Drawing:
 
         known = sorted(d.id for d in self._dims)
         if _is_glob(key):
-            return {i for i in known if _glob(key).fullmatch(i)}
+            return {i for i in known if _glob(key).fullmatch(i) or _glob(key).fullmatch(i.split(".", 2)[-1])}
         found = {i for i in known if i == key or i.startswith(key + ".")}
         if not found:
             raise ValueError(f"{call}: '{key}' is no dimension of the drawing's sketches; they have " + ", ".join(known))
@@ -300,17 +553,42 @@ class Drawing:
         """Changes the center lines of one circle or arc.
 
         Args:
-            id: the circle's or arc's id.
+            id: the circle's or arc's id, or the circle or arc selected (sk("Circle.1")); one that two of the view's
+                sketches have by its full id, the sketch's id first ("Sketch.2.Circle.1"), or selected.
             arms: "h" or "v" for one arm of the cross only.
             cross: a short cross at the center instead of lines across the circle.
             pitch: a construction circle drawn as a center line (a bolt circle).
             off: no center lines.
 
+        Raises:
+            ValueError: an id that two of the drawing's sketches have.
+
         Examples:
             dw.Center("bolt circle", pitch=True)
         """
-        self._centers[id] = {k: v for k, v in dict(arms=arms, cross=cross, pitch=pitch, off=off).items() if v}
+        self._centers[self._key(id, "Drawing.Center")] = {k: v for k, v in dict(arms=arms, cross=cross, pitch=pitch,
+                                                                                off=off).items() if v}
         return self
+
+    def _key(self, id, call):
+        """the view's key of id: a plain id one of its sketches has, a full id (the sketch's id first) or a selected
+        element of a sketch; a plain id two sketches have raises, naming both ways to name one"""
+        if not isinstance(id, str):
+            element = id[0] if hasattr(id, "__len__") and len(id) == 1 else id
+            s = next((s for s in self._sketched if s.sketch is getattr(element, "sketch", None)), None)
+            if s is None:
+                raise ValueError(f"{call}: {id!r} is no element of the drawing's sketches")
+            return s.key(element.local)
+        owners = self._owners.get(id, [])
+        if len(owners) > 1:
+            full = ", ".join(f"'{s.sketch.id}.{id}'" for s in owners)
+            raise ValueError(f"{call}: '{id}' is in {len(owners)} of the drawing's sketches; name one by its full id "
+                             f"({full}) or selected (sk('{id}'))")
+        for s in self._sketched:
+            local = id[len(s.sketch.id) + 1:] if id.startswith(s.sketch.id + ".") else None
+            if local in s.ids:
+                return s.key(local)
+        return id
 
     def Axis(self, a, b=None, /, through=None) -> Drawing:
         """Adds a center line the sketch does not have: an axis of symmetry or of rotation, or a curved one.
@@ -376,6 +654,43 @@ class Drawing:
         self._callouts.append((np.asarray(tip, float), d / np.linalg.norm(d), str(letter)))
         return self
 
+    def Section(self, view: Drawing, /) -> Drawing:
+        """Marks where a section view is cut, as DIN does on the view it is taken from.
+
+        The cutting line runs where the section's plane meets this view's, narrow long-dashed dotted across the part and
+        a little past its outline, wide at both ends; an arrow at each end points the way the section is seen, with the
+        letter of its view name ("B-B": B).
+
+        Args:
+            view: the section, a px.Drawing(part, plane, section=True) with letters in its view name.
+
+        Raises:
+            ValueError: view is no section, its view name has no letters ("Section view B-B" or "B-B"), or its plane
+                runs along this view's.
+
+        Examples:
+            front.Section(px.Drawing(part, px.Plane(normal=(-1, 0, 0), axis=(0, -1, 0)), section=True, view_name="B-B"))
+        """
+        import re
+
+        if not view._section:
+            raise ValueError("Drawing.Section: the view is no section; px.Drawing(part, plane, section=True)")
+        named = re.search(r"\b([A-Z]{1,2})\s*[-\u2013]\s*\1\s*$", view._view_name or "")
+        if named is None:
+            raise ValueError("Drawing.Section: the section's view name has no letters for its arrows; view_name=\"Section view "
+                             "B-B\" or \"B-B\"")
+        letter = named.group(1)
+        own, cut = self.plane, view.plane
+        n = np.asarray(tuple(cut.normal), float)
+        a, b = float(np.dot(tuple(own.h), n)), float(np.dot(tuple(own.v), n))
+        if math.hypot(a, b) < 1e-9:
+            raise ValueError("Drawing.Section: the section's plane runs along this view's; it is seen cut on a view that "
+                             "sees its plane edge-on")
+        c = float(np.dot(np.subtract(tuple(cut.origin), tuple(own.origin)), n))
+        self._cuts.append((np.array([a, b]) * c / (a * a + b * b), np.array([-b, a]) / math.hypot(a, b),
+                           -np.array([a, b]) / math.hypot(a, b), letter))
+        return self
+
     def Measure(self, p, q, /, value=None, offset: float = 10.0) -> Drawing:
         """Adds a length no sketch holds, from p to q.
 
@@ -397,16 +712,36 @@ class Drawing:
     def _outline(self):
         out = [p for s in self._sketched for p in s.outline]
         out += [line for line, hidden in self._lines if not hidden]
+        if self._solid is not None:
+            out += self._solid.visible
         return out
 
-    def _strokes(self, mm, lettering):
+    def _drawn_lines(self):
+        """the lines the view draws besides its outline: (polyline, hidden), its own and its solid's hidden edges"""
+        out = list(self._lines)
+        if self._solid is not None:
+            out += [(p, True) for p in self._solid.hidden]
+        return out
+
+    def _strokes(self, mm, lettering, fmt=dims.Fmt):
         """the dimensions' strokes, the center lines, the callouts and the view's name above everything, in the drawing's
-        coordinates, mm sketch units per paper mm"""
+        coordinates, mm sketch units per paper mm, numbers written by fmt"""
         outline = self._outline()
         per_unit = 1e3 * self.unit
-        layout = dims.Layout(outline, mm, lambda t: lettering.width(t), self._places, self.names)
+        layout = dims.Layout(outline, mm, lambda t: lettering.width(t), self._places, self.names, fmt)
+        solid = self._solid.strokes(mm) if self._solid is not None else None
         callouts = dims.Strokes("callouts", height=NAME)
-        for tip, d, letter in self._callouts:
+        cuts = dims.Strokes("cutting lines")
+        marks = list(self._callouts)
+        for at, along, looking, letter in self._cuts:
+            pts = np.concatenate([np.atleast_2d(p) for p in outline]) if outline else np.zeros((1, 2))
+            ts = (pts - at) @ along
+            ends = [at + along * (ts.min() - mm * CUT_OVER), at + along * (ts.max() + mm * CUT_OVER)]
+            cuts.lines.append((ends[0], ends[1], "center"))
+            for end, inward in ((ends[0], along), (ends[1], -along)):
+                cuts.lines.append((end, end + inward * mm * CUT_END, "wide"))
+                marks.append((end, looking, letter))
+        for tip, d, letter in marks:
             n = np.array([-d[1], d[0]])
             tail, base = tip - d * mm * 12, tip - d * mm * 5
             callouts.lines.append((tail, base, "wide"))
@@ -414,15 +749,15 @@ class Drawing:
             callouts.texts.append((tail - d * mm * 4 - np.array([0.0, mm * NAME / 2]), 0.0, letter))
         # the callouts are where the caller put them: the leaders and radii laid out keep clear of them
         layout.drawn.append(callouts)
+        layout.drawn.append(cuts)
         out = []
         shown = self._shown()
-        everything = {i: g for s in self._sketched for i, g in s.everything.items()}
+        everything = {s.key(i): g for s in self._sketched for i, g in s.seen.items()}
         carried = {r for d in shown for r in d.refs if everything.get(r, {}).get("construction")}
         # the centre lines first: the radii, diameters and leaders keep clear of them
         centres = dims.CenterLines(everything, shown, mm, outline, self._centers, self._axes, carried)
         layout.drawn.append(centres)
-        # the rows fill from the part outward: shorter dimensions first
-        for d in sorted(shown, key=lambda d: (d.kind != "linear", d.span)):
+        for d in dims.Ordered(shown):
             if d.kind in ("linear", "radius", "diameter"):
                 d = _in_mm(d, per_unit)
             out.append(layout.Draw(d))
@@ -430,14 +765,18 @@ class Drawing:
             d = dims.Dimension("Measure", "linear", float(np.linalg.norm(q - p)) * per_unit if value is None else 0.0)
             d.p, d.q, d.u = p, q, dims._unit(q - p)
             layout.places = {**layout.places, "Measure": dims.Place(offset=offset, text=value if isinstance(value, str) else
-                                                                   (None if value is None else dims.Fmt(value)))}
+                                                                   (None if value is None else fmt(value)))}
             out.append(layout.Draw(d))
         out.append(centres)
+        if solid is not None and solid.lines:
+            out.append(solid)
         corners = self._corner_lines(shown, mm)
         if corners.lines:
             out.append(corners)
-        if self._callouts:
+        if marks:
             out.append(callouts)
+        if cuts.lines:
+            out.append(cuts)
         if self._view_name:
             pts = _points(outline, out, mm, lettering)
             middle = (min(p[0] for p in np.concatenate(outline)) + max(p[0] for p in np.concatenate(outline))) / 2 \
@@ -482,35 +821,35 @@ class Drawing:
         Examples:
             svg = dw.ToSVG()
         """
-        return Sheet(self).ToSVG()
+        return Sheet(self, standard=self._standard).ToSVG()
 
     def WriteSVG(self, path, /) -> None:
         """Writes the drawing on a sheet of its own as an SVG file, at true scale.
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .svg is added.
 
         Examples:
             dw.WriteSVG("plate.svg")
         """
-        Sheet(self).WriteSVG(path)
+        Sheet(self, standard=self._standard).WriteSVG(path)
 
     def WritePDF(self, path, /) -> None:
         """Writes the drawing on a sheet of its own as a PDF file, at true scale (it prints 1:1 at 100 %).
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .pdf is added.
 
         Examples:
             dw.WritePDF("plate.pdf")
         """
-        Sheet(self).WritePDF(path)
+        Sheet(self, standard=self._standard).WritePDF(path)
 
     def WriteDXF(self, path, /) -> None:
         """Writes the drawing on a sheet of its own as a DXF file with real dimension entities, as Sheet.WriteDXF.
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .dxf is added.
 
         Raises:
             ImportError: ezdxf is not installed (pip install ezdxf).
@@ -518,7 +857,7 @@ class Drawing:
         Examples:
             dw.WriteDXF("plate.dxf")
         """
-        Sheet(self).WriteDXF(path)
+        Sheet(self, standard=self._standard).WriteDXF(path)
 
     def _repr_svg_(self):
         return self.ToSVG()
@@ -546,12 +885,13 @@ def _in_mm(d, per_unit):
 
 
 class Sheet:
-    """Views at one scale on a DIN sheet: px.Drawing objects, placed by their planes in first-angle projection.
+    """Views at one scale on a sheet: px.Drawing objects, placed by their planes in first- or third-angle projection.
 
     A view on a standard plane takes its place itself, aligned with the front view (the drawing on px.XZ, or the
-    first): the top view (px.XY) below it, the view from the left to its right, from the right (px.YZ) to its left;
-    Add(drawing, at=...) places any other. The scale is the largest of DIN ISO 5455 at which the views and their
-    dimensions fit the sheet's drawing area, or scale=; the sheet is written at true scale.
+    first): in first-angle projection the top view (px.XY) below it, the view from the left to its right, from the
+    right (px.YZ) to its left; in third-angle projection the other way round; Add(drawing, at=...) places any other.
+    The scale is the largest of DIN ISO 5455 at which the views and their dimensions fit the sheet's drawing area, or
+    scale=; the sheet is written at true scale.
 
     Args:
         drawings: the views, px.Drawing objects.
@@ -562,9 +902,12 @@ class Sheet:
         font: the lettering's TrueType file; default osifont (after DIN EN ISO 3098-2), which ships with planex.
         landscape: True lays the sheet on its side, False stands it upright; default A4 upright, A3 and larger on
             their side. The filing margin stays on the left, the title block in the lower right corner.
+        standard: "DIN" (first-angle projection and its symbol, a decimal comma) or "ASME" (third-angle projection
+            and its symbol, a decimal point; the dimension text along the line, A4 to A0 sheets, the title block and
+            millimeters stay as DIN's in this version); its views are written in it. Default px.config.drawing_standard.
 
     Raises:
-        ValueError: size is unknown; scale is not positive; font is no file.
+        ValueError: size is unknown; scale is not positive; font is no file; standard is neither "DIN" nor "ASME".
 
     Examples:
         px.Sheet(front, top, side).WritePDF("part.pdf")
@@ -573,7 +916,9 @@ class Sheet:
     """
 
     def __init__(self, *drawings: Drawing, size: str = "A4", scale: float | None = None, frame: bool = False,
-                 font: str | os.PathLike | None = None, landscape: bool | None = None):
+                 font: str | os.PathLike | None = None, landscape: bool | None = None, standard: str | None = None):
+        self.standard = _standard(standard, "Sheet")
+        self._fmt = functools.partial(dims.Fmt, sign="." if self.standard == "ASME" else ",")
         key = str(size).upper()
         if key not in SIZES:
             raise ValueError(f"Sheet: size '{size}' is unknown; {', '.join(SIZES)}")
@@ -596,7 +941,7 @@ class Sheet:
         Args:
             drawing: the view, a px.Drawing.
             at: where its origin lies, in the drawing's units from the first view's origin; default a view on a
-                standard plane places itself in first-angle projection.
+                standard plane places itself in the sheet's projection.
 
         Raises:
             TypeError: drawing is not a px.Drawing.
@@ -655,7 +1000,7 @@ class Sheet:
         if unknown:
             raise ValueError(f"Sheet.Title: {', '.join(unknown)} is no field of the template; its fields are "
                              + ", ".join(t.lower() for t in block.tags))
-        self._title = (block, {k.upper(): v if isinstance(v, str) else dims.Fmt(v) if isinstance(v, (int, float))
+        self._title = (block, {k.upper(): v if isinstance(v, str) else self._fmt(v) if isinstance(v, (int, float))
                                else str(v) for k, v in fields.items()})
         return self
 
@@ -678,7 +1023,7 @@ class Sheet:
         views = [d for d, _ in self._views]
         paper = 1e3 * views[0].unit * ratio
         mm = 1 / paper
-        drawn = [d._strokes(mm, lettering) for d in views]
+        drawn = [d._strokes(mm, lettering, self._fmt) for d in views]
         boxes = []
         for strokes, d in zip(drawn, views):
             pts = _points(d._outline(), strokes, mm, lettering)
@@ -705,7 +1050,7 @@ class Sheet:
         return SimpleNamespace(lettering=lettering, ratio=ratio, drawn=drawn, places=places, paper=paper, shift=shift)
 
     def _footer(self):
-        """the notes' baseline and the drawing area's bottom above the title block, the notes and the first-angle
+        """the notes' baseline and the drawing area's bottom above the title block, the notes and the projection
         symbol, in mm"""
         base = BORDER + (self._title[0].height if self._title else 0.0)
         notes_at, bottom = base + 2, base + (4.0 if self._title else 0.0)
@@ -719,12 +1064,12 @@ class Sheet:
         """the title block's fields: the call's, and SCALE, SIZE, DATE and SHEET where the template has them"""
         block, fields = self._title
         ratio = a.ratio
-        auto = {"SCALE": f"{dims.Fmt(ratio)}:1" if ratio >= 1 else f"1:{dims.Fmt(1 / ratio)}", "SIZE": self.size,
+        auto = {"SCALE": f"{self._fmt(ratio)}:1" if ratio >= 1 else f"1:{self._fmt(1 / ratio)}", "SIZE": self.size,
                 "DATE": datetime.date.today().isoformat(), "SHEET": "1/1"}
         return {**{k: v for k, v in auto.items() if k in block.tags}, **fields}
 
     def _sheet(self, ink, a):
-        """what the sheet itself has: its tables, frame, title block, notes and the first-angle symbol"""
+        """what the sheet itself has: its tables, frame, title block, notes and the projection symbol"""
         W, H = self.paper
         for rows, origin, widths, height in self._tables:
             ink.table(rows, origin * a.paper + a.shift, widths, height)
@@ -737,7 +1082,7 @@ class Sheet:
         ink.text(FILING + 2, notes_at, left, 2.5, ha="left")
         ink.text(W - BORDER - 2, notes_at, right, 2.5, ha="right")
         if len(self._views) > 1:
-            ink.first_angle(W - BORDER - 2, notes_at + (6.5 if right else 0.0))
+            ink.projection_symbol(W - BORDER - 2, notes_at + (6.5 if right else 0.0), self.standard == "ASME")
 
     def _figure(self):
         matplotlib = _need("matplotlib", "Sheet and Drawing")
@@ -752,12 +1097,16 @@ class Sheet:
         ax.set_ylim(0, H)
         ax.set_aspect("equal")
         ax.axis("off")
-        ink = _Ink(ax, a.lettering)
+        ink = _Ink(ax, a.lettering, self._fmt)
         for (d, _), strokes, o in zip(self._views, a.drawn, a.places):
             def T(pts, o=o):
                 return np.atleast_2d(np.asarray(pts, float)) * a.paper + o * a.paper + a.shift
 
-            for line, hidden in d._lines:
+            if d._solid is not None and d._solid.pictorial:
+                light, low = d._solid.image(1 / (PIXELS * a.paper))
+                if light.size:
+                    ink.image(light, T(low)[0], T(np.asarray(low) + np.array(light.shape[::-1]) / (PIXELS * a.paper))[0])
+            for line, hidden in d._drawn_lines():
                 ink.polyline(T(line), NARROW if hidden else WIDE, HIDDEN if hidden else "-")
             for pts in d._outline():
                 ink.polyline(T(pts), WIDE)
@@ -771,12 +1120,13 @@ class Sheet:
         """Writes the sheet as a DXF file with real dimension entities, editable in a CAD program.
 
         The views lie in model space at true size in millimeters; the dimensions are DIMENSION entities in a dimension
-        style after DIN (decimal comma, closed arrows, osifont lettering) scaled to the sheet's scale, so plotted at
+        style named by the sheet's standard ("DIN": a decimal comma, "ASME": a decimal point; closed arrows, osifont
+        lettering) scaled to the sheet's scale, so plotted at
         that scale they come out as on the PDF; center and hidden lines in their DIN EN ISO 128-2 line types; the
         frame, tables and notes at the size the scale gives them.
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .dxf is added.
 
         Raises:
             ImportError: ezdxf is not installed (pip install ezdxf).
@@ -802,9 +1152,9 @@ class Sheet:
                                        ("Text", 25, "Continuous"), ("Frame", 70, "Continuous")):
             doc.layers.add(name, lineweight=weight, linetype=linetype)
         doc.styles.add("Lettering", font=os.path.basename(a.lettering.path))
-        doc.dimstyles.add("DIN", dxfattribs=dict(
+        doc.dimstyles.add(self.standard, dxfattribs=dict(
             dimtxsty="Lettering", dimtxt=HEIGHT, dimasz=ARROW, dimexe=dims.OVER, dimexo=0.0, dimgap=1.0, dimtad=1,
-            dimtih=0, dimtoh=0, dimdec=3, dimzin=8, dimdsep=ord(","), dimadec=3, dimazin=2, dimlfac=1.0,
+            dimtih=0, dimtoh=0, dimdec=3, dimzin=8, dimdsep=ord(self._fmt(0.5)[1]), dimadec=3, dimazin=2, dimlfac=1.0,
             dimscale=1 / a.ratio))
         msp = doc.modelspace()
         for (d, _), strokes, o in zip(self._views, a.drawn, a.places):
@@ -824,11 +1174,17 @@ class Sheet:
                 else:
                     for pts in s.outline:
                         lines(pts, "Visible")
+            if d._solid is not None:
+                for key, layer in (("visible", "Visible"), ("hidden", "Hidden")):
+                    if key == "visible" or d._solid.hidden:
+                        for w in d._solid.wires[key]:
+                            for v in w.edges:
+                                AddEdge(msp, v.edge, at, u, {"layer": layer})
             for line, hidden in d._lines:
                 lines(line, "Hidden" if hidden else "Visible")
             for s in strokes:
                 if s.entity is not None:
-                    _dimension(msp, s.entity, at, u)
+                    _dimension(msp, s.entity, at, u, self.standard)
                     continue
                 for p, q, style in s.lines:
                     lines([p, q], {"center": "Center", "wide": "Visible"}.get(style, "Thin"))
@@ -840,13 +1196,16 @@ class Sheet:
                     msp.add_text(text, height=s.height / a.ratio, rotation=angle,
                                  dxfattribs={"layer": "Text", "style": "Lettering"}).set_placement(
                                      at(*anchor), align=TextEntityAlignment.CENTER)
-        self._sheet(_DxfInk(msp, a.lettering, a.ratio, a.shift), a)
-        doc.saveas(os.fspath(path))
+        self._sheet(_DxfInk(msp, a.lettering, a.ratio, a.shift, self._fmt), a)
+        doc.saveas(with_extension(path, ".dxf"))
 
     def _spread(self, views, boxes, mm):
         """each view's origin in the front view's coordinates: a view's own at=, else the views on standard planes
-        beside the front view in first-angle projection (sharing the coordinates they have in common), GAP mm apart"""
+        beside the front view in first-angle projection, or third-angle for ASME (sharing the coordinates they have in
+        common), GAP mm apart"""
         kinds = [_side(d.plane) for d in views]
+        below, above, after, before = ("bottom", "top", "right", "left") if self.standard == "ASME" else \
+            ("top", "bottom", "left", "right")
         front = next((k for k, kind in enumerate(kinds) if kind == "front"), 0)
         out = [np.zeros(2) if at is None else np.asarray(at, float).copy() for _, at in self._views]
         gap = mm * GAP
@@ -856,14 +1215,14 @@ class Sheet:
             if k == front or self._views[k][1] is not None:
                 continue
             b = boxes[k]
-            if kind == "top":
+            if kind == below:
                 out[k][1] = fb[0][1] - gap - b[1][1]
-            elif kind == "bottom":
+            elif kind == above:
                 out[k][1] = fb[1][1] + gap - b[0][1]
-            elif kind == "left":
+            elif kind == after:
                 out[k][0] = fb[1][0] + gap - b[0][0]
                 beyond = max(beyond, out[k][0] + b[1][0])
-            elif kind == "right":
+            elif kind == before:
                 out[k][0] = fb[0][0] - gap - b[1][0]
         for k, kind in enumerate(kinds):
             if k != front and self._views[k][1] is None and kind in ("rear", "other"):
@@ -886,12 +1245,12 @@ class Sheet:
         """Writes the sheet as an SVG file at true scale.
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .svg is added.
 
         Examples:
             sh.WriteSVG("part.svg")
         """
-        with open(path, "w", encoding="utf-8") as f:
+        with open(with_extension(path, ".svg"), "w", encoding="utf-8") as f:
             f.write(self.ToSVG())
 
     def WritePDF(self, path, /) -> None:
@@ -900,7 +1259,7 @@ class Sheet:
         It prints 1:1 at 100 %.
 
         Args:
-            path: the file to write.
+            path: the file to write; without an extension .pdf is added.
 
         Examples:
             sh.WritePDF("part.pdf")
@@ -909,7 +1268,7 @@ class Sheet:
 
         fig = self._figure()
         with matplotlib.rc_context({"pdf.fonttype": 42}):
-            fig.savefig(path, format="pdf", metadata={"CreationDate": None})
+            fig.savefig(with_extension(path, ".pdf"), format="pdf", metadata={"CreationDate": None})
 
     def _repr_svg_(self):
         return self.ToSVG()
@@ -927,7 +1286,7 @@ def _fields(lo, hi, middle):
 
 
 def _side(plane):
-    """which standard view a plane gives, by the direction it is seen from (first-angle projection)"""
+    """which standard view a plane gives, by the direction it is seen from"""
     n = np.asarray(tuple(plane.normal), float)
     for name, d in (("front", (0, -1, 0)), ("top", (0, 0, 1)), ("right", (1, 0, 0)), ("left", (-1, 0, 0)),
                     ("bottom", (0, 0, -1)), ("rear", (0, 1, 0))):
@@ -939,8 +1298,8 @@ def _side(plane):
 class _Ink:
     """draws on the sheet in mm: lines wide or narrow, center and hidden lines, arrows, the lettering"""
 
-    def __init__(self, ax, lettering):
-        self.ax, self.lettering = ax, lettering
+    def __init__(self, ax, lettering, fmt=dims.Fmt):
+        self.ax, self.lettering, self.fmt = ax, lettering, fmt
 
     def polyline(self, pts, width, style="-"):
         pts = np.atleast_2d(pts)
@@ -949,6 +1308,17 @@ class _Ink:
 
     def fill(self, pts):
         self.ax.fill(*zip(*pts), color=INK, lw=0)
+
+    def image(self, light, low, high):
+        """a pictorial's faces as an image, grey by how squarely they face the light, clear where there is none"""
+        seen = ~np.isnan(light)
+        rgba = np.ones(light.shape + (4,))
+        rgba[..., :3] = _greys(np.where(seen, light, 0.0))[..., None]
+        rgba[..., 3] = seen
+        x, y = self.ax.get_xlim(), self.ax.get_ylim()
+        self.ax.imshow(rgba, extent=(low[0], high[0], low[1], high[1]), origin="upper", interpolation="none")
+        self.ax.set_xlim(x)
+        self.ax.set_ylim(y)
 
     def text(self, x, y, text, height=HEIGHT, angle=0.0, ha="center", va="baseline"):
         self.ax.text(x, y, text, fontproperties=self.lettering.sized(height), color=INK, rotation=angle,
@@ -981,7 +1351,7 @@ class _Ink:
         for k, row in enumerate(rows):
             y = y1 - height * (k + 0.5)
             for x, text in zip(lefts, row):
-                self.text(x + 1.5, y, dims.Fmt(text), ha="left", va="center")
+                self.text(x + 1.5, y, self.fmt(text), ha="left", va="center")
 
     def frame(self, W, H, bottom=True):
         """DIN EN ISO 5457: the frame round the drawing area (0.7 mm; 20 mm filing margin on the left, 10 mm round),
@@ -1009,19 +1379,21 @@ class _Ink:
             for k, (a, b) in enumerate(zip(ys, ys[1:])):
                 self.text((edge + outer) / 2, (a + b) / 2, LETTERS[k % len(LETTERS)], va="center")
 
-    def first_angle(self, right, bottom):
-        """the symbol of first-angle projection, its lower right corner at (right, bottom)"""
+    def projection_symbol(self, right, bottom, third=False):
+        """the symbol of first-angle projection (third: third-angle, the circles left of the cone), its lower right
+        corner at (right, bottom)"""
         over, big = 1.5, 2 * HEIGHT
         small, length, gap = 0.54 * big, 1.04 * big, 0.5 * big
         right -= over
-        x0, y = right - big - gap - length, bottom + over + big / 2
+        left, y = right - big - gap - length, bottom + over + big / 2
+        x0 = left + big + gap if third else left
         self.polyline([(x0, y - small / 2), (x0 + length, y - big / 2), (x0 + length, y + big / 2), (x0, y + small / 2),
                        (x0, y - small / 2)], NARROW)
-        c = np.array([right - big / 2, y])
+        c = np.array([left + big / 2 if third else right - big / 2, y])
         t = np.linspace(0, 2 * math.pi, 97)
         for r in (big / 2, small / 2):
             self.polyline(np.c_[c[0] + r * np.cos(t), c[1] + r * np.sin(t)], NARROW)
-        self.polyline([(x0 - over, y), (right + over, y)], NARROW, SYMBOL_CENTER)
+        self.polyline([(left - over, y), (right + over, y)], NARROW, SYMBOL_CENTER)
         self.polyline([(c[0], c[1] - big / 2 - over), (c[0], c[1] + big / 2 + over)], NARROW, SYMBOL_CENTER)
 
 
@@ -1029,8 +1401,8 @@ class _DxfInk(_Ink):
     """draws the sheet's own lines and texts into a DXF model space, whose drawing lies there at true size in mm: a
     point on the sheet at (p - shift) / ratio"""
 
-    def __init__(self, msp, lettering, ratio, shift):
-        self.msp, self.lettering, self.ratio, self.shift = msp, lettering, ratio, shift
+    def __init__(self, msp, lettering, ratio, shift, fmt=dims.Fmt):
+        self.msp, self.lettering, self.ratio, self.shift, self.fmt = msp, lettering, ratio, shift, fmt
 
     def model(self, pts):
         return (np.atleast_2d(np.asarray(pts, float)) - self.shift) / self.ratio
@@ -1136,13 +1508,13 @@ class _TitleBlock:
                     ink.text(where[0], where[1], text, e.dxf.height, e.dxf.rotation, ha, va)
 
 
-def _dimension(msp, e, at, u):
-    """one dimension of the layout (Strokes.entity) as a DIMENSION entity: at(x, y) the model point of a drawing's, u
-    the model length of a drawing unit"""
+def _dimension(msp, e, at, u, style):
+    """one dimension of the layout (Strokes.entity) as a DIMENSION entity in the dimension style style: at(x, y) the
+    model point of a drawing's, u the model length of a drawing unit"""
     def P(p):
         return at(*p)
 
-    style = dict(dimstyle="DIN", text=e["text"].replace("⌀", "%%c"), dxfattribs={"layer": "Dimensions"})
+    style = dict(dimstyle=style, text=e["text"].replace("⌀", "%%c"), dxfattribs={"layer": "Dimensions"})
     if e["kind"] == "linear":
         dim = msp.add_linear_dim(base=P(e["base"]), p1=P(e["p1"]), p2=P(e["p2"]), angle=e["angle"], **style)
     elif e["kind"] in ("radius", "diameter"):

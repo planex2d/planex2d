@@ -42,15 +42,16 @@ def test_a_point_on_the_exact_curve_is_on_the_spline():
     s = w.edges[0].edge
     b = s.bspline
     poles, knots = b["poles"], b["knots"]
-    # the curve's point at the middle of its range, by de Boor (cubic, not rational)
-    u = 0.5 * (knots[3] + knots[len(poles)])
-    k = max(i for i in range(3, len(poles)) if knots[i] <= u)
-    d = [list(poles[j]) for j in range(k - 3, k + 1)]
-    for r in range(1, 4):
-        for j in range(3, r - 1, -1):
-            i = k - 3 + j
-            a = (u - knots[i]) / (knots[i + 4 - r] - knots[i])
+    # the curve's point at the middle of its range, by de Boor (not rational)
+    n = b["degree"]
+    u = 0.5 * (knots[n] + knots[len(poles)])
+    k = max(i for i in range(n, len(poles)) if knots[i] <= u)
+    d = [list(poles[j]) for j in range(k - n, k + 1)]
+    for r in range(1, n + 1):
+        for j in range(n, r - 1, -1):
+            i = k - n + j
+            a = (u - knots[i]) / (knots[i + n + 1 - r] - knots[i])
             d[j] = [(1 - a) * d[j - 1][c] + a * d[j][c] for c in (0, 1)]
-    p = tuple(d[3])
+    p = tuple(d[n])
     assert w.Distance(p) == pytest.approx(0, abs=1e-12)
     assert w.ClosestPoint(p) == pytest.approx(p, abs=1e-12)

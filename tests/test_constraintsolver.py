@@ -291,7 +291,7 @@ def test_a_coincidence_given_twice_is_redundant():
     sk = px.Sketch()
     sk.Move((0, 0)).Line((10, 0), id="a")
     sk.Constrain("a.start", "origin", px.Coincident)
-    with pytest.warns(px.PlanexWarning, match=r"Coincident\.2 .* is redundant \(consistent\)"):
+    with pytest.warns(px.PlanexWarning, match=r"Coincident\.2 .* follows from Coincident\.1; remove one of them"):
         sk.Constrain("a.start", "origin", px.Coincident)
     assert sk.redundant == ["Coincident.2"]
 

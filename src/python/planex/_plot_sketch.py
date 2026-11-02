@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 # the sketch view: its plot area at most this many pixels
 SKETCH_BOX = (600, 450)
 GRID_COL, MINOR_GRID_COL = "#d9d9d9", "#ececec"
-# the parent solid under the sketch: its projected faces in the face colour, see-through, its edges black
-PARENT_FILL, PARENT_EDGE = "rgba(221, 230, 240, 0.6)", "black"
+# widths in pt; PARENT_SHORT is a part of the solid's size
+PARENT_EDGE, PARENT_WIDE, PARENT_NARROW, PARENT_SHORT = "black", 1.2, 0.6, 0.006
 # the sizes of the sketch look are CSS pixels (plotly's), 96 to the inch
 CSS_PX = 96
 # the frame around the plot area, in CSS pixels: left, right, top, bottom
@@ -63,8 +63,9 @@ def Plot(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool
             moves, a color per motion (those after the eighth in gray), with a legend "motion 3: drag Line.2.end.h (3 elements)"
             (in plotly the dimension that would remove it when hovered); a radius motion has its arrow on the
             circle or arc; a number k draws motion k only (counted from 1). A QuickSketch has none and warns.
-        show_parent: an OCC solid (e.g. the one whose face the sketch lies on) drawn projected into the sketch's plane
-            under the sketch, its faces lightly filled, its edges black (in plotly with their names when hovered);
+        show_parent: an OCC solid (e.g. the one whose face the sketch lies on) drawn under the sketch, seen along its
+            normal as px.Drawing's isometric view draws a solid: its faces shaded grey, its visible edges wide, its
+            smooth edges narrow, its hidden edges left out (in plotly the edges' names when hovered);
             only in the plot.
         backend: "matplotlib" or "plotly" (hover) without ax; None is matplotlib.
 
@@ -196,53 +197,37 @@ def _elements(sketch):
     return everything, drawn, {g["id"]: _path(g) for g in drawn if g["kind"] in CURVES}
 
 
-def _shadow(face, normal):
-    """the area of the surface triangles of an OCC face projected along normal, signed so that the front and back of
-    a curved face cancel: about 0 for a face seen edge-on, also a cylinder seen end-on"""
-    import numpy as np
-    from netgen.meshing import MeshingStep
-    from netgen.occ import OCCGeometry
-
-    a, b = face.bounding_box
-    size = max(b.x - a.x, b.y - a.y, b.z - a.z) / 12
-    mesh = OCCGeometry(face).GenerateMesh(maxh=size, perfstepsend=MeshingStep.MESHSURFACE)
-    points = np.array([p.p for p in mesh.Points()])
-    tris = np.array([[points[v.nr - 1] for v in el.vertices] for el in mesh.Elements2D()])
-    if not len(tris):
-        return 0.0
-    return abs(float((np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0]) @ np.asarray(normal)).sum())) / 2
-
-
 def _parent_geometry(sketch, parent):
-    """the OCC solid projected straight into the sketch's plane: for each face seen with an area its loops (outer
-    counterclockwise, holes clockwise: one region to fill with its holes empty), and its edges as (name, polyline),
-    or None when nothing of it projects"""
+    """the OCC solid seen along the sketch's normal as px.Drawing's pictorial shows a solid, in the sketch's
+    coordinates (a drawing's view of the sketch's plane): its shaded triangles and their greys, its visible edges as
+    (name, polyline), its smooth edges' pieces stopped short of the outline; None when nothing of it is seen"""
     import warnings
+
+    import numpy as np
 
     import planex as px
 
-    normal = px.Plane(sketch).normal
+    from ._drawing import _greys, _shortened, _Solid
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", px.PlanexWarning)
-        edges = px.Project(parent, sketch)
-        faces = []
-        for f in parent.faces:
-            if _shadow(f, normal) < 1e-3 * f.mass:
-                continue
-            try:
-                region = px.Shape(px.Project(f, sketch))
-            except (ValueError, RuntimeError):
-                continue
-            if region.mass > 0:
-                faces.append(region)
-    box = [w.bounding_box for w in edges if w.bounding_box]
-    if not box:
+        solid = _Solid(parent, px.Plane(sketch), True, False, False)
+        named = [e for w in px.Project(parent, sketch) for e in w.edges if e.name] if any(e.name for e in parent.edges) else []
+    tol = 2e-4 * solid.size
+
+    def name_of(run):
+        k = (len(run) - 1) // 2
+        mid = tuple((run[k] + run[k + 1]) / 2)
+        near = min(named, key=lambda e: e.Distance(mid), default=None)
+        return near.name if near is not None and near.Distance(mid) <= 10 * tol else ""
+
+    visible = [np.asarray(run, float) for w in solid.wires["visible"] for e in w.edges for run in e.Wire().Polylines(tol)]
+    if not visible:
         return None
-    size = max(max(b[1][0] for b in box) - min(b[0][0] for b in box), max(b[1][1] for b in box) - min(b[0][1] for b in box))
-    tol = 2e-4 * size
-    regions = [region.Polylines(tol) for region in faces]
-    runs = [(e.name or "", run) for w in edges for e in w.edges for run in e.Wire().Polylines(tol)]
-    return regions, runs
+    visible = [(name_of(run), run) for run in visible]
+    triangles, light = solid.shading
+    smooth = [np.array([a, b]) for run in solid.smooth for a, b, _ in _shortened(run, PARENT_SHORT * solid.size)]
+    return [np.asarray(t, float) for t in triangles], _greys(light), visible, smooth
 
 
 def _axis_line(g, mid, reach):
@@ -255,6 +240,7 @@ def _axis_line(g, mid, reach):
 
 
 def _plotly(sketch, fig, show_constraints, show_ends, show_direction, diagnoses, motions, show_parent):
+    import numpy as np
     import plotly.graph_objects as go
 
     from . import _dimensions as dims
@@ -267,15 +253,23 @@ def _plotly(sketch, fig, show_constraints, show_ends, show_direction, diagnoses,
     if show_parent is not None:
         parent = _parent_geometry(sketch, show_parent)
         if parent is not None:
-            for region in parent[0]:
+            triangles, grey, visible, smooth = parent
+            # one trace per grey (to 1/64): thousands of triangles in a few traces
+            level = np.round(grey * 64) / 64
+            for g in np.unique(level):
                 xs, ys = [], []
-                for loop in region:
-                    xs.extend(list(loop[:, 0]) + [None])
-                    ys.extend(list(loop[:, 1]) + [None])
-                fig.add_trace(go.Scatter(x=xs, y=ys, mode="none", fill="toself", fillcolor=PARENT_FILL,
+                for t in (t for t, l in zip(triangles, level) if l == g):
+                    xs.extend(list(t[:, 0]) + [t[0, 0], None])
+                    ys.extend(list(t[:, 1]) + [t[0, 1], None])
+                c = int(round(255 * g))
+                fig.add_trace(go.Scatter(x=xs, y=ys, mode="none", fill="toself", fillcolor=f"rgb({c}, {c}, {c})",
                                          hoverinfo="skip", showlegend=False))
-            for name, run in parent[1]:
-                fig.add_trace(go.Scatter(x=run[:, 0], y=run[:, 1], mode="lines", line=dict(color=PARENT_EDGE, width=0.8),
+            if smooth:
+                fig.add_trace(go.Scatter(x=[x for s in smooth for x in (s[0, 0], s[1, 0], None)],
+                                         y=[y for s in smooth for y in (s[0, 1], s[1, 1], None)], mode="lines",
+                                         line=dict(color=PARENT_EDGE, width=PARENT_NARROW), hoverinfo="skip", showlegend=False))
+            for name, run in visible:
+                fig.add_trace(go.Scatter(x=run[:, 0], y=run[:, 1], mode="lines", line=dict(color=PARENT_EDGE, width=PARENT_WIDE),
                                          hovertext=name, hoverinfo="text", showlegend=False))
     everything, drawn, paths = _elements(sketch)
     ends = _ends(drawn)
@@ -476,10 +470,9 @@ def _hover_at(item):
 def _matplotlib(sketch, ax, show_constraints, show_ends, show_direction, diagnoses, motions, show_parent):
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib.collections import LineCollection
+    from matplotlib.collections import LineCollection, PolyCollection
     from matplotlib.lines import Line2D
-    from matplotlib.patches import Circle, PathPatch, Polygon
-    from matplotlib.path import Path
+    from matplotlib.patches import Circle, Polygon
     from matplotlib.ticker import MultipleLocator
     from matplotlib.transforms import Affine2D, ScaledTranslation
 
@@ -493,7 +486,7 @@ def _matplotlib(sketch, ax, show_constraints, show_ends, show_direction, diagnos
     parent = _parent_geometry(sketch, show_parent) if show_parent is not None else None
     pts = [p for path in paths.values() for p in path] + [tuple(g["point"]) for g in lone]
     if parent is not None:
-        pts += [tuple(p) for region in parent[0] for loop in region for p in loop] + [tuple(p) for _, run in parent[1] for p in run]
+        pts += [tuple(p) for _, run in parent[2] for p in run]
     if not pts:
         pts = [(0.0, 0.0)]
     if ax is None:
@@ -529,10 +522,11 @@ def _matplotlib(sketch, ax, show_constraints, show_ends, show_direction, diagnos
                            alpha=alpha, transform=at(p), solid_capstyle="round", solid_joinstyle="round", zorder=4))
 
     if parent is not None:
-        for region in parent[0]:
-            outline = Path(np.concatenate(region), np.concatenate([[Path.MOVETO] + [Path.LINETO] * (len(loop) - 1) for loop in region]))
-            ax.add_patch(PathPatch(outline, facecolor=(221 / 255, 230 / 255, 240 / 255, 0.6), linewidth=0, zorder=1))
-        ax.add_collection(LineCollection([run for _, run in parent[1]], colors=PARENT_EDGE, linewidths=0.8 * pt, zorder=1))
+        triangles, grey, visible, smooth = parent
+        colors = np.column_stack([grey, grey, grey])
+        ax.add_collection(PolyCollection(triangles, facecolors=colors, edgecolors=colors, linewidths=0.3, zorder=1))
+        ax.add_collection(LineCollection(smooth, colors=PARENT_EDGE, linewidths=PARENT_NARROW * pt, zorder=1))
+        ax.add_collection(LineCollection([run for _, run in visible], colors=PARENT_EDGE, linewidths=PARENT_WIDE * pt, zorder=1))
     lines = {}
     for g in drawn:
         if g["kind"] in CURVES:

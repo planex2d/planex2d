@@ -122,6 +122,17 @@ namespace planex2d::sketch {
         // two of its points one after the other (the last and the first of a closed one) at one place: the middle of
         // the polyline through its points
         std::optional<Vertex> DegenerateSpline(const Element &e) const {
+            // a spline by its poles: all of them at one place (two following ones at one place make a corner)
+            if (const SplineData &d = g.splines[e.SplineIndex()]; d.poled) {
+                const Vertex a = g.Coords(d.points.front());
+                double size = 0.0;
+                for (size_t p : d.points)
+                    size = std::max(size, NormInf(g.Coords(p)));
+                for (size_t p : d.points)
+                    if (!g.Coords(p).IsClose(a, Tol(size)))
+                        return std::nullopt;
+                return a;
+            }
             std::vector<Vertex> q = e.SplinePoints(g);
             if (g.splines[e.SplineIndex()].closed)
                 q.push_back(q.front());

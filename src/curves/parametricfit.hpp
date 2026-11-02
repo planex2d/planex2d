@@ -167,10 +167,13 @@ namespace planex2d {
 
     // a curve given by its points only (point(t), called once per t) over [t0, t1]: the cubic through samples placed
     // adaptively, a stretch halved until the curve passes its middle sample within fitTol of its size (an offset: within
-    // spline_tol); at most 4096 samples, with a warning if that is not enough. Closed as ParametricFit
+    // spline_tol); at most 4096 samples for 1e-10 and looser, with a warning (and remedy) if that is not enough. Closed
+    // as ParametricFit
     template <class F>
-    Curve<double, Vertex> SampledFit(F point, double t0, double t1, const std::string &call, double fitTol = 1e-10) {
-        constexpr size_t most = 4096, first = 16;
+    Curve<double, Vertex> SampledFit(F point, double t0, double t1, const std::string &call, double fitTol = 1e-10, const std::string &remedy = "") {
+        constexpr size_t first = 16;
+        // a cubic's error falls with the fourth power of the spacing: a tighter target needs its fourth root more samples
+        const size_t most = fitTol >= 1e-10 ? 4096 : (size_t)(4096.0 * std::sqrt(std::sqrt(1e-10 / fitTol)));
         IsFinite(call.c_str(), {t0, t1});
         if (t0 == t1)
             throw std::invalid_argument(call + ": the range (" + NumberText(t0) + ", " + NumberText(t1) + ") is empty");
@@ -215,7 +218,7 @@ namespace planex2d {
         }
         if (worst > tol)
             Warning() << call << ": the curve passes its samples within " << worst / size << " of its size with " << most
-                      << " samples, not " << fitTol;
+                      << " samples, not " << fitTol << remedy;
         c.poles.front() = samples.begin()->second;
         c.poles.back() = samples.rbegin()->second;
         c.closed = closed;

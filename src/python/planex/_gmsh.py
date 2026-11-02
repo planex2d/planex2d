@@ -13,6 +13,7 @@ from ._sketches import sketch_types
 from ._geom import oriented, xy
 from ._compound import Compound
 from ._caller import warn
+from ._paths import with_extension
 
 PERIODIC = 2
 
@@ -178,7 +179,7 @@ def WriteGeo(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: s
 
     Args:
         obj: the Face, Shape, Wire, sketch or Compound to write.
-        path: the file to write.
+        path: the file to write; without an extension .geo is added.
 
     Examples:
         face.WriteGeo("part.geo")
@@ -206,5 +207,5 @@ def WriteGeo(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, path: s
         for name, ids in names[dim].items():
             tag += 1
             out.append(f'Physical {kind}("{name}", {tag}) = {{{", ".join(map(str, ids))}}};')
-    with open(path, "w", encoding="utf-8") as f:
+    with open(with_extension(path, ".geo"), "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")

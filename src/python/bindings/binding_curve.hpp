@@ -4,6 +4,8 @@
 #pragma once
 
 #include <array>
+#include <cmath>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -68,9 +70,11 @@ inline sketch::CurveFormula ParsedCurve(const py::handle &point, const py::handl
     return f;
 }
 
-// the shape of the curve the callable point gives over the range (numbers): SampledFit, the callable called once per t;
-// a reversed range runs from t0 to t1 as a formula's does, sampled along s = -t
-inline Curve<double, Vertex> CallableShape(const py::object &point, const py::handle &range, const std::string &text) {
+// the shape of the curve the callable point gives over the range (numbers): SampledFit to tol of its size (none: 1e-10),
+// the callable called once per t; a reversed range runs from t0 to t1 as a formula's does, sampled along s = -t
+inline Curve<double, Vertex> CallableShape(const py::object &point, const py::handle &range, const std::string &text, std::optional<double> tol) {
+    if (tol && !(std::isfinite(*tol) && *tol > 0.0))
+        throw py::value_error(text + ": tol is a positive number, the fit's target relative to the curve's size");
     const py::tuple t = CurveRange(range, text, true);
     const double t0 = t[0].cast<double>(), t1 = t[1].cast<double>(), way = t1 < t0 ? -1.0 : 1.0;
     return SampledFit([&](double s) {
@@ -84,5 +88,10 @@ inline Curve<double, Vertex> CallableShape(const py::object &point, const py::ha
             throw py::type_error(text + ": the callable gives " + py::repr(p).cast<std::string>() + " at t = " + NumberText(at) +
                                  ", no point (h, v): a tuple, list or array of two numbers");
         }
-    }, way * t0, way * t1, text);
+    }, way * t0, way * t1, text, tol.value_or(1e-10), "; give tol= a looser target");
+}
+// tol= is a callable's: a formula is fitted to about 1e-12 of its size
+inline void CheckFormulaTol(std::optional<double> tol, const std::string &text) {
+    if (tol)
+        throw py::value_error(text + ": tol= is for a callable point; a formula is fitted to about 1e-12 of its size");
 }

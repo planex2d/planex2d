@@ -27,22 +27,25 @@ from ._planex import (Arc, ArcEdge, Circle, CircleEdge, Constraint, Curve, EdgeV
                       OCCGeometry, Pad, Plane, PlanexWarning, Pocket, Project, QuickSketch, ResetIdCounters, Rotation,
                       Shape, Spline, SplineEdge, Subtract, SymmetricDifference, Translation, Unify, V, Vertex, VertexView,
                       VerticesView, Wire, Wires, XY, XZ, YZ, ZX, origin)
+from ._planex import Bottom, Front, Left, Rear, Right, Top
 # outside __all__, re-exported for type checkers by the alias
 from ._planex import BSpline as BSpline, config as config, first as first, last as last
 from ._planex import Auto as Auto
-from ._planex import (Angle, Coincident, Concentric, Curvature, Diameter, Distance, Equal, Fix, Horizontal, Parallel,
-                      Perpendicular, Radius, RigidGroup, Symmetric, SymmetricCarriers, Tangent, Vertical)
+from ._planex import Minimal as Minimal
+from ._planex import (Angle, Coincident, Concentric, Curvature, CurvatureRadius, Diameter, Distance, Equal, Fix, FixH, FixV,
+                      Horizontal, Parallel, Perpendicular, Radius, RigidGroup, Symmetric, SymmetricCarriers, Tangent, Vertical)
 from ._planex import Chamfer, Flat, OffsetForm, Round, Sharp, Square
 from ._closing import ClosedOpenWires
 from ._compound import Compound
 from ._deformable import DeformableShape
 from ._dxf import FromDXF, WriteDXF
 from ._svgfile import FromSVG, WriteSVG
-from ._drawing import Drawing, Sheet
+from ._drawing import Drawing, Isometric, Sheet
 from ._gmsh import WriteGeo
 from ._io import FromBrep, FromOCC, FromStep, WriteBrep, WriteStep
 from ._meshsection import Intersect3d
 from ._kicad import FromKiCad
+from ._catpart import FromCATPart
 from ._kicadwrite import WriteKiCad
 from . import _geom, debug, stackups, types
 from ._levelset import FromLevelSet
@@ -92,6 +95,11 @@ for _cls in _sketch_types:
 del _cls
 from ._parameters import Parameters, use as _use  # noqa: E402
 Sketch.Use = _use
+from ._animate import Animate as _animate  # noqa: E402
+Sketch.Animate = _animate
+from ._spreadsheet import AddToSpreadsheet as _add_to_spreadsheet, ReadSpreadsheet as _read_spreadsheet  # noqa: E402
+Sketch.AddToSpreadsheet = _add_to_spreadsheet
+Sketch.ReadSpreadsheet = _read_spreadsheet
 DeformableShape.Plot = Plot
 DeformableShape.ToSVG = ToSVG
 DeformableShape._repr_svg_ = _svg._repr_svg
@@ -111,14 +119,14 @@ x, y, z, h, v = (_select.Coordinate(c) for c in "xyzhv")
 X, Y, Z = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
 
 # not x, y, z, h, v, X, Y, Z, BSpline and config: a star import after NGSolve's or netgen.occ's keeps theirs
-__all__ = ["Angle", "Arc", "ArcEdge", "Auto", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "Curve",
+__all__ = ["Angle", "Arc", "ArcEdge", "Auto", "Bottom", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "CurvatureRadius", "Curve",
            "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
-           "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "Flat", "FromBrep", "FromDXF", "FromKiCad", "FromLevelSet",
-           "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
-           "Intersect3d", "Line", "LineEdge", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
-           "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "ResetIdCounters",
-           "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricDifference",
-           "SymmetricCarriers", "Tangent", "ToSVG", "ToShapely", "Translation", "Unify", "V", "Vertex", "VertexView",
+           "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FixH", "FixV", "Flat", "FromBrep", "FromCATPart", "FromDXF", "FromKiCad", "FromLevelSet",
+           "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "Front", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
+           "Intersect3d", "Isometric", "Left", "Line", "LineEdge", "Minimal", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
+           "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "Rear", "ResetIdCounters",
+           "Right", "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricDifference",
+           "SymmetricCarriers", "Tangent", "ToSVG", "ToShapely", "Top", "Translation", "Unify", "V", "Vertex", "VertexView",
            "Vertical", "VerticesView", "Wire", "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad",
            "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m", "mil", "mm", "origin", "um"]
 

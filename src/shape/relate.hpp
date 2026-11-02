@@ -137,6 +137,7 @@ namespace planex2d {
                     if (side == PieceSide::Inside) {
                         m.Raise(0, 0, 2);
                         m.Raise(1, 0, 1);
+                        m.Raise(2, 0, 2);
                     } else {
                         m.Raise(0, 2, 2);
                         m.Raise(1, 2, 1);
@@ -146,6 +147,7 @@ namespace planex2d {
                     if (side == PieceSide::Inside) {
                         m.Raise(0, 0, 2);
                         m.Raise(0, 1, 1);
+                        m.Raise(0, 2, 2);
                     } else {
                         m.Raise(2, 0, 2);
                         m.Raise(2, 1, 1);

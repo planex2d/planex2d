@@ -142,7 +142,7 @@ jobs:
           mkdir unpacked && tar xzf dist/*.tar.gz -C unpacked --strip-components=1
           python -m pip install pytest hypothesis
           if [ "${{ matrix.install }}" = full ]; then
-            python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements
+            python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements openpyxl
           fi
           python -m pytest unpacked/tests -q
 

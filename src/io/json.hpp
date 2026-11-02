@@ -40,6 +40,7 @@ namespace planex2d {
         bool IsNull() const { return std::holds_alternative<std::nullptr_t>(value); }
         bool IsArray() const { return std::holds_alternative<Array>(value); }
         bool IsObject() const { return std::holds_alternative<Object>(value); }
+        bool IsString() const { return std::holds_alternative<std::string>(value); }
 
         // the member with that key, null if there is none
         const Json &operator[](std::string_view key) const {

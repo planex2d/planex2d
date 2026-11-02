@@ -21,8 +21,9 @@ void BindConstraintKinds(py::module_ &m) {
                                   "The kinds of constraints (px.Distance, ...); the geometric ones are also flags of the drawing calls.");
     for (sketch::Kind k : {sketch::Kind::Coincident, sketch::Kind::Horizontal, sketch::Kind::Vertical, sketch::Kind::Parallel, sketch::Kind::Perpendicular,
                        sketch::Kind::Tangent, sketch::Kind::Curvature, sketch::Kind::Equal, sketch::Kind::Symmetric, sketch::Kind::Concentric,
-                       sketch::Kind::Fix, sketch::Kind::Distance, sketch::Kind::Radius, sketch::Kind::Diameter, sketch::Kind::Angle,
-                       sketch::Kind::SymmetricCarriers, sketch::Kind::RigidGroup})
+                       sketch::Kind::Fix, sketch::Kind::FixH, sketch::Kind::FixV, sketch::Kind::Distance, sketch::Kind::Radius,
+                       sketch::Kind::Diameter, sketch::Kind::Angle, sketch::Kind::SymmetricCarriers, sketch::Kind::RigidGroup,
+                       sketch::Kind::CurvatureRadius})
         kinds.value(sketch::KindName(k), k);
     kinds.export_values();
 }
@@ -30,23 +31,35 @@ void BindConstraintKinds(py::module_ &m) {
 void BindSketch(py::module_ &m) {
     py::options options;
     options.disable_function_signatures();
-    m.def("_Interpolate", [](const std::vector<Vertex> &points, const std::map<size_t, Vertex> &tangents, bool closed, const py::object &style) {
+    const auto settingsAt = [](const std::vector<size_t> &at, const std::optional<std::map<size_t, double>> &tensions,
+                               const std::optional<std::map<size_t, double>> &radii) {
+        const std::map<size_t, TangentSetting<double>> given = TangentSettingsArg(tensions, radii, "_Interpolate");
+        std::vector<TangentSetting<double>> out;
+        for (size_t i : at)
+            out.push_back(given.count(i) ? given.at(i) : TangentSetting<double>{});
+        return out;
+    };
+    m.def("_Interpolate", [settingsAt](const std::vector<Vertex> &points, const std::map<size_t, Vertex> &tangents, bool closed, const py::object &style,
+                                       const std::optional<std::map<size_t, double>> &tensions, const std::optional<std::map<size_t, double>> &radii) {
         const auto [at, vectors] = TangentsOf(tangents);
-        const Curve<double, Vertex> f = Interpolate(points, at, vectors, closed, StyleArg(style, "_Interpolate"));
+        const Curve<double, Vertex> f = Interpolate(points, at, vectors, closed, StyleArg(style, "_Interpolate"), settingsAt(at, tensions, radii));
         py::dict out;
         out["degree"] = f.degree;
         out["knots"] = f.knots;
         out["params"] = f.params;
         out["poles"] = f.poles;
         return out;
-    }, py::arg("points"), py::pos_only(), py::arg("tangents") = std::map<size_t, Vertex>{}, py::arg("closed") = false, py::arg("style") = "averaged",
-       "test hook: our B-spline interpolation (degree, flattened knots, chord length parameters, poles)");
-    m.def("_InterpolatedAt", [](const std::vector<Vertex> &points, const std::map<size_t, Vertex> &tangents, bool closed, double u, size_t k,
-                                const py::object &style) {
+    }, py::arg("points"), py::pos_only(), py::arg("tangents") = std::map<size_t, Vertex>{}, py::arg("closed") = false, py::arg("style") = py::none(),
+       py::arg("tensions") = py::none(), py::arg("curvature_radii") = py::none(),
+       "test hook: our B-spline interpolation (degree, flattened knots, chord length parameters, poles); style None: the config's");
+    m.def("_InterpolatedAt", [settingsAt](const std::vector<Vertex> &points, const std::map<size_t, Vertex> &tangents, bool closed, double u, size_t k,
+                                          const py::object &style, const std::optional<std::map<size_t, double>> &tensions,
+                                          const std::optional<std::map<size_t, double>> &radii) {
         const auto [at, vectors] = TangentsOf(tangents);
-        return Tuple2(Interpolate(points, at, vectors, closed, StyleArg(style, "_InterpolatedAt")).At(u, k));
-    }, py::arg("points"), py::pos_only(), py::arg("tangents"), py::arg("closed"), py::arg("u"), py::arg("k") = 0, py::arg("style") = "averaged",
-       "test hook: the k-th derivative of the interpolating B-spline at the chord length parameter u");
+        return Tuple2(Interpolate(points, at, vectors, closed, StyleArg(style, "_InterpolatedAt"), settingsAt(at, tensions, radii)).At(u, k));
+    }, py::arg("points"), py::pos_only(), py::arg("tangents"), py::arg("closed"), py::arg("u"), py::arg("k") = 0, py::arg("style") = py::none(),
+       py::arg("tensions") = py::none(), py::arg("curvature_radii") = py::none(),
+       "test hook: the k-th derivative of the interpolating B-spline at the chord length parameter u; style None: the config's");
     py::enum_<SketchAxis>(m, "SketchAxis", "The horizontal and vertical axis of a sketch (px.H, px.V), and the global origin (px.origin).")
         .value("H", SketchAxis::H)
         .value("V", SketchAxis::V)

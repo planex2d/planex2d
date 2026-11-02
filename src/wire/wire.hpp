@@ -269,6 +269,14 @@ namespace planex2d {
                 axes.Translate(v);
                 return *this;
             }
+            // the same edges run the other way: in reverse order, each reversed
+            Wire &Reverse() {
+                std::reverse(edges.begin(), edges.end());
+                std::reverse(owners.begin(), owners.end());
+                for (Edge &e : edges)
+                    std::visit([](auto &x) { x = x.Reversed(); }, e);
+                return *this;
+            }
             Wire &Mirror(const Vertex &a, const Vertex &d) {
                 IsFinite("Mirror", {a.x, a.y, d.x, d.y});
                 Vertex u = MirrorDirection(d);
@@ -459,7 +467,7 @@ namespace planex2d {
             void MergeOnCarriers();
 
             // splinePieces: also the pieces of a spline (the export's last step; a spline fit would refit them)
-            void RemoveSmallEdges(double tol, bool splinePieces = false);
+            void RemoveSmallEdges(double tol, bool splinePieces = false, const std::vector<std::string> &sides = {});
 
             void RemoveFreeEdges();
 
@@ -467,10 +475,11 @@ namespace planex2d {
 
             void FitSplines(const SplineFit &fit);
 
-            Wire Cleaned(const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup) const;
+            Wire Cleaned(const ArcFit &arcs, const SplineFit &fit, const Cleanup &cleanup, const std::vector<std::string> &sides = {}) const;
             Wire &Simplify(const ArcFit &arcs = config::state->arc_fit, const SplineFit &fit = config::state->spline_fit,
                            const Cleanup &cleanup = config::state->cleanup);
             Wire Offset(double d, OffsetEnd ends = OffsetEnd::Round, OffsetCorner corners = OffsetCorner::Round) const;
+            Wire OffsetCurves(double d, std::optional<bool> bothSides, OffsetEnd ends, OffsetCorner corners) const;
 
             // each corner of at cut by the rule (FilletRule, ChamferRule): the edges there shortened, the new edge between
             // them; the corners that cannot be cut are warned about, none raises. In shape/fillet.hpp

@@ -52,6 +52,11 @@ def area(shape):
     return sum(f.mass for f in shape.faces)
 
 
+def offset_band(wire, d, ends=px.Round, corners=px.Round):
+    """the region within d of a wire's edges, both sides, as a Shape (Wire.Offset gives its boundary, a Wire)"""
+    return px.Shape([wire.Offset(d, True, ends, corners)])
+
+
 def polygon_area(polygon):
     return 0.0 if is_empty(polygon) else area(polygon.ToOCCFace())
 

@@ -92,9 +92,8 @@ def test_averaged_style_is_planexs_own():
     w = px.Spline(P5, style="averaged")
     assert from_netgen(px.Spline(P4, style="averaged"), netgen(P4, False, {})) < TOL
     assert from_netgen(w, netgen(P5, False, {})) > 1e-3
-    assert w.mass == px.Spline(P5).mass
     sk = px.QuickSketch()
-    sk.Spline(P5, start_from_localpos=False)
+    sk.Spline(P5, start_from_localpos=False, style="averaged")
     assert sk.Geometry("Spline.1")["style"] == "averaged"
     assert from_netgen(sk.Wire("Spline.1"), netgen(P5, False, {})) > 1e-3
 
@@ -105,10 +104,10 @@ def test_averaged_periodic_is_the_c2_periodic_cubic_from_every_start(pts):
     areas = []
     for k in range(len(pts)):
         turned = pts[k:] + pts[:k]
-        areas.append(polygon_area(px.Face([px.Spline(turned, periodic=True)])))
+        areas.append(polygon_area(px.Face([px.Spline(turned, periodic=True, style="averaged")])))
         for make in (px.QuickSketch, px.Sketch):
             sk = make()
-            sk.Spline(turned, periodic=True, start_from_localpos=False)
+            sk.Spline(turned, periodic=True, start_from_localpos=False, style="averaged")
             areas.append(polygon_area(sk.Face()))
     assert max(areas) - min(areas) <= 1e-12 * max(areas)
     if pts is C4:
@@ -128,7 +127,7 @@ def test_averaged_periodic_spline_and_sketch_spline_are_one_curve():
 
 
 def test_config_spline_style(style):
-    assert px.config.spline_style == "averaged"
+    assert px.config.spline_style == "quintic"
     px.config.spline_style = "clamped"
     assert px.config.spline_style == "clamped"
     assert from_netgen(px.Spline(P5), netgen(P5, False, {})) < TOL
@@ -141,7 +140,7 @@ def test_config_spline_style(style):
         with pytest.raises(ValueError, match="'averaged' or 'clamped'"):
             px.config.spline_style = wrong
     assert px.config.spline_style == "clamped"
-    with pytest.raises(ValueError, match=r"Spline: style 'b'; it is 'averaged' or 'clamped'"):
+    with pytest.raises(ValueError, match=r"Spline: style 'b'; it is 'quintic', 'averaged' or 'clamped'"):
         px.Spline(P3, style="b")
     with pytest.raises(ValueError, match="'averaged' or 'clamped'"):
         px.QuickSketch().Spline(P3, style="b")
@@ -158,7 +157,7 @@ def test_the_old_style_names_raise_naming_the_new(style, old, new):
         px.Sketch().Spline(P3, style=old)
     with pytest.raises(ValueError, match=r"^config.spline_style: " + message):
         px.config.spline_style = old
-    assert px.config.spline_style == "averaged"
+    assert px.config.spline_style == "quintic"
 
 
 @pytest.mark.constraints

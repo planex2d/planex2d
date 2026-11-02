@@ -433,3 +433,9 @@ The test board `tests/data/kicad/pic_programmer.kicad_pcb` (part of planex's sou
 documentation's copy `docs/integrations/pcb/pic_programmer.kicad_pcb` (in the repository only) are KiCad's demo board
 `demos/pic_programmer`, https://gitlab.com/kicad/code/kicad, Copyright the KiCad developers, licensed under CC BY-SA 4.0
 (https://creativecommons.org/licenses/by-sa/4.0/), unmodified; see `tests/data/kicad/NOTICE`.
+
+## With thanks
+
+The cadmpeg project shares its notes on CAD file formats openly (https://github.com/cadmpeg/cadmpeg, CC BY 4.0). Thank
+you to its authors for sharing them: they were a great help in writing planex's .CATPart reader. planex contains no
+text or code from cadmpeg.

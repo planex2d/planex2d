@@ -19,7 +19,7 @@ def geometry(sk, id="Spline.1"):
 def derivative(g, u, k=1):
     """the k-th derivative of a drawn spline at chord length u"""
     tangents = {int(i): t for i, t in g["tangents"].items()}
-    return px._planex._InterpolatedAt(g["points"], tangents, g["closed"], u, k)
+    return px._planex._InterpolatedAt(g["points"], tangents, g["closed"], u, k, style=g["style"])
 
 
 def flat(points):
@@ -84,7 +84,7 @@ def test_a_line_and_a_spline_tangent_at_their_joint():
 
 def test_a_tangent_turns_the_spline_at_the_joint_and_leaves_its_points():
     sk = px.Sketch()
-    sk.Move((0, 0)).Line(2, 0, px.Fix, id="lead").Spline([(3, 1.2), (4.5, 0.4), (5, 2)])
+    sk.Move((0, 0)).Line(2, 0, px.Fix, id="lead").Spline([(3, 1.2), (4.5, 0.4), (5, 2)], style="averaged")
     dof = sk.dof
     sk.Constrain("lead", "Spline.1", px.Tangent)
     g = geometry(sk)
@@ -137,7 +137,7 @@ def test_the_points_of_a_spline_by_index():
 
 def test_an_angle_at_a_tangent_line_of_a_spline_turns_it_there():
     sk = px.Sketch()
-    sk.Move((0, 0), px.Fix).Spline([(1, 0.8), (2.3, 0.5), (3, -0.4)], id="s")
+    sk.Move((0, 0), px.Fix).Spline([(1, 0.8), (2.3, 0.5), (3, -0.4)], id="s", style="averaged")
     dof = sk.dof
     sk.Constrain(px.H, "s.t0", px.Angle, 30, id="lift")
     g = geometry(sk, "s")
@@ -153,7 +153,7 @@ def test_an_angle_at_a_tangent_line_of_a_spline_turns_it_there():
 
 def test_a_given_tangent_is_an_angle_unknown_that_constraints_can_turn():
     sk = px.Sketch()
-    sk.Move((0, 0)).Spline([(1, 1), (2, 0)], tangents={0: (0, 1)})
+    sk.Move((0, 0)).Spline([(1, 1), (2, 0)], tangents={0: (0, 1)}, style="averaged")
     g = geometry(sk)
     assert g["tangents"] == {0: pytest.approx((0, 1), abs=TOL)}
     assert unit(derivative(g, 0)) == pytest.approx((0, 1), abs=TOL)
@@ -245,7 +245,7 @@ def test_mirrored_splines_follow_their_original():
 
 def test_the_tangents_of_a_mirrored_spline_follow_the_original():
     sk = px.Sketch()
-    sk.Move(sk.origin, px.Coincident).Line(2, 0.3, id="base").Spline([(3, 1.5), (1.5, 2.5)], px.Tangent, id="s")
+    sk.Move(sk.origin, px.Coincident).Line(2, 0.3, id="base").Spline([(3, 1.5), (1.5, 2.5)], px.Tangent, id="s", style="averaged")
     sk.Constrain(px.H, "base", px.Angle, 10, id="tilt")
     sk.Mirrored("Chain.1", px.V)
     sk["tilt"] = 20
@@ -258,7 +258,7 @@ def test_the_tangents_of_a_mirrored_spline_follow_the_original():
 
 def test_a_circular_pattern_of_a_spline():
     sk = px.Sketch()
-    sk.Move((1, 0)).Spline([(1.5, 0.3), (2, 0)], px.Fix, id="petal", tangents={0: (1, 1)})
+    sk.Move((1, 0)).Spline([(1.5, 0.3), (2, 0)], px.Fix, id="petal", tangents={0: (1, 1)}, style="averaged")
     sk.CircularPattern("petal", sk.origin, 4)
     assert sk.elements["Spline"] == ["petal"] + [f"CircularPattern.1.{k}.petal" for k in (1, 2, 3)]
     assert flat(geometry(sk, "CircularPattern.1.1.petal")["points"]) == pytest.approx([0, 1, -0.3, 1.5, 0, 2], abs=TOL)
@@ -364,11 +364,11 @@ def test_the_derivatives_of_a_tangent_with_a_spline():
 def curve_at(e, t, k=0):
     """the k-th derivative of a system spline (its Element dict) at chord length t"""
     tangents = {i: (math.cos(math.radians(a)), math.sin(math.radians(a))) for i, a in zip(e["tangent_at"], e["tangents"])}
-    return px._planex._InterpolatedAt(e["points"], tangents, e["closed"], t, k)
+    return px._planex._InterpolatedAt(e["points"], tangents, e["closed"], t, k, style="averaged")
 
 
 def fixed_spline(s, points):
-    return s.Spline([s.Point(*xy, fixed=True) for xy in points])
+    return s.Spline([s.Point(*xy, fixed=True) for xy in points], style="averaged")
 
 
 WAVE = [(0, 0), (1, 0.8), (2.3, 0.5), (3, -0.4)]
@@ -422,7 +422,7 @@ def test_a_line_and_a_circle_touch_a_spline_away_from_its_points():
 def test_two_splines_touch_away_from_their_points():
     s = px._planex._ConstraintSystem()
     a = fixed_spline(s, WAVE)
-    b = s.Spline([s.Point(*xy) for xy in [(0.5, 1.6), (1.4, 1.0), (2.5, 1.7)]])
+    b = s.Spline([s.Point(*xy) for xy in [(0.5, 1.6), (1.4, 1.0), (2.5, 1.7)]], style="averaged")
     s.Constrain("Tangent", [a, b])
     assert s.Solve()["solved"]
     ta, tb = s.values[-2], s.values[-1]

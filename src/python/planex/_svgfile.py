@@ -20,6 +20,7 @@ from ._units import inch, m, mm
 from ._auto import Auto, is_auto
 from ._fileunits import check_length, read_factor, write_factor
 from ._caller import warn
+from ._paths import with_extension
 
 if TYPE_CHECKING:
     from ._compound import Compound
@@ -150,7 +151,7 @@ def WriteSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, 
 
     Args:
         obj: a Face, Shape, Wire, Compound or sketch, or a list of them.
-        path: the file to write.
+        path: the file to write; without an extension .svg is added.
         unit: the length the drawing counts in (px.m, px.mm, ...).
         scale: what the model's numbers are multiplied by; px.Auto converts them from meters into unit, 1 writes them
             as they are.
@@ -207,7 +208,7 @@ def WriteSVG(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | list, 
             f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
             f'width="{_n(w * k * unit / mm)}mm" height="{_n(h * k * unit / mm)}mm" '
             f'viewBox="{_n(x0 * k)} {_n(-y1 * k)} {_n(w * k)} {_n(h * k)}">\n')
-    with open(path, "w", encoding="utf-8") as out:
+    with open(with_extension(path, ".svg"), "w", encoding="utf-8") as out:
         out.write(head + "\n".join(body) + "\n</svg>\n")
     if path_of.approximated:
         warn(f"WriteSVG: {path_of.approximated} curve(s) have no exact SVG form (rational, or above degree 3) and "

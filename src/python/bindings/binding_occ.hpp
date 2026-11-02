@@ -20,6 +20,7 @@
 #include "integrations/netgenocc/plane.hpp"
 #include "integrations/netgenocc/project.hpp"
 #include "integrations/netgenocc/shapeexport.hpp"
+#include "integrations/netgenocc/silhouette.hpp"
 
 #include "binding.hpp"
 
@@ -70,15 +71,37 @@ inline Wire ProjectedWire(const TopoDS_Shape &shape, const AxisSystem &axes) {
     return p.wire;
 }
 
-inline WireList ProjectedWires(const TopoDS_Shape &shape, const AxisSystem &axes) { return ProjectedWire(shape, axes).OrderedChains(); }
+// the outline of the shadow: each region's outer loop, then its holes
+inline WireList ShadowWires(const TopoDS_Shape &shape, const AxisSystem &axes) {
+    WireList out;
+    for (const Face &f : Shadow(shape, axes).Faces()) {
+        out.push_back(f.Outer());
+        for (Wire &hole : f.Holes())
+            out.push_back(std::move(hole));
+    }
+    return out;
+}
+
+inline WireList ProjectedWires(const TopoDS_Shape &shape, const AxisSystem &axes, bool silhouette = false) {
+    return silhouette ? ShadowWires(shape, axes) : ProjectedWire(shape, axes).OrderedChains();
+}
+
+inline const std::string silhouetteArg = "    silhouette: the outline of the shadow the shape casts along the normal instead of its edges: the outer boundary "
+                                         "and the boundaries of the holes one sees through, px.Shape(...) of them the region. Fold lines of curved "
+                                         "faces bound it where they do, exact where the surface allows (a cylinder or cone: lines, a sphere: a "
+                                         "circle), a torus's as OCC's hidden-line algorithm traces them (within about 1e-7 of its size), other "
+                                         "surfaces' splines through points on their exact fold.\n";
 
 inline const char *ProjectDoc(const std::string &x) {
-    return Doc("Project(shape: TopoDS_Shape | list[TopoDS_Shape], /) -> list[Wire]\n\n"
+    return Doc("Project(shape: TopoDS_Shape | list[TopoDS_Shape], /, silhouette: bool = False) -> list[Wire]\n\n"
                "The edges of the OCC shape projected straight onto this plane, as a list of wires, as px.Project.\n\n"
                "Args:\n"
-               "    shape: an OCC shape, or a list of them (projected as one compound).\n\n"
+               "    shape: an OCC shape, or a list of them (projected as one compound).\n" + silhouetteArg + "\n"
+               "Raises:\n"
+               "    ValueError: silhouette=True for a shape without faces.\n\n"
                "Examples:\n"
-               "    " + x + ".Project(box)");
+               "    " + x + ".Project(box)\n"
+               "    " + x + ".Project(shaft, silhouette=True)");
 }
 
 // the dim of netgen's OCCGeometry of faces in the plane: a dim=2 mesh keeps only x and y, so faces elsewhere than in
@@ -134,14 +157,14 @@ inline Pair3 NearestAcross(const Planar &s, const std::optional<Vertex> &point, 
     return {n.d, Vector3Of(n.a.XYZ()), Vector3Of(n.b.XYZ())};
 }
 
-inline const OCCHooks occHooks{.point = OCCPointOf,
-                               .direction = OCCDirectionOf,
-                               .axes = OCCAxesOf,
-                               .isShape = IsOCCShape,
-                               .isAxes = IsOCCAxes,
-                               .projected = OCCProjected,
-                               .across = ProjectedAcross,
-                               .nearest = NearestAcross};
+inline const OCCHooks netgenHooks{.point = OCCPointOf,
+                                  .direction = OCCDirectionOf,
+                                  .axes = OCCAxesOf,
+                                  .isShape = IsOCCShape,
+                                  .isAxes = IsOCCAxes,
+                                  .projected = OCCProjected,
+                                  .across = ProjectedAcross,
+                                  .nearest = NearestAcross};
 
 // m is the core module: the OCC module adds its functions there and its methods to the core's classes, so planex reads
 // the same as with one module

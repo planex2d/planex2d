@@ -146,6 +146,24 @@ def test_show_parent_draws_the_solid_under_the_sketch_with_its_edge_names():
     assert not any(n.startswith(("Line.", "Arc.", "Circle.")) for n in names if n)
 
 
+def test_show_parent_draws_the_solid_as_a_drawings_isometric_view_does():
+    occ = pytest.importorskip("netgen.occ")
+    pytest.importorskip("matplotlib")
+    from matplotlib.collections import LineCollection, PolyCollection
+
+    box = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(40, 20, 10)) - occ.Cylinder(occ.Pnt(30, 10, -1), occ.Z, r=4, h=12)
+    box = box.MakeFillet([e for e in box.edges if abs(e.center.z - 10) < 1e-9 and abs(e.center.x) < 1e-9], 3)
+    sk = px.Sketch(box.faces.Max(occ.Z))
+    sk.Circle((10, 10), 3)
+    ax = sk.Plot(show_parent=box)
+    parent = [c for c in ax.collections if c.get_zorder() == 1]
+    faces = [c for c in parent if isinstance(c, PolyCollection)]
+    assert faces and all(f[0] == f[1] == f[2] and 0 < f[0] < 1 for c in faces for f in c.get_facecolor())
+    edges = {round(float(c.get_linewidth()[0]), 6): len(c.get_segments()) for c in parent if isinstance(c, LineCollection)}
+    (narrow, n), (wide, w) = sorted(edges.items())
+    assert wide == pytest.approx(2 * narrow) and n >= 1 and w >= 4
+
+
 def test_plotly_shows_an_element_s_id_all_along_it():
     # plotly's tooltip needs a point within 20 px: invisible markers lie along every element, a hundredth of the
     # drawing apart, not only at its middle

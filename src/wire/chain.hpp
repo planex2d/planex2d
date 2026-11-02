@@ -41,11 +41,17 @@ namespace planex2d {
     // the edges in order along their single chain, each keeping its own direction; ends within tol are joined
     // bit-exactly, a later edge's end moved onto the earlier edge's. Raises for a branch or several chains (hint: the
     // fix named in the message)
-    inline Wire OrderChain(const EdgeList &edges, const AxisSystem &axes, double tol, const std::string &call,
-                           const std::string &hint = "px.Wires(edges) returns them as a list, tol= joins ends further apart") {
-        Wire w(axes);
+    // the edges along their single chain: each one's index and whether the chain runs along its direction (enters it
+    // at its start); closed when it ends where it starts. Raises for a branch or several chains (hint: the fix named in
+    // the message)
+    struct ChainWalk {
+        std::vector<std::pair<size_t, bool>> edges;
+        bool closed = false;
+    };
+    inline ChainWalk WalkChain(const EdgeList &edges, double tol, const std::string &call, const std::string &hint) {
+        ChainWalk walk;
         if (edges.empty())
-            return w;
+            return walk;
         const size_t none = (size_t)-1;
         const std::vector<Vertex> pts = edges.Endpoints();
         std::vector<size_t> id;
@@ -79,16 +85,10 @@ namespace planex2d {
         if (start == none)
             start = 0;
         std::vector<bool> used(edges.size(), false);
-        size_t entry = start;
-        Vertex joint = pts[start];
-        for (;;) {
-            Edge e = edges[entry / 2];
+        for (size_t entry = start;;) {
             used[entry / 2] = true;
-            if (!(Wire::EndOf(e, entry % 2 == 1) == joint))
-                Wire::MoveEnd(e, entry % 2 == 1, joint);
+            walk.edges.push_back({entry / 2, entry % 2 == 0});
             const size_t leave = entry ^ 1;
-            joint = Wire::EndOf(e, leave % 2 == 1);
-            w.Add(std::move(e));
             size_t next = none;
             for (size_t k : at[id[leave]])
                 if (k != leave)
@@ -96,13 +96,34 @@ namespace planex2d {
             if (next == none)
                 break;
             if (used[next / 2]) {
-                Edge &last = w[w.Size() - 1];
-                if (!(joint == pts[start]))
-                    Wire::MoveEnd(last, leave % 2 == 1, pts[start]);
+                walk.closed = true;
                 break;
             }
             entry = next;
         }
+        return walk;
+    }
+
+    // the edges in order along their single chain, each keeping its own direction; ends within tol are joined
+    // bit-exactly, a later edge's end moved onto the earlier edge's. Raises for a branch or several chains (hint: the
+    // fix named in the message)
+    inline Wire OrderChain(const EdgeList &edges, const AxisSystem &axes, double tol, const std::string &call,
+                           const std::string &hint = "px.Wires(edges) returns them as a list, tol= joins ends further apart") {
+        Wire w(axes);
+        const ChainWalk walk = WalkChain(edges, tol, call, hint);
+        if (walk.edges.empty())
+            return w;
+        const Vertex first = Wire::EndOf(edges[walk.edges.front().first], !walk.edges.front().second);
+        Vertex joint = first;
+        for (const auto &[k, along] : walk.edges) {
+            Edge e = edges[k];
+            if (!(Wire::EndOf(e, !along) == joint))
+                Wire::MoveEnd(e, !along, joint);
+            joint = Wire::EndOf(e, along);
+            w.Add(std::move(e));
+        }
+        if (walk.closed && !(joint == first))
+            Wire::MoveEnd(w[w.Size() - 1], walk.edges.back().second, first);
         return w;
     }
 

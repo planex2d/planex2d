@@ -563,3 +563,289 @@ def check_sketch(spec):
         else:
             off = (turn(direction("a"), direction("b")) - value["phi"]) % 180
             near(min(off, 180 - off), 0, turn_tol, "phi")
+
+
+def chord_params(points, closed):
+    """the points' parameters of an interpolating spline: the summed chords, back to the start when closed"""
+    loop = list(points) + list(points[:1]) if closed else list(points)
+    t = [0.0]
+    for a, b in zip(loop, loop[1:]):
+        t.append(t[-1] + math.dist(a, b))
+    return t
+
+
+def quintic(points, closed, tangents, tensions, radii):
+    """the exact quintic through the points: at(u, k), its k-th derivative at the chord parameter u"""
+    def at(u, k=0):
+        return np.array(px._planex._InterpolatedAt([tuple(p) for p in points], tangents, closed, u, k, style="quintic",
+                                                    tensions=tensions, curvature_radii=radii))
+
+    return at
+
+
+@st.composite
+def spline_specs(draw):
+    """a quintic spline's points, open or closed; at some of them a tangent direction, alone, with a tension or with a
+    signed curvature; and a turn, scale and shift of the whole"""
+    closed = draw(st.booleans())
+    n = draw(st.integers(3 if closed else 2, 7))
+    points = tuple((draw(coordinate()), draw(coordinate())) for _ in range(n))
+    setting = st.tuples(st.floats(-math.pi, math.pi), st.sampled_from(("tangent", "tension", "curvature")),
+                        st.floats(0.3, 3.0), st.floats(-3.0, 3.0))
+    settings = tuple(draw(st.one_of(st.none(), setting)) for _ in range(n))
+    moved = (draw(st.floats(-math.pi, math.pi)), draw(st.floats(0.1, 10.0)), draw(coordinate(-5.0, 5.0)),
+             draw(coordinate(-5.0, 5.0)))
+    return (closed, points, settings, moved)
+
+
+def spline_settings(settings):
+    """the tangents, tensions and curvature radii of a spline spec's settings"""
+    tangents, tensions, radii = {}, {}, {}
+    for i, s in enumerate(settings):
+        if s is None:
+            continue
+        angle, kind, tension, curvature = s
+        tangents[i] = (math.cos(angle), math.sin(angle))
+        if kind == "tension":
+            tensions[i] = tension
+        if kind == "curvature" and abs(curvature) >= 0.05:
+            radii[i] = 1 / curvature
+    return tangents, tensions, radii
+
+
+def check_spline(spec):
+    """the quintic through random points with random settings: through every point; the given tangent direction and
+    signed curvature where set, a lone tangent as long as the plain spline's times its tension; smooth to the fourth
+    derivative at a free point, the third at a tangent, the second at a curvature; an open end without a setting
+    natural (third and fourth derivative zero); the reversed points the same curve backwards; the points turned,
+    scaled and moved the curve turned, scaled and moved; px.Spline through every point with the curvature set"""
+    closed, points, settings, (turn_by, scale, dx, dy) = spec
+    n = len(points)
+    t = chord_params(points, closed)
+    chords = [b - a for a, b in zip(t, t[1:])]
+    spread = max(math.dist(p, q) for p in points for q in points)
+    apart = min(math.dist(p, q) for k, p in enumerate(points) for q in points[:k])
+    assume(apart >= 0.05 and apart >= 0.1 * spread)
+    tangents, tensions, radii = spline_settings(settings)
+    at = quintic(points, closed, tangents, tensions, radii)
+    knots, length, shortest = t[:n], t[-1], min(chords)
+    size = max([1.0] + [abs(c) for p in points for c in p])
+    for i, (u, p) in enumerate(zip(knots, points)):
+        assert math.dist(at(u), p) <= 1e-10 * size, (spec, "through", i)
+    for i, d in tangents.items():
+        x, y = at(knots[i], 1)
+        speed = math.hypot(x, y)
+        assert abs(d[0] * y - d[1] * x) <= 1e-9 * speed and d[0] * x + d[1] * y > 0, (spec, "tangent", i)
+        if i in radii:
+            ax, ay = at(knots[i], 2)
+            assert (x * ay - y * ax) / speed ** 3 == pytest.approx(1 / radii[i], rel=1e-8), (spec, "curvature", i)
+    if len(tangents) == 1 and not radii:
+        (i, _), = tangents.items()
+        plain = float(np.linalg.norm(quintic(points, closed, {}, {}, {})(knots[i], 1)))
+        assert float(np.linalg.norm(at(knots[i], 1))) == pytest.approx(tensions.get(i, 1.0) * plain, rel=1e-9), \
+            (spec, "tangent length", i)
+    h = 1e-9 * shortest
+    # the jump of a k-th derivative over 2 h, as a fraction of the shortest chord's own scale of it: about 1e-7 where it
+    # is continuous, 10 and more where it jumps
+    for i in (range(n) if closed else range(1, n - 1)):
+        smooth = 2 if i in radii else 3 if i in tangents else 4
+        for k in range(1, smooth + 1):
+            before, after = (at(length - h, k), at(h, k)) if i == 0 else (at(knots[i] - h, k), at(knots[i] + h, k))
+            assert float(np.linalg.norm(after - before)) * shortest ** (k - 1) <= 1e-4, (spec, "smooth", i, k)
+    if not closed:
+        for i in (0, n - 1):
+            if i not in tangents:
+                for k in (3, 4):
+                    end = float(np.linalg.norm(at(knots[i], k))) * shortest ** (k - 1)
+                    assert end <= 1e-8, (spec, "natural end", i, k)
+    order = [(n - j) % n for j in range(n)] if closed else list(range(n - 1, -1, -1))
+    back = quintic([points[j] for j in order], closed,
+                   {k: (-tangents[j][0], -tangents[j][1]) for k, j in enumerate(order) if j in tangents},
+                   {k: tensions[j] for k, j in enumerate(order) if j in tensions},
+                   {k: -radii[j] for k, j in enumerate(order) if j in radii})
+    c, s = math.cos(turn_by), math.sin(turn_by)
+
+    def moved(p):
+        return np.array((scale * (c * p[0] - s * p[1]) + dx, scale * (s * p[0] + c * p[1]) + dy))
+
+    there = quintic([tuple(moved(p)) for p in points], closed,
+                    {i: (c * d[0] - s * d[1], s * d[0] + c * d[1]) for i, d in tangents.items()}, tensions,
+                    {i: scale * r for i, r in radii.items()})
+    far = scale * size + abs(dx) + abs(dy)
+    for u in np.linspace(0.0, length, 23):
+        assert math.dist(back(length - u), at(u)) <= 1e-9 * size, (spec, "reversed", u)
+        assert math.dist(there(scale * u), moved(at(u))) <= 1e-9 * far, (spec, "moved", u)
+    try:
+        w = px.Spline([tuple(p) for p in points], periodic=closed, tangents=tangents or None, tensions=tensions or None,
+                      curvature_radii=radii or None, style="quintic")
+    except ValueError as e:
+        import shapely
+
+        path = shapely.set_precision(shapely.LineString([tuple(at(u)) for u in np.linspace(0.0, length, 2000)]),
+                                     1e-9 * size)
+        assert not path.is_simple, (spec, "px.Spline refused a curve that does not cross or touch itself", e)
+        return
+    for i, p in enumerate(points):
+        m = w.Measure(at=p)
+        assert m["distance"] <= 1e-9 * size, (spec, "px.Spline through", i)
+        if i in radii:
+            assert m["curvature"] == pytest.approx(1 / radii[i], rel=1e-7), (spec, "px.Spline curvature", i)
+
+
+@st.composite
+def sketch_spline_specs(draw):
+    """a quintic spline tangent to the bend family's arc, its points drawn at random ahead of the arc's end, a curvature
+    radius at its first drawn point; and new values of the line, the arc and the curvature"""
+    steps = tuple((draw(st.floats(-1.5, 1.5)), draw(st.floats(0.3, 1.5))) for _ in range(draw(st.integers(2, 4))))
+    curvature = st.one_of(st.floats(-2.0, -0.05), st.floats(0.05, 2.0))
+    return (steps, draw(curvature), draw(st.floats(0.5, 4.0)), draw(st.floats(0.3, 2.0)), draw(st.floats(30.0, 150.0)),
+            draw(curvature))
+
+
+def sketch_spline_of(steps, curvature):
+    """a fixed line, a tangent arc and a quintic spline tangent to it, drawn at the first values (2, 1, 90 degrees)"""
+    sk = px.Sketch()
+    sk.Move((0, 0), px.Fix).Line(2, 0, px.Horizontal, id="a").Arc(1, 90, px.Tangent, id="b")
+    points, y = [], 1.0
+    for side, ahead in steps:
+        y += ahead
+        points.append((3 + side, y))
+    sk.Spline(points, px.Tangent, id="s", style="quintic")
+    sk.Constrain("a", px.Distance, 2, id="la")
+    sk.Constrain("b", px.Radius, 1, id="r")
+    sk.Constrain("b", px.Angle, 90, id="sw")
+    sk.Constrain("s.p1", px.CurvatureRadius, 1 / curvature, id="kr")
+    return sk, len(points)
+
+
+def check_sketch_spline(spec):
+    """the solved sketch meets its line, arc and curvature radius within the solver's residual, the spline runs on from
+    the arc's end along its tangent and through every point it was given"""
+    steps, curvature, la, r, sw, new_curvature = spec
+    sk, count = sketch_spline_of(steps, curvature)
+    sk.Update({"la": la, "r": r, "sw": sw, "kr": 1 / new_curvature})
+    points = [sk.Location(f"s.p{k}") for k in range(count + 1)]
+    scale = max([1.0, r] + [abs(v) for p in points for v in p])
+    tol = 10 * SOLVE_TOL * scale
+    turn_tol = math.degrees(tol / min(la, r))
+    a0, a1 = sk.Location("a.start"), sk.Location("a.end")
+    c, s, e = sk.Location("b.center"), sk.Location("b.start"), sk.Location("b.end")
+    assert abs(math.dist(a0, a1) - la) <= tol, (spec, "la")
+    for p in (s, e):
+        assert abs(math.dist(p, c) - r) <= tol, (spec, "r")
+    assert abs((turn((s[0] - c[0], s[1] - c[1]), (e[0] - c[0], e[1] - c[1])) - sw + 180) % 360 - 180) <= turn_tol, \
+        (spec, "sw")
+    assert math.dist(points[0], e) <= tol, (spec, "joined")
+    start = sk.Measure("s", at=e)
+    assert abs(turn((-(e[1] - c[1]), e[0] - c[0]), start["tangent_hv"])) <= turn_tol, (spec, "tangent")
+    for k, p in enumerate(points):
+        assert sk.Measure("s", at=p)["distance"] <= tol, (spec, "through", k)
+    assert sk.Measure("s", at=points[1])["curvature"] == pytest.approx(new_curvature, rel=1e-7), (spec, "curvature")
+
+
+def least_rectangle(hull):
+    """the least area of a rectangle around a convex polygon (shapely's), one side along an edge (rotating calipers)"""
+    pts = np.asarray(hull.exterior.coords)[:-1]
+    best = math.inf
+    for a, b in zip(pts, np.roll(pts, -1, axis=0)):
+        u = (b - a) / np.linalg.norm(b - a)
+        along, across = pts @ u, pts @ np.array([-u[1], u[0]])
+        best = min(best, float((along.max() - along.min()) * (across.max() - across.min())))
+    return best
+
+
+def check_hull(spec):
+    """ConvexHull covers the face, EnclosingCircle and EnclosingRectangle cover the hull; against shapely's convex hull
+    and minimum bounding circle and the least rectangle around shapely's hull, within the sampling (a spline's hull
+    also within its approximation)"""
+    import shapely
+
+    a = build(spec)
+    g = valid(a)
+    sample = 1e-6 * size(a)
+    x0, y0, x1, y1 = g.bounds
+    near = 4 * sample + (2 * px.config.spline_tol * math.hypot(x1 - x0, y1 - y0) if a.splines else 0.0)
+    hull = a.Measure(px.measurements.ConvexHull())
+    circle = a.Measure(px.measurements.EnclosingCircle())
+    rect = a.Measure(px.measurements.EnclosingRectangle())
+    curved = near * perimeter(hull) if a.splines else 0.0
+    assert area(a - hull) <= area_tol(a, hull) + curved, (spec, "hull leaves out", area(a - hull))
+    for name, f in (("circle", circle["face"]), ("rectangle", rect["face"])):
+        assert area(hull - f) <= area_tol(hull, f) + curved, (spec, name + " leaves out", area(hull - f))
+    theirs = shapely.convex_hull(g)
+    assert abs(area(hull) - theirs.area) <= near * perimeter(hull) + area_tol(hull), \
+        (spec, "hull area", area(hull), theirs.area)
+    assert abs(circle["radius"] - shapely.minimum_bounding_radius(g)) <= near + 1e-12 * size(a), \
+        (spec, "circle radius", circle["radius"], shapely.minimum_bounding_radius(g))
+    length, width = rect["length"], rect["width"]
+    assert length >= width and abs(area(rect["face"]) - length * width) <= area_tol(rect["face"]), (spec, "rectangle")
+    assert abs(length * width - least_rectangle(theirs)) <= near * 2 * (length + width) + area_tol(hull), \
+        (spec, "rectangle area", length * width, least_rectangle(theirs))
+
+
+def transposed(matrix):
+    return "".join(matrix[3 * j + i] for i in range(3) for j in range(3))
+
+
+# the named relations as DE-9IM patterns of two faces (Crosses has none between areas)
+PATTERNS = {"Equals": ["T*F**FFF*"], "IsDisjoint": ["FF*FF****"], "Contains": ["T*****FF*"], "IsWithin": ["T*F**F***"],
+            "Covers": ["T*****FF*", "*T****FF*", "***T**FF*", "****T*FF*"],
+            "IsCoveredBy": ["T*F**F***", "*TF**F***", "**FT*F***", "**F*TF***"],
+            "Touches": ["FT*******", "F**T*****", "F***T****"], "Overlaps": ["T*T***T**"]}
+
+
+def matches(matrix, pattern):
+    return all(p == "*" or (p == "T" and m != "F") or p == m for m, p in zip(matrix, pattern))
+
+
+def check_relate(spec):
+    """the DE-9IM matrix of a pair: the other way round its transpose, every named relation as its pattern says, a face
+    with itself equal; for straight-edged faces apart or the same, shapely's matrix of the same vertices"""
+    import shapely
+
+    a, b = build_pair(spec)
+    m = a.Relate(b)
+    assert b.Relate(a) == transposed(m), (spec, "transposed", m, b.Relate(a))
+    for name, patterns in PATTERNS.items():
+        assert getattr(a, name)(b) == any(matches(m, p) for p in patterns), (spec, name, m)
+    assert a.Intersects(b) == (not a.IsDisjoint(b)), (spec, "Intersects", m)
+    if spec[1] == "same":
+        assert m == "2FFF1FFF2", (spec, "same", m)
+    if spec[1] in ("free", "same") and spec[0][0] in STRAIGHT and spec[2][0] in STRAIGHT:
+        ga, gb = shapely_of(a, 1e-6 * size(a)), shapely_of(b, 1e-6 * size(b))
+        # a free pair can still have a vertex within rounding of the other's boundary (two stars of one outline):
+        # there shapely's exact arithmetic and planex's tolerance differ (shapely's distance may even round to 0), so
+        # only pairs apart or meeting at the very same vertices count
+        tol = 1e-9 * size(a, b)
+
+        def near(x, y, g):
+            corners = set(vertices(y))
+            return any(p not in corners and d <= tol
+                       for p, d in zip(vertices(x), shapely.distance(shapely.points(vertices(x)), g.boundary)))
+
+        if not (near(a, b, gb) or near(b, a, ga)):
+            theirs = shapely.relate(ga, gb)
+            assert m == theirs, (spec, "shapely", m, theirs)
+
+
+@st.composite
+def band_specs(draw):
+    """an open polyline running to the right (so it never crosses itself) and an offset distance"""
+    n = draw(st.integers(2, 6))
+    x, points = draw(coordinate()), []
+    for _ in range(n):
+        points.append((x, draw(coordinate())))
+        x += draw(st.floats(0.2, 1.0))
+    return (tuple(points), draw(st.floats(0.02, 0.3)))
+
+
+def check_band_thickness(spec):
+    """a polyline offset by d to both sides, with round corners and ends, is the union of discs of radius d around it:
+    its thinnest wall is 2 d, wherever the band runs straight or round its ends"""
+    points, d = spec
+    s = px.QuickSketch().Move(points[0])
+    for p in points[1:]:
+        s.Line(p)
+    band = px.Shape([s.Wire().Offset(d, True, px.Round, px.Round)])
+    got = band.Measure(px.measurements.MinThickness())
+    assert abs(got - 2 * d) <= 1e-9 * size(band), (spec, "thinnest", got, 2 * d)

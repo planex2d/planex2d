@@ -75,8 +75,8 @@ def test_an_update_without_solution_changes_nothing():
 
 def test_a_redundant_constraint_warns_and_is_listed():
     sk = rectangle()
-    with pytest.warns(px.PlanexWarning, match=r"Parallel.1 \(\"bottom\", \"top\", px.Parallel\) is redundant \(consistent\) with "
-                                              r"Perpendicular.1, Perpendicular.2"):
+    with pytest.warns(px.PlanexWarning, match=r"Parallel.1 \(\"bottom\", \"top\", px.Parallel\) follows from "
+                                              r"Perpendicular.1, Perpendicular.2; remove one of them"):
         sk.Constrain("bottom", "top", px.Parallel)
     assert sk.status == "full" and sk.dof == 0
     assert sk.redundant == ["Perpendicular.1", "Perpendicular.2", "Parallel.1"]
@@ -296,7 +296,7 @@ def test_strict_mode_exports_only_fully_constrained_sketches():
     sk.Constrain("bottom", "top", px.Distance, 2)
     sk.Constrain("P", px.Fix)
     # a consistent redundancy is no reason to refuse
-    with pytest.warns(px.PlanexWarning, match="redundant"):
+    with pytest.warns(px.PlanexWarning, match="follows from"):
         sk.Constrain("bottom", "top", px.Parallel)
     assert sk.Face().mass == pytest.approx(8, abs=1e-12)
 

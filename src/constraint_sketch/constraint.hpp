@@ -42,6 +42,7 @@ namespace planex2d::cs {
         std::vector<size_t> held, heldPoints;
         // Tangent: the tangent directions it gave splines at the joint, (spline, point index)
         std::vector<std::pair<size_t, size_t>> madeTangents;
+        std::vector<std::pair<size_t, size_t>> madeCurvatures;
         // a point on a spline, its distance from one, or a touch away from its points: the positions along the
         // spline(s) there (chord length unknowns); a rigid group: where its frame is and how it turned (h, v, angle)
         std::vector<size_t> params;

@@ -165,21 +165,27 @@ void BindEdges(py::module_ &m) {
            "    edge.Distance((5, 3), on_carrier=True)")
         .def("ClosestPoint", [](const EdgeView &r, const py::object &point) { return ClosestPointOf(ThingOf(r.AsWire()), point); },
              py::arg("point"), py::pos_only(), ClosestPointDoc("edge"))
-        .def("Measure", [](const EdgeView &r, const py::object &to, bool project) {
+        .def("Measure", [](const py::object &self, const py::object &to, bool project, const py::object &at) {
+            const EdgeView &r = self.cast<const EdgeView &>();
+            if (!at.is_none())
+                return MeasureAt(ThingOf(r.AsWire()), at, to, [&](size_t) { return self; });
             return MeasureWith(ThingOf(r.AsWire()), to, project, [](const std::string &n) -> Thing {
                 throw py::value_error("Measure(to='" + n + "'): an edge has no names to look up");
             });
-        }, py::arg("to") = py::none(), py::arg("project") = false,
-           "Measure(to: Point | Point3 | Face | Shape | Wire | EdgeView | None = None, project: bool = False) -> dict\n\n"
-           "The measures of the edge as a dict, with the keys of Wire.Measure.\n\n"
-           "Args:\n"
-           "    to: anything Distance takes: adds the distance to it.\n"
-           "    project: True projects a target of to in another plane into this one.\n\n"
-           "Raises:\n"
-           "    ValueError: to is a name: an edge has no names to look up.\n\n"
-           "Examples:\n"
-           "    edge.Measure()\n"
-           "    edge.Measure(to=(0, 0))");
+        }, py::arg("to") = py::none(), py::arg("project") = false, py::arg("at") = py::none(),
+           Doc(std::string("Measure(to: Point | Point3 | Face | Shape | Wire | EdgeView | None = None, project: bool = False, "
+                           "at: float | Point | Point3 | None = None) -> dict\n\n"
+                           "The measures of the edge as a dict, with the keys of Wire.Measure.\n\n"
+                           "Args:\n"
+                           "    to: anything Distance takes: adds the distance to it.\n"
+                           "    project: True projects a target of to in another plane into this one.\n") +
+               AT_DOC + "\n"
+               "Raises:\n"
+               "    ValueError: to is a name: an edge has no names to look up" + AT_RAISES + ".\n"
+               "    TypeError: at= and to= are given together.\n\n"
+               "Examples:\n"
+               "    edge.Measure(to=(0, 0))\n"
+               "    edge.Measure(at=(0, 0))[\"curvature\"]"));
     EdgeFields([&](const char *name, auto get, auto set) {
         using V = SetterValueOf<decltype(set)>;
         edgeref.def_property(name, [get](const EdgeView &r) { return get(PropsOrDefault(r.Get())); },
@@ -478,31 +484,37 @@ void BindEdges(py::module_ &m) {
        "    px.FromPolyline([(0, 0), (10, 0), (10, 5)])\n"
        "    px.FromPolyline([(0, 0), (10, 0), (10, 5)], closed=True, name=\"outline\", maxh=0.5)");
     auto spline = [](const py::iterable &points, bool periodic, double tol, const std::optional<std::map<size_t, Vertex>> &tangents,
-                     const py::object &axes, const py::object &style) {
+                     const py::object &axes, const py::object &style, const std::optional<std::map<size_t, double>> &tensions,
+                     const std::optional<std::map<size_t, double>> &radii) {
         const AxisSystem a = AxesArg(axes, "Spline");
         Wire w(a);
         for (planex2d::Spline &s : planex2d::Spline::Through(PlanePoints(a, points, "Spline"), periodic, tol, tangents.value_or(std::map<size_t, Vertex>{}),
-                                                             StyleArg(style, "Spline")))
+                                                             StyleArg(style, "Spline"), TangentSettingsArg(tensions, radii, "Spline")))
             w.Add(std::move(s));
         return w;
     };
     m.def("_Spline", spline, py::arg("points"), py::pos_only(), py::arg("periodic") = false, py::arg("tol") = 1e-8,
-          py::arg("tangents") = py::none(), py::arg("plane") = py::none(), py::arg("style") = py::none(),
-          "for the importers: Spline without the self-crossing check, the result goes through px.Wires");
+          py::arg("tangents") = py::none(), py::arg("plane") = py::none(), py::arg("style") = py::none(), py::arg("tensions") = py::none(),
+          py::arg("curvature_radii") = py::none(), "for the importers: Spline without the self-crossing check, the result goes through px.Wires");
     m.def("Spline", [spline](const py::iterable &points, bool periodic, double tol, const std::optional<std::map<size_t, Vertex>> &tangents,
-                             const py::object &axes, const py::object &style) {
-        Wire w = spline(points, periodic, tol, tangents, axes, style);
+                             const py::object &axes, const py::object &style, const std::optional<std::map<size_t, double>> &tensions,
+                             const std::optional<std::map<size_t, double>> &radii) {
+        Wire w = spline(points, periodic, tol, tangents, axes, style, tensions, radii);
         w.CheckChain("Spline");
         return w;
     }, py::arg("points"), py::pos_only(), py::arg("periodic") = false, py::arg("tol") = 1e-8, py::arg("tangents") = py::none(),
-       py::arg("plane") = py::none(), py::arg("style") = py::none(),
+       py::arg("plane") = py::none(), py::arg("style") = py::none(), py::arg("tensions") = py::none(), py::arg("curvature_radii") = py::none(),
        "Spline(points: list[Point] | np.ndarray, /, periodic: bool = False, tol: float = 1e-08, tangents: dict[int, tuple[float, "
-       "float]] | None = None, plane: Plane | None = None, style: str | None = None) -> Wire\n\n"
+       "float]] | None = None, plane: Plane | None = None, style: str | None = None, tensions: dict[int, float] | None = None, "
+       "curvature_radii: dict[int, float] | None = None) -> Wire\n\n"
        "A wire of one spline through the points, one closed edge if periodic.\n\n"
-       "Style 'averaged' is planex's interpolation, its knots averaged from the points' parameters, using only the "
-       "tangents' directions; periodic, the C2 periodic cubic, the same curve whichever point the list starts with. Style "
-       "'clamped' is the curve of OCC's Geom2dAPI_Interpolate as netgen calls it, a knot at every point (periodic: "
-       "OCC's, which depends on the start point and has a kink there).\n\n"
+       "Style 'quintic' is the quintic through the points with the least change of curvature, "
+       "smooth to its fourth derivative at the points; a tangent gives the direction there, a tension scales the tangent's "
+       "own length, a curvature radius sets the curvature across it. Style 'averaged' is planex's cubic, its knots averaged "
+       "from the points' parameters, using only the tangents' directions; periodic, the C2 periodic cubic, the same curve "
+       "whichever point the list starts with. Style 'clamped' is the curve of OCC's Geom2dAPI_Interpolate as netgen calls "
+       "it, a knot at every point (periodic: OCC's, which depends on the start point and has a kink there). Every style "
+       "runs through the points at chord-length parameters.\n\n"
        "Args:\n"
        "    points: the points (h, v), or (x, y, z) on the plane, the spline runs through, in order (a list or an (n, 2) or (n, 3) array); a periodic spline lists its start once.\n"
        "    periodic: True closes the spline smoothly through the first point.\n"
@@ -510,72 +522,85 @@ void BindEdges(py::module_ &m) {
        "    tangents: {index of a point: its tangent direction (dh, dv)}; None for none.\n"
        "    plane: the plane the wire lies on: a Plane, netgen Axes, a sketch, Shape, Face, Wire, Compound or planar "
        "OCC shape (its plane); default the xy plane.\n"
-       "    style: 'averaged' or 'clamped'; None takes px.config.spline_style.\n\n"
+       "    style: 'quintic', 'averaged' or 'clamped'; None takes px.config.spline_style.\n"
+       "    tensions: {index of a point with a tangent: its tension}, positive, 1 the tangent's own length; None for 1.\n"
+       "    curvature_radii: {index of a point with a tangent: the radius of curvature there}, positive bending left of "
+       "the tangent, negative right, math.inf straight; style 'quintic' only.\n\n"
        "Raises:\n"
        "    ValueError: the curve crosses itself; fewer than 2 points (3 if periodic); two neighboring points coincide; "
-       "a tangent is zero or at no point; a periodic spline repeats its first point at the end; style is not "
-       "'averaged' or 'clamped'; a value is not finite.\n"
+       "a tangent is zero or at no point; a tension or curvature radius at a point without a tangent; a tension not "
+       "positive; a curvature radius zero, or with another style; a periodic spline repeats its first point at the end; "
+       "style is not 'quintic', 'averaged' or 'clamped'; a value is not finite.\n"
        "    TypeError: plane has another form.\n\n"
        "Examples:\n"
        "    px.Spline([(0, 0), (1, 1), (2, 0)])\n"
-       "    px.Spline([(0, 0), (1, 1), (2, 0)], tangents={0: (0, 1)}, style=\"clamped\")");
-    m.def("Curve", [](const py::object &point, const py::object &range, const py::object &axes) {
+       "    px.Spline([(0, 0), (20, 10), (40, 0)], tangents={1: (1, 0)}, curvature_radii={1: -30}, style=\"quintic\")");
+    m.def("Curve", [](const py::object &point, const py::object &range, const py::object &axes, std::optional<double> tol) {
         const std::string text = CurveText("Curve", point, range);
         py::dict names;
         names["numbers_only"] = "px.Curve has no dimensions";
-        const Curve<double, Vertex> shape = IsCurveCallable(point) ? CallableShape(point, range, text) : ParsedCurve(point, range, text, names).Shape({});
+        if (!IsCurveCallable(point))
+            CheckFormulaTol(tol, text);
+        const Curve<double, Vertex> shape = IsCurveCallable(point) ? CallableShape(point, range, text, tol) : ParsedCurve(point, range, text, names).Shape({});
         Wire w(AxesArg(axes, "Curve"));
         for (planex2d::Spline &s : planex2d::Spline::FromCurve(shape))
             w.Add(std::move(s));
         w.CheckChain("Curve");
         return w;
-    }, py::arg("point"), py::arg("range"), py::pos_only(), py::kw_only(), py::arg("plane") = py::none(),
-       "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float, float], /, *, plane: Plane | None = None) -> Wire\n\n"
+    }, py::arg("point"), py::arg("range"), py::pos_only(), py::kw_only(), py::arg("plane") = py::none(), py::arg("tol") = py::none(),
+       "Curve(point: tuple[str, str] | Callable[[float], Point], range: tuple[float, float], /, *, plane: Plane | None = None, "
+       "tol: float | None = None) -> Wire\n\n"
        "A wire of one spline edge, fitted to the parametric curve to about 1e-12 of its size.\n\n"
        "The point is (h, v) as two expressions in the parameter t: numbers, units, pi, + - * / ^, sqrt, abs, min, max, sin, "
        "cos, tan, asin, acos, atan2 (angles in degrees), exp, log (natural), sinh, cosh, tanh, asinh, acosh, atanh, and h in v or v in h (the other coordinate at the same t); or a "
-       "callable t -> (h, v), a tuple, list or array, called once per t (fitted by a cubic to 1e-10 of its size). An end at "
+       "callable t -> (h, v), a tuple, list or array, called once per t (fitted by a cubic to within tol of its size). An end at "
        "its start closes it into one closed edge. The formula is not kept: the wire holds the spline.\n\n"
        "Args:\n"
        "    point: (h, v), two expressions in t, (\"t\", \"t^2\") for v = h^2; or a callable t -> (h, v).\n"
        "    range: (t0, t1), two numbers.\n"
        "    plane: the plane the wire lies on: a Plane, netgen Axes, a sketch, Shape, Face, Wire, Compound or planar "
-       "OCC shape (its plane); default the xy plane.\n\n"
+       "OCC shape (its plane); default the xy plane.\n"
+       "    tol: a callable's fit, how closely the cubic passes the curve relative to its size; default 1e-10, larger "
+       "for a curve with fine detail that 4096 samples do not fit to 1e-10.\n\n"
        "Raises:\n"
        "    TypeError: a point that is no two expressions or callable, a range that is no two numbers, a callable that gives "
        "no point.\n"
        "    ValueError: a name the formula cannot use (px.Curve takes no dimensions), h and v using each other or a "
        "coordinate itself, a formula out of its domain in the range, an empty range, a curve of no length, a curve that "
-       "crosses itself.\n\n"
+       "crosses itself, tol= with a formula or a tol that is no positive number.\n\n"
        "Examples:\n"
        "    px.Curve((\"t\", \"t^2\"), (0, 1))\n"
        "    px.Curve((\"10*cos(t)\", \"5*sin(t)\"), (0, 360))");
-    auto bspline = [](const py::iterable &poles, const std::vector<double> &knots, int degree,
+    // knots none: clamped and uniform, a periodic curve's one period evenly
+    auto bspline = [](const py::iterable &poles, const std::optional<std::vector<double>> &knots, int degree,
                       const std::optional<std::vector<double>> &weights, bool periodic, const py::object &axes) {
         const AxisSystem a = AxesArg(axes, "BSpline");
-        BSplineData b{PlanePoints(a, poles, "BSpline"), knots, weights ? *weights : std::vector<double>{}, degree};
+        std::vector<Vertex> q = PlanePoints(a, poles, "BSpline");
+        const std::vector<double> k = knots ? *knots : UniformKnots(q.size(), (size_t)std::max(degree, 1), periodic);
+        BSplineData b{std::move(q), k, weights ? *weights : std::vector<double>{}, degree};
         Wire w(a);
         for (planex2d::Spline &s : planex2d::Spline::FromCurve(BSplineCurve(b, periodic)))
             w.Add(std::move(s));
         return w;
     };
-    m.def("_BSpline", bspline, py::arg("poles"), py::arg("knots"), py::arg("degree"), py::arg("weights") = py::none(),
+    m.def("_BSpline", bspline, py::arg("poles"), py::arg("knots") = py::none(), py::arg("degree") = 3, py::arg("weights") = py::none(),
           py::arg("periodic") = false, py::arg("plane") = py::none(),
           "for the importers: BSpline without the self-crossing check, the result goes through px.Wires");
-    m.def("BSpline", [bspline](const py::iterable &poles, const std::vector<double> &knots, int degree,
+    m.def("BSpline", [bspline](const py::iterable &poles, const std::optional<std::vector<double>> &knots, int degree,
                                const std::optional<std::vector<double>> &weights, bool periodic, const py::object &axes) {
         Wire w = bspline(poles, knots, degree, weights, periodic, axes);
         w.CheckChain("BSpline");
         return w;
-    }, py::arg("poles"), py::arg("knots"), py::arg("degree"), py::arg("weights") = py::none(), py::arg("periodic") = false,
+    }, py::arg("poles"), py::arg("knots") = py::none(), py::arg("degree") = 3, py::arg("weights") = py::none(), py::arg("periodic") = false,
        py::arg("plane") = py::none(),
-       "BSpline(poles: list[Point], knots: list[float], degree: int, weights: list[float] | None = None, periodic: bool = "
-       "False, plane: Plane | None = None) -> Wire\n\n"
+       "BSpline(poles: list[Point], knots: list[float] | None = None, degree: int = 3, weights: list[float] | None = None, "
+       "periodic: bool = False, plane: Plane | None = None) -> Wire\n\n"
        "A wire of one spline given as a b-spline, one closed edge if it is closed.\n\n"
        "Args:\n"
        "    poles: the control points (h, v), or (x, y, z) on the plane.\n"
-       "    knots: the flattened knots, each repeated by its multiplicity.\n"
-       "    degree: the degree of the curve.\n"
+       "    knots: the flattened knots, each repeated by its multiplicity; None: clamped and uniform (each end degree + "
+       "1 times, the inner ones evenly between; a periodic curve: one period, evenly).\n"
+       "    degree: the degree of the curve, 3 a cubic.\n"
        "    weights: one weight per pole for a rational curve; None: not rational.\n"
        "    periodic: True for a periodic b-spline; its knots are one period, the first knot's copies to the last's, the "
        "last repeated as often as the first, as many before the last as there are poles.\n"

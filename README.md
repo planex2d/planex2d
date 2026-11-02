@@ -8,6 +8,8 @@
   <a href="https://planex2d.org/docs/">Documentation</a> ·
   <a href="https://planex2d.org/docs/core/installation.html">Installation</a> ·
   <a href="https://planex2d.org/docs/examples/index.html">Examples</a> ·
+  <a href="https://planex2d.org/docs/exercises/index.html">CAD practice drawings</a> ·
+  <a href="https://planex2d.org/playground/">Playground</a> ·
   <a href="https://planex2d.org/docs/core/notices.html">License and notices</a><br>
   <a href="https://doi.org/10.5281/zenodo.23718969"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23718969.svg" alt="DOI 10.5281/zenodo.23718969"></a>
 </p>
@@ -65,6 +67,27 @@ face.Plot()
   <img src="https://planex2d.org/docs/_static/gallery/landing-turtle.svg" alt="The angle bracket drawn by the pen: two legs, an inner fillet of radius 10 and a hole in each leg" width="320">
 </p>
 
+## In the browser
+
+The [playground](https://planex2d.org/playground/) runs planex2d in the browser, with nothing to install: the code on
+the left, what it prints and draws on the right, and a link that carries the code. Many of the examples open there.
+The [tools](https://planex2d.org/#tools) on planex2d.org, a viewer, converters, a section calculator, a contour checker
+and a nesting tool for DXF, SVG and STEP files, run on planex2d in the browser too.
+
+## Examples
+
+The [examples](https://planex2d.org/docs/examples/index.html) are complete parts and classic problems, each with its own
+numbers, and most of them check their result against a formula, a textbook value or a measured property.
+
+<p align="center">
+  <a href="https://planex2d.org/docs/examples/planetary-gearbox.html"><img src="https://planex2d.org/docs/_static/gallery/planetary-gearbox.png" alt="A planetary gearbox with its sun, three planets and ring gear" height="170"></a>
+  <a href="https://planex2d.org/docs/examples/jansen-linkage.html"><img src="https://planex2d.org/docs/_static/gallery/jansen-linkage.png" alt="The Jansen linkage, the leg of the Strandbeest" height="170"></a>
+  <a href="https://planex2d.org/docs/examples/motor.html"><img src="https://planex2d.org/docs/_static/gallery/motor.png" alt="A motor lamination glued into stator, coils, rotor and magnets" height="170"></a>
+  <a href="https://planex2d.org/docs/examples/chladni-figures.html"><img src="https://planex2d.org/docs/_static/gallery/chladni-figures.png" alt="Chladni figures, the nodal lines of a vibrating square plate" height="170"></a>
+  <a href="https://planex2d.org/docs/examples/slicer.html"><img src="https://planex2d.org/docs/_static/gallery/slicer.png" alt="A part sliced into layers with perimeters and infill for 3D printing" height="170"></a>
+  <a href="https://planex2d.org/docs/examples/penrose-tiling.html"><img src="https://planex2d.org/docs/_static/gallery/penrose-tiling.png" alt="A Penrose tiling of golden triangles" height="170"></a>
+</p>
+
 ## Where to go next
 
 - [Quick sketches](https://planex2d.org/docs/core/sketch/index.html) and
@@ -76,6 +99,8 @@ face.Plot()
 - [OpenCASCADE](https://planex2d.org/docs/integrations/occ/index.html) and
   [netgen/NGSolve](https://planex2d.org/docs/integrations/netgen/index.html): from faces to solids, meshes and simulations.
 - [Examples](https://planex2d.org/docs/examples/index.html): mechanisms, machines, fields and manufacturing.
+- [CAD practice drawings](https://planex2d.org/docs/exercises/index.html): 2D and 3D parts as dimensioned drawings, to
+  model in planex2d or any CAD system.
 - [Benchmarks](https://planex2d.org/docs/core/comparison/index.html): planex2d next to OpenCASCADE and polygon libraries on
   the same tasks.
 
