@@ -168,7 +168,7 @@ namespace planex2d::cs {
                     GiveCurvature(c, r.element, r.index, std::isinf(c.value) ? 0.0 : 1.0 / c.value);
                 return;
             }
-            if ((c.kind != Kind::Tangent && c.kind != Kind::Curvature) || c.refs.size() != 2)
+            if ((c.kind != Kind::Tangent && c.kind != Kind::Curvature) || c.refs.size() != 2 || c.ownTangents)
                 return;
             const std::optional<size_t> joint = JointOf(c);
             if (!joint)

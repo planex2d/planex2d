@@ -149,3 +149,39 @@ def test_parallel_distance_with_a_point_but_no_end_raises(sketch):
     for distance in [(2, (1, 5)), (-2, (1, 5)), (2, (7, 0))]:
         with pytest.raises(ValueError):
             sk.Line(parallel="base", distance=distance, id="copy")
+
+
+def test_trimming_a_circle_and_the_chord_through_it_leaves_nothing_redundant():
+    # each later cut ties the chord's new ends to the ring's ends, which repeats the first cut's ties of those ends on
+    # the chord: those go
+    c = px.Sketch()
+    c.Circle((0, 0), 10, id="ring")
+    c.Move((-20, 3)).Line(40, 0, px.Horizontal, id="chord")
+    dof = c.dof
+    c.Trim(("ring", (0, -10)), "chord")
+    c.Trim(("chord", (-19, 3)))
+    c.Trim(("chord", (19, 3)))
+    assert (c.status, c.dof, c.redundant) == ("under", dof, [])
+    assert all(c["state"] == "ok" for c in c._Constraints())
+
+
+def test_a_trim_takes_over_the_coincidences_that_put_the_cutters_ends_on_the_circle():
+    # a keyway's ends put on a bore, then the bore trimmed between them: its arc's ends tied to the keyway's ends hold
+    # them on the bore, the two coincidences go
+    sk = px.Sketch()
+    sk.Circle((0, 0), 10, id="bore")
+    sk.Constrain("bore.center", "origin", px.Coincident)
+    sk.Constrain("bore", px.Radius, 10)
+    sk.Move((-2, 12)).Line(0, -3, px.Vertical, id="left")
+    sk.Move((2, 12)).Line(0, -3, px.Vertical, id="right")
+    sk.Constrain("left.end", "bore", px.Coincident, id="on_left")
+    sk.Constrain("right.end", "bore", px.Coincident, id="on_right")
+    sk.Constrain("left", "right", px.Distance, 4, id="width")
+    dof = sk.dof
+    sk.Trim(("bore", (0, 10)))
+    ids = {c["id"] for c in sk._Constraints()}
+    assert (sk.dof, sk.redundant, "on_left" in ids, "on_right" in ids) == (dof, [], False, False)
+    sk.Update({"width": 6})
+    for end in ("left.end", "right.end"):
+        assert math.hypot(*sk.locations[end]) == pytest.approx(10, abs=1e-9), end
+    assert sorted(abs(sk.locations[e][0]) for e in ("left.end", "right.end")) == pytest.approx([3, 3], abs=1e-9)

@@ -118,6 +118,32 @@ static py::dict SuggestionDict(const cs::Suggestion &g) {
     return out;
 }
 
+// Constrain's arguments: ids, OCC edges (projected), the kind, a value
+static ConstraintSketch &ConstrainFrom(ConstraintSketch &s, const py::args &args, const std::optional<std::string> &id, bool reference,
+                                       bool ownTangents) {
+    Prepare(s, args);
+    std::vector<std::string> refs;
+    std::optional<sketch::Kind> kind;
+    std::optional<double> value;
+    for (const py::handle &h : args) {
+        if (py::isinstance<sketch::Kind>(h)) {
+            if (kind)
+                throw py::type_error("Constrain: one kind (px.Distance, ...) per call");
+            kind = h.cast<sketch::Kind>();
+        } else if (kind && IsNumber(h) && !value)
+            value = h.cast<double>();
+        else if (!kind && occHooks->isShape(h))
+            refs.push_back(s.ProjectedReference(*occHooks->projected(h, s.Axes(), true), "Constrain"));
+        else if (!kind)
+            refs.push_back(RefIn(s, h, "Constrain"));
+        else
+            throw py::type_error("Constrain(ids..., kind[, value])");
+    }
+    if (!kind)
+        throw py::type_error("Constrain: which kind? (px.Distance, ...)");
+    return s.Constrain(refs, *kind, value, UserId(id), reference, ownTangents);
+}
+
 static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
     auto ref = py::return_value_policy::reference_internal;
     sketch
@@ -135,27 +161,7 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
                        "was drawn in, even in the smallest steps Update takes) is an error that changes nothing, else a "
                        "warning; on by default in mode='strict'.")
         .def("Constrain", NamingIds("Constrain", +[](ConstraintSketch &s, const py::args &args, const std::optional<std::string> &id, bool reference) -> ConstraintSketch & {
-            Prepare(s, args);
-            std::vector<std::string> refs;
-            std::optional<sketch::Kind> kind;
-            std::optional<double> value;
-            for (const py::handle &h : args) {
-                if (py::isinstance<sketch::Kind>(h)) {
-                    if (kind)
-                        throw py::type_error("Constrain: one kind (px.Distance, ...) per call");
-                    kind = h.cast<sketch::Kind>();
-                } else if (kind && IsNumber(h) && !value)
-                    value = h.cast<double>();
-                else if (!kind && occHooks->isShape(h))
-                    refs.push_back(s.ProjectedReference(*occHooks->projected(h, s.Axes(), true), "Constrain"));
-                else if (!kind)
-                    refs.push_back(RefIn(s, h, "Constrain"));
-                else
-                    throw py::type_error("Constrain(ids..., kind[, value])");
-            }
-            if (!kind)
-                throw py::type_error("Constrain: which kind? (px.Distance, ...)");
-            return s.Constrain(refs, *kind, value, UserId(id), reference);
+            return ConstrainFrom(s, args, id, reference, false);
         }), py::arg("id") = py::none(), py::arg("reference") = false, ref,
              "Constrain(*args: Id | Constraint | float, id: str | None = None, reference: bool = False) -> Sketch\n\n"
              "Add a constraint or dimension and solve at once.\n\n"
@@ -171,10 +177,14 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "    TypeError: no kind, two kinds, or arguments after the kind other than one value.\n"
              "    ValueError: a wrong value, or an expression out of its domain. A constraint that contradicts the others is "
              "kept but not solved (PlanexWarning naming the constraints it contradicts): status is 'over', its elements are "
-             "pink, and it is solved again once the other dimensions allow it.\n\n"
+             "red, and it is solved again once the other dimensions allow it.\n\n"
              "Examples:\n"
              "    sk.Constrain(\"Line.1\", px.Horizontal)\n"
              "    sk.Constrain(\"Line.1\", px.Distance, 10, id=\"w\")")
+        .def("_Constrain", NamingIds("Constrain", +[](ConstraintSketch &s, const py::args &args, const std::optional<std::string> &id, bool ownTangents) -> ConstraintSketch & {
+            return ConstrainFrom(s, args, id, false, ownTangents);
+        }), py::arg("id") = py::none(), py::arg("own_tangents") = false, ref,
+             "for px.FromCATPart: Constrain; own_tangents: a Tangent leaves a spline at the joint the tangent its points give it")
         .def("__getitem__", [](ConstraintSketch &s, const py::object &given) -> py::object {
             const std::string id = RefIn(s, given, "sk[id]");
             const double v = s.Value(id);
@@ -456,13 +466,14 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
                 d["text"] = i.text;
                 d["refs"] = i.refs;
                 d["value"] = i.value ? py::object(py::float_(*i.value)) : py::object(py::none());
-                d["state"] = i.redundant || i.over ? "over" : "ok";
+                d["state"] = i.over ? "over" : i.redundant ? "redundant" : "ok";
                 d["reference"] = i.reference;
                 d["derived"] = i.derived;
                 out.append(d);
             }
             return out;
-        }, "for the plots: every constraint with the ids it relates, its value and state ('over' if redundant, suspended or in the set of one that is)")
+        }, "for the plots: every constraint with the ids it relates, its value and state ('over' if suspended or in the set of one that is, "
+           "'redundant' if it repeats others)")
         .def("_States", [](ConstraintSketch &s) {
             py::dict out;
             for (const auto &[id, state] : s.States())

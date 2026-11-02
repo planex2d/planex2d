@@ -650,3 +650,19 @@ def test_an_arc_dimensioned_by_its_diameter_gets_its_center_mark():
     s = strokes(px.Drawing(sk, unit=px.mm))["center lines"]
     assert len([(a, b) for a, b, _ in s.lines if np.allclose((a + b) / 2, (0, 0))]) == 2
 
+
+def test_center_marks_the_center_of_a_construction_circle_as_asked():
+    # a construction circle a dimension measures: drawn as a center line; Center adds lines across it or a cross
+    sk = plate()
+    sk.Circle((40, 20), 8, construction=True, id="throat")
+    sk.Constrain("throat", px.Diameter, 16)
+
+    def at_throat(dw):
+        return [np.linalg.norm(b - a) for a, b, _ in strokes(dw)["center lines"].lines if np.allclose((a + b) / 2, (40, 20))]
+
+    assert at_throat(px.Drawing(sk, unit=px.mm)) == []
+    assert at_throat(px.Drawing(sk, unit=px.mm).Center("throat")) == pytest.approx([2 * (8 + dims.CENTER_OVER)] * 2)
+    assert at_throat(px.Drawing(sk, unit=px.mm).Center("throat", cross=True)) == pytest.approx([2 * dims.CROSS] * 2)
+    assert len(at_throat(px.Drawing(sk, unit=px.mm).Center("throat", arms="h"))) == 1
+    assert at_throat(px.Drawing(sk, unit=px.mm).Center("throat", pitch=True)) == []
+

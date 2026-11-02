@@ -119,6 +119,33 @@ def test_a_spline_the_constraints_determine_keeps_its_shape_and_the_line_turns()
     assert cross((x1 - x0, y1 - y0), derivative(g, 0)) == pytest.approx(0, abs=1e-12)
 
 
+def test_a_tangent_that_leaves_the_spline_its_own_tangent_places_the_joint():
+    # an arc on a fixed circle continued by a spline through two fixed points: the plain tangent turns the spline at the
+    # joint, which stays free on the circle; own_tangents (px.FromCATPart's) keeps the spline's interpolated tangent,
+    # which fixes where the joint sits
+    def joined(own):
+        sk = px.Sketch(auto_constraint=False)
+        sk.Move((20, 0)).Arc((20, 0), (0, 20), center=(0, 0), id="a")
+        sk.Spline([(0, 20), (-12, 30), (-30, 28)], start_from_localpos=False, style="quintic", id="s")
+        for point in ("a.center", "a.start", "s.p1", "s.p2"):
+            sk.Constrain(point, px.Fix)
+        sk.Constrain("a.end", "s.p0", px.Coincident)
+        if own:
+            sk._Constrain("s", "a", px.Tangent, own_tangents=True)
+        else:
+            sk.Constrain("s", "a", px.Tangent)
+        return sk
+
+    turned = joined(False)
+    assert (turned.dof, list(geometry(turned, "s")["tangents"])) == (1, [0])
+    sk = joined(True)
+    g = geometry(sk, "s")
+    assert (sk.dof, g["tangents"]) == (0, {})
+    joint = sk._Location("s.p0")
+    assert math.hypot(*joint) == pytest.approx(20, abs=1e-9)
+    assert abs(cross(joint, derivative(g, 0))) == pytest.approx(1, abs=1e-9)
+
+
 def test_the_points_of_a_spline_by_index():
     sk = px.Sketch()
     sk.Move((0, 0)).Spline([(1, 0.8), (2.3, 0.5), (3, -0.4)], id="s")

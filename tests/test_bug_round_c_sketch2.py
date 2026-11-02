@@ -114,8 +114,8 @@ def test_0103_redundant_rings_on_their_points():
     sk = _link()
     sk.Constrain("upper.start", "boss1", px.Coincident)
     sk.Constrain("upper.start", "boss1", px.Coincident)
-    over = [g for g in _signs(sk) if g["colour"] == _svg.STATE["over"]]
-    rings = [item for g in over for item in g["items"] if item[0] == "circle"]
+    repeated = [g for g in _signs(sk) if g["colour"] == _svg.STATE["redundant"]]
+    rings = [item for g in repeated for item in g["items"] if item[0] == "circle"]
     assert rings
     assert all(item[2] == (0.0, 0.0) for item in rings)
 

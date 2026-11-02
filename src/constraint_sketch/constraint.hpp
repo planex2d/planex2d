@@ -58,6 +58,8 @@ namespace planex2d::cs {
         bool automatic = false;
         // a copy's tie to its original: solved, not listed (the copy's one tie is)
         bool tie = false;
+        // Tangent: it gives no spline a tangent direction at the joint, a spline there keeps the one its points give it
+        bool ownTangents = false;
     };
 
 }

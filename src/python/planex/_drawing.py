@@ -552,6 +552,8 @@ class Drawing:
                off: bool = False) -> Drawing:
         """Changes the center lines of one circle or arc.
 
+        A drawn circle has its center lines without it; a construction circle gets them only from Center.
+
         Args:
             id: the circle's or arc's id, or the circle or arc selected (sk("Circle.1")); one that two of the view's
                 sketches have by its full id, the sketch's id first ("Sketch.2.Circle.1"), or selected.

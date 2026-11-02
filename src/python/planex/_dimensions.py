@@ -189,7 +189,7 @@ def Dimensions(sketch, everything=None):
         if not sides and any(everything.get(r, {}).get("kind") in ("Pattern", "Offset") for r in refs):
             continue
         name = None if c["id"].startswith((kind + ".", "Reference.")) else c["id"]
-        d = Dimension(c["id"], kind, value, bool(c.get("reference")), c["state"] == "over", name, refs=tuple(refs))
+        d = Dimension(c["id"], kind, value, bool(c.get("reference")), c["state"] != "ok", name, refs=tuple(refs))
         g0 = everything.get(refs[0]) if refs else None
         if kind == "Distance":
             if len(refs) == 1 and g0 is not None and g0["kind"] == "Line":
@@ -835,8 +835,9 @@ class Layout:
 
 
 def CenterLines(everything, dims, mm, outline, centers=None, axes=(), carried=()):
-    """the center lines: a cross through every circle drawn (not construction), a short cross at the center of an arc
-    whose radius or diameter is dimensioned, the sketch's axes (not H and V) across the part, a circular pattern's pitch circle;
+    """the center lines: a cross through every circle drawn (not construction) and every construction circle centers
+    names, a short cross at the center of an arc whose radius or diameter is dimensioned, the sketch's axes (not H and
+    V) across the part, a circular pattern's pitch circle;
     centers: {id: dict(arms=..., cross=..., off=...)} changes; axes: more (a, b) or (a, b, through); carried: the
     construction elements a drawn dimension measures, drawn as center lines"""
     from ._svg import _path
@@ -864,9 +865,14 @@ def CenterLines(everything, dims, mm, outline, centers=None, axes=(), carried=()
             cross(c, mm * CROSS if how.get("cross") else r + mm * CENTER_OVER, how.get("arms", "hv"))
         elif g["kind"] == "Arc" and (i in dimensioned or i in centers):
             cross(np.asarray(g["center"], float), mm * CROSS, how.get("arms", "hv"))
-        elif g["kind"] == "Circle" and g["construction"] and (how.get("pitch") or i in carried):
-            t = np.linspace(0, 2 * math.pi, 241)
-            out.arcs.append(np.c_[g["center"][0] + g["r"] * np.cos(t), g["center"][1] + g["r"] * np.sin(t)])
+        elif g["kind"] == "Circle" and g["construction"]:
+            if how.get("pitch") or i in carried:
+                t = np.linspace(0, 2 * math.pi, 241)
+                out.arcs.append(np.c_[g["center"][0] + g["r"] * np.cos(t), g["center"][1] + g["r"] * np.sin(t)])
+            # its center marked only when asked for, as a drawn circle's: lines across it or a cross
+            if i in centers and not how.get("pitch"):
+                c, r = np.asarray(g["center"], float), float(g["r"])
+                cross(c, mm * CROSS if how.get("cross") else r + mm * CENTER_OVER, how.get("arms", "hv"))
         elif g["kind"] == "Axis" and i not in ("H", "V"):
             t = math.radians(g["normal_angle"])
             n, u = np.array([math.cos(t), math.sin(t)]), np.array([-math.sin(t), math.cos(t)])

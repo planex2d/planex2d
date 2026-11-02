@@ -43,15 +43,16 @@ def Plot(sketch: Sketch | QuickSketch, /, ax: Any = None, show_constraints: bool
          show_parent: Any = None, backend: str | None = None) -> Any:
     """Draws the sketch with matplotlib or plotly, every element in the color of its state.
 
-    Green is fully constrained, black free, pink over-constrained (a constraint that contradicts the others and the elements it
+    Green is fully constrained, black free, red over-constrained (a constraint that contradicts the others and the elements it
     contradicts; all free while the constraints are disabled);
     construction elements are dashed, projected elements gold; in plotly an element shows its id when hovered. The
     signs, pieces and arrows keep their size on screen when zooming.
 
     Args:
         ax: a matplotlib Axes or a plotly Figure to draw into, which also selects the backend.
-        show_constraints: True adds a sign per constraint (in plotly what it is when hovered; not while the
-            constraints are disabled), the dimensions drawn as on a drawing (extension and dimension lines, arrows,
+        show_constraints: True adds a sign per constraint (in plotly what it is when hovered; red where it
+            contradicts others, light pink where it repeats them; not while the constraints are disabled), the
+            dimensions drawn as on a drawing (extension and dimension lines, arrows,
             the values, laid out outside the outline) with center lines; a QuickSketch has none and warns.
         show_ends: True adds a blue start and an orange end piece on every line and arc.
         show_direction: True adds an arrow from start to end on every line and arc.
