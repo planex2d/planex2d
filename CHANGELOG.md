@@ -137,6 +137,11 @@
 
 ### Changed
 
+- OCC bindings that do not fit leave planex importable: a planex2d-occ without a module for the installed netgen (a
+  netgen newer than its last build) or built for another planex2d, and a planex built from source under another netgen
+  than it was compiled against, make `import planex` warn once with the pip command that fits (for the build from
+  source: `pip install --no-build-isolation --force-reinstall planex2d`), and the OCC calls raise with it; before,
+  `import planex` raised an ImportError, and a build from source under a changed netgen failed or crashed
 - `px.config.spline_style` is `'quintic'` by default: `px.Spline`, `sk.Spline` and `px.QuickSketch`'s splines without
   `style=` are quintics, so existing code draws a slightly different curve through the same points (degree 5 in
   DXF and STEP); `style="averaged"` gives the cubic of before, `px.config.spline_style = "averaged"` for the whole

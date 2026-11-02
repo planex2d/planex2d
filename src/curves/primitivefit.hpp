@@ -43,6 +43,9 @@ namespace planex2d {
             // and (-vt + s) / denom is 0 / 0
             double s = std::sqrt(vt * vt + denom * vv);
             double d = vt >= 0.0 ? vv / (vt + s) : (s - vt) / denom;
+            // tangents alike and across the chord: no biarc of equal tangent lengths; one arc, which the fit splits
+            if (!std::isfinite(d))
+                return {TangentArc(pa, ta, pb, atol)};
             pm = (pa + ta * d + pb - tb * d) * 0.5;
         }
         if (Norm(pm - pa) <= tol || Norm(pb - pm) <= tol)
