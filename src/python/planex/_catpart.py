@@ -95,7 +95,8 @@ class _Sketch:
         if len(parameters):
             self.sketch.Use(parameters)
         self.elements = {e["id"]: e for e in s["elements"]}
-        self.refs = {}
+        self.refs = {e["id"]: {"h": px.H, "v": px.V, "origin": "origin"}[e["role"]] for e in s["elements"]
+                     if e["kind"] == "axis"}
         self.same = {}
         for c in s["constraints"]:
             if c["kind"] == "coincidence" and all(self.elements.get(x, {}).get("kind") == "point" for x in c["elements"]):
@@ -103,7 +104,7 @@ class _Sketch:
                 if a != b:
                     self.same[b] = a
                 c["shared"] = True
-        self.points, self.held = 0, set()
+        self.points, self.held, self.drawn = 0, set(), []
         for e in s["elements"]:
             self._draw(e)
         for e in s["elements"]:
@@ -122,6 +123,7 @@ class _Sketch:
             for c in s["constraints"]:
                 self._constrain(c)
         self.left += [str(w.message) for w in caught]
+        self._tie()
         for formula in formulas:
             self._formula(formula, named)
         if self.left:
@@ -129,6 +131,8 @@ class _Sketch:
 
     def _at(self, point):
         e = self.elements[point]
+        if e.get("role") == "origin":
+            return (0.0, 0.0)
         return (e["at"][0] * self.f, e["at"][1] * self.f)
 
     def _first(self, point):
@@ -160,9 +164,7 @@ class _Sketch:
 
     def _draw(self, e):
         kind, sk = e["kind"], self.sketch
-        if kind == "axis":
-            self.refs[e["id"]] = {"h": px.H, "v": px.V, "origin": "origin"}[e["role"]]
-        elif kind == "line":
+        if kind == "line":
             sk.Line(self._end(e["start"]), self._end(e["end"]), **self._options(e))
             self._drawn(e, "Line", {e["start"]: "start", e["end"]: "end"})
         elif kind == "circle":
@@ -189,9 +191,39 @@ class _Sketch:
         self.refs[e["id"]] = ident
         for point, part in parts.items():
             self.refs.setdefault(self._first(point), f"{ident}.{part}")
+            self.drawn.append((point, f"{ident}.{part}"))
         if e.get("projected"):
             self.sketch.Constrain(ident, px.Fix)
             self.held.add(ident)
+
+    def _tie(self):
+        """the coincidences the drawing left as two points: a curve's point named by the sketch's origin, and two
+        points coincident in CATIA, each named by a curve"""
+        first = {}
+        for point, part in self.drawn:
+            first.setdefault(point, part)
+            if self.elements[point].get("role") == "origin":
+                self._coincide(part, "origin")
+        for c in self.constraints:
+            if c.get("shared"):
+                a, b = (first.get(x) for x in c["elements"])
+                if a and b:
+                    self._coincide(a, b)
+
+    def _coincide(self, a, b):
+        """a and b one point, unless they already are or the sketch's constraints hold them together (a tangency at
+        the ends, two fixed points)"""
+        sk = self.sketch
+        if sk._PointElement(a) == sk._PointElement(b):
+            return
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", px.PlanexWarning)
+            sk.Constrain(a, b, px.Coincident)
+        ident = _newest(sk, px.Coincident)
+        if ident in sk.redundant:
+            sk.Remove(ident)
+        else:
+            self.left += [str(w.message) for w in caught]
 
     def _ellipse(self, e):
         cx, cy = self._at(e["center"])

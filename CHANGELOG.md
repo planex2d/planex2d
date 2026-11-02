@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.1
+
+### Fixed
+
+- `px.FromCATPart` reads a sketch with a circle, an arc or a spline point made coincident with the sketch's origin:
+  it lies on planex's `origin` and is held there by a coincidence; before, the file raised a `KeyError`
+- `px.FromCATPart` keeps the sketch's coincidences when its dimensions change: a line or an arc that starts or ends
+  on the sketch's origin, and two points made coincident in the .CATPart file (a line's end on a circle's center),
+  stay together; before, they were drawn at the same place but came apart on `sk.Update`
+
 ## v0.3.0
 
 ### Added
