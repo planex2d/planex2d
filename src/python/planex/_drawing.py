@@ -11,13 +11,16 @@ import importlib
 import io
 import math
 import os
+import re
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from . import _autodim
 from . import _dimensions as dims
 from ._auto import Auto, is_auto
+from ._caller import warn
 from ._dimensions import ARROW, HEIGHT, NARROW, WIDE
 from ._paths import with_extension
 
@@ -72,6 +75,8 @@ class _Lettering:
         self.points_per_mm = _pt(1.0) / cap
         self.prop.set_size(self.points_per_mm * HEIGHT)
         self._TextPath = TextPath
+        # measured: the layout's searches ask for the same few values' widths thousands of times, 90 % of a sheet's time
+        self._widths = {}
 
     def sized(self, height):
         p = self.prop.copy()
@@ -79,8 +84,11 @@ class _Lettering:
         return p
 
     def width(self, text, height=HEIGHT):
-        extent = self._TextPath((0, 0), text, size=self.points_per_mm * height, prop=self.prop).get_extents().width
-        return extent * 25.4 / 72
+        key = (text, height)
+        if key not in self._widths:
+            path = self._TextPath((0, 0), text, size=self.points_per_mm * height, prop=self.prop)
+            self._widths[key] = path.get_extents().width * 25.4 / 72
+        return self._widths[key]
 
 
 def _paths(everything):
@@ -91,9 +99,10 @@ def _paths(everything):
 
 class _Sketched:
     """one sketch of a view: its drawing by id in its own coordinates (everything) and with its places in the view's
-    (seen), its outline (the curves not construction) in the view's coordinates"""
+    (seen), its outline (the curves not construction) in the view's coordinates; drawn False for a view's generated
+    sketch, whose edges the solid draws"""
 
-    def __init__(self, sketch, to_view):
+    def __init__(self, sketch, to_view, drawn=True):
         self.sketch = sketch
         self.everything = {g["id"]: g for g in sketch._Drawing()}
         self.to_view = to_view
@@ -103,7 +112,7 @@ class _Sketched:
         self.mirrored = (h - o)[0] * (v - o)[1] - (h - o)[1] * (v - o)[0] < 0
         self.seen = self.everything if self.flat else {i: self._seen(g) for i, g in self.everything.items()}
         paths = _paths(self.everything)
-        self.outline = [to_view(p) for i, p in paths.items() if not self.everything[i]["construction"]]
+        self.outline = [to_view(p) for i, p in paths.items() if not self.everything[i]["construction"]] if drawn else []
         self.ids, self.shared = set(self.everything) - {"H", "V"}, set()
 
     def key(self, i):
@@ -248,7 +257,7 @@ class _Solid:
             return [np.asarray(run, float) for w in wires for e in w.edges for run in e.Wire().Polylines(tol)]
 
         self.visible = runs(self.wires["visible"])
-        self.hidden = runs(self.wires["hidden"]) if hidden and not section and not pictorial else []
+        self.hidden = _hidden_runs(self.wires, tol, 1e-6 * self.size) if hidden and not section and not pictorial else []
         self.smooth = runs(self.wires["smooth"])
         self.pictorial, self._shape, self._plane = pictorial, shape, plane
 
@@ -275,6 +284,31 @@ class _Solid:
         if self.region is not None:
             out.lines += _hatching(self.region.Polylines(1e-3 * self.size), HATCH * mm)
         return out
+
+
+def _hidden_runs(wires, tol, near):
+    """the hidden edges as polylines within tol: those on one straight line and those on one circle (within near)
+    joined into one run each, so that each is dashed once, less their stretches under a visible edge on the same line
+    or circle; other curves each on its own"""
+    from ._carriers import Lines, Rounds, Without
+
+    def edges(key, kinds):
+        return [e for w in wires[key] for e in w.edges if type(e.edge).__name__ in kinds and e.mass > near]
+
+    straight, rounds = ("LineEdge",), ("ArcEdge", "CircleEdge")
+    out = [np.asarray(run, float) for w in wires["hidden"] for e in w.edges if type(e.edge).__name__ not in straight + rounds
+           for run in e.Wire().Polylines(tol)]
+    seen = Lines(edges("visible", straight), near)
+    for key, (d, foot, spans) in Lines(edges("hidden", straight), near).items():
+        for s, f in Without(spans, seen[key][2] if key in seen else [], near):
+            out.append(np.array([foot + s * d, foot + f * d]))
+    seen = Rounds(edges("visible", rounds), near)
+    for key, (c, r, spans) in Rounds(edges("hidden", rounds), near).items():
+        for s, f in Without(spans, seen[key][2] if key in seen else [], near / r, True):
+            # the chord of a step stays within tol of the arc
+            t = np.linspace(s, f, max(2, math.ceil((f - s) / (2 * math.acos(max(-1.0, 1 - tol / r))))) + 1)
+            out.append(np.stack([c[0] + r * np.cos(t), c[1] + r * np.sin(t)], axis=1))
+    return out
 
 
 # smooth edges stop this far short of the outline (DIN's Lichtkanten, as far as known), sections are hatched this far
@@ -396,6 +430,7 @@ class Drawing:
         self._places, self._centers, self._axes, self._lines, self._measures = {}, {}, [], [], []
         self._view_name, self._callouts, self._hidden = view_name, [], []
         self._section, self._cuts = section, []
+        self._auto, self._given, self._auto_axes, self._chamfers = None, set(), set(), {}
         self.Update()
 
     @property
@@ -412,8 +447,9 @@ class Drawing:
         import planex as px
 
         view = self.plane
-        self._sketched = [_Sketched(sk, _mapper(px.Plane(sk), view)) for sk in self._sketches]
+        self._sketched = [_Sketched(sk, _mapper(px.Plane(sk), view), sk is not self._auto) for sk in self._sketches]
         found = [dims.Dimensions(s.sketch, s.everything) for s in self._sketched]
+        found = [_autodim.Chamfered(ds, self._chamfers) if s.sketch is self._auto else ds for s, ds in zip(self._sketched, found)]
         self._owners = {}
         for s, ds in zip(self._sketched, found):
             s.ids |= {d.id for d in ds}
@@ -456,6 +492,41 @@ class Drawing:
         self._sketches.append(sketch)
         return self.Update()
 
+    def AutoDimension(self) -> Drawing:
+        """Dimensions a view of a solid as a drafter would.
+
+        The view's visible lines, arcs and circles become a sketch of its own (id "Auto"; other curves, as an ellipse
+        or a helix, get no dimensions) that the view's dimensions come from: equal
+        holes or groups of edges repeated about a center or in rows as one instance and a pattern of it (a bolt circle
+        on its pitch circle), the relations a drafter sees (tangent, concentric, horizontal and vertical, square,
+        parallel, symmetric, ...), then the dimensions: angles, diameters and radii, then distances, horizontal and
+        vertical ones first, round values first; a 45° chamfer on one callout, its leg × 45° ("0,4 × 45°") on a leader.
+        The dimensions of the view's own sketches (Add) are taken as given and
+        not repeated, nor what follows from them; on a px.Sheet a size that another view shows is drawn once (front,
+        top, the side views, then sections and other views; a diameter where its circle is round). Place and Hide take
+        its dimensions as a sketch's; calling it again makes them anew, after a sketch of the view changed.
+
+        Raises:
+            ValueError: the drawing is no view of a solid along a plane (a sketch's own drawing, or a pictorial).
+
+        Examples:
+            px.Sheet(*(px.Drawing(part, plane, unit=px.mm).AutoDimension() for plane in (px.Front, px.Top, px.Left)))
+        """
+        if self._solid is None or self._solid.pictorial:
+            raise ValueError("Drawing.AutoDimension: a view of an OCC solid along a plane (px.Drawing(part, px.Front)); "
+                             "a sketch's drawing shows the sketch's own dimensions")
+        if self._auto is not None:
+            self._sketches.remove(self._auto)
+            self._auto, self._given, self._auto_axes, self._chamfers = None, set(), set(), {}
+            self.Update()
+        sketch, given, self._auto_axes, self._chamfers = _autodim.ViewSketch(self)
+        self._auto = sketch
+        self._sketches.append(sketch)
+        self.Update()
+        s = next(s for s in self._sketched if s.sketch is sketch)
+        self._given = {s.key(i) for i in given}
+        return self
+
     def Place(self, id: str, place: Any = Auto, /, *, leader: bool = False, outside: bool = False, inside: bool = False,
               across: float | None = None, supplement: bool = False, count: int | Auto = Auto, text: str | None = None,
               suffix: str | None = None) -> Drawing:
@@ -466,8 +537,9 @@ class Drawing:
                 first ("Sketch.2.Distance.1").
             place: a length or distance: the offset of its dimension line from the measured points, + away from the
                 part's middle, - towards it (measured points on both sides of the middle: + along the drawing's x for
-                a vertical one, its y for a horizontal one); a radius or diameter: the direction of its line, an angle
-                in degrees from h or "n", "ne", "e", "se", "s", "sw", "w", "nw"; an angle: the radius of its arc.
+                a vertical one, its y for a horizontal one); a radius or diameter: the direction of its line, a
+                chamfer's callout: of its leader, an angle in degrees from h or "n", "ne", "e", "se", "s", "sw", "w",
+                "nw"; an angle: the radius of its arc.
                 px.Auto leaves it as laid out.
             leader: a diameter or radius on a leader out of the part, its value horizontal (a small hole).
             outside: a radius's arrow and value outside the arc.
@@ -544,9 +616,13 @@ class Drawing:
         return found
 
     def _shown(self):
-        """the dimensions drawn: all but the hidden ones"""
-        hidden = {i for key in self._hidden for i in self._hides(key, "Drawing")}
+        """the dimensions drawn: all but the hidden ones and the generated ones the view's own sketches give"""
+        hidden = {i for key in self._hidden for i in self._hides(key, "Drawing")} | self._given
         return [d for d in self._dims if d.id not in hidden]
+
+    def _generated(self):
+        """the ids of the generated sketch's dimensions (AutoDimension)"""
+        return {s.key(i) for s in self._sketched if s.sketch is self._auto for i in s.ids}
 
     def Center(self, id: str, /, *, arms: str | None = None, cross: bool = False, pitch: bool = False,
                off: bool = False) -> Drawing:
@@ -725,9 +801,10 @@ class Drawing:
             out += [(p, True) for p in self._solid.hidden]
         return out
 
-    def _strokes(self, mm, lettering, fmt=dims.Fmt):
-        """the dimensions' strokes, the center lines, the callouts and the view's name above everything, in the drawing's
-        coordinates, mm sketch units per paper mm, numbers written by fmt"""
+    def _strokes(self, mm, lettering, fmt=dims.Fmt, repeats=()):
+        """the dimensions' strokes (not those of repeats, the ids of generated ones another view of the sheet shows), the
+        center lines, the callouts and the view's name above everything, in the drawing's coordinates, mm sketch units
+        per paper mm, numbers written by fmt"""
         outline = self._outline()
         per_unit = 1e3 * self.unit
         layout = dims.Layout(outline, mm, lambda t: lettering.width(t), self._places, self.names, fmt)
@@ -753,14 +830,18 @@ class Drawing:
         layout.drawn.append(callouts)
         layout.drawn.append(cuts)
         out = []
-        shown = self._shown()
+        shown = [d for d in self._shown() if d.id not in repeats]
         everything = {s.key(i): g for s in self._sketched for i, g in s.seen.items()}
+        # the axes the generated sketch is symmetric about or measured from: center lines across the part
+        for s in self._sketched:
+            if s.sketch is self._auto:
+                everything.update({f"{s.sketch.id}.{'VH'[k]}": s.seen["VH"[k]] for k in self._auto_axes})
         carried = {r for d in shown for r in d.refs if everything.get(r, {}).get("construction")}
         # the centre lines first: the radii, diameters and leaders keep clear of them
         centres = dims.CenterLines(everything, shown, mm, outline, self._centers, self._axes, carried)
         layout.drawn.append(centres)
         for d in dims.Ordered(shown):
-            if d.kind in ("linear", "radius", "diameter"):
+            if d.kind in ("linear", "radius", "diameter", "chamfer"):
                 d = _in_mm(d, per_unit)
             out.append(layout.Draw(d))
         for p, q, value, offset in self._measures:
@@ -769,6 +850,7 @@ class Drawing:
             layout.places = {**layout.places, "Measure": dims.Place(offset=offset, text=value if isinstance(value, str) else
                                                                    (None if value is None else fmt(value)))}
             out.append(layout.Draw(d))
+        layout.Interrupt(centres)
         out.append(centres)
         if solid is not None and solid.lines:
             out.append(solid)
@@ -883,6 +965,8 @@ def _in_mm(d, per_unit):
 
     d = copy.copy(d)
     d.value = d.value * per_unit
+    if d.total is not None:
+        d.total = d.total * per_unit
     return d
 
 
@@ -891,7 +975,9 @@ class Sheet:
 
     A view on a standard plane takes its place itself, aligned with the front view (the drawing on px.XZ, or the
     first): in first-angle projection the top view (px.XY) below it, the view from the left to its right, from the
-    right (px.YZ) to its left; in third-angle projection the other way round; Add(drawing, at=...) places any other.
+    right (px.YZ) to its left; in third-angle projection the other way round; a view on no standard plane (an
+    isometric) in the free corner diagonal to the front view, between the side view and the top view; Add(drawing,
+    at=...) or zone= places any view elsewhere.
     The scale is the largest of DIN ISO 5455 at which the views and their dimensions fit the sheet's drawing area, or
     scale=; the sheet is written at true scale.
 
@@ -937,23 +1023,35 @@ class Sheet:
         for d in drawings:
             self.Add(d)
 
-    def Add(self, drawing: Drawing, /, at=None) -> Sheet:
+    def Add(self, drawing: Drawing, /, at=None, zone: str | None = None) -> Sheet:
         """Adds a view.
 
         Args:
             drawing: the view, a px.Drawing.
-            at: where its origin lies, in the drawing's units from the first view's origin; default a view on a
+            at: where its origin lies, in the drawing's units in the front view's coordinates; default a view on a
                 standard plane places itself in the sheet's projection.
+            zone: a grid reference zone of the frame, its row's letter (from the top) and its column's number (from
+                the left) as the frame labels them, "B5", or the fields a span covers, "B5:C6": the view's middle, its
+                dimensions included, at the zone's middle, out of the projection (with or without the frame drawn).
+                The other views keep their places beside the front view, centered on the sheet as without it (or
+                lined up with a front view placed in a zone); the scale is the largest at which every view fits. A
+                view placed in a zone that fits at no scale, as one too wide for a field at the frame, is left out of
+                that and drawn over the edge with a warning.
 
         Raises:
             TypeError: drawing is not a px.Drawing.
+            ValueError: a zone the sheet has not, or both at and zone.
 
         Examples:
             sh.Add(detail, at=(120, 0))
+            sh.Add(px.Drawing(part, px.Isometric), zone="A4")
         """
         if not isinstance(drawing, Drawing):
             raise TypeError("Sheet.Add: a px.Drawing")
-        self._views.append((drawing, None if at is None else np.asarray(at, float)))
+        if at is not None and zone is not None:
+            raise ValueError("Sheet.Add: at or zone, not both")
+        self._views.append((drawing, None if at is None else np.asarray(at, float),
+                            None if zone is None else (str(zone), _zone(zone, self.paper, self.size))))
         return self
 
     def Table(self, rows, /, at=(0, 0), widths=(44, 20), height: float = 7) -> Sheet:
@@ -1020,20 +1118,19 @@ class Sheet:
         return self
 
     def _layout(self, ratio, lettering):
-        """the views at the scale ratio: their strokes, their places (origins in the front view's coordinates) and the
-        bounds of everything, in the drawing's units"""
-        views = [d for d, _ in self._views]
+        """the views at the scale ratio: their strokes, their boxes, their places (origins in the front view's
+        coordinates; a view placed in a zone, there, is placed by _placed), in the drawing's units, and the paper mm per
+        drawing unit"""
+        views = [d for d, _, _ in self._views]
         paper = 1e3 * views[0].unit * ratio
         mm = 1 / paper
-        drawn = [d._strokes(mm, lettering, self._fmt) for d in views]
+        repeats = _autodim.Repeats(views)
+        drawn = [d._strokes(mm, lettering, self._fmt, repeats[k]) for k, d in enumerate(views)]
         boxes = []
         for strokes, d in zip(drawn, views):
             pts = _points(d._outline(), strokes, mm, lettering)
             boxes.append((pts.min(axis=0), pts.max(axis=0)))
-        places = self._spread(views, boxes, mm)
-        lo = np.min([b[0] + p for b, p in zip(boxes, places)], axis=0)
-        hi = np.max([b[1] + p for b, p in zip(boxes, places)], axis=0)
-        return drawn, places, lo, hi, paper
+        return drawn, boxes, self._spread(views, boxes, mm), paper
 
     def _arrange(self):
         """the scale and where everything goes: the lettering, the scale ratio, each view's strokes and origin (in the
@@ -1044,12 +1141,69 @@ class Sheet:
         lettering = _Lettering(self.font)
         W, H = self.paper
         area = (FILING, self._footer()[1], W - BORDER, H - BORDER)
+        tried = []
         for ratio in ([self.scale] if self.scale else SCALES):
-            drawn, places, lo, hi, paper = self._layout(ratio, lettering)
-            if (hi - lo)[0] * paper <= area[2] - area[0] and (hi - lo)[1] * paper <= area[3] - area[1]:
+            drawn, boxes, places, paper = self._layout(ratio, lettering)
+            shift, papers = self._placed(boxes, places, paper, area)
+            tried.append((ratio, drawn, places, paper, shift, papers))
+            if all(_within(b, area) for b in papers):
                 break
-        shift = np.array([(area[0] + area[2]) / 2, (area[1] + area[3]) / 2]) - (lo + hi) / 2 * paper
+        else:
+            ratio, drawn, places, paper, shift, papers = self._fitting(tried, area)
+        self._crowded(papers, area, ratio)
         return SimpleNamespace(lettering=lettering, ratio=ratio, drawn=drawn, places=places, paper=paper, shift=shift)
+
+    def _placed(self, boxes, places, paper, area):
+        """the shift (mm) that puts the views on the paper and each view's box there: the sheet's own views centered in
+        area as a group, or lined up with a front view placed in a zone; a view placed in a zone with its box's middle at
+        the zone's (its place in places set to match)"""
+        zones = [z for _, _, z in self._views]
+        own = [k for k, z in enumerate(zones) if z is None]
+        front = self._front()
+        if zones[front] is not None:
+            shift = zones[front][1] - ((boxes[front][0] + boxes[front][1]) / 2 + places[front]) * paper
+        elif own:
+            lo = np.min([boxes[k][0] + places[k] for k in own], axis=0)
+            hi = np.max([boxes[k][1] + places[k] for k in own], axis=0)
+            shift = np.array([(area[0] + area[2]) / 2, (area[1] + area[3]) / 2]) - (lo + hi) / 2 * paper
+        else:
+            shift = np.zeros(2)
+        for k, z in enumerate(zones):
+            if z is not None:
+                places[k] = (z[1] - shift) / paper - (boxes[k][0] + boxes[k][1]) / 2
+        return shift, [((b[0] + p) * paper + shift, (b[1] + p) * paper + shift) for b, p in zip(boxes, places)]
+
+    def _fitting(self, tried, area):
+        """of the scales tried, the largest at which every view fits but those placed in a zone that fit at none; the
+        smallest if there is none"""
+        inside = [[_within(b, area) for b in t[-1]] for t in tried]
+        never = {k for k, (_, _, z) in enumerate(self._views) if z is not None and not any(f[k] for f in inside)}
+        return next((t for t, f in zip(tried, inside) if all(ok or k in never for k, ok in enumerate(f))), tried[-1])
+
+    def _crowded(self, papers, area, ratio):
+        """warns of a view placed in a zone that runs over the drawing area, or that overlaps another view"""
+        import planex as px
+
+        zones = [z for _, _, z in self._views]
+        scale = f"{self._fmt(ratio)}:1" if ratio >= 1 else f"1:{self._fmt(1 / ratio)}"
+
+        def name(k):
+            d = self._views[k][0]
+            return (f"'{d._view_name}'" if d._view_name else f"view {k + 1}") + (f" in zone {zones[k][0]}" if zones[k] else "")
+
+        for k, z in enumerate(zones):
+            if z is not None and not _within(papers[k], area):
+                warn(f"Sheet: the {name(k)} runs over the drawing area (inside the frame, above the title block) at "
+                     f"{scale}", px.PlanexWarning)
+        for j in range(len(zones)):
+            for k in range(j + 1, len(zones)):
+                (a0, a1), (b0, b1) = papers[j], papers[k]
+                if (zones[j] or zones[k]) and np.all(np.minimum(a1, b1) > np.maximum(a0, b0)):
+                    warn(f"Sheet: the {name(j)} and the {name(k)} overlap", px.PlanexWarning)
+
+    def _front(self):
+        """the view the others line up with: the first one on the front plane, else the first"""
+        return next((k for k, (d, _, _) in enumerate(self._views) if _side(d.plane) == "front"), 0)
 
     def _footer(self):
         """the notes' baseline and the drawing area's bottom above the title block, the notes and the projection
@@ -1100,7 +1254,7 @@ class Sheet:
         ax.set_aspect("equal")
         ax.axis("off")
         ink = _Ink(ax, a.lettering, self._fmt)
-        for (d, _), strokes, o in zip(self._views, a.drawn, a.places):
+        for (d, _, _), strokes, o in zip(self._views, a.drawn, a.places):
             def T(pts, o=o):
                 return np.atleast_2d(np.asarray(pts, float)) * a.paper + o * a.paper + a.shift
 
@@ -1159,7 +1313,7 @@ class Sheet:
             dimtih=0, dimtoh=0, dimdec=3, dimzin=8, dimdsep=ord(self._fmt(0.5)[1]), dimadec=3, dimazin=2, dimlfac=1.0,
             dimscale=1 / a.ratio))
         msp = doc.modelspace()
-        for (d, _), strokes, o in zip(self._views, a.drawn, a.places):
+        for (d, _, _), strokes, o in zip(self._views, a.drawn, a.places):
             u = 1e3 * d.unit
 
             def at(x, y, o=o, u=u):
@@ -1194,6 +1348,10 @@ class Sheet:
                     lines(arc, "Center")
                 for f in s.fills:
                     msp.add_solid([at(*p) for p in f], dxfattribs={"layer": "Visible"})
+                # a leader of no dimension entity (a chamfer's callout): its arrowhead filled
+                for tip, direction in s.arrows:
+                    msp.add_solid([at(*p) for p in dims.Head(tip, direction, dims.ARROW / a.paper)],
+                                  dxfattribs={"layer": "Thin"})
                 for anchor, angle, text in s.texts:
                     msp.add_text(text, height=s.height / a.ratio, rotation=angle,
                                  dxfattribs={"layer": "Text", "style": "Lettering"}).set_placement(
@@ -1204,17 +1362,22 @@ class Sheet:
     def _spread(self, views, boxes, mm):
         """each view's origin in the front view's coordinates: a view's own at=, else the views on standard planes
         beside the front view in first-angle projection, or third-angle for ASME (sharing the coordinates they have in
-        common), GAP mm apart"""
+        common), a rear view and a second view on a standard plane in a row beyond them, a view on no standard plane in
+        the free quadrant diagonal to the front view, GAP mm apart"""
         kinds = [_side(d.plane) for d in views]
         below, above, after, before = ("bottom", "top", "right", "left") if self.standard == "ASME" else \
             ("top", "bottom", "left", "right")
-        front = next((k for k, kind in enumerate(kinds) if kind == "front"), 0)
-        out = [np.zeros(2) if at is None else np.asarray(at, float).copy() for _, at in self._views]
+        front = self._front()
+        # a second view on a standard plane (a section seen from the front) goes beside the others, not onto the first
+        kinds = [kind if kinds.index(kind) == k or kind == "other" else "beside" for k, kind in enumerate(kinds)]
+        out = [np.zeros(2) if at is None else np.asarray(at, float).copy() for _, at, _ in self._views]
+        # a view placed in a zone is placed there (_placed), out of the projection
+        free = [at is None and zone is None for _, at, zone in self._views]
         gap = mm * GAP
         fb = (boxes[front][0] + out[front], boxes[front][1] + out[front])
         beyond = fb[1][0]
         for k, kind in enumerate(kinds):
-            if k == front or self._views[k][1] is not None:
+            if k == front or not free[k]:
                 continue
             b = boxes[k]
             if kind == below:
@@ -1227,9 +1390,40 @@ class Sheet:
             elif kind == before:
                 out[k][0] = fb[0][0] - gap - b[1][0]
         for k, kind in enumerate(kinds):
-            if k != front and self._views[k][1] is None and kind in ("rear", "other"):
+            if k != front and free[k] and kind in ("rear", "beside"):
                 out[k][0] = beyond + gap - boxes[k][0][0]
                 beyond = out[k][0] + boxes[k][1][0]
+        # a view on no standard plane (an isometric) in the free quadrant: below or above the side view and beside the
+        # top view, their middles in line with its, clear of the front view's row and column; the next ones beside it
+        others = [k for k, kind in enumerate(kinds) if k != front and free[k] and kind == "other"]
+        column = next((k for kind in (after, before) for k in range(len(kinds)) if kinds[k] == kind and free[k]), None)
+        row = next((k for kind in ("top", "bottom") for k in range(len(kinds)) if kinds[k] == kind and free[k]), None)
+        if column is None and row is None:
+            for k in others:
+                out[k][0] = beyond + gap - boxes[k][0][0]
+                beyond = out[k][0] + boxes[k][1][0]
+            return out
+        sx = -1.0 if column is not None and kinds[column] == before else 1.0
+        sy = -1.0 if (kinds[row] if row is not None else "top") == below else 1.0
+
+        def middle(k):
+            return (boxes[k][0] + boxes[k][1]) / 2 + out[k]
+
+        def reach(ks, axis, s):
+            """how far the views ks reach along axis toward s"""
+            return s * max(s * (boxes[k][1 if s > 0 else 0][axis] + out[k][axis]) for k in ks)
+
+        x0 = reach([front] + ([row] if row is not None else []), 0, sx) + sx * gap
+        y0 = reach([front] + ([column] if column is not None else []), 1, sy) + sy * gap
+        for n, k in enumerate(others):
+            half = (boxes[k][1] - boxes[k][0]) / 2
+            x, y = x0 + sx * half[0], y0 + sy * half[1]
+            if column is not None and n == 0:
+                x = sx * max(sx * middle(column)[0], sx * x)
+            if row is not None:
+                y = sy * max(sy * middle(row)[1], sy * y)
+            out[k] = np.array([x, y]) - (boxes[k][0] + boxes[k][1]) / 2
+            x0 = x + sx * (half[0] + gap)
         return out
 
     def ToSVG(self) -> str:
@@ -1274,6 +1468,29 @@ class Sheet:
 
     def _repr_svg_(self):
         return self.ToSVG()
+
+
+def _zone(text, paper, size):
+    """the middle in mm on paper (W, H) of a grid reference zone as the frame labels it, "B5" (rows lettered from the
+    top, columns numbered from the left), or of the fields a span such as "B5:C6" covers"""
+    W, H = paper
+    xs, ys = _fields(FILING, W - BORDER, W / 2), _fields(BORDER, H - BORDER, H / 2)[::-1]
+    rows, columns = LETTERS[:len(ys) - 1], len(xs) - 1
+    corners = []
+    for part in str(text).split(":"):
+        m = re.fullmatch(r"\s*([A-Za-z])(\d+)\s*", part)
+        if m is None or m.group(1).upper() not in rows or not 1 <= int(m.group(2)) <= columns or str(text).count(":") > 1:
+            raise ValueError(f"Sheet.Add: zone {text!r} is not on this {size} sheet; its zones are A1 to {rows[-1]}{columns} "
+                             "(a row's letter from the top, a column's number from the left), or a span such as 'A1:B2'")
+        r, c = rows.index(m.group(1).upper()), int(m.group(2)) - 1
+        corners += [np.array([xs[c], ys[r + 1]]), np.array([xs[c + 1], ys[r]])]
+    return (np.min(corners, axis=0) + np.max(corners, axis=0)) / 2
+
+
+def _within(box, area):
+    """whether a box (lo, hi) on paper lies inside area (x0, y0, x1, y1), to a hundredth of a mm"""
+    return bool(box[0][0] >= area[0] - 0.01 and box[0][1] >= area[1] - 0.01 and box[1][0] <= area[2] + 0.01
+                and box[1][1] <= area[3] + 0.01)
 
 
 def _fields(lo, hi, middle):

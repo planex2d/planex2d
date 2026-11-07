@@ -259,11 +259,15 @@ def _drafting(sketch, everything, k, font):
                and not g.get("projected")]
     found = dims.Dimensions(sketch, everything)
     # the values in the sketch's own units as the plot has always written them (the drawings' DIN form is for mm)
-    layout = dims.Layout(outline, mm, lambda text: 0.56 * font * len(text) / per_mm, None, True, lambda v: f"{v:g}")
+    # a label is font px high, HEIGHT / CAP mm, its cap height HEIGHT: the rows further apart by the difference, the
+    # labels as clear of each other as a drawing's
+    layout = dims.Layout(outline, mm, lambda text: 0.56 * font * len(text) / per_mm, None, True, lambda v: f"{v:g}",
+                         dims.ROW + dims.HEIGHT / CAP - dims.HEIGHT)
     # the centre lines first: the radii, diameters and leaders keep clear of them
     centres = dims.CenterLines({i: g for i, g in everything.items() if g["kind"] != "Axis"}, found, mm, outline)
     layout.drawn.append(centres)
     out = {d.id: layout.Draw(d) for d in dims.Ordered(found)}
+    layout.Interrupt(centres)
     out["center lines"] = centres
     return out, mm
 
@@ -476,7 +480,8 @@ def _signs(sketch, everything, k=None, font=10):
                                                  abs(w * math.sin(t)) + abs(h * math.cos(t)))))
 
     def free(c, half):
-        return (all(abs(c[0] - x) >= half[0] + hx or abs(c[1] - y) >= half[1] + hy for (x, y), (hx, hy) in taken)
+        # 4 px clear of the values and signs placed: a value beyond its arrow may stand right beside a sign's place
+        return (all(abs(c[0] - x) >= half[0] + hx + 4 or abs(c[1] - y) >= half[1] + hy + 4 for (x, y), (hx, hy) in taken)
                 and not _meets_box(segments, c, half))
 
     def occupy(p, shift, half):
@@ -502,11 +507,26 @@ def _signs(sketch, everything, k=None, font=10):
     def label(p, n, text):
         return ("text", p, spot(p, n, size(text)), text, 0)
 
+    hidden = {}
+
+    def undrawn(ref):
+        """the geometry of an element there but not drawn (a circle Trim split carries its pieces and keeps its
+        constraints), else None"""
+        if ref in everything or ref in ("H", "V"):
+            return None
+        if ref not in hidden:
+            try:
+                sketch._Location(ref)
+                hidden[ref] = None
+            except ValueError:
+                hidden[ref] = sketch._Geometry(ref)
+        return hidden[ref]
+
     def point(ref):
         g = everything.get(ref)
         if g is not None and g["kind"] == "Point":
             return tuple(g["point"])
-        return tuple(sketch._Location(ref)) if g is None else None
+        return tuple(sketch._Location(ref)) if g is None and undrawn(ref) is None else None
 
     def middle(ref):
         """a place on the element and the normal there"""
@@ -519,7 +539,7 @@ def _signs(sketch, everything, k=None, font=10):
         return point(ref), (0.0, 1.0)
 
     def center(ref):
-        g = everything.get(ref)
+        g = everything.get(ref) or undrawn(ref)
         if g is not None and g["kind"] in ("Arc", "Circle"):
             return tuple(g["center"])
         return point(ref)
@@ -605,6 +625,8 @@ def _signs(sketch, everything, k=None, font=10):
             continue
         drawn = [r for r in refs if r not in ("H", "V")]
         kind, items = c["kind"], []
+        if any(undrawn(r) for r in drawn) and kind not in ("Coincident", "Concentric", "Fix", "FixH", "FixV") and c["id"] not in drafted:
+            continue
         if kind == "Coincident":
             places = [p for p in (point(r) for r in refs if r not in paths) if p is not None]
             if places and c["state"] != "ok":
@@ -613,7 +635,7 @@ def _signs(sketch, everything, k=None, font=10):
             elif places:
                 items.append(("circle", places[0], spot(places[0], (0.7071, 0.7071), (5.0, 5.0))))
             else:
-                marks = [middle(r) for r in drawn]
+                marks = [m for m in (middle(r) for r in drawn) if m[0] is not None]
                 items += [label(p, n, "≡") for p, n in marks]
                 if len(marks) == 2:
                     items.append(("leader", marks[0][0], marks[1][0]))

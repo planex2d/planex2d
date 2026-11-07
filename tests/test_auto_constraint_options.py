@@ -13,7 +13,8 @@ pytestmark = pytest.mark.constraints
 
 DEFAULTS = {"coincident": True, "tangent": True, "concentric": True, "point_on_curve": True, "horizontal": False,
             "vertical": False, "perpendicular": False, "parallel": False, "equal_radius": False, "equal_length": False,
-            "collinear": False, "named_helpers": True}
+            "collinear": False, "midpoint": False, "symmetric": False, "pitch_circle": False,
+            "named_helpers": True}
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +40,7 @@ def quiet(make):
 
 
 def test_the_config_has_the_defaults():
-    assert px.config.auto_constraint is False
+    assert px.config.auto_constraint is True
     assert px.config.auto_constraint_options == DEFAULTS
 
 
@@ -63,9 +64,10 @@ def test_wrong_keys_and_values_raise():
 
 
 def test_none_takes_the_configs_switch():
+    assert px.Sketch().auto_constraint == DEFAULTS
+    px.config.auto_constraint = False
     assert px.Sketch().auto_constraint is False
     px.config.auto_constraint = True
-    assert px.Sketch().auto_constraint == DEFAULTS
     assert px.Sketch(auto_constraint=False).auto_constraint is False
     assert px.QuickSketch((0, 0)).Line(1).elements["Line"] == ["Line.1"]
 
@@ -170,3 +172,52 @@ def test_a_long_outline_copies_in_with_its_relations_quickly():
     took = time.perf_counter() - start
     assert count(sk, "Tangent") == 799 and sk.redundant == []
     assert took < 30
+
+
+def test_the_user_s_constraint_takes_the_place_of_the_auto_one_it_repeats():
+    sk = px.Sketch()
+    sk.Move((0, 0)).Line(4, 0, id="a")
+    sk.Move((4, 0)).Line(0, 3, id="b")
+    auto = list(sk.constraints["Coincident"])
+    quiet(lambda: sk.Constrain("b.start", "a.end", px.Coincident, id="joint"))
+    assert list(sk.constraints["Coincident"]) == ["joint"] and auto != ["joint"]
+    assert repr(sk.constraints["Coincident"]["joint"]) == '"b.start", "a.end", px.Coincident'
+    assert sk.redundant == []
+
+
+def test_a_tangent_at_a_cusp_keeps_the_cusp():
+    for auto in (True, False):
+        sk = px.Sketch(auto_constraint=auto)
+        sk.Curve(("t", "0.1*t^2"), (0, 10)).Line(0, -10).Close()
+        if not auto:
+            sk.Constrain("Line.2", "Curve.1", px.Tangent)
+        assert sk.Location("Line.2.start") == pytest.approx((10, 0), abs=1e-9)
+        assert sk.Shape().mass == pytest.approx(100 / 3, rel=1e-10)
+
+
+def test_auto_constraints_the_user_s_make_redundant_go_quietly():
+    sk = px.Sketch()
+    sk.Circle(5, id="outside").Circle(3, id="ring")
+    assert "Concentric" in sk.constraints
+    for i in ("outside", "ring"):
+        quiet(lambda: sk.Constrain(f"{i}.center", "origin", px.Coincident))
+    assert "Concentric" not in sk.constraints and sk.redundant == []
+
+
+NACA_HALF = "0.594689181 * (0.298222773 * t - 0.127125232 * t^2 - 0.357907906 * t^4 + 0.291984971 * t^6 - 0.105174606 * t^8)"
+
+
+def test_a_tangent_between_curves_that_meet_twice_holds_where_they_meet_smoothly():
+    """a NACA 0012's two surfaces: smooth at the leading edge, a sharp corner at the trailing edge"""
+    sk = px.Sketch()
+    sk.Curve(("t^2", NACA_HALF), (1, 0), id="upper")
+    sk.Move((0.5, 0.5)).Curve(("t^2", "-" + NACA_HALF), (0, 1), id="lower")
+    assert sk.status == "full"
+    by_hand = px.Sketch(auto_constraint=False)
+    by_hand.Curve(("t^2", NACA_HALF), (1, 0), id="upper")
+    by_hand.Move((0.5, 0.5)).Curve(("t^2", "-" + NACA_HALF), (0, 1), id="lower")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", px.PlanexWarning)
+        by_hand.Constrain("upper.start", "lower.end", px.Coincident).Constrain("upper.end", "lower.start", px.Coincident)
+        by_hand.Constrain("upper", "lower", px.Tangent)
+    assert by_hand.status == "full" and by_hand.Location("upper.end") == pytest.approx((0, 0), abs=1e-12)

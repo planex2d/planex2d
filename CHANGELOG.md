@@ -1,5 +1,140 @@
 # Changelog
 
+## v0.3.2
+
+### Added
+
+- The auto constraint relations `"midpoint"` and `"symmetric"` (both off by default): a point, an end or a circle's
+  center at a line's middle is held at its midpoint (`sk.AutoConstrain(geometric={"midpoint": True})`); with
+  `"symmetric"`, `sk.AutoConstrain` finds the axes the edges are symmetric about (at least two connected edges
+  mirrored onto edges; the axis that mirrors the most first, each edge about one axis) and holds the geometry
+  symmetric about them, mirrored circles and arcs with equal radii, on a construction line it adds where the sketch has
+  no line on the axis (its id first in the list it returns); `sk.SuggestConstraints` suggests symmetry about the lines
+  the sketch has; `"pitch_circle"` (off by default, `sk.AutoConstrain` only): three or more equal circles equally
+  spaced about a center (all round it or on part of it) get a construction circle concentric with it through their
+  centers and a construction
+  line from the center to each, so that the pitch circle's diameter and the angles between neighbours dimension
+  them; with `"horizontal"` and `"vertical"` two circle centers at one height are held level
+  (`px.Horizontal` between them) and two at one h in line (`px.Vertical`)
+- `px.Distance` of two points and a line: their distance across the line, `sk.Constrain("a.center", "b.center",
+  px.V, px.Distance, 30)` their horizontal distance and with `px.H` their vertical one; drawn as a horizontal or
+  vertical dimension in sketch plots, drawings and DXF
+- `dw.AutoDimension()` dimensions a view of a solid as a drafter would (`px.Drawing(part, px.Front).AutoDimension()`):
+  the view's visible lines, arcs and circles become a sketch of its own (id `"Auto"`; arcs on one circle as one, other
+  curves such as an ellipse or a helix without dimensions), equal holes or groups of edges repeated about a
+  center or in rows and grids as one instance and a pattern of it (a bolt circle on its pitch circle), the relations a
+  drafter sees, then its dimensions in the auto constraints' order; positions are taken from the part's datum, never
+  from the view plane's own axes where the part has no point on them (a section's plane through a part's middle), and
+  an axis the part is symmetric about is drawn as a center line. The dimensions of the view's own sketches
+  (`dw.Add(sk)`) come first and the generated ones complete them; on a `px.Sheet` each size is drawn once (front,
+  top, the side views, then sections and other views; a diameter in the view where its circle is round). A 45°
+  chamfer is one callout, its leg × 45° ("0,4 × 45°") on a leader, in place of its angle and a length (in DXF lines, a
+  filled arrowhead and a text). `dw.Place` and `dw.Hide` take the generated dimensions as a sketch's, `dw.Place` a
+  chamfer's leader direction
+- `sh.Add(view, zone="B5")` places a view in a grid reference zone of the frame (a row's letter from the top, a
+  column's number from the left, as the frame labels them; a span such as "B5:C6"): its middle, dimensions included,
+  at the zone's middle, out of the projection, with or without the frame drawn; the other views keep their places
+  beside the front view, centered as before or lined up with a front view placed in a zone; the scale is the largest
+  at which every view fits (a placed view that fits at no scale, such as one wider than a field at the frame, is left
+  out of that and drawn over the edge), and a placed view that runs over the drawing area, or overlaps another view, warns
+  (`sh.Add(px.Drawing(part, px.Isometric), zone="A4")`)
+
+### Changed
+
+- A new sketch auto constrains by default: `px.config.auto_constraint` is True (was False), so `px.Sketch()` finds
+  the relations of `px.config.auto_constraint_options` while it is drawn (coincident, tangent, concentric and
+  point on curve by default), only where they hold to rounding, so nothing moves. `px.Sketch(auto_constraint=False)`
+  or `px.config.auto_constraint = False` draws without them as before
+- `sk.AutoConstrain` is no longer marked experimental
+- A constraint of yours that auto constraints already found (the same kind on the same places) takes the auto one's
+  place, with your references and id; before, yours was kept and reported redundant
+- An auto constraint that your constraints make redundant goes quietly (three circles drawn at one point get
+  Concentric, tying each centre to the origin then removes it); before, it stayed with a warning that it was
+  redundant. Auto coincidences that join two points keep the warning
+- `sk.SuggestConstraints`, `sk.AutoConstrain` and the free-motion plot give the dimensions a drafter gives, those with
+  round values first (a length a multiple of 0.5 in the decade two below the sketch's largest extent, so 0.5 for a
+  part 100 to 999 across and 0.0005 for one 0.1 to 0.999, the same in metres as in mm; an angle in whole degrees;
+  then the rest in the same order): angles
+  other than right angles first (between neighbouring lines that meet, a slanted line's own from `px.H`), then
+  diameters and radii, then distances, the
+  horizontal and vertical ones first (the overall extents, center to center, a center from the datum's edges,
+  between parallel lines, the two sides of one connected outline before those of two, lengths; the largest first), then positions from the origin, the datum's first (a datum
+  on the origin held there before all else); the datum
+  is the origin where the geometry has a point or an edge on it, else the corner nearest the lower left, else the
+  largest circle's center; a fillet's center is never dimensioned; before, line lengths, radii and angles came
+  first, then every point's position (a rectangle: `sk.Constrain("left", "right", px.Distance, 4)`, not
+  `sk.Constrain("bottom", px.Distance, 4)`)
+- Where two relations found by auto constraints say the same, the one a drafter would give stays: joints, concentric,
+  tangent, horizontal and vertical, perpendicular, parallel, the other coincidences, points on curves, midpoints,
+  collinear lines, symmetry, then equal radii and lengths; before, coincidences and points on curves came before
+  tangents
+- Without planex2d-occ (in the browser, or the core alone) a sketch's offset of a spline or curve is one quintic
+  spline through points of the exact offset, within `px.config.spline_tol` of it, in the sketch's wires, faces, plots
+  and DXF; before, it was its arcs and lines, with a warning (`sk.Offset("pitch", -5, id="profile")` after
+  `sk.Curve(f, (0, 360), id="pitch")`). With planex2d-occ it stays OCC's fitted B-spline
+
+- Drawings show a pattern's step: a `LinearPattern`'s spacing (and spacing2) and a partial `CircularPattern`'s angle
+  as one dimension between the first two instances with the number of steps and the total, `6× 12 (= 72)`,
+  `4× 40° (= 160°)`; a pattern over the full circle keeps its step implied by the count; before, a pattern's own
+  dimensions were left out of drawings
+- A view on no standard plane (an isometric) that a sheet places itself goes into the free corner diagonal to the
+  front view, between the side view and the top view (lower right in first-angle projection, upper right in
+  third-angle), beside the one there is without the other; before, it went in a row beside the projection, which often
+  cost the sheet a scale
+- Dimension lines lie closer to the part: the first row 8 mm from it (was 10), the rows 7 mm apart (was 8); angle arcs
+  start at 12 mm from their vertex (was 15). Sketch plots, whose lettering is drawn taller, keep their rows as far
+  apart as their values need to stay as clear of each other as a drawing's
+
+### Fixed
+
+- A sheet places a second view on a standard plane (a section seen from the front) beside the other views; before, it
+  lay on top of the first
+- Auto constraints put a point within `tol` of an axis on it (`px.Coincident`); before, they could dimension it a
+  distance of 0 from the axis (`sk.AutoConstrain(tol=1e-6)`)
+- Drawings keep the radius values of concentric arcs apart: an arc's radius line turns up to 150 degrees from the
+  arc's middle, staying on the arc, away from a concentric one's line and from what it would cross; before, two
+  concentric arcs wrote their values on top of each other
+- Drawings and drafted sketch plots keep their dimension values clear: each angle, radius, diameter, leader and
+  inclined dimension takes the place where no value lies on another and no line or edge crosses a value (an angle's
+  value beyond an arrow or its arc a row further out, a diameter's value further along its line, a radius or diameter
+  on a leader where every place on its arc or in its circle is crossed); a value wider than the space between its
+  extension lines goes beyond the arrow on its right or upper end; a center line has a gap where a value has to lie on
+  it; a vertical dimension's value always reads from the right; before, values could lie on each other, across their
+  extension lines or on edges (an angle on a hole's leader, two vertical values reading from opposite sides of their
+  lines). Sheets draw several times faster
+- Auto constraints that find many relations that repeat each other are fast: the repeated ones are found in one
+  pass in their order instead of one analysis of the sketch each; a 48-line view with every relation on took
+  minutes and takes well under a second (`sk.AutoConstrain(geometric={...})`, `auto_constraint=` with many
+  relations on)
+- A shaded pictorial of an open shell (`px.Drawing(shape, px.Isometric)` of faces that bound no solid) shades the
+  faces seen from inside, lit as their outside; before, a face's inside seen through an opening stayed white, so the
+  shell looked like a hole there. Solids draw as before
+- A piece of a spline between two of its points that lie very close together (1e-6 apart on a spline 2000 long, as a
+  view's hidden lines can cut it) keeps its curve; before, `edge.bspline` or `sk.Add` of such a piece crashed Python
+- Auto constraints leave out a relation the solver cannot take, a tangent at the end of a spline of more than about 60
+  points; the spline's end is still joined to what starts there. Before, `sk.AutoConstrain` and `auto_constraint=`
+  raised "a constraint on more than about 60 points"
+- Auto constraints relate no B-spline to its own legs and no two pieces of one spline to each other; before,
+  `sk.BSpline(...)` with auto constraints on raised "contradicts the constraints there are"
+- A Tangent at a cusp (a line turning back along the curve it meets, as a closing line at a parabola's vertex) keeps
+  the cusp, from `sk.Constrain(..., px.Tangent)` and from auto constraints; before, the solve turned the line over to
+  the other side of the joint
+- Auto constraints no longer repeat an offset's own ties (a band's end cap centred on its source's end); before, the
+  tie was reported redundant
+- Hidden edges that fall on one line or one circle in a view of a solid (a pocket's rim and ceiling seen from above,
+  a coil's front and back) are one dashed line, and a hidden stretch under a visible edge is left out; before, each
+  edge was dashed on its own and together they read as a thin solid line
+- `sk.ToSVG(show_constraints=True)` and the plots draw the constraints on a circle that `Trim` split into pieces (its
+  Concentric at its centre, a point on it at the point); before, they raised "_Location('ring'): 'ring' is no point"
+- A Tangent between two elements that meet at both ends (an airfoil's two surfaces: smooth at the leading edge, a
+  sharp corner at the trailing edge) holds where they meet smoothly; before, it was taken at whichever shared point
+  came first, and the sketch raised "contradicts the constraints there are" or came out over-defined
+
+### Packaging
+
+- planex2d-occ's build for Pyodide (Emscripten) needs only the target Python's headers, not its interpreter
+- The development status on PyPI is now Beta (was Alpha)
+
 ## v0.3.1
 
 ### Fixed

@@ -187,3 +187,13 @@ def test_plotly_shows_an_element_s_id_all_along_it():
     xs = sorted(x for x, _ in along)
     assert len(along) >= 100 and xs[0] < 1 and xs[-1] > 99 and max(b - a for a, b in zip(xs, xs[1:])) <= 1.0 + 1e-9
     assert sum(1 for t in fig.data if t.hovertext is not None for h in t.hovertext if h == "short") == 1
+
+
+def test_constraints_on_a_circle_trim_split_are_drawn():
+    sk = px.Sketch()
+    sk.Circle(5, id="outside").Circle(3, id="ring")
+    sk.Move((3, 0)).Line(1.5, 0, id="spoke")
+    sk.Move((-1, 4)).Line(0, -8, id="left").Move((1, 4)).Line(0, -8, id="right")
+    sk.Trim(("ring", (0, 3))).Trim(("ring", (0, -3)))
+    svg = sk.ToSVG(show_constraints=True)
+    assert "ring" not in [g["id"] for g in sk._Drawing()] and "◎" in svg

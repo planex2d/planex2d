@@ -41,6 +41,7 @@ def test_the_occ_module_adds_its_functions_to_the_core_module_and_its_methods_to
 
 
 @pytest.mark.occ
+@pytest.mark.subprocess
 def test_without_the_occ_module_planex_has_the_same_names():
     assert json.loads(_run(WITHOUT_OCC + NAMES)) == json.loads(_run(NAMES))
 
@@ -106,6 +107,7 @@ def test_the_module_carries_the_installed_version():
 
 
 @pytest.mark.occ
+@pytest.mark.subprocess
 def test_the_occ_bindings_refuse_a_core_of_another_version_or_other_sources():
     version = px._planex._version
     module = "planex._planex_occ" if "planex._planex_occ" in sys.modules else "planex_occ"

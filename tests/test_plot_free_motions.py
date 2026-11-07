@@ -55,7 +55,7 @@ def test_plotly_hovers_the_dimension_that_removes_a_motion():
     assert [t.name for t in fig.data if t.showlegend] == RECTANGLE_LEGEND and fig.layout.showlegend
     assert [len(shapes(fig, c)) for c in _plot_sketch.MOTIONS[:4]] == [4, 4, 2, 2]
     (width,) = [t for t in fig.data if not t.showlegend and t.legendgroup == RECTANGLE_LEGEND[2]]
-    assert width.hovertext[0] == RECTANGLE_LEGEND[2] + ', constrain with sk.Constrain("bottom", px.Distance, 4)'
+    assert width.hovertext[0] == RECTANGLE_LEGEND[2] + ', constrain with sk.Constrain("left", "right", px.Distance, 4)'
     assert {(s.xanchor, s.yanchor) for s in shapes(fig, _plot_sketch.MOTIONS[2])} == {(5, 2), (5, 4)}
     assert all(s.xsizemode == "pixel" and s.path.startswith("M 16.00 0.00") for s in shapes(fig, _plot_sketch.MOTIONS[2]))
 

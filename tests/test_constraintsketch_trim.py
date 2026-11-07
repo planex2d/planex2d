@@ -84,11 +84,11 @@ def test_split_numbers_the_pieces_and_the_constraints_resolve_through_the_wire()
 def test_constraints_on_the_cut_off_end_follow_it():
     sk = post_on_base()
     sk.Move((1, -1)).Line(1, 0, id="foot")
-    sk.Constrain("post.end", "foot.start", px.Coincident)
+    sk.Constrain("post.end", "foot.start", px.Coincident, id="joint")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         sk.Trim(("post", (1, -0.5)), "base")
-    assert repr(sk.constraints["Coincident"]["Coincident.1"]) == '"post.trimmed.1.end", "foot.start", px.Coincident'
+    assert repr(sk.constraints["Coincident"]["joint"]) == '"post.trimmed.1.end", "foot.start", px.Coincident'
 
 
 @pytest.mark.constraints

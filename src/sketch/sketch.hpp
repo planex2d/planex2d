@@ -1768,7 +1768,7 @@ namespace planex2d {
         // the spline element FitParams gives, without its id; the points between its ends are made as point elements
         size_t FitCurve(const sketch::CurveEval &g, double ta, double tb, std::array<size_t, 2> at, const Options &o) {
             const bool closed = at[0] == at[1];
-            const std::vector<double> t = g.FitParams(ta, tb, Coords(at[0]), Coords(at[1]), closed);
+            const std::vector<double> t = g.FitParams(ta, tb, Coords(at[0]), Coords(at[1]), closed, SplineStyle::Averaged);
             const std::array<Vertex, 2> ends = g.EndDirections(ta, tb);
             std::vector<size_t> ids{at[0]};
             for (size_t i = 1; i + 1 < t.size(); ++i) {
@@ -2987,27 +2987,36 @@ namespace planex2d {
             }
         }
         // an offset curve's edges: one spline, its arcs within spline_tol of the exact curve and its B-spline fitted to them
-        // (as the spline fit at export); if no B-spline fits them or no spline fit is loaded, the
-        // arcs and lines themselves, with a warning
+        // (as the spline fit at export); if no B-spline fits them, the arcs and lines themselves, with a warning; without
+        // the spline fit, the quintic through its points
         EdgeList OffsetCurveEdges(size_t e) const {
+            if (!config::state->spline_fitter)
+                return {OffsetCurveSpline(e)};
             double atol = 0.0;
             const std::vector<PrimitiveEdge> arcs = s.elements[e].OffsetCurveArcs(s, &atol);
-            const auto asArcs = [&](const char *why) {
-                Warning() << elementIds[e] << ": " << why << ", it goes out as its " << arcs.size() << " arcs and lines";
-                EdgeList out;
-                for (const PrimitiveEdge &a : arcs)
-                    out.push_back(std::visit([](const auto &x) -> Edge { return x; }, a));
-                return out;
-            };
-            if (!config::state->spline_fitter)
-                return asArcs("no spline fit without planex's OCC integration");
             // a closed curve as one closed spline
             std::optional<planex2d::Spline> fitted;
             for (size_t n = 2; n <= 64 && !fitted; n *= 2)
                 fitted = planex2d::Spline::Fitted(arcs, planex2d::FitPoints(arcs, atol, n), atol, arcs.front().StartTangent(), arcs.back().EndTangent());
-            if (!fitted)
-                return asArcs("no B-spline fits it within spline_tol");
-            return {std::move(*fitted)};
+            if (fitted)
+                return {std::move(*fitted)};
+            Warning() << elementIds[e] << ": no B-spline fits it within spline_tol, it goes out as its " << arcs.size() << " arcs and lines";
+            EdgeList out;
+            for (const PrimitiveEdge &a : arcs)
+                out.push_back(std::visit([](const auto &x) -> Edge { return x; }, a));
+            return out;
+        }
+        planex2d::Spline OffsetCurveSpline(size_t e) const {
+            const sketch::OffsetRun run = s.elements[e].Run(s);
+            const std::array<size_t, 2> ends = s.elements[e].Ends(s);
+            const bool closed = ends[0] == ends[1];
+            const Vertex a = Coords(ends[0]), b = Coords(ends[1]);
+            const std::vector<double> t = run.g.FitParams(run.reversed ? run.to : run.from, run.reversed ? run.from : run.to, a, b, closed, SplineStyle::Quintic);
+            std::vector<Vertex> nodes = run.g.Places(t, a, b, closed);
+            const planex2d::Curve<double, Vertex> c = run.g.Through(t, nodes, closed, SplineStyle::Quintic);
+            if (closed)
+                nodes.push_back(a);
+            return planex2d::Spline::FromNodes(c, c.params, nodes).front();
         }
         std::vector<std::vector<size_t>> Groups() const { return GroupsOf(false); }
         // the lines, arcs and circles (drawn ones, or all) by the groups they form at shared points, in the order drawn

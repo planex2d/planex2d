@@ -28,7 +28,9 @@
 #include <HLRBRep_HLRToShape.hxx>
 #include <Poly_Triangulation.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <TopExp.hxx>
 #include <TopLoc_Location.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <gp_Ax2.hxx>
 
 #include "core/grid.hpp"
@@ -441,6 +443,9 @@ namespace planex2d {
     // viewer's upper left: 0 edge-on, 1 square)
     inline Shading ShadedTriangles(const TopoDS_Shape &shape, const AxisSystem &axes, double deflection) {
         BRepMesh_IncrementalMesh mesh(shape, deflection);
+        TopTools_IndexedMapOfShape bounding;
+        for (TopExp_Explorer s(shape, TopAbs_SOLID); s.More(); s.Next())
+            TopExp::MapShapes(s.Current(), TopAbs_FACE, bounding);
         const gp_Vec n(ToOCC(axes.Normal())), toLight = (n + gp_Vec(ToOCC(axes.YDirection() - axes.XDirection())) * 0.5).Normalized();
         std::vector<std::pair<double, size_t>> order;
         Shading out;
@@ -450,14 +455,14 @@ namespace planex2d {
             const Handle(Poly_Triangulation) t = BRep_Tool::Triangulation(f, at);
             if (t.IsNull())
                 continue;
-            const bool reversed = f.Orientation() == TopAbs_REVERSED;
+            const bool reversed = f.Orientation() == TopAbs_REVERSED, bothSides = !bounding.Contains(f);
             for (int k = 1; k <= t->NbTriangles(); ++k) {
                 int a, b, c;
                 t->Triangle(k).Get(a, b, c);
                 const gp_Pnt p[3] = {t->Node(a).Transformed(at.Transformation()), t->Node(b).Transformed(at.Transformation()),
                                      t->Node(c).Transformed(at.Transformation())};
                 gp_Vec normal = gp_Vec(p[0], p[1]) ^ gp_Vec(p[0], p[2]);
-                if (reversed)
+                if (bothSides ? normal.Dot(n) < 0.0 : reversed)
                     normal.Reverse();
                 if (!(normal.Dot(n) > 0.0))
                     continue;

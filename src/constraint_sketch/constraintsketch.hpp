@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "constraint_sketch/copyrecords.hpp"
+#include "constraint_sketch/dimensionfinder.hpp"
 #include "constraint_sketch/freemotions.hpp"
 #include "constraint_sketch/pending.hpp"
 #include "constraint_sketch/reports.hpp"
@@ -347,9 +348,23 @@ namespace planex2d {
                                                     (sketch::IsFix(kind) ? "fix" : "group") + " its source and the offset's distance instead");
             Atomic([&] {
                 RetrySuspended();
+                DropImpliedLike(c);
                 AddConstraint(c, id, std::nullopt, true, true);
             });
             return *this;
+        }
+        void DropImpliedLike(const cs::Constraint &c) {
+            if (c.reference)
+                return;
+            const std::string key = PlaceKeyOf(c.kind, c.refs);
+            for (size_t j = 0; j < constraintIds.size(); ++j) {
+                const std::string id = constraintIds[j];
+                if (impliedIds.contains(id) && PlaceKeyOf(s.constraints[j].kind, s.constraints[j].refs) == key) {
+                    Remove(id);
+                    impliedIds.erase(id);
+                    return;
+                }
+            }
         }
 
         // an equation between dimensions (nodes over the names: Value k the k-th name) as one more equation of the
@@ -444,15 +459,73 @@ namespace planex2d {
 
         // the relations of o between the elements isNew marks (not projected ones) and the others, never with the origin
         // or the axes; tol: an absolute length, none for rounding
-        std::vector<sketch::FoundRelation> AutoRelations(const AutoConstraint &o, std::vector<char> isNew, std::optional<double> tol = std::nullopt) const {
+        std::vector<sketch::FoundRelation> AutoRelations(const AutoConstraint &o, std::vector<char> isNew, std::optional<double> tol = std::nullopt,
+                                                         std::vector<sketch::FoundAxis> axes = {}, std::vector<sketch::FoundPitchCircle> pitches = {}) const {
             std::vector<char> skip(s.elements.size(), 0);
             for (const char *id : {"origin", "H", "V"})
                 if (const auto at = byId.find(id); at != byId.end() && at->second.isElement)
                     skip[at->second.index] = 1;
+            for (const sketch::FoundAxis &axis : axes)
+                if (axis.isNew)
+                    for (size_t k = 0; k < s.elements.size(); ++k)
+                        skip[k] = skip[k] || k == axis.line || IsEndPointOf(k, axis.line);
             for (size_t k = 0; k < s.elements.size(); ++k)
                 if (isNew[k] && s.elements[k].IsHeld(s))
                     isNew[k] = 0;
-            return sketch::RelationFinder(s, o, std::move(isNew), std::move(skip), tol).Find();
+            std::vector<sketch::FoundRelation> found = sketch::RelationFinder(s, o, std::move(isNew), std::move(skip), tol, std::move(axes), std::move(pitches)).Find();
+            std::erase_if(found, [&](const sketch::FoundRelation &r) { return !s.Fits({r.kind, r.refs}); });
+            return found;
+        }
+        bool IsEndPointOf(size_t point, size_t line) const {
+            return s.elements[point].kind == sketch::ElementKind::Point &&
+                   (s.elements[point].Point() == s.elements[line].Start() || s.elements[point].Point() == s.elements[line].End());
+        }
+        std::vector<sketch::FoundPitchCircle> PitchCircles(std::optional<double> tol) {
+            std::vector<char> skip(s.elements.size(), 0);
+            for (size_t k = 0; k < s.elements.size(); ++k)
+                skip[k] = !IsDrawn(k);
+            const auto skipped = [&](const std::string &id) {
+                if (const auto at = byId.find(id); at != byId.end() && at->second.isElement)
+                    skip[at->second.index] = 1;
+            };
+            for (const auto &[name, info] : patterns) {
+                for (const std::string &id : info.originals)
+                    skipped(id);
+                for (const auto &[elements, others] : info.copies) {
+                    for (const std::string &id : elements)
+                        skipped(id);
+                    for (const std::string &id : others)
+                        skipped(id);
+                }
+            }
+            std::vector<sketch::FoundPitchCircle> out = sketch::PitchCircleFinder(s, skip, tol).Circles();
+            for (sketch::FoundPitchCircle &pitch : out) {
+                pitch.circle = AddElement(s.AddCircle(s.NewPoint(pitch.centre), pitch.r), "Circle", {std::nullopt, {}, true});
+                for (size_t hole : pitch.holes) {
+                    const size_t a = AddElement(s.AddPoint(s.NewPoint(pitch.centre)), "Point", {std::nullopt, {}, true});
+                    const size_t b = AddElement(s.AddPoint(s.NewPoint(s.Coords(s.elements[hole].Center()))), "Point", {std::nullopt, {}, true});
+                    pitch.spokes.push_back(AddElement(s.AddLine(s.elements[a].Point(), s.elements[b].Point()), "Line", {std::nullopt, {}, true}));
+                }
+            }
+            return out;
+        }
+        std::vector<sketch::FoundAxis> SymmetryAxes(std::optional<double> tol, bool newLines) {
+            std::vector<char> skip(s.elements.size(), 0);
+            for (size_t k = 0; k < s.elements.size(); ++k)
+                skip[k] = !IsDrawn(k);
+            std::vector<sketch::FoundAxis> out;
+            for (sketch::FoundAxis &axis : sketch::SymmetryFinder(s, skip, tol).Axes()) {
+                if (axis.line == sketch::none && !newLines)
+                    continue;
+                if (axis.line == sketch::none) {
+                    const size_t a = AddElement(s.AddPoint(s.NewPoint(axis.At(axis.from))), "Point", {std::nullopt, {}, true});
+                    const size_t b = AddElement(s.AddPoint(s.NewPoint(axis.At(axis.to))), "Point", {std::nullopt, {}, true});
+                    axis.line = AddElement(s.AddLine(s.elements[a].Point(), s.elements[b].Point()), "Line", {std::nullopt, {}, true});
+                    axis.isNew = true;
+                }
+                out.push_back(axis);
+            }
+            return out;
         }
         // relations found in bulk (copied or added geometry): added without a solve each, one solve, then the ones that
         // follow from the others left out quietly
@@ -461,6 +534,7 @@ namespace planex2d {
                 return;
             Atomic([&] {
                 const std::set<std::string> have = ConstraintKeys();
+                const size_t first = s.constraints.size();
                 for (const sketch::FoundRelation &r : found) {
                     if (have.contains(KeyOf(r.kind, r.refs)))
                         continue;
@@ -473,8 +547,20 @@ namespace planex2d {
                 analysis.reset();
                 if (!s.Solve().solved)
                     throw std::invalid_argument(std::string(call) + ": the relations found have no solution");
+                DropRedundantFrom(first);
                 DropRedundantImplied();
             });
+        }
+        void DropRedundantFrom(size_t first) {
+            const std::vector<char> redundant = s.RedundantFrom(first);
+            std::vector<std::string> drop;
+            for (size_t c = first; c < constraintIds.size(); ++c)
+                if (redundant[c] && impliedIds.contains(constraintIds[c]))
+                    drop.push_back(constraintIds[c]);
+            for (size_t k = drop.size(); k-- > 0;) {
+                Remove(drop[k]);
+                impliedIds.erase(drop[k]);
+            }
         }
         // the elements from first on came in at once (Add): their relations in bulk, none found again when the call ends
         void RelateAdded(size_t first) {
@@ -497,6 +583,17 @@ namespace planex2d {
                 key += "," + std::to_string(r.element) + ":" + std::to_string((int)r.part) + ":" + std::to_string(r.index);
             return key;
         }
+        std::string PlaceKeyOf(sketch::Kind kind, const std::vector<sketch::Ref> &refs) const {
+            std::vector<std::string> parts;
+            for (const sketch::Ref &r : refs)
+                parts.push_back(r.IsPoint(s) ? "p" + std::to_string(s.coordsOf[r.PointAt(s)])
+                                             : std::to_string(r.element) + ":" + std::to_string((int)r.part) + ":" + std::to_string(r.index));
+            std::sort(parts.begin(), parts.end());
+            std::string key = std::to_string((int)kind);
+            for (const std::string &p : parts)
+                key += "," + p;
+            return key;
+        }
         std::set<std::string> ConstraintKeys() const {
             std::set<std::string> out;
             for (const cs::Constraint &c : s.constraints)
@@ -516,7 +613,8 @@ namespace planex2d {
         ConstraintSketch &ConstrainImplied(const cs::Constraint &c) {
             const size_t dof = Analysis(false).dof;
             AtomicIf([&] {
-                if (AddConstraint(c, std::nullopt, dof))
+                const cs::System::Mark before = s.Marked();
+                if (AddConstraint(c, std::nullopt, dof) || (analysis->dof == dof && MakesOffsetTieRedundant(before)))
                     return false;
                 const std::string added = constraintIds.back();
                 DropRedundantImplied();
@@ -524,6 +622,14 @@ namespace planex2d {
                 return true;
             });
             return *this;
+        }
+
+        bool MakesOffsetTieRedundant(const cs::System::Mark &before) const {
+            for (size_t j : MadeRedundant(s.Redundancies(*analysis), before))
+                for (const auto &entry : offsetInfos)
+                    if (entry.second.Owns(constraintIds[j]))
+                        return true;
+            return false;
         }
 
         double Value(const std::string &id) {
@@ -917,10 +1023,10 @@ namespace planex2d {
             ConstraintSketch scratch = *this;
             std::vector<cs::Suggestion> out;
             if (geometric)
-                for (const cs::Constraint &c : scratch.AddedRelations(*geometric, tol, "SuggestConstraints"))
+                for (const cs::Constraint &c : scratch.AddedRelations(*geometric, tol, "SuggestConstraints", false))
                     out.push_back(scratch.Suggested(c, ""));
             if (dimensional)
-                for (const auto &[c, removes] : scratch.RemovingDimensions())
+                for (const auto &[c, removes] : scratch.RemovingDimensions(tol))
                     out.push_back(scratch.Suggested(c, removes));
             return out;
         }
@@ -929,11 +1035,12 @@ namespace planex2d {
             Flush();
             const std::set<std::string> had(constraintIds.begin(), constraintIds.end());
             const std::vector<Vertex> was = PointPlaces();
+            const size_t elementsBefore = s.elements.size();
             Atomic([&] {
                 if (geometric)
-                    AddedRelations(*geometric, tol, "AutoConstrain");
+                    AddedRelations(*geometric, tol, "AutoConstrain", true);
                 if (dimensional)
-                    AddDimensions(RemovingDimensions());
+                    AddDimensions(RemovingDimensions(tol));
             });
             const std::vector<Vertex> now = PointPlaces();
             double moved = 0.0;
@@ -942,6 +1049,9 @@ namespace planex2d {
             if (moved > Tol(s.Size()))
                 Warning() << "AutoConstrain: the relations moved the geometry by up to " << NumberText(moved);
             std::vector<std::string> out;
+            for (size_t k = elementsBefore; k < s.elements.size(); ++k)
+                if (s.elements[k].kind == sketch::ElementKind::Line || s.elements[k].kind == sketch::ElementKind::Circle)
+                    out.push_back(elementIds[k]);
             for (const std::string &id : constraintIds)
                 if (!had.contains(id))
                     out.push_back(id);
@@ -2247,9 +2357,11 @@ namespace planex2d {
             analysis.reset();
         }
         // the relations o finds between all elements within tol, added in bulk; the ones kept
-        std::vector<cs::Constraint> AddedRelations(const AutoConstraint &o, std::optional<double> tol, const char *call) {
+        std::vector<cs::Constraint> AddedRelations(const AutoConstraint &o, std::optional<double> tol, const char *call, bool newAxes) {
             const std::set<std::string> had(constraintIds.begin(), constraintIds.end());
-            AddRelations(AutoRelations(o, std::vector<char>(s.elements.size(), 1), tol), call);
+            std::vector<sketch::FoundAxis> axes = o.symmetric ? SymmetryAxes(tol, newAxes) : std::vector<sketch::FoundAxis>{};
+            std::vector<sketch::FoundPitchCircle> pitches = o.pitch_circle && newAxes ? PitchCircles(tol) : std::vector<sketch::FoundPitchCircle>{};
+            AddRelations(AutoRelations(o, std::vector<char>(s.elements.size(), 1), tol, std::move(axes), std::move(pitches)), call);
             std::vector<cs::Constraint> out;
             for (size_t c = 0; c < constraintIds.size(); ++c)
                 if (!had.contains(constraintIds[c]))
@@ -2257,47 +2369,34 @@ namespace planex2d {
             return out;
         }
         // the candidates that each remove one of the free motions, with the drag of the motion each removes
-        std::vector<std::pair<cs::Constraint, std::string>> RemovingDimensions() {
-            const std::vector<cs::Constraint> candidates = DimensionCandidates();
+        std::vector<std::pair<cs::Constraint, std::string>> RemovingDimensions(std::optional<double> tol = std::nullopt) {
+            const std::vector<cs::Constraint> candidates = DimensionCandidates(tol);
             std::vector<std::pair<cs::Constraint, std::string>> out;
             for (const auto &[k, removes] : cs::FreeMotionFinder(s, UnknownLabels(), elementIds).Removing(candidates))
                 out.push_back({candidates[k], removes});
             return out;
         }
-        // in the order they are tried, sizes first: every line's length, arc's radius and full circle's diameter, the
-        // angle between two lines that meet; then every free point's h and v from the origin (Distance from V and H; a
-        // point on an axis: Coincident with it); values as the geometry has them
-        std::vector<cs::Constraint> DimensionCandidates() const {
-            const double rounding = Tol(s.Size());
+        // in the order they are tried: a datum on the origin held there, the drafter's dimensions (DimensionFinder), then
+        // every free point's h and v from the origin, the datum's first (Distance from V and H; a point on an axis, within
+        // tol: Coincident with it); values as the geometry has them
+        std::vector<cs::Constraint> DimensionCandidates(std::optional<double> tol = std::nullopt) const {
+            const cs::DimensionFinder finder(s);
             std::vector<cs::Constraint> out;
-            std::map<size_t, std::vector<size_t>> linesAt;
-            for (size_t e = 3; e < s.elements.size(); ++e) {
-                const sketch::Element &element = s.elements[e];
-                const sketch::ElementKind kind = element.kind;
-                if (element.IsHeld(s) || (kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc && kind != sketch::ElementKind::Circle))
-                    continue;
-                cs::Constraint c{kind == sketch::ElementKind::Line  ? sketch::Kind::Distance
-                                 : kind == sketch::ElementKind::Arc ? sketch::Kind::Radius
-                                                                    : sketch::Kind::Diameter,
-                                 {sketch::Ref{e}}};
-                c.value = std::abs(s.Measured(c));
-                if (c.value > rounding)
-                    out.push_back(c);
-                if (kind == sketch::ElementKind::Line)
-                    for (size_t p : {element.Start(), element.End()})
-                        linesAt[s.coordsOf[p]].push_back(e);
-            }
-            for (const auto &[point, lines] : linesAt)
-                for (size_t i = 0; i < lines.size(); ++i)
-                    for (size_t j = i + 1; j < lines.size(); ++j) {
-                        cs::Constraint c{sketch::Kind::Angle, {sketch::Ref{lines[i]}, sketch::Ref{lines[j]}}};
-                        c.value = std::abs(s.Measured(c));
-                        // parallel lines: an angle of 0 or 180 degrees is no dimension
-                        if (std::abs(std::sin(c.value * std::numbers::pi / 180.0)) > 1e-9)
-                            out.push_back(c);
-                    }
             const std::vector<std::pair<std::string, std::string>> label = UnknownLabels();
             std::vector<char> seen(s.values.size(), 0);
+            const std::optional<size_t> datum = finder.DatumUnknown();
+            if (const std::optional<size_t> line = finder.OriginLine())
+                out.push_back({sketch::Kind::Coincident, {sketch::Ref{2}, sketch::Ref{*line}}});
+            if (datum && finder.IsAtOrigin()) {
+                seen[*datum] = 1;
+                Positions(RefOf(label[*datum].first), *datum, tol, out);
+            }
+            const std::vector<cs::Constraint> drafted = finder.Candidates();
+            out.insert(out.end(), drafted.begin(), drafted.end());
+            if (datum && !seen[*datum]) {
+                seen[*datum] = 1;
+                Positions(RefOf(label[*datum].first), *datum, tol, out);
+            }
             for (size_t e = 3; e < s.elements.size(); ++e) {
                 const sketch::ElementKind kind = s.elements[e].kind;
                 if (kind != sketch::ElementKind::Point && kind != sketch::ElementKind::Line && kind != sketch::ElementKind::Arc &&
@@ -2310,17 +2409,20 @@ namespace planex2d {
                     if (names[k].second != "x" || names[k].first == ".origin" || s.held[u[k]] || seen[u[k]])
                         continue;
                     seen[u[k]] = 1;
-                    const sketch::Ref p = RefOf(label[u[k]].first);
-                    // V (element 1) measures h, H (element 0) v
-                    for (const size_t axis : {1, 0}) {
-                        const double at = s.values[u[k] + 1 - axis];
-                        cs::Constraint c{std::abs(at) > rounding ? sketch::Kind::Distance : sketch::Kind::Coincident, {p, sketch::Ref{axis}}};
-                        c.value = std::abs(at);
-                        out.push_back(c);
-                    }
+                    Positions(RefOf(label[u[k]].first), u[k], tol, out);
                 }
             }
             return out;
+        }
+        void Positions(const sketch::Ref &p, size_t unknown, std::optional<double> tol, std::vector<cs::Constraint> &out) const {
+            const double rounding = std::max(Tol(s.Size()), tol.value_or(0.0));
+            // V (element 1) measures h, H (element 0) v
+            for (const size_t axis : {1, 0}) {
+                const double at = s.values[unknown + 1 - axis];
+                cs::Constraint c{std::abs(at) > rounding ? sketch::Kind::Distance : sketch::Kind::Coincident, {p, sketch::Ref{axis}}};
+                c.value = std::abs(at);
+                out.push_back(c);
+            }
         }
         // dimensions that hold as the geometry is: added in bulk, one solve
         void AddDimensions(const std::vector<std::pair<cs::Constraint, std::string>> &found) {
@@ -2409,7 +2511,7 @@ namespace planex2d {
         }
         void DropRedundantImplied() {
             for (;;) {
-                const std::vector<char> redundant = s.Redundancies(Analysis());
+                const std::vector<char> redundant = s.Redundancies(Analysis(false));
                 std::optional<std::string> drop;
                 for (size_t c = constraintIds.size(); c-- > 0 && !drop;)
                     if (redundant[c] && impliedIds.contains(constraintIds[c]))
@@ -2707,6 +2809,21 @@ namespace planex2d {
                 Warning() << name << " (" << text << "): " << what;
             }
         }
+        bool DropImpliedMadeRedundant(const std::vector<char> &now, const cs::System::Mark &before) {
+            const std::vector<size_t> made = MadeRedundant(now, before);
+            if (made.empty())
+                return false;
+            for (size_t j : made)
+                if (!impliedIds.contains(constraintIds[j]) || s.IsMerge(s.constraints[j]))
+                    return false;
+            for (size_t m = made.size(); m-- > 0;) {
+                const std::string id = constraintIds[made[m]];
+                Remove(id);
+                impliedIds.erase(id);
+            }
+            analysis = s.Analyze(false);
+            return true;
+        }
         // the constraints the new one makes redundant (now: the flags, before: the mark before it was added), each with
         // what it follows from; several that follow from the same in one warning
         void ReportMadeRedundant(const std::vector<char> &now, const cs::System::Mark &before) const {
@@ -2772,7 +2889,7 @@ namespace planex2d {
                     return Joined(from);
                 }
                 Warning() << RedundancyText(k, from);
-            } else if (reportMakes)
+            } else if (reportMakes && !DropImpliedMadeRedundant(now, before))
                 ReportMadeRedundant(now, before);
             if (amplified > config::state->sensitivity_warning && amplifiedBefore <= config::state->sensitivity_warning)
                 Warning() << name << " (" << text << "): nearly singular, a small change of the dimensions can move the geometry "

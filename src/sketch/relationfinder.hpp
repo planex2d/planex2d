@@ -19,6 +19,8 @@
 #include "core/config.hpp"
 #include "core/vertex.hpp"
 #include "sketch/geometry.hpp"
+#include "sketch/pitchcirclefinder.hpp"
+#include "sketch/symmetryfinder.hpp"
 
 // The relations auto constraints find between the elements of a sketch, where they hold to rounding or
 // within an absolute tolerance, strongest first: a relation that follows from those before it is then a weaker one.
@@ -35,21 +37,27 @@ namespace planex2d::sketch {
         // isNew: per element, a relation needs a new one; skip: elements never related (the origin, the axes); tol: an
         // absolute length, none for rounding
         RelationFinder(const Geometry &g, const AutoConstraint &o, std::vector<char> isNew, std::vector<char> skip,
-                       std::optional<double> tol = std::nullopt)
-            : g(g), o(o), isNew(std::move(isNew)), skip(std::move(skip)), tol(tol) {}
+                       std::optional<double> tol = std::nullopt, std::vector<FoundAxis> axes = {}, std::vector<FoundPitchCircle> pitches = {})
+            : g(g), o(o), isNew(std::move(isNew)), skip(std::move(skip)), tol(tol), axes(std::move(axes)), pitches(std::move(pitches)) {}
 
         std::vector<FoundRelation> Find() {
             Places();
             Clusters();
-            if (o.point_on_curve) {
+            if (o.point_on_curve)
                 PenPoints();
+            if (o.point_on_curve || o.midpoint)
                 PointsOnCurves();
-            }
             if (o.tangent)
                 Tangents();
             Lines();
+            if (o.horizontal || o.vertical)
+                CentreRows();
             if (o.equal_radius)
                 EqualRadii();
+            for (const FoundAxis &axis : axes)
+                Symmetries(axis);
+            for (const FoundPitchCircle &pitch : pitches)
+                OnPitchCircle(pitch);
             std::vector<FoundRelation> out;
             for (std::vector<FoundRelation> &kind : found)
                 for (FoundRelation &r : kind)
@@ -58,8 +66,9 @@ namespace planex2d::sketch {
         }
 
     private:
-        enum Order { CoincidentOrder, ConcentricOrder, CollinearOrder, OnCurveOrder, TangentOrder, HorizontalOrder, VerticalOrder,
-                     PerpendicularOrder, ParallelOrder, EqualRadiusOrder, EqualLengthOrder, Orders };
+        enum Order { JointOrder, ConcentricOrder, TangentOrder, HorizontalOrder, VerticalOrder, PerpendicularOrder, ParallelOrder,
+                     CoincidentOrder, OnCurveOrder, MidpointOrder, CollinearOrder, SymmetricOrder, PitchOrder, EqualRadiusOrder,
+                     EqualLengthOrder, Orders };
 
         struct End {
             size_t element;
@@ -170,7 +179,8 @@ namespace planex2d::sketch {
                     if (o.concentric)
                         Add(ConcentricOrder, Kind::Concentric, {{places[f].round}, {places[j].round}});
                 } else if (o.coincident) {
-                    Add(CoincidentOrder, Kind::Coincident, {places[f].ref, places[j].ref});
+                    Add(places[f].ends.empty() || places[j].ends.empty() ? CoincidentOrder : JointOrder, Kind::Coincident,
+                        {places[f].ref, places[j].ref});
                     parent[Root(j)] = Root(f);
                 }
             }
@@ -204,6 +214,13 @@ namespace planex2d::sketch {
             return std::abs(Cross(u, v)) <= Near(NormInf(at)) * (Norm(u) + Norm(v));
         }
         bool IsLine(size_t k) const { return g.elements[k].kind == ElementKind::Line; }
+        bool IsOfOneSpline(size_t a, size_t b) const {
+            const auto spline = [&](size_t k) {
+                const Element &e = g.elements[k];
+                return e.kind == ElementKind::Spline ? e.SplineIndex() : g.LegOf(e);
+            };
+            return spline(a) != none && spline(a) == spline(b);
+        }
 
         // the ends at one place (shared or found coincident) that touch there, not two lines
         void Tangents() {
@@ -217,7 +234,7 @@ namespace planex2d::sketch {
                     for (size_t j = i + 1; j < ends.size(); ++j) {
                         const End x = ends[i].first, y = ends[j].first;
                         const size_t a = std::min(x.element, y.element), b = std::max(x.element, y.element);
-                        if (a == b || (IsLine(a) && IsLine(b)) || !Fresh(a, b) || done.contains({a, b}))
+                        if (a == b || (IsLine(a) && IsLine(b)) || !Fresh(a, b) || done.contains({a, b}) || IsOfOneSpline(a, b))
                             continue;
                         if (Tangential(x, y, places[ends[i].second].at)) {
                             done.insert({a, b});
@@ -248,7 +265,8 @@ namespace planex2d::sketch {
             }
         }
 
-        // the ends and Points (one per place found coincident) on a line, arc or circle, away from its ends
+        // the ends and Points (one per place found coincident) on a line, arc or circle, away from its ends; at a line's
+        // middle, centres too, its midpoint
         void PointsOnCurves() {
             std::vector<size_t> targets;
             Vertex lo{INFINITY, INFINITY}, hi{-INFINITY, -INFINITY};
@@ -286,16 +304,28 @@ namespace planex2d::sketch {
                         grid[key(i, j)].push_back(k);
             for (size_t p = 0; p < places.size(); ++p) {
                 const Place &place = places[p];
-                if (place.IsCentre() || first[p] != none)
+                const bool centre = place.IsCentre();
+                if ((centre && !o.midpoint) || first[p] != none)
                     continue;
                 const auto it = grid.find(key(index(place.at.x, lo.x), index(place.at.y, lo.y)));
                 if (it == grid.end())
                     continue;
-                for (size_t k : it->second)
-                    if ((place.isNew || isNew[k]) &&
-                        std::find(place.elements.begin(), place.elements.end(), k) == place.elements.end() && OnCurve(k, place))
+                for (size_t k : it->second) {
+                    if (!(place.isNew || isNew[k]) || std::find(place.elements.begin(), place.elements.end(), k) != place.elements.end())
+                        continue;
+                    if (o.midpoint && IsAtMiddle(k, place))
+                        Add(MidpointOrder, Kind::Coincident, {place.ref, {k, Part::Mid}});
+                    else if (!centre && o.point_on_curve && OnCurve(k, place))
                         Add(OnCurveOrder, Kind::Coincident, {place.ref, {k}});
+                }
             }
+        }
+        bool IsAtMiddle(size_t k, const Place &place) const {
+            if (!IsLine(k))
+                return false;
+            const Vertex a = g.Coords(g.elements[k].Start()), b = g.Coords(g.elements[k].End());
+            const double nearTol = Near(std::max({NormInf(place.at), NormInf(a), NormInf(b)}));
+            return Norm(b - a) > 2.0 * nearTol && place.at.IsClose((a + b) * 0.5, nearTol);
         }
         bool OnCurve(size_t k, const Place &place) const {
             const Element &e = g.elements[k];
@@ -456,6 +486,26 @@ namespace planex2d::sketch {
                 }
             }
         }
+        void CentreRows() {
+            std::vector<size_t> centres;
+            for (size_t p = 0; p < places.size(); ++p)
+                if (Root(p) == p && places[p].IsCentre() && g.elements[places[p].round].kind == ElementKind::Circle)
+                    centres.push_back(p);
+            for (const bool horizontal : {true, false}) {
+                if (!(horizontal ? o.horizontal : o.vertical))
+                    continue;
+                const auto level = [&](size_t p) { return horizontal ? places[p].at.y : places[p].at.x; };
+                std::stable_sort(centres.begin(), centres.end(), [&](size_t i, size_t j) { return level(i) < level(j); });
+                for (size_t a = 0; a < centres.size();) {
+                    const Place &f = places[centres[a]];
+                    size_t b = a + 1;
+                    for (; b < centres.size() && level(centres[b]) - level(centres[a]) <= Near(std::max(NormInf(f.at), NormInf(places[centres[b]].at))); ++b)
+                        if (Fresh(f.round, places[centres[b]].round))
+                            Add(horizontal ? HorizontalOrder : VerticalOrder, horizontal ? Kind::Horizontal : Kind::Vertical, {f.ref, places[centres[b]].ref});
+                    a = b;
+                }
+            }
+        }
         void EqualLengths(const std::vector<LineData> &lines) {
             std::vector<size_t> order(lines.size());
             std::iota(order.begin(), order.end(), size_t(0));
@@ -492,10 +542,131 @@ namespace planex2d::sketch {
             }
         }
 
+        void Symmetries(const FoundAxis &axis) {
+            const Ref on{axis.line};
+            std::vector<size_t> mirror(places.size(), none);
+            std::vector<char> paired(places.size(), 0), anchored(g.elements.size(), 0);
+            const std::vector<size_t> byX = RootsByX();
+            for (size_t p : byX)
+                mirror[p] = PlaceAt(byX, axis.Mirrored(places[p].at), places[p].IsCentre());
+            if (axis.isNew)
+                for (const Part end : {Part::Start, Part::End})
+                    Anchor(axis, {axis.line, end}, mirror, paired, anchored);
+            for (size_t k = 0; k < g.elements.size(); ++k) {
+                if (!Used(k) || !IsLine(k))
+                    continue;
+                const std::optional<size_t> a = ClassOf(g.elements[k].Start()), b = ClassOf(g.elements[k].End());
+                if (!a || !b || *a == *b || mirror[*a] != *b)
+                    continue;
+                paired[*a] = paired[*b] = 1;
+                if (!anchored[k])
+                    Add(SymmetricOrder, Kind::Coincident, {{k, Part::Mid}, on});
+                Add(SymmetricOrder, Kind::Perpendicular, {{k}, on});
+            }
+            for (size_t p : byX) {
+                const size_t q = mirror[p];
+                if (q == none || paired[p] || IsOwnEnd(p, axis.line))
+                    continue;
+                if (q == p && !IsArcCentre(p))
+                    Add(SymmetricOrder, Kind::Coincident, {places[p].ref, on});
+                else if (p < q && !paired[q] && IsMirroredPair(p, q))
+                    Add(SymmetricOrder, Kind::Symmetric, {places[p].ref, places[q].ref, on});
+            }
+            MirroredRounds(axis, mirror);
+        }
+        void OnPitchCircle(const FoundPitchCircle &pitch) {
+            const Ref centre = CentreRef(pitch.middle);
+            Add(PitchOrder, Kind::Concentric, {{pitch.middle}, {pitch.circle}});
+            for (size_t k = 0; k < pitch.holes.size(); ++k) {
+                Add(PitchOrder, Kind::Coincident, {CentreRef(pitch.holes[k]), {pitch.circle}});
+                Add(PitchOrder, Kind::Coincident, {{pitch.spokes[k], Part::Start}, centre});
+                Add(PitchOrder, Kind::Coincident, {{pitch.spokes[k], Part::End}, CentreRef(pitch.holes[k])});
+            }
+        }
+        Ref CentreRef(size_t round) {
+            const std::optional<size_t> p = ClassOf(g.elements[round].Center());
+            return p ? places[*p].ref : Ref{round, Part::Center};
+        }
+        std::vector<size_t> RootsByX() {
+            std::vector<size_t> out;
+            for (size_t p = 0; p < places.size(); ++p)
+                if (Root(p) == p)
+                    out.push_back(p);
+            std::sort(out.begin(), out.end(), [&](size_t i, size_t j) { return places[i].at.x < places[j].at.x; });
+            return out;
+        }
+        size_t PlaceAt(const std::vector<size_t> &byX, const Vertex &q, bool centre) const {
+            const double nearTol = Near(NormInf(q));
+            auto it = std::lower_bound(byX.begin(), byX.end(), q.x - nearTol, [&](size_t p, double x) { return places[p].at.x < x; });
+            for (; it != byX.end() && places[*it].at.x <= q.x + nearTol; ++it)
+                if (places[*it].IsCentre() == centre && places[*it].at.IsClose(q, nearTol))
+                    return *it;
+            return none;
+        }
+        void Anchor(const FoundAxis &axis, const Ref &end, const std::vector<size_t> &mirror, std::vector<char> &paired,
+                    std::vector<char> &anchored) {
+            const Vertex at = g.Coords(end.part == Part::Start ? g.elements[axis.line].Start() : g.elements[axis.line].End());
+            const double nearTol = Near(NormInf(at));
+            for (size_t p = 0; p < places.size(); ++p)
+                if (Root(p) == p && mirror[p] == p && places[p].at.IsClose(at, nearTol)) {
+                    paired[p] = 1;
+                    Add(SymmetricOrder, Kind::Coincident, {end, places[p].ref});
+                    return;
+                }
+            for (size_t k = 0; k < g.elements.size(); ++k) {
+                if (!Used(k) || !(IsLine(k) || g.elements[k].kind == ElementKind::Arc))
+                    continue;
+                const Element &e = g.elements[k];
+                const Vertex a = g.Coords(e.Start()), b = g.Coords(e.End());
+                if (!axis.Mirrored(a).IsClose(b, nearTol))
+                    continue;
+                if (IsLine(k) && at.IsClose((a + b) * 0.5, nearTol)) {
+                    anchored[k] = 1;
+                    Add(SymmetricOrder, Kind::Coincident, {end, {k, Part::Mid}});
+                    return;
+                }
+                if (!IsLine(k) && std::abs(Norm(at - g.Coords(e.Center())) - std::abs(g.values[e.Radius()])) <= nearTol) {
+                    Add(SymmetricOrder, Kind::Coincident, {end, {k}});
+                    return;
+                }
+            }
+        }
+        bool IsArcCentre(size_t p) const { return places[p].IsCentre() && g.elements[places[p].round].kind == ElementKind::Arc; }
+        bool IsOwnEnd(size_t p, size_t line) const {
+            return std::find(places[p].elements.begin(), places[p].elements.end(), line) != places[p].elements.end();
+        }
+        bool IsMirroredPair(size_t p, size_t q) const {
+            if (!places[p].IsCentre())
+                return true;
+            const Element &x = g.elements[places[p].round], &y = g.elements[places[q].round];
+            return x.kind == ElementKind::Circle && y.kind == ElementKind::Circle &&
+                   std::abs(std::abs(g.values[x.Radius()]) - std::abs(g.values[y.Radius()])) <= Near(NormInf(places[p].at));
+        }
+        void MirroredRounds(const FoundAxis &axis, const std::vector<size_t> &mirror) {
+            for (size_t i = 0; i < g.elements.size(); ++i)
+                for (size_t j = i + 1; j < g.elements.size(); ++j)
+                    if (Used(i) && Used(j) && IsMirroredRound(i, j, axis, mirror))
+                        Add(SymmetricOrder, Kind::Equal, {{i}, {j}});
+        }
+        bool IsMirroredRound(size_t i, size_t j, const FoundAxis &axis, const std::vector<size_t> &mirror) {
+            const Element &x = g.elements[i], &y = g.elements[j];
+            if (x.kind != y.kind || !(x.kind == ElementKind::Arc || x.kind == ElementKind::Circle) ||
+                std::abs(std::abs(g.values[x.Radius()]) - std::abs(g.values[y.Radius()])) > Near(NormInf(g.Coords(x.Center()))))
+                return false;
+            if (x.kind == ElementKind::Circle)
+                return axis.Mirrored(g.Coords(x.Center())).IsClose(g.Coords(y.Center()), Near(NormInf(g.Coords(x.Center()))));
+            const std::optional<size_t> xs = ClassOf(x.Start()), xe = ClassOf(x.End()), ys = ClassOf(y.Start()), ye = ClassOf(y.End());
+            if (!xs || !xe || !ys || !ye)
+                return false;
+            return x.ccw == y.ccw ? mirror[*xs] == *ye && mirror[*xe] == *ys : mirror[*xs] == *ys && mirror[*xe] == *ye;
+        }
+
         const Geometry &g;
         const AutoConstraint o;
         const std::vector<char> isNew, skip;
         const std::optional<double> tol;
+        const std::vector<FoundAxis> axes;
+        const std::vector<FoundPitchCircle> pitches;
         std::vector<Place> places;
         std::unordered_map<size_t, size_t> placeOf;
         std::set<size_t> skipped;
