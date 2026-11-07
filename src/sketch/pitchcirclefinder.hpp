@@ -35,7 +35,7 @@ namespace planex2d::sketch {
                 rounds.push_back({k, g.Coords(e.Center()), std::abs(g.values[e.Radius()]), e.kind == ElementKind::Circle});
                 size = std::max(size, NormInf(rounds.back().c) + rounds.back().r);
             }
-            near = tol ? *tol : Tol(size);
+            nearby = tol ? *tol : Tol(size);
         }
 
         std::vector<FoundPitchCircle> Circles() const {
@@ -44,11 +44,11 @@ namespace planex2d::sketch {
             for (size_t m = 0; m < rounds.size(); ++m) {
                 std::vector<size_t> around;
                 for (size_t i = 0; i < rounds.size(); ++i)
-                    if (rounds[i].circle && !used[i] && !rounds[i].c.IsClose(rounds[m].c, near))
+                    if (rounds[i].circle && !used[i] && !rounds[i].c.IsClose(rounds[m].c, nearby))
                         around.push_back(i);
                 const Vertex c = rounds[m].c;
                 std::sort(around.begin(), around.end(), [&](size_t i, size_t j) {
-                    const long long x = std::llround(rounds[i].r / near), y = std::llround(rounds[j].r / near);
+                    const long long x = std::llround(rounds[i].r / nearby), y = std::llround(rounds[j].r / nearby);
                     return x != y ? x < y : Norm(rounds[i].c - c) < Norm(rounds[j].c - c);
                 });
                 for (size_t a = 0; a < around.size();) {
@@ -56,7 +56,7 @@ namespace planex2d::sketch {
                     while (b < around.size() && IsAlike(around[a], around[b], c))
                         ++b;
                     std::vector<size_t> group(around.begin() + (std::ptrdiff_t)a, around.begin() + (std::ptrdiff_t)b);
-                    const bool alike = rounds[m].circle && std::abs(rounds[m].r - rounds[group.front()].r) <= near;
+                    const bool alike = rounds[m].circle && std::abs(rounds[m].r - rounds[group.front()].r) <= nearby;
                     if (group.size() >= 3 && !alike && IsEquallySpaced(group, c)) {
                         FoundPitchCircle found{rounds[m].e, c, Norm(rounds[group.front()].c - c), {}};
                         for (size_t i : group) {
@@ -80,7 +80,7 @@ namespace planex2d::sketch {
         };
 
         bool IsAlike(size_t i, size_t j, const Vertex &c) const {
-            return std::abs(rounds[i].r - rounds[j].r) <= near && std::abs(Norm(rounds[i].c - c) - Norm(rounds[j].c - c)) <= near;
+            return std::abs(rounds[i].r - rounds[j].r) <= nearby && std::abs(Norm(rounds[i].c - c) - Norm(rounds[j].c - c)) <= nearby;
         }
         bool IsEquallySpaced(std::vector<size_t> &group, const Vertex &c) const {
             std::sort(group.begin(), group.end(), [&](size_t i, size_t j) {
@@ -95,7 +95,7 @@ namespace planex2d::sketch {
                 const double step = chords[(gap + 1) % n];
                 bool equal = true;
                 for (size_t k = 0; k < n && equal; ++k)
-                    equal = k == gap || std::abs(chords[k] - step) <= near;
+                    equal = k == gap || std::abs(chords[k] - step) <= nearby;
                 if (equal) {
                     std::rotate(group.begin(), group.begin() + (std::ptrdiff_t)((gap + 1) % n), group.end());
                     return true;
@@ -105,7 +105,7 @@ namespace planex2d::sketch {
         }
 
         std::vector<Round> rounds;
-        double near = 0.0;
+        double nearby = 0.0;
     };
 
 }

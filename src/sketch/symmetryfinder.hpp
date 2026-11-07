@@ -34,8 +34,8 @@ namespace planex2d::sketch {
             for (size_t k = 0; k < g.elements.size(); ++k)
                 if (!skip[k])
                     AddEdge(k);
-            near = tol ? *tol : Tol(size);
-            turn = size > 0.0 ? near / size : 0.0;
+            nearby = tol ? *tol : Tol(size);
+            turn = size > 0.0 ? nearby / size : 0.0;
             Touching();
         }
 
@@ -56,7 +56,7 @@ namespace planex2d::sketch {
                 if (!best)
                     return out;
                 const FoundAxis axis = AxisOf(*best, used);
-                if (axis.line != none || axis.to - axis.from > near)
+                if (axis.line != none || axis.to - axis.from > nearby)
                     out.push_back(axis);
                 for (size_t i : best->edges)
                     used[i] = 1;
@@ -129,15 +129,15 @@ namespace planex2d::sketch {
             std::sort(ends.begin(), ends.end(), [](const End &x, const End &y) { return x.at.x < y.at.x; });
             touching.assign(edges.size(), {});
             for (size_t m = 0; m < ends.size(); ++m)
-                for (size_t n = m + 1; n < ends.size() && ends[n].at.x - ends[m].at.x <= near; ++n)
-                    if (ends[m].edge != ends[n].edge && ends[m].at.IsClose(ends[n].at, near)) {
+                for (size_t n = m + 1; n < ends.size() && ends[n].at.x - ends[m].at.x <= nearby; ++n)
+                    if (ends[m].edge != ends[n].edge && ends[m].at.IsClose(ends[n].at, nearby)) {
                         touching[ends[m].edge].push_back(ends[n].edge);
                         touching[ends[n].edge].push_back(ends[m].edge);
                     }
         }
 
         static FoundAxis Bisector(const Vertex &p, const Vertex &q) { return {(p + q) * 0.5, Normalized(Vertex{p.y - q.y, q.x - p.x})}; }
-        bool IsAlike(const EdgeData &x, const EdgeData &y) const { return x.kind == y.kind && y.size - x.size <= near; }
+        bool IsAlike(const EdgeData &x, const EdgeData &y) const { return x.kind == y.kind && y.size - x.size <= nearby; }
 
         std::vector<Candidate> Candidates() const {
             std::vector<size_t> order(edges.size());
@@ -155,12 +155,12 @@ namespace planex2d::sketch {
         void Mirrors(size_t i, size_t j, std::vector<Candidate> &out) const {
             const EdgeData &x = edges[i], &y = edges[j];
             if (x.IsCircle()) {
-                if (i != j && !x.c.IsClose(y.c, near))
+                if (i != j && !x.c.IsClose(y.c, nearby))
                     out.push_back({Bisector(x.c, y.c), i, j});
                 return;
             }
             if (i == j) {
-                if (!x.a.IsClose(x.b, near))
+                if (!x.a.IsClose(x.b, nearby))
                     out.push_back({Bisector(x.a, x.b), i, j});
                 return;
             }
@@ -169,11 +169,11 @@ namespace planex2d::sketch {
                 if (arc && reversed != (x.ccw == y.ccw))
                     continue;
                 const Vertex ta = reversed ? y.b : y.a, tb = reversed ? y.a : y.b;
-                if (x.a.IsClose(ta, near) && x.b.IsClose(tb, near))
+                if (x.a.IsClose(ta, nearby) && x.b.IsClose(tb, nearby))
                     continue;
-                const FoundAxis axis = x.a.IsClose(ta, near) ? Bisector(x.b, tb) : Bisector(x.a, ta);
-                if (axis.Mirrored(x.a).IsClose(ta, near) && axis.Mirrored(x.b).IsClose(tb, near) &&
-                    (!arc || axis.Mirrored(x.c).IsClose(y.c, near)))
+                const FoundAxis axis = x.a.IsClose(ta, nearby) ? Bisector(x.b, tb) : Bisector(x.a, ta);
+                if (axis.Mirrored(x.a).IsClose(ta, nearby) && axis.Mirrored(x.b).IsClose(tb, nearby) &&
+                    (!arc || axis.Mirrored(x.c).IsClose(y.c, nearby)))
                     out.push_back({axis, i, j});
             }
         }
@@ -206,7 +206,7 @@ namespace planex2d::sketch {
             const Vertex d = run.front().axis.dir, n{-d.y, d.x};
             std::sort(run.begin(), run.end(), [&](const Candidate &p, const Candidate &q) { return Dot(n, p.axis.at) < Dot(n, q.axis.at); });
             for (size_t m = 0; m < run.size(); ++m) {
-                if (m == 0 || Dot(n, run[m].axis.at) - Dot(n, run[m - 1].axis.at) > near)
+                if (m == 0 || Dot(n, run[m].axis.at) - Dot(n, run[m - 1].axis.at) > nearby)
                     out.push_back({run[m].axis, {}, {}});
                 Cluster &c = out.back();
                 c.edges.push_back(run[m].edge);
@@ -237,7 +237,7 @@ namespace planex2d::sketch {
                     continue;
                 for (const Vertex &p : {e.a, e.b}) {
                     along.push_back(axis.Along(p));
-                    if (!e.IsCircle() && axis.IsOn(p, near))
+                    if (!e.IsCircle() && axis.IsOn(p, nearby))
                         anchors.push_back(axis.Along(p));
                 }
             }
@@ -245,7 +245,7 @@ namespace planex2d::sketch {
                 if (!used[i])
                     anchors.push_back(axis.Along(edges[i].Middle()));
             for (const EdgeData &e : edges)
-                if (e.IsCircle() && axis.IsOn(e.c, near))
+                if (e.IsCircle() && axis.IsOn(e.c, nearby))
                     anchors.push_back(axis.Along(e.c));
             if (anchors.size() < 2)
                 along.insert(along.end(), anchors.begin(), anchors.end());
@@ -261,10 +261,10 @@ namespace planex2d::sketch {
                 if (e.kind == ElementKind::Axis) {
                     const double a = g.values[e.AxisAngle()];
                     const Vertex n{std::cos(a), std::sin(a)};
-                    if (std::abs(Dot(n, axis.dir)) <= turn && std::abs(Dot(n, axis.at) - g.values[e.AxisDistance()]) <= near)
+                    if (std::abs(Dot(n, axis.dir)) <= turn && std::abs(Dot(n, axis.at) - g.values[e.AxisDistance()]) <= nearby)
                         return k;
                 }
-                if (e.kind == ElementKind::Line && axis.IsOn(g.Coords(e.Start()), near) && axis.IsOn(g.Coords(e.End()), near))
+                if (e.kind == ElementKind::Line && axis.IsOn(g.Coords(e.Start()), nearby) && axis.IsOn(g.Coords(e.End()), nearby))
                     return k;
             }
             return none;
@@ -273,7 +273,7 @@ namespace planex2d::sketch {
         const Geometry &g;
         std::vector<EdgeData> edges;
         std::vector<std::vector<size_t>> touching;
-        double size = 0.0, near = 0.0, turn = 0.0;
+        double size = 0.0, nearby = 0.0, turn = 0.0;
     };
 
 }
