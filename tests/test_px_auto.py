@@ -29,7 +29,7 @@ def test_auto_alone_and_with_relations():
 
 
 def test_a_drawing_call_with_auto_finds_its_relations_for_that_call_only():
-    sk = px.Sketch().Move((1, 1))
+    sk = px.Sketch(auto_constraint=False).Move((1, 1))
     sk.Line(10, px.Auto({"horizontal": True}))
     assert kinds(sk)["Horizontal"] == ['"Line.1", px.Horizontal']
     assert sk.auto_constraint is False

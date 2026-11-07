@@ -30,7 +30,7 @@ def test_arcs_and_circles_get_centre_points_and_no_point_id_changes():
     assert centres(sk) == ["Center.1", "Center.2"]
     assert [i.local for i in sk("bend.center")] == ["Center.1"] and [i.local for i in sk("hole.center")] == ["Center.2"]
     assert sk.Location("Center.2") == sk.Location("hole.center") == (10, 0)
-    assert sk.dof == 10
+    assert sk.dof == 9
 
 
 @pytest.mark.constraints

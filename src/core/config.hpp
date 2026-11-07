@@ -58,7 +58,7 @@ namespace planex2d {
     struct AutoConstraint {
         bool coincident = true, tangent = true, concentric = true, point_on_curve = true;
         bool horizontal = false, vertical = false, perpendicular = false, parallel = false;
-        bool equal_radius = false, equal_length = false, collinear = false;
+        bool equal_radius = false, equal_length = false, collinear = false, midpoint = false, symmetric = false, pitch_circle = false;
         bool named_helpers = true;
     };
     inline constexpr std::pair<const char *, bool AutoConstraint::*> autoConstraintKeys[] = {
@@ -67,7 +67,9 @@ namespace planex2d {
         {"horizontal", &AutoConstraint::horizontal},       {"vertical", &AutoConstraint::vertical},
         {"perpendicular", &AutoConstraint::perpendicular}, {"parallel", &AutoConstraint::parallel},
         {"equal_radius", &AutoConstraint::equal_radius},   {"equal_length", &AutoConstraint::equal_length},
-        {"collinear", &AutoConstraint::collinear},         {"named_helpers", &AutoConstraint::named_helpers}};
+        {"collinear", &AutoConstraint::collinear},         {"midpoint", &AutoConstraint::midpoint},
+        {"symmetric", &AutoConstraint::symmetric},         {"pitch_circle", &AutoConstraint::pitch_circle},
+        {"named_helpers", &AutoConstraint::named_helpers}};
 
 }
 
@@ -107,7 +109,7 @@ namespace planex2d::config {
         // receives the warnings instead of std::cerr when set; may throw
         void (*warning_handler)(const std::string &) = nullptr;
         // a new constraint sketch's auto_constraint= when it is not given, and the relations auto_constraint=True finds
-        bool auto_constraint = false;
+        bool auto_constraint = true;
         AutoConstraint auto_constraint_options;
         // defaults of the OCC exports, overridden by their arguments
         ArcFit arc_fit;

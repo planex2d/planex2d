@@ -34,6 +34,16 @@ def test_a_view_shows_the_visible_edges_wide_and_the_hidden_ones_dashed():
     assert not [p for p, dashed in px.Drawing(block(), px.Front, unit=px.mm, hidden=False)._drawn_lines() if dashed]
 
 
+
+def test_hidden_edges_on_one_line_are_one_dashed_line():
+    """a pocket 10 deep from below: its rim and its ceiling fall together in the top view"""
+    pocket = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(60, 30, 20)) - occ.Box(occ.Pnt(10, 10, -1), occ.Pnt(50, 20, 10))
+    hidden = [p for p, dashed in px.Drawing(pocket, px.Top, unit=px.mm)._drawn_lines() if dashed]
+    assert len(hidden) == 4
+    lo, hi = extent(hidden)
+    assert lo == pytest.approx((10, 10)) and hi == pytest.approx((50, 20))
+
+
 def test_the_standard_views_take_their_places_in_first_angle_projection():
     views = [px.Drawing(block(), plane, unit=px.mm) for plane in (px.Front, px.Top, px.Left)]
     places = px.Sheet(*views)._arrange().places
@@ -114,6 +124,24 @@ def test_a_pictorial_shows_the_nearest_face_at_every_point():
         row, col = light.shape[0] - 1 - int((v - low[1]) / pixel), int((h - low[0]) / pixel)
         assert light[row, col] == pytest.approx(np.dot(normal, to_light), abs=1e-12)
     assert np.isnan(light[0, 0]) and np.nanmax(light) <= 1
+
+
+def test_a_pictorial_shades_an_open_shell_seen_from_inside_as_from_outside():
+    n = np.array([1, -1, 1]) / math.sqrt(3)
+    x, y = np.array([1, 1, 0]) / math.sqrt(2), np.array([-1, 1, 2]) / math.sqrt(6)
+    to_light = n + 0.5 * (y - x)
+    to_light /= np.linalg.norm(to_light)
+    tube = occ.Wire([occ.Segment(occ.Pnt(10, 0, 0), occ.Pnt(10, 0, 20))]).Revolve(occ.Axis((0, 0, 0), occ.Z), 360)
+    # through the middle of the top opening the back wall's inside at (-1, 1, 0) / sqrt(2) * 10, its normal towards the
+    # axis (1, -1, 0) / sqrt(2) as the front wall's outside at (1, -1, 0) / sqrt(2) * 10
+    expected = np.dot(np.array([1, -1, 0]) / math.sqrt(2), to_light)
+    pixel = 0.05
+    for shell in (tube, tube.Reversed()):
+        light, low = px._planex._ShadedImage(shell, px.Isometric.plane, 1e-3, pixel)
+        for point in ((0, 0, 20), (10 / math.sqrt(2), -10 / math.sqrt(2), 10)):
+            h, v = np.dot(point, x), np.dot(point, y)
+            row, col = light.shape[0] - 1 - int((v - low[1]) / pixel), int((h - low[0]) / pixel)
+            assert light[row, col] == pytest.approx(expected, abs=0.02)
 
 
 def test_fold_lines_on_a_free_form_surface_lie_on_its_exact_fold():

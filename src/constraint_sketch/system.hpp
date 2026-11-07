@@ -634,6 +634,69 @@ namespace planex2d::cs {
         // rank; a is the analysis of the last Build
         // the redundant constraints: by the analysis's rows, and a coincidence of two points that earlier ones merged
         // already (a merge takes no row, the analysis cannot see it)
+        std::vector<char> RedundantFrom(size_t first) {
+            Build();
+            std::vector<std::vector<double>> basis;
+            for (size_t c = 0; c < Count(); ++c)
+                if (c < first || c >= constraints.size())
+                    TakesRank(c, basis);
+            DisjointSets groups(ownCoordsOf.size());
+            std::vector<char> out(constraints.size(), 0);
+            for (size_t c = 0; c < constraints.size(); ++c) {
+                if (IsMerge(constraints[c])) {
+                    const size_t p = groups.Find(constraints[c].refs[0].PointAt(*this)), q = groups.Find(constraints[c].refs[1].PointAt(*this));
+                    out[c] = c >= first && p == q;
+                    groups.Join(p, q);
+                } else if (c >= first)
+                    out[c] = !TakesRank(c, basis);
+            }
+            return out;
+        }
+        bool TakesRank(size_t c, std::vector<std::vector<double>> &basis) const {
+            size_t size = 0;
+            for (const RowBlock &block : Blocks(c))
+                size += block.rows * block.indices.size();
+            std::vector<double> r(Rows(c), 0.0), local(size, 0.0);
+            Evaluate(c, values, r.data(), local.data());
+            bool took = false;
+            size_t at = 0;
+            for (const RowBlock &block : Blocks(c))
+                for (size_t row = 0; row < block.rows; ++row) {
+                    std::vector<double> v(values.size(), 0.0);
+                    for (size_t u : block.indices) {
+                        if (!fixed[u])
+                            v[u] += local[at] * scale[u];
+                        ++at;
+                    }
+                    took = Joins(std::move(v), basis) || took;
+                }
+            return took;
+        }
+        static bool Joins(std::vector<double> v, std::vector<std::vector<double>> &basis) {
+            const auto length = [](const std::vector<double> &x) {
+                double sum = 0.0;
+                for (double e : x)
+                    sum += e * e;
+                return std::sqrt(sum);
+            };
+            const double size = length(v);
+            // twice: one Gram-Schmidt pass leaves v off orthogonal when it lies nearly in the span
+            for (int pass = 0; pass < 2; ++pass)
+                for (const std::vector<double> &b : basis) {
+                    double d = 0.0;
+                    for (size_t i = 0; i < v.size(); ++i)
+                        d += v[i] * b[i];
+                    for (size_t i = 0; i < v.size(); ++i)
+                        v[i] -= d * b[i];
+                }
+            const double left = length(v);
+            if (!(left > config::state->rank_tol * size))
+                return false;
+            for (double &e : v)
+                e /= left;
+            basis.push_back(std::move(v));
+            return true;
+        }
         std::vector<char> Redundancies(const ConstraintAnalysis &a) const {
             std::vector<char> out(a.redundant.begin(), a.redundant.begin() + (std::ptrdiff_t)constraints.size());
             for (const auto &[row, c] : valueRows)
@@ -805,6 +868,13 @@ namespace planex2d::cs {
             Eigen::MatrixXd N = MotionBasis(*this, x, size_);
             return {std::move(x), std::move(N)};
         }
+        // Add gives c at most a param per curve and a tangent per spline
+        bool Fits(const Constraint &c) const {
+            size_t given = 0;
+            for (const Ref &r : c.refs)
+                given += r.IsSpline(*this) ? 2 : r.IsCurve(*this) ? 1 : 0;
+            return UnknownsReadBy(c).size() + given <= maxLocal;
+        }
 
     private:
         std::vector<Constraint> structural;
@@ -874,6 +944,12 @@ namespace planex2d::cs {
         std::vector<size_t> LocalsOf(const Constraint &c) const { return IsPointwise(c) ? std::vector<size_t>{} : IndicesOf(c); }
 
         std::vector<size_t> IndicesOf(const Constraint &c) const {
+            std::vector<size_t> out = UnknownsReadBy(c);
+            if (out.size() > maxLocal)
+                throw std::invalid_argument("a constraint on more than about 60 points (a spline's)");
+            return out;
+        }
+        std::vector<size_t> UnknownsReadBy(const Constraint &c) const {
             const bool angles = c.kind == Kind::Copy && !c.held.empty();
             std::vector<size_t> out = angles ? c.held : std::vector<size_t>{};
             if (IsMerge(c))
@@ -897,21 +973,28 @@ namespace planex2d::cs {
             out.erase(std::unique(out.begin(), out.end()), out.end());
             // held for good: constants, as projected geometry
             std::erase_if(out, [&](size_t u) { return held[u]; });
-            if (out.size() > maxLocal)
-                throw std::invalid_argument("a constraint on more than about 60 points (a spline's)");
             return out;
         }
 
         // a point that is an end of both (the same unknowns), as where a line or arc runs on into an arc; of a spline
-        // any of its points (JoinPoints)
+        // any of its points (JoinPoints); of two that meet at more than one, the one where they turn least
         std::optional<size_t> Joint(const Ref &a, const Ref &b) const {
             if (a.part != Part::Whole || b.part != Part::Whole)
                 return std::nullopt;
+            std::vector<size_t> shared;
             for (size_t p : JoinPoints(elements[a.element]))
                 for (size_t q : JoinPoints(elements[b.element]))
                     if (coordsOf[p] == coordsOf[q])
-                        return p;
-            return std::nullopt;
+                        shared.push_back(p);
+            if (shared.size() < 2)
+                return shared.empty() ? std::nullopt : std::optional(shared[0]);
+            const std::vector<size_t> none;
+            const Eval e{*this, sharedCurves, values, none, size_};
+            const auto turn = [&](size_t p) {
+                const DualVector ta = e.TangentAt(a, p), tb = e.TangentAt(b, p);
+                return std::abs(Cross(ta, tb).v) / (Norm(ta).v * Norm(tb).v);
+            };
+            return *std::min_element(shared.begin(), shared.end(), [&](size_t p, size_t q) { return turn(p) < turn(q); });
         }
 
         // the points another element can join e at: of a spline by its poles its ends, its other poles lie off it (a
@@ -959,7 +1042,7 @@ namespace planex2d::cs {
 
         // whether two elements' directions (TangentAt) at their joint are the same (1) or opposite (-1) when they
         // join smoothly: one ending there and the other starting there run on the same way; elsewhere (a spline's
-        // inner point, a closed spline's seam) the drawing decides
+        // inner point, a closed spline's seam) and where they are tangent already (a cusp too) the drawing decides
         double Sense(const Ref &a, const Ref &b, size_t joint, const Eval &e) const {
             const auto leaves = [&](const Ref &r) {
                 const Element &el = elements[r.element];
@@ -969,10 +1052,11 @@ namespace planex2d::cs {
                 const double travel = el.kind == ElementKind::Arc && !el.ccw ? -1.0 : 1.0;
                 return coordsOf[ends[0]] == coordsOf[joint] ? travel : coordsOf[ends[1]] == coordsOf[joint] ? -travel : 0.0;
             };
+            const DualVector ta = e.TangentAt(a, joint), tb = e.TangentAt(b, joint);
             const double la = leaves(a), lb = leaves(b);
-            if (la != 0.0 && lb != 0.0)
+            if (la != 0.0 && lb != 0.0 && std::abs(Cross(ta, tb).v) > Tol(1.0) * Norm(ta).v * Norm(tb).v)
                 return -la * lb;
-            return Side(Dot(e.TangentAt(a, joint), e.TangentAt(b, joint)));
+            return Side(Dot(ta, tb));
         }
 
         // the residual rows of c, lengths; a combination of elements the kind does not relate is an error
@@ -1353,6 +1437,10 @@ namespace planex2d::cs {
                 r[0] = e.RoundOf(a).r - v;
                 return 1;
             }
+            if (n == 3 && a.IsPoint(*this) && b.IsPoint(*this) && q[2].IsLine(*this)) {
+                r[0] = Cross(e.CarrierOf(q[2]).u, e.PointOf(b) - e.PointOf(a)) * sign - v;
+                return 1;
+            }
             if (n != 2)
                 return std::nullopt;
             if (c.params.size() == 1) {
@@ -1724,6 +1812,10 @@ namespace planex2d::cs {
                     c.sign = Side(Cross(e.CurveAt(elements[b.element], t, 1), d));
                 } else if (const std::optional<size_t> j = JointOf(c))
                     c.sign = Sense(a, b, *j, e);
+                return;
+            }
+            if (n == 3 && a.IsPoint(*this) && b.IsPoint(*this) && c.refs[2].IsLine(*this)) {
+                c.sign = Side(Cross(e.CarrierOf(c.refs[2]).u, e.PointOf(b) - e.PointOf(a)));
                 return;
             }
             if (n != 2 || (a.IsPoint(*this) && b.IsPoint(*this)))

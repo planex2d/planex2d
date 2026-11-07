@@ -284,7 +284,7 @@ def test_first_angle_placement():
         sk.Move((0, 0), px.Fix).Line(40, 0, px.Horizontal).Line(0, 20, px.Vertical).Line(-40, 0, px.Horizontal) \
             .Close(px.Vertical)
     sh = px.Sheet(*(px.Drawing(sk, unit=px.mm) for sk in (front, top, right)))
-    _, places, _, _, _ = sh._layout(1.0, _Lettering())
+    _, _, places, _ = sh._layout(1.0, _Lettering())
     assert places[1][0] == 0 and places[1][1] < -20
     assert places[2][1] == 0 and places[2][0] < -40
 
@@ -295,7 +295,7 @@ def test_asme_places_the_views_in_third_angle_projection():
         sk.Move((0, 0), px.Fix).Line(40, 0, px.Horizontal).Line(0, 20, px.Vertical).Line(-40, 0, px.Horizontal) \
             .Close(px.Vertical)
     sh = px.Sheet(*(px.Drawing(sk, unit=px.mm) for sk in (front, top, right)), standard="ASME")
-    _, places, _, _, _ = sh._layout(1.0, _Lettering())
+    _, _, places, _ = sh._layout(1.0, _Lettering())
     assert places[1][0] == 0 and places[1][1] > 20
     assert places[2][1] == 0 and places[2][0] > 40
 
@@ -388,8 +388,8 @@ def test_dxf_has_real_dimension_entities(tmp_path):
     msp = doc.modelspace()
     assert doc.units == 4 and doc.header["$LTSCALE"] == 2 and doc.dimstyles.get("DIN").dxf.dimscale == 2
     shown = sorted(e.text for d in msp.query("DIMENSION") for e in doc.blocks.get(d.dxf.geometry) if e.dxftype() == "MTEXT")
-    assert shown == sorted(["12", "12", "20", "45", "50", "80", "(39,806°)", "3× %%c6"])
-    assert sorted(d.dxf.text for d in msp.query("DIMENSION"))[:2] == ["(<>)", "3× <>"]
+    assert shown == sorted(["12", "12", "20", "45", "50", "80", "(39,806°)", "3× %%c6", "2× 14 (= 28)"])
+    assert sorted(d.dxf.text for d in msp.query("DIMENSION"))[:3] == ["(<>)", "2× <> (= 28)", "3× <>"]
     assert len(msp.query("CIRCLE")) == 3 and len(msp.query("LINE")) == 5
     px.Drawing(plate(0.001)).WriteDXF(tmp_path / "plate.dxf")
     plate_msp = ezdxf.readfile(tmp_path / "plate.dxf").modelspace()
@@ -600,7 +600,8 @@ def test_an_angle_between_legs_short_on_the_paper_stays_at_their_ends():
     sk.Constrain("arm", px.Distance, 3, id="a")
     sk.Constrain("back", "arm", px.Angle, 15, id="steer")
     radius = strokes(px.Drawing(sk, unit=px.mm))["steer"].entity["radius"]
-    assert radius <= 3 + 2.0 + 1e-9
+    # at the legs' ends its value would lie on the arm and on the arm's length's extension line: a row further out
+    assert radius <= 3 + 2.0 + dims.ROW + 1e-9
 
 
 def test_a_box_check_finds_a_segment_through_it():
@@ -643,12 +644,25 @@ def test_a_slots_width_is_drawn_across_its_sides():
     assert d.p == pytest.approx((10, 3.3)) and d.q == pytest.approx((10, -3.3))
 
 
+def arms(s, c, reach):
+    """the lengths end to end of the center lines through c, horizontal and vertical, within reach of it (a gap at a
+    value kept)"""
+    c, out = np.asarray(c, float), []
+    for u in (np.array([1.0, 0.0]), np.array([0.0, 1.0])):
+        ts = [u @ (p - c) for a, b, _ in s.lines if all(abs(u[0] * (p - c)[1] - u[1] * (p - c)[0]) < 1e-9
+                                                         and np.linalg.norm(p - c) <= reach + 1e-9 for p in (a, b))
+              for p in (a, b)]
+        if ts:
+            out.append(max(ts) - min(ts))
+    return out
+
+
 def test_an_arc_dimensioned_by_its_diameter_gets_its_center_mark():
     sk = px.Sketch()
     sk.Move((10, 0)).Arc((-10, 0), center=(0, 0), id="throat")
     sk.Constrain("throat", px.Diameter, 20)
     s = strokes(px.Drawing(sk, unit=px.mm))["center lines"]
-    assert len([(a, b) for a, b, _ in s.lines if np.allclose((a + b) / 2, (0, 0))]) == 2
+    assert arms(s, (0, 0), 10) == pytest.approx([2 * dims.CROSS] * 2)
 
 
 def test_center_marks_the_center_of_a_construction_circle_as_asked():
@@ -658,7 +672,7 @@ def test_center_marks_the_center_of_a_construction_circle_as_asked():
     sk.Constrain("throat", px.Diameter, 16)
 
     def at_throat(dw):
-        return [np.linalg.norm(b - a) for a, b, _ in strokes(dw)["center lines"].lines if np.allclose((a + b) / 2, (40, 20))]
+        return arms(strokes(dw)["center lines"], (40, 20), 8 + dims.CENTER_OVER)
 
     assert at_throat(px.Drawing(sk, unit=px.mm)) == []
     assert at_throat(px.Drawing(sk, unit=px.mm).Center("throat")) == pytest.approx([2 * (8 + dims.CENTER_OVER)] * 2)
@@ -666,3 +680,211 @@ def test_center_marks_the_center_of_a_construction_circle_as_asked():
     assert len(at_throat(px.Drawing(sk, unit=px.mm).Center("throat", arms="h"))) == 1
     assert at_throat(px.Drawing(sk, unit=px.mm).Center("throat", pitch=True)) == []
 
+
+
+def test_a_vertical_line_a_hair_off_reads_from_the_right():
+    assert dims._upright((1e-15, -1.0)) == pytest.approx(90)
+    assert dims._upright((-1e-15, 1.0)) == pytest.approx(90)
+    assert dims._upright((0.0, -1.0)) == pytest.approx(90)
+
+
+def test_segments_on_one_line_cross_only_where_they_overlap():
+    a, b = np.array([0.0, 0.0]), np.array([1.0, 0.0])
+    assert dims._hits(a, b, np.array([[2.0, 0.0]]), np.array([[3.0, 0.0]])) == 0
+    assert dims._hits(a, b, np.array([[0.5, 0.0]]), np.array([[2.0, 0.0]])) == 1
+    assert dims._hits(a, b, np.array([[1.0, 0.0]]), np.array([[2.0, 0.0]])) == 1
+    assert dims._hits(a, b, np.array([[0.5, -1.0]]), np.array([[0.5, 1.0]])) == 1
+
+
+def value_box(s, k=0):
+    anchor, angle, text = s.texts[k]
+    return dims._box(anchor, angle, _Lettering().width(text, s.height), s.height)
+
+
+def test_a_value_wider_than_its_extension_lines_goes_beyond_the_arrow():
+    sk = px.Sketch()
+    sk.Move((0, 0), px.Fix).Line(3.5, 0, px.Horizontal, id="tab").Line(0, 20, px.Vertical).Line(-3.5, 0, px.Horizontal) \
+        .Close(px.Vertical)
+    sk.Constrain("tab", px.Distance, 3.5, id="w")
+    s = strokes(px.Drawing(sk, unit=px.mm))["w"]
+    (anchor, angle, text), = s.texts
+    assert text == "3,5" and angle == pytest.approx(0)
+    assert anchor[0] - _Lettering().width(text) / 2 >= 3.5 + dims.ARROW + 1 - 1e-9
+    extensions = [(a, b) for a, b, _ in s.lines if abs(a[0] - b[0]) < 1e-9]
+    assert len(extensions) == 2 and dims._crossed(value_box(s), dims._ends(extensions)) == 0
+
+
+def test_a_long_radius_or_diameter_value_ends_before_the_arrow():
+    pen = dims.Pen(1.0, [], lambda t: 2.0 * len(t))
+    pen.out = dims.Strokes("r")
+    dims.Radius(pen, np.zeros(2), 40.0, np.array([1.0, 0.0]), "R40 (long)")
+    (anchor, _, text), = pen.out.texts
+    assert anchor[0] + pen.width(text) / 2 <= 40 - dims.ARROW - 1 + 1e-9
+    pen.out = dims.Strokes("d")
+    dims.Diameter(pen, np.zeros(2), 12.0, np.array([1.0, 0.0]), "⌀24 h7")
+    (anchor, _, text), = pen.out.texts
+    assert anchor[0] + pen.width(text) / 2 <= 12 - dims.ARROW - 1 + 1e-9
+
+
+def test_an_angle_s_value_moves_off_a_value_drawn_where_it_would_go():
+    def angle():
+        b = np.array([math.cos(math.radians(40)), math.sin(math.radians(40))])
+        d = dims.Dimension("a", "angle", 40.0, c=np.zeros(2), a=np.array([1.0, 0.0]), b=b, legs=((0.0, 60.0), (0.0, 60.0)))
+        return d
+
+    free = dims.Layout([], 1.0, lambda t: 2.0 * len(t))
+    alone = free.Draw(angle())
+    blocked = dims.Layout([], 1.0, lambda t: 2.0 * len(t))
+    blocker = dims.Strokes("blocker")
+    blocker.texts.append((alone.texts[0][0], alone.texts[0][1], "XXXXXX"))
+    blocked.drawn.append(blocker)
+    moved = blocked.Draw(angle())
+    box = lambda s: dims._box(s.texts[0][0], s.texts[0][1], 2.0 * len(s.texts[0][2]), dims.HEIGHT)
+    assert dims._crossed(box(moved), dims._ends(box(blocker))) == 0
+    assert texts(moved) == ["40°"]
+
+
+def test_a_center_line_gets_a_gap_where_a_value_lies_on_it():
+    layout = dims.Layout([], 1.0, lambda t: 2.0 * len(t))
+    centres = dims.Strokes("center lines")
+    centres.lines.append((np.array([-20.0, 2.0]), np.array([20.0, 2.0]), "center"))
+    t = np.linspace(0, 2 * math.pi, 241)
+    centres.arcs.append(np.c_[3 * np.cos(t), 2 + 3 * np.sin(t)])
+    value = dims.Strokes("v")
+    value.texts.append((np.zeros(2), 0.0, "R10"))
+    layout.drawn += [centres, value]
+    layout.Interrupt(centres)
+    # the value's box x -3..3, y 0..3.5, half a millimeter clear
+    lines = np.array([(a, b) for a, b, _ in centres.lines])
+    assert lines.shape == (2, 2, 2) and np.allclose(lines, [((-20, 2), (-3.5, 2)), ((3.5, 2), (20, 2))])
+    assert len(centres.arcs) == 2
+    for arc in centres.arcs:
+        inside = (np.abs(arc[:, 0]) < 3.5 - 1e-9) & (arc[:, 1] > -0.5 + 1e-9) & (arc[:, 1] < 4.0 - 1e-9)
+        assert not inside.any()
+
+
+def crossed_by(s, blocker):
+    """how often the values of strokes s cross the lines of the strokes blocker"""
+    boxes = [seg for anchor, angle, text in s.texts for seg in dims._box(anchor, angle, 2.0 * len(text), dims.HEIGHT)]
+    return dims._crossed(boxes, dims._ends([(a, b) for a, b, _ in blocker.lines]))
+
+
+def test_an_arc_s_radius_goes_on_a_leader_where_every_place_on_the_arc_crosses_a_line():
+    layout = dims.Layout([], 1.0, lambda t: 2.0 * len(t))
+    blocker = dims.Strokes("blocker")
+    blocker.lines += [(np.array([-30.0, y]), np.array([30.0, y]), "thin") for y in (5.0, 15.0)]
+    layout.drawn.append(blocker)
+    d = dims.Dimension("r", "radius", 10.0, c=np.zeros(2), r=10.0, a=np.array([0.0, 1.0]), sweep=math.radians(60))
+    s = layout.Draw(d)
+    (anchor, angle, text), = s.texts
+    assert text == "R10" and angle == 0 and anchor[1] > 15
+    assert crossed_by(s, blocker) == 0 and s.entity["location"] is not None
+    tip, _ = s.arrows[0]
+    assert np.linalg.norm(tip) == pytest.approx(10)
+
+
+def test_a_circle_s_diameter_goes_on_a_leader_where_every_place_inside_crosses_a_line():
+    layout = dims.Layout([], 1.0, lambda t: 2.0 * len(t))
+    blocker = dims.Strokes("blocker")
+    for k in range(12):
+        u = np.array([math.cos(k * math.pi / 12), math.sin(k * math.pi / 12)])
+        blocker.lines.append((-9.5 * u, 9.5 * u, "thin"))
+    layout.drawn.append(blocker)
+    s = layout.Draw(dims.Dimension("d", "diameter", 20.0, c=np.zeros(2), r=10.0))
+    (anchor, _, text), = s.texts
+    assert text == "⌀20" and np.linalg.norm(anchor) > 10
+    assert crossed_by(s, blocker) == 0
+    assert sorted(np.linalg.norm(tip) for tip, _ in s.arrows) == pytest.approx([10, 10])
+
+
+def box(plane, w, h, dimensioned=False):
+    """a w x h rectangle on plane, its corner at the origin; with its two sizes dimensioned"""
+    sk = px.Sketch(plane)
+    sk.Move((0, 0), px.Fix).Line(w, 0, px.Horizontal, id="b").Line(0, h, px.Vertical, id="r").Line(-w, 0, px.Horizontal) \
+        .Close(px.Vertical)
+    if dimensioned:
+        sk.Constrain("b", px.Distance, w, id="width")
+        sk.Constrain("r", px.Distance, h, id="height")
+    return px.Drawing(sk, unit=px.mm)
+
+
+def paper_middle(sh, k):
+    """view k's middle on the sheet in mm, its dimensions included"""
+    from planex._drawing import _points
+
+    a = sh._arrange()
+    d = sh._views[k][0]
+    pts = _points(d._outline(), a.drawn[k], 1 / a.paper, a.lettering)
+    return ((pts.min(axis=0) + pts.max(axis=0)) / 2 + a.places[k]) * a.paper + a.shift
+
+
+def test_a_view_placed_in_a_zone_has_its_middle_at_the_zone_s_middle():
+    # A4 upright: columns 20, 55, 105, 155, 200 mm from the left, rows 287, 248.5, 198.5, ... from the top
+    sh = px.Sheet(box(px.XZ, 40, 20, True)).Add(box(px.XY, 30, 10, True), zone="B2")
+    assert paper_middle(sh, 1) == pytest.approx((80, 223.5))
+    span = px.Sheet(box(px.XZ, 40, 20, True)).Add(box(px.XY, 30, 10, True), zone="b2:C3")
+    assert paper_middle(span, 1) == pytest.approx((105, 198.5))
+    framed = px.Sheet(box(px.XZ, 40, 20, True), frame=True).Add(box(px.XY, 30, 10, True), zone="B2")
+    assert paper_middle(framed, 1) == pytest.approx((80, 223.5))
+    framed.ToSVG()
+
+
+def test_a_top_view_placed_in_a_zone_leaves_the_line_up_and_a_front_view_takes_the_others_along():
+    sh = px.Sheet(box(px.XZ, 40, 20, True)).Add(box(px.XY, 40, 20, True), zone="E4")
+    a = sh._arrange()
+    assert a.places[1][0] != pytest.approx(0) and paper_middle(sh, 1)[0] == pytest.approx(177.5)
+    front = px.Sheet().Add(box(px.XZ, 40, 20, True), zone="B3").Add(box(px.XY, 40, 20, True))
+    a = front._arrange()
+    assert np.allclose(a.places[0], 0) and a.places[1][0] == pytest.approx(0) and a.places[1][1] < 0
+    assert paper_middle(front, 0) == pytest.approx((130, 223.5))
+
+
+def test_views_placed_in_zones_count_in_the_scale_and_one_running_over_warns():
+    # 200 mm wide: 1:2 on A4 by projection, but in column 1 (35 mm wide) only from 1:10
+    assert px.Sheet(box(px.XZ, 200, 50), box(px.XY, 200, 50))._arrange().ratio == pytest.approx(0.5)
+    assert px.Sheet(box(px.XZ, 200, 50)).Add(box(px.XY, 200, 50), zone="C1")._arrange().ratio == pytest.approx(0.1)
+    with pytest.warns(px.PlanexWarning) as caught:
+        px.Sheet(box(px.XZ, 20, 5), scale=1).Add(box(px.XY, 200, 50), zone="C1")._arrange()
+    assert any(re.search(r"view 2 in zone C1 runs over the drawing area .* at 1:1", str(w.message)) for w in caught)
+
+
+def test_dimension_rows_lie_8_mm_from_the_part_and_7_mm_apart():
+    sk = px.Sketch()
+    sk.Move((0, 0), px.Fix).Line(40, 0, px.Horizontal, id="b").Line(0, 20, px.Vertical).Line(-40, 0, px.Horizontal) \
+        .Close(px.Vertical)
+    sk.Circle((10, 10), 2, id="hole")
+    sk.Constrain("b", px.Distance, 40, id="width")
+    sk.Constrain("hole.center", px.V, px.Distance, 10, id="x")
+    strokes = {s.id: s for s in px.Drawing(sk, unit=px.mm)._strokes(1.0, _Lettering())}
+
+    def level(i):
+        return {round(float(a[1]), 6) for a, b, _ in strokes[i].lines if abs(a[1] - b[1]) < 1e-9}
+
+    # below the part, the shorter one nearer
+    assert level("x") == {-8.0} and level("width") == {-15.0}
+
+
+def test_a_view_placed_in_a_zone_that_fits_at_no_scale_leaves_the_scale_to_the_others():
+    # its name, 5 mm high, is wider than column 1 (35 mm) at every scale; the front view alone fits at 1:2
+    named = box(px.XY, 10, 10).ViewName("Flat pattern of the cover")
+    sh = px.Sheet(box(px.XZ, 200, 50)).Add(named, zone="C1")
+    with pytest.warns(px.PlanexWarning) as caught:
+        assert sh._arrange().ratio == pytest.approx(0.5)
+    assert any(re.search(r"'Flat pattern of the cover' in zone C1 runs over the drawing area .* at 1:2", str(w.message))
+               for w in caught)
+    with pytest.warns(px.PlanexWarning):
+        assert paper_middle(sh, 1) == pytest.approx((37.5, 173.5))
+
+
+def test_a_view_in_a_zone_on_another_warns_of_the_overlap():
+    with pytest.warns(px.PlanexWarning, match="view 1 and the view 2 in zone C2 overlap"):
+        px.Sheet(box(px.XZ, 100, 50), scale=1).Add(box(px.XY, 20, 10), zone="C2")._arrange()
+
+
+def test_a_zone_the_sheet_has_not_names_its_zones():
+    sh = px.Sheet()
+    for zone in ("G1", "A5", "I1", "B", "A1:B2:C3"):
+        with pytest.raises(ValueError, match=r"is not on this A4 sheet; its zones are A1 to F4"):
+            sh.Add(box(px.XZ, 10, 10), zone=zone)
+    with pytest.raises(ValueError, match="at or zone, not both"):
+        sh.Add(box(px.XZ, 10, 10), at=(0, 0), zone="A1")

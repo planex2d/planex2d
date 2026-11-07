@@ -57,7 +57,7 @@ class ConfigMeta(base):
              "call's flag.\n\n"
              "Args:\n"
              "    relations: True or False per relation (coincident, tangent, concentric, point_on_curve, horizontal, "
-             "vertical, perpendicular, parallel, equal_radius, equal_length, collinear, named_helpers).\n\n"
+             "vertical, perpendicular, parallel, equal_radius, equal_length, collinear, midpoint, symmetric, pitch_circle, named_helpers).\n\n"
              "Raises:\n"
              "    TypeError: an unknown relation, or a value other than True or False.\n\n"
              "Examples:\n"
@@ -160,8 +160,8 @@ class ConfigMeta(base):
                 "sensitivity_warning: float\n\nA constraint sketch warns when a small change of its dimensions can move its geometry more than this many "
                 "times as much.");
     ConfigValue(cfg, "auto_constraint", config::state->auto_constraint,
-                "auto_constraint: bool\n\nThe auto_constraint= of a new px.Sketch (and px.Move making one) when it is not given: True finds the "
-                "relations of auto_constraint_options.");
+                "auto_constraint: bool\n\nThe auto_constraint= of a new px.Sketch (and px.Move making one) when it is not given, True by default: "
+                "True finds the relations of auto_constraint_options.");
     cfg.def_property_static("auto_constraint_options", [](py::object) { return AutoConstraintDict(config::state->auto_constraint_options); },
                             [](py::object, const py::object &v) {
                                 if (!py::isinstance<py::dict>(v))
@@ -172,7 +172,11 @@ class ConfigMeta(base):
                             },
                             "auto_constraint_options: dict\n\nThe relations auto_constraint=True finds where they hold to rounding, each True or False: "
                             "coincident, tangent, concentric, point_on_curve (on by default), horizontal, vertical, perpendicular, parallel, "
-                            "equal_radius, equal_length, collinear (off), and named_helpers (on: the helpers a call names become their "
+                            "equal_radius, equal_length, collinear, midpoint (a point at a line's middle), symmetric (sk.AutoConstrain and "
+                            "sk.SuggestConstraints only: about the axes that mirror at least two connected edges onto edges), pitch_circle "
+                            "(sk.AutoConstrain only: three or more equal circles equally spaced about a center on a construction circle; "
+                            "off), and "
+                            "named_helpers (on: the helpers a call names become their "
                             "constraints). Set as a dict, which changes only the relations it names.");
     ConfigValue(cfg, "branch_check_min_length", config::state->branch_check_min_length,
                 "branch_check_min_length: float\n\nA line of a constraint sketch shorter than this times the sketch's size has no direction for the branch "

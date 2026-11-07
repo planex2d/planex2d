@@ -2,12 +2,15 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 # Publishes planex2d.org to GitHub Pages from two releases: the documentation (the .zip asset of a v* release of
-# planex2d/docs: docs/, a root index.html that sends visitors on to it, robots.txt, llms.txt) and the site around it
-# (site.zip of a v* release of planex2d/planex2d.org: the homepage, the tools, assets/, sitemap.xml, robots.txt). Both
-# are unpacked into one folder, the site over the docs, and published together. Only the root index.html (the homepage
-# replaces the docs' redirect) and robots.txt (the site's names both sitemaps) may be in both zips; any other file in
-# both, or a docs/ folder in the site, stops the run. Each part is the newest v* release of its repository, or the tag
-# given by hand; before planex2d/planex2d.org has a release, the docs are published alone.
+# planex2d/docs: docs/, a root index.html that sends visitors on to it, robots.txt, llms.txt, llms-full.txt) and the
+# site around it (site.zip of a v* release of planex2d/planex2d.org: the homepage, the tools, assets/, sitemap.xml,
+# robots.txt, llms.txt, llms-full.txt). Both are unpacked into one folder, the site over the docs, and published
+# together. Only the root index.html (the homepage replaces the docs' redirect), robots.txt (the site's names both
+# sitemaps), llms.txt and llms-full.txt may be in both zips; any other file in both, or a docs/ folder in the site,
+# stops the run. The two llms.txt become one: the docs' title and summary, the docs' sections, then the site's, and the
+# sections named Optional last, as one. llms-full.txt is that list, followed by the docs' pages and then the site's.
+# Each part is the newest v* release of its repository, or the tag given by hand; before planex2d/planex2d.org has a
+# release, the docs are published alone.
 #
 # The docs zip holds the site's files at its root (the export's site.zip) or in one folder (Finder's Compress on the
 # pages folder makes pages.zip; its __MACOSX folder and .DS_Store files are dropped). It runs by hand, when
@@ -108,13 +111,61 @@ jobs:
               echo "the site's zip holds a docs/ folder: the docs come from $DOCS only"; exit 1
             fi
             clashes=$(cd web && find . -type f | sed 's#^\./##' | while read -r f; do
-              if [ "$f" != index.html ] && [ "$f" != robots.txt ] && [ -e "../site/$f" ]; then echo "$f"; fi
+              if [ "$f" != index.html ] && [ "$f" != robots.txt ] && [ "$f" != llms.txt ] && [ "$f" != llms-full.txt ] \
+                && [ -e "../site/$f" ]; then echo "$f"; fi
             done)
             if [ -n "$clashes" ]; then
-              echo "in both zips (only index.html and robots.txt may be):"; echo "$clashes"; exit 1
+              echo "in both zips (only index.html, robots.txt, llms.txt and llms-full.txt may be):"; echo "$clashes"
+              exit 1
             fi
-            cp -R web/. site/
           fi
+      - name: One llms.txt and llms-full.txt for the docs and the site
+        shell: python3 {0}
+        run: |
+          from pathlib import Path
+
+          PAGES = "\n---\n\nSource: "
+
+
+          # the lines before the first section, the list of each section by its name, and the pages after the list
+          def split(text):
+              at = text.find(PAGES)
+              index, pages = (text, "") if at < 0 else (text[:at], text[at:])
+              head, sections, name = [], {}, None
+              for line in index.splitlines():
+                  if line.startswith("## "):
+                      name = line[3:].strip()
+                      sections.setdefault(name, [])
+                  elif name is None:
+                      head.append(line)
+                  elif line.strip():
+                      sections[name].append(line)
+              return head, sections, pages
+
+
+          def merged(docs, site):
+              head, first, docs_pages = split(docs)
+              _, second, site_pages = split(site)
+              sections = {}
+              for part in (first, second):
+                  for name, lines in part.items():
+                      sections.setdefault(name, []).extend(lines)
+              lines = "\n".join(head).rstrip().splitlines() + [""]
+              for name in [n for n in sections if n != "Optional"] + [n for n in sections if n == "Optional"]:
+                  lines += [f"## {name}", ""] + sections[name] + [""]
+              return "\n".join(lines).rstrip() + "\n" + docs_pages + site_pages
+
+
+          for name in ("llms.txt", "llms-full.txt"):
+              docs, site = Path("site", name), Path("web", name)
+              if docs.is_file() and site.is_file():
+                  docs.write_text(merged(docs.read_text(encoding="utf-8"), site.read_text(encoding="utf-8")),
+                                  encoding="utf-8")
+                  site.unlink()
+                  print("merged the docs' and the site's", name)
+      - name: The site over the docs
+        run: |
+          if [ -d web ]; then cp -R web/. site/; fi
           test -f site/index.html
           test -f site/docs/index.html
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1

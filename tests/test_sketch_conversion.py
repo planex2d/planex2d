@@ -24,7 +24,7 @@ def relations(sk):
 
 def test_a_converted_quicksketch_has_its_geometry_and_no_constraints():
     quick = draw(px.QuickSketch())
-    converted = px.Sketch(quick, copy=True)
+    converted = px.Sketch(quick, copy=True, auto_constraint=False)
     assert isinstance(converted, px.Sketch) and not converted.auto_constraint
     assert converted.elements == quick.elements and converted.constraints == {}
     assert converted.Shape().mass == pytest.approx(quick.Shape().mass, rel=1e-12)
@@ -41,7 +41,7 @@ def test_auto_constraint_adds_what_the_points_show():
         "Tangent": ['"Arc.1", "Line.3", px.Tangent', '"Line.2", "Arc.1", px.Tangent', '"Line.3", "Circle.1", px.Tangent'],
         "Coincident": ['"Point.5", "Circle.1", px.Coincident', '"Point.7", "Point.8", px.Coincident'],
     }
-    assert converted.dof == px.Sketch(quick, copy=True).dof - 6
+    assert converted.dof == px.Sketch(quick, copy=True, auto_constraint=False).dof - 6
 
 
 def test_the_drawing_tools_convert_as_their_lines():

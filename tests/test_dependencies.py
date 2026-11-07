@@ -42,7 +42,7 @@ def test_each_redundancy_names_only_its_own_partners():
 
 
 def test_a_coincidence_of_points_already_merged_names_the_merges_between_them():
-    sk = px.Sketch()
+    sk = px.Sketch(auto_constraint=False)
     sk.Move((0, 0)).Line((10, 0), id="a")
     sk.Move((10, 0)).Line((10, 5), id="b")
     sk.Move((10, 0)).Line((15, 0), id="c")

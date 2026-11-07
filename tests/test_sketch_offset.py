@@ -485,7 +485,7 @@ def test_an_inner_side_that_closes_raises():
 
 @pytest.mark.constraints
 def test_a_source_that_loses_its_tangency_raises():
-    sk = rounded()
+    sk = rounded(lambda start: px.Sketch(start, auto_constraint=False))
     sk.Offset("rr", 1, id="o")
     before = repr(sk.constraints)
     with pytest.raises(ValueError, match=r"Offset\('o'\): .*; make the offset again"):

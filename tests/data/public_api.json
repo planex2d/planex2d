@@ -193,6 +193,9 @@
  "px.Drawing.Add": [
   "(self, sketch, /) -> Drawing"
  ],
+ "px.Drawing.AutoDimension": [
+  "(self) -> Drawing"
+ ],
  "px.Drawing.Axis": [
   "(self, a, b=None, /, through=None) -> Drawing"
  ],
@@ -1544,7 +1547,7 @@
   "(self, *drawings: Drawing, size: str = 'A4', scale: float | None = None, frame: bool = False, font: str | os.PathLike | None = None, landscape: bool | None = None, standard: str | None = None)"
  ],
  "px.Sheet.Add": [
-  "(self, drawing: Drawing, /, at=None) -> Sheet"
+  "(self, drawing: Drawing, /, at=None, zone: str | None = None) -> Sheet"
  ],
  "px.Sheet.Notes": [
   "(self, left: str = '', right: str = '') -> Sheet"

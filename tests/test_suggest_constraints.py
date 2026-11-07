@@ -25,10 +25,10 @@ def near_rectangle():
     return sk
 
 
-def test_sizes_come_before_positions_each_removing_one_motion():
+def test_extents_come_before_positions_each_removing_one_motion():
     sk = hv_rectangle()
     found = sk.SuggestConstraints(geometric=False)
-    assert [g["call"] for g in found] == ['sk.Constrain("bottom", px.Distance, 4)', 'sk.Constrain("right", px.Distance, 2)',
+    assert [g["call"] for g in found] == ['sk.Constrain("left", "right", px.Distance, 4)', 'sk.Constrain("bottom", "top", px.Distance, 2)',
                                           'sk.Constrain("bottom.start", px.V, px.Distance, 1)',
                                           'sk.Constrain("bottom.start", px.H, px.Distance, 2)']
     assert [g["removes"] for g in found] == ["bottom.end.h", "right.end.v", "bottom.start.h", "bottom.start.v"]
@@ -64,7 +64,7 @@ def test_what_the_constraints_hold_already_is_not_suggested():
     sk = hv_rectangle()
     sk.Constrain("bottom", px.Distance, 4)
     found = sk.SuggestConstraints()
-    assert all("bottom\"" not in g["call"] and "top\"" not in g["call"] for g in found)
+    assert all('"left", "right"' not in g["call"] and '"bottom", px.Distance' not in g["call"] for g in found)
     assert len(found) == sk.dof == 3
 
 

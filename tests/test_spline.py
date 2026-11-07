@@ -148,3 +148,15 @@ def test_split_points_found_against_a_much_longer_edge(half_width):
     r = P * rect(-half_width, 1.8, 2 * half_width, 0.1)
     assert len(r.splines) == 4
     assert r.mass == pytest.approx((P * rect(-10, 1.8, 20, 0.1)).mass, rel=1e-12)
+
+
+# two following points 1e-6 apart on a spline 2000 long: their stretch is shorter than the knot snap (1e-9 of the curve's
+# range) and keeps a curve of its own
+def test_a_stretch_between_two_close_points_keeps_its_curve():
+    gap = 1e-6
+    w = px.Spline([(0, 0), (1000, 500), (1000 + gap, 500), (2000, 0)])
+    pieces = [q for p in w.Split(px.Line((1000, -100), (1000, 1000))) for q in p.Split(px.Line((1000 + gap, -100), (1000 + gap, 1000)))]
+    (sliver,) = [e for p in pieces for e in p.edges if e.mass < 1e-3]
+    poles = sliver.edge.bspline["poles"]
+    assert tuple(poles[0]) == pytest.approx((1000, 500)) and tuple(poles[-1]) == pytest.approx((1000 + gap, 500))
+    assert len(px.Sketch(auto_constraint=False).Add(px.Wire([sliver])).elements["Spline"]) == 1

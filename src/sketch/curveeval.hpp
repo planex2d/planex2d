@@ -59,10 +59,10 @@ namespace planex2d::sketch {
             const double sense = tb > ta ? 1.0 : -1.0;
             return {At(ta, 1) * (sense / Norm(At(ta, 1))), At(tb, 1) * (sense / Norm(At(tb, 1)))};
         }
-        // the chord lengths from ta (its point a) to tb (b) an ordinary spline ('averaged') through its points there, with its
+        // the chord lengths from ta (its point a) to tb (b) a spline of the style through its points there, with its
         // directions at the ends (closed, a == b: periodic), passes to stay within spline_tol of it: first the places
         // over the spline's points, then the spans halved where it is not yet within spline_tol
-        std::vector<double> FitParams(double ta, double tb, const Vertex &a, const Vertex &b, bool closed) const {
+        std::vector<double> FitParams(double ta, double tb, const Vertex &a, const Vertex &b, bool closed, SplineStyle style) const {
             const double sense = tb > ta ? 1.0 : -1.0, same = 1e-9 * f.params.back();
             const auto ordered = [&](std::vector<double> &t) { std::sort(t.begin(), t.end(), [&](double x, double y) { return (x - y) * sense < 0.0; }); };
             std::vector<double> t{ta, tb};
@@ -76,17 +76,12 @@ namespace planex2d::sketch {
             for (size_t k = 1; k < f.params.size(); ++k)
                 add(f.params[k] + f.params.back());
             ordered(t);
-            const auto place = [&](size_t i) { return i == 0 ? a : i + 1 == t.size() ? b : At(t[i], 0); };
-            const std::array<Vertex, 2> ends = EndDirections(ta, tb);
             for (int round = 0; round < 12; ++round) {
-                std::vector<Vertex> points;
+                const std::vector<Vertex> points = Places(t, a, b, closed);
                 BBox box;
-                for (size_t i = 0; i + (closed ? 1 : 0) < t.size(); ++i) {
-                    points.push_back(place(i));
-                    box.Grow(points.back());
-                }
-                const Curve<double, Vertex> spline = Interpolate(points, closed ? std::vector<size_t>{} : std::vector<size_t>{0, points.size() - 1},
-                                                                 closed ? std::vector<Vertex>{} : std::vector<Vertex>{ends[0], ends[1]}, closed, SplineStyle::Averaged);
+                for (const Vertex &p : points)
+                    box.Grow(p);
+                const Curve<double, Vertex> spline = Through(t, points, closed, style);
                 const double atol = config::state->spline_tol * Norm(box.Size());
                 std::vector<double> more;
                 for (size_t i = 0; i + 1 < t.size(); ++i)
@@ -98,6 +93,17 @@ namespace planex2d::sketch {
                 ordered(t);
             }
             return t;
+        }
+        std::vector<Vertex> Places(const std::vector<double> &t, const Vertex &a, const Vertex &b, bool closed) const {
+            std::vector<Vertex> points;
+            for (size_t i = 0; i + (closed ? 1 : 0) < t.size(); ++i)
+                points.push_back(i == 0 ? a : i + 1 == t.size() ? b : At(t[i], 0));
+            return points;
+        }
+        Curve<double, Vertex> Through(const std::vector<double> &t, const std::vector<Vertex> &points, bool closed, SplineStyle style) const {
+            const std::array<Vertex, 2> ends = EndDirections(t.front(), t.back());
+            return Interpolate(points, closed ? std::vector<size_t>{} : std::vector<size_t>{0, points.size() - 1},
+                               closed ? std::vector<Vertex>{} : std::vector<Vertex>{ends[0], ends[1]}, closed, style);
         }
 
     private:

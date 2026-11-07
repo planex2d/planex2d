@@ -59,7 +59,12 @@ if(PLANEX_WITH_OCC)
         set(Python3_EXECUTABLE ${NETGEN_PYTHON_EXECUTABLE})
     endif()
 endif()
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten" AND NOT PLANEX_CORE)
+    # planex2d-occ's Pyodide build: only the target Python's headers, no interpreter of it to run
+    find_package(Python3 REQUIRED COMPONENTS Development.Module)
+else()
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+endif()
 find_package(Threads REQUIRED)
 if(PLANEX_CORE)
     # the version the core is tested with: pybind11's overload resolution changed between 3.0 and 3.1
