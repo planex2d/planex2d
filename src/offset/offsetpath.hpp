@@ -48,6 +48,15 @@ namespace planex2d {
         const Vertex out = Normalized(p - a.Center());
         return a.CCW() ? out * -1.0 : out;
     }
+    // as LeftNormal, a spline's from its exact curve: its approximation's pieces turn off it by up to the approximation's
+    // tolerance
+    inline Vertex ExactLeftNormal(const Edge &e, const Vertex &p) {
+        if (const Spline *spline = std::get_if<Spline>(&e)) {
+            const Vertex t = spline->ExactTangent(p);
+            return Vertex{-t.y, t.x};
+        }
+        return LeftNormal(e, p);
+    }
 
     // the area a closed chain encloses, positive counterclockwise
     inline double ChainArea(const EdgeList &chain) {

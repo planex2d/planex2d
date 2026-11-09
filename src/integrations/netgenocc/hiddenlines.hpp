@@ -361,8 +361,65 @@ namespace planex2d {
         hidden.Erase(drop);
     }
 
+    struct FoldAxis {
+        bool round = false, anyAxis = false;
+        gp_Ax1 axis;
+        bool convex = false;
+        int face = -1;
+    };
+    struct RoundFaces {
+        std::vector<TracedFace> faces;
+        std::vector<FoldAxis> axes;
+    };
+    inline RoundFaces RoundFacesOf(const TopoDS_Shape &shape, double nearTol) {
+        RoundFaces out;
+        for (TopExp_Explorer e(shape, TopAbs_FACE); e.More(); e.Next()) {
+            const TopoDS_Face &f = TopoDS::Face(e.Current());
+            const BRepAdaptor_Surface s(f);
+            FoldAxis axis{true, false, {}};
+            switch (s.GetType()) {
+            case GeomAbs_Cylinder: axis.axis = s.Cylinder().Axis(); break;
+            case GeomAbs_Cone: axis.axis = s.Cone().Axis(); break;
+            case GeomAbs_Torus: axis.axis = s.Torus().Axis(); break;
+            case GeomAbs_Sphere: axis = {true, true, gp_Ax1(s.Sphere().Location(), gp_Dir(0.0, 0.0, 1.0))}; break;
+            case GeomAbs_SurfaceOfRevolution: axis.axis = s.AxeOfRevolution(); break;
+            default: axis.round = false;
+            }
+            if (!axis.round)
+                continue;
+            TracedFace x{f, new ShapeAnalysis_Surface(BRep_Tool::Surface(f)), 0.0, 0.0, 0.0, 0.0, {}};
+            BRepTools::UVBounds(f, x.u0, x.u1, x.v0, x.v1);
+            BRepBndLib::Add(f, x.box);
+            x.box.Enlarge(nearTol);
+            out.faces.push_back(x);
+            out.axes.push_back(axis);
+        }
+        return out;
+    }
+    inline FoldAxis TurningOf(const Handle(Geom_Curve) &c, double t0, double t1, const RoundFaces &round, double tol) {
+        const TracedFace *f = FaceUnder(c, t0, t1, round.faces, tol);
+        if (!f)
+            return {};
+        FoldAxis out = round.axes[(size_t)(f - round.faces.data())];
+        out.face = (int)(f - round.faces.data());
+        const gp_Pnt p = c->Value(0.5 * (t0 + t1));
+        const gp_Pnt2d uv = f->surface->ValueOfUV(p, tol);
+        gp_Pnt q;
+        gp_Vec du, dv;
+        f->surface->Surface()->D1(uv.X(), uv.Y(), q, du, dv);
+        gp_Vec normal = du.Crossed(dv);
+        if (f->face.Orientation() == TopAbs_REVERSED)
+            normal.Reverse();
+        gp_Vec radial(out.axis.Location(), p);
+        if (!out.anyAxis)
+            radial -= gp_Vec(out.axis.Direction()) * radial.Dot(gp_Vec(out.axis.Direction()));
+        out.convex = normal.Dot(radial) > 0.0;
+        return out;
+    }
+
     struct ViewEdges {
-        Wire visible, hidden, smooth;
+        Wire visible, hidden, smooth, folds;
+        std::vector<FoldAxis> foldAxes;
     };
 
     // the lines of a view of shape along the normal of axes, in its coordinates: OCC's exact hidden-line algorithm's
@@ -374,12 +431,13 @@ namespace planex2d {
         HLRBRep_HLRToShape r = HiddenLines(shape, axes);
         const double nearTol = FoldNear(shape);
         const std::vector<TracedFace> traced = TracedFaces(shape, nearTol);
+        const RoundFaces round = RoundFacesOf(shape, nearTol);
         // the triangulation lies within deflection of the faces: a face less than two of that in front of a point is the
         // point's own; a fold's lines of sight start three of it aside
         const double deflection = 0.5 * nearTol, tol = 2.0 * deflection, aside = 3.0 * deflection;
         DepthCheck depth(shape, axes, deflection);
         const gp_Dir n(ToOCC(axes.Normal()));
-        ViewEdges out{Wire(axes), Wire(axes), Wire(axes)};
+        ViewEdges out{Wire(axes), Wire(axes), Wire(axes), Wire(axes), {}};
         for (const HLRBRep_TypeOfResultingEdge type : {HLRBRep_Sharp, HLRBRep_Rg1Line, HLRBRep_OutLine})
             for (const bool visible : {true, false})
                 for (TopExp_Explorer e(r.CompoundOfEdges(type, visible, true), TopAbs_EDGE); e.More(); e.Next()) {
@@ -389,6 +447,7 @@ namespace planex2d {
                         continue;
                     const bool fold = type == HLRBRep_OutLine;
                     const TracedFace *f = fold ? FaceUnder(c, t0, t1, traced, nearTol) : nullptr;
+                    const FoldAxis turning = fold ? TurningOf(c, t0, t1, round, nearTol) : FoldAxis{};
                     // the point found on the surface for the last test: the next one starts from it
                     std::optional<gp_Pnt2d> last;
                     const auto hidden = [&](double t) {
@@ -420,11 +479,17 @@ namespace planex2d {
                         if (type == HLRBRep_Rg1Line && s.hidden)
                             continue;
                         Wire &w = type == HLRBRep_Rg1Line ? out.smooth : s.hidden ? out.hidden : out.visible;
+                        const size_t before = w.Size();
                         if (f)
                             AddRefinedFold(c, s.from, s.to, *f, axes, nearTol, nullptr, w);
                         else
                             for (Edge &x : ProjectEdge(BRepBuilderAPI_MakeEdge(c, s.from, s.to).Edge(), axes, nullptr).edges)
                                 w.Add(std::move(x));
+                        if (fold && (f || turning.round) && &w == &out.visible)
+                            for (size_t k = before; k < w.Size(); ++k) {
+                                out.folds.Add(w[k]);
+                                out.foldAxes.push_back(turning);
+                            }
                     }
                 }
         // the same projected point up to rounding: 1e-9 of the size

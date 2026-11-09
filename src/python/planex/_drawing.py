@@ -252,6 +252,7 @@ class _Solid:
             if cut:
                 self.region = px.Shape(px.Project(cut, plane))
         self.wires = px._planex._ViewLines(shape, plane)
+        self.shape, self.chains = shape, None
 
         def runs(wires):
             return [np.asarray(run, float) for w in wires for e in w.edges for run in e.Wire().Polylines(tol)]
@@ -430,7 +431,7 @@ class Drawing:
         self._places, self._centers, self._axes, self._lines, self._measures = {}, {}, [], [], []
         self._view_name, self._callouts, self._hidden = view_name, [], []
         self._section, self._cuts = section, []
-        self._auto, self._given, self._auto_axes, self._chamfers = None, set(), set(), {}
+        self._auto, self._given, self._auto_axes, self._chamfers, self._diameters = None, set(), set(), [], set()
         self.Update()
 
     @property
@@ -449,7 +450,8 @@ class Drawing:
         view = self.plane
         self._sketched = [_Sketched(sk, _mapper(px.Plane(sk), view), sk is not self._auto) for sk in self._sketches]
         found = [dims.Dimensions(s.sketch, s.everything) for s in self._sketched]
-        found = [_autodim.Chamfered(ds, self._chamfers) if s.sketch is self._auto else ds for s, ds in zip(self._sketched, found)]
+        found = [_autodim.Diametral(_autodim.Chamfered(ds, self._chamfers), self._diameters) if s.sketch is self._auto else ds
+                 for s, ds in zip(self._sketched, found)]
         self._owners = {}
         for s, ds in zip(self._sketched, found):
             s.ids |= {d.id for d in ds}
@@ -517,9 +519,9 @@ class Drawing:
                              "a sketch's drawing shows the sketch's own dimensions")
         if self._auto is not None:
             self._sketches.remove(self._auto)
-            self._auto, self._given, self._auto_axes, self._chamfers = None, set(), set(), {}
+            self._auto, self._given, self._auto_axes, self._chamfers, self._diameters = None, set(), set(), [], set()
             self.Update()
-        sketch, given, self._auto_axes, self._chamfers = _autodim.ViewSketch(self)
+        sketch, given, self._auto_axes, self._chamfers, self._diameters = _autodim.ViewSketch(self)
         self._auto = sketch
         self._sketches.append(sketch)
         self.Update()
@@ -622,7 +624,7 @@ class Drawing:
 
     def _generated(self):
         """the ids of the generated sketch's dimensions (AutoDimension)"""
-        return {s.key(i) for s in self._sketched if s.sketch is self._auto for i in s.ids}
+        return {s.key(i) for s in self._sketched if s.sketch is self._auto for i in s.ids} | {c["id"] for c in self._chamfers}
 
     def Center(self, id: str, /, *, arms: str | None = None, cross: bool = False, pitch: bool = False,
                off: bool = False) -> Drawing:
@@ -967,6 +969,8 @@ def _in_mm(d, per_unit):
     d.value = d.value * per_unit
     if d.total is not None:
         d.total = d.total * per_unit
+    if d.kind == "chamfer":
+        d.r = d.r * per_unit
     return d
 
 
@@ -1205,15 +1209,27 @@ class Sheet:
         """the view the others line up with: the first one on the front plane, else the first"""
         return next((k for k, (d, _, _) in enumerate(self._views) if _side(d.plane) == "front"), 0)
 
+    def _shown_notes(self):
+        """the notes, the left one with the general note of the chamfer sizes three or more chamfers have"""
+        left, right = self._notes
+        views = [d for d, _, _ in self._views]
+        sizes = sorted(_autodim.GeneralChamfers(views)) if views else []
+        if sizes:
+            per = 1e3 * views[0].unit
+            text = ", ".join(self._fmt(a * per) + (f" × {self._fmt(b * per)}" if b else " × 45°") for a, b in sizes)
+            left = "; ".join(x for x in (left, f"Unspecified chamfers {text}") if x)
+        return left, right
+
     def _footer(self):
         """the notes' baseline and the drawing area's bottom above the title block, the notes and the projection
         symbol, in mm"""
         base = BORDER + (self._title[0].height if self._title else 0.0)
         notes_at, bottom = base + 2, base + (4.0 if self._title else 0.0)
-        if any(self._notes):
+        notes = self._shown_notes()
+        if any(notes):
             bottom = notes_at + 10
         if len(self._views) > 1:
-            bottom = max(bottom, notes_at + (6.5 if self._notes[1] else 0.0) + 2 * HEIGHT + 5)
+            bottom = max(bottom, notes_at + (6.5 if notes[1] else 0.0) + 2 * HEIGHT + 5)
         return notes_at, bottom
 
     def _fields(self, a):
@@ -1233,7 +1249,7 @@ class Sheet:
             ink.frame(W, H, bottom=not self._title)
         if self._title:
             ink.title(self._title[0], (W - BORDER, BORDER), self._fields(a))
-        left, right = self._notes
+        left, right = self._shown_notes()
         notes_at = self._footer()[0]
         ink.text(FILING + 2, notes_at, left, 2.5, ha="left")
         ink.text(W - BORDER - 2, notes_at, right, 2.5, ha="right")

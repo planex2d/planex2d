@@ -258,7 +258,7 @@ namespace planex2d {
                                                                                      : std::nullopt;
                 if (v && a.k != b.k) {
                     const Vertex p = ChainVertex(chain, *v);
-                    if (ad * Norm(LeftNormal(chain[a.k], p) - LeftNormal(chain[b.k], p)) <= tol)
+                    if (ad * Norm(ExactLeftNormal(chain[a.k], p) - ExactLeftNormal(chain[b.k], p)) <= tol)
                         j = {true, *v};
                 }
             }

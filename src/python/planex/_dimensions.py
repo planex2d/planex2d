@@ -84,7 +84,8 @@ class Place:
 class Dimension:
     """one dimension constraint as a drawing measures it: a linear one from p to q along u (lines: the elements whose
     nearer end an extension line starts from), a radius or diameter of the circle (c, r), an angle at c from direction
-    a counterclockwise to b with legs that long"""
+    a counterclockwise to b with legs that long; prefix written before the value (⌀ for a turned part's diameter seen
+    from the side)"""
     id: str
     kind: str
     value: float
@@ -99,6 +100,7 @@ class Dimension:
     c: Any = None
     r: float = 0.0
     a: Any = None
+    prefix: str = ""
     b: Any = None
     legs: tuple = ((0.0, 0.0), (0.0, 0.0))
     count: int = 1
@@ -126,7 +128,8 @@ class Strokes:
 
 
 def _counts(everything, constraints):
-    """for each circle and arc, how many equal ones it stands for: its pattern copies and its px.Equal partners"""
+    """for each circle and arc, how many equal ones it stands for: its pattern copies, its px.Equal partners and its
+    mirror images (_mirrors)"""
     parent = {}
 
     def find(x):
@@ -148,10 +151,39 @@ def _counts(everything, constraints):
         for j in rounds:
             if j != i and j.endswith("." + i) and any(j.startswith(p + ".") for p in patterns):
                 join(i, j)
+    for a, b in _mirrors(everything, constraints, rounds):
+        join(a, b)
     size = {}
     for i in rounds:
         size[find(i)] = size.get(find(i), 0) + 1
     return {i: size[find(i)] for i in rounds}
+
+
+def _mirrors(everything, constraints, rounds):
+    """the pairs of circles or arcs that are mirror images, one kind and one radius with their centres mirrored, about
+    an axis the constraints make the sketch symmetric about"""
+    axes = {c["refs"][-1] for c in constraints if c["kind"] == "Symmetric"} | \
+           {c["refs"][1] for c in constraints if c["kind"] == "Coincident" and len(c["refs"]) == 2 and str(c["refs"][0]).endswith(".mid")}
+    lines = []
+    for i in axes:
+        g = everything.get(i)
+        if g is not None and "start" in g and "end" in g:
+            p, q = np.asarray(g["start"], float)[:2], np.asarray(g["end"], float)[:2]
+        elif i in ("H", "V"):
+            p, q = np.zeros(2), np.array([1.0, 0.0] if i == "H" else [0.0, 1.0])
+        else:
+            continue
+        if np.linalg.norm(q - p) > 0:
+            lines.append((p, (q - p) / np.linalg.norm(q - p)))
+    places = [(i, everything[i]["kind"], np.asarray(everything[i]["center"], float)[:2], float(everything[i]["r"])) for i in rounds]
+    tol = 1e-6 * max([float(np.abs(c).max()) + r for _, _, c, r in places] + [1e-300])
+    out = []
+    for p, d in lines:
+        for k, (i, kind, c, r) in enumerate(places):
+            m = p + 2 * ((c - p) @ d) * d - (c - p)
+            out += [(i, j) for j, other, e, s in places[k + 1:]
+                    if other == kind and abs(s - r) <= tol and np.linalg.norm(m - e) <= tol]
+    return out
 
 
 def _hv(plane, point):
@@ -180,8 +212,8 @@ def _circumcentre(a, b, c):
 
 
 def _pattern_step(c, everything, location):
-    """a pattern's spacing or angle as one dimension between its first two instances, the number of steps and the total
-    with it ("6× 12 (= 72)"); None for the step of a full circle, which its count implies"""
+    """a pattern's spacing or angle as one dimension between its first two instances, with the number of steps
+    ("6× 12"); None for the step of a full circle, which its count implies"""
     pattern, linear, second = c["refs"][0], c["kind"] == "Distance", c["id"].endswith(".spacing2")
     copies = {}
     for i in everything:
@@ -738,14 +770,15 @@ def Text(d, place, names, measured=None, fmt=Fmt):
     elif d.kind == "angle":
         value = fmt(180 - abs(d.value) if p.supplement else abs(d.value)) + "°"
     elif d.kind == "chamfer":
-        value = fmt(d.value) + " × 45°"
+        value = fmt(d.value) + (f" × {fmt(d.r)}" if d.r else " × 45°")
     else:
         value = fmt(d.value)
     if sign:
         value = ("⌀" if d.kind == "diameter" else "R") + value
+    elif p.text is None:
+        value = d.prefix + value
     count = p.count if p.count is not None else d.count
-    suffix = p.suffix or (f"(= {fmt(d.total)}{'°' if d.kind == 'angle' else ''})" if d.total is not None else None)
-    text = (f"{count}× " if count > 1 else "") + value + (f" {suffix}" if suffix else "")
+    text = (f"{count}× " if count > 1 else "") + value + (f" {p.suffix}" if p.suffix else "")
     if names and d.name:
         text = f"{d.name} = {text}"
     return f"({text})" if d.reference else text

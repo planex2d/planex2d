@@ -1079,12 +1079,13 @@ inline py::object ElementOfEdge(S &s, const std::optional<std::string> &id, size
     return py::none();
 }
 
-// how closely sketch curves are drawn: 2e-4 of the size of the box around the sketch's points, as the plots draw
+// how closely sketch curves are drawn: 2e-4 of the size of the box around the elements' points, as the plots draw
 // projected outlines
 inline double DrawingTol(const sketch::Geometry &g) {
     BBox box;
-    for (size_t p = 0; p < g.coordsOf.size(); ++p)
-        box.Grow(g.Coords(p));
+    for (const sketch::Element &e : g.elements)
+        for (size_t p : e.kind == sketch::ElementKind::Point ? std::vector<size_t>{e.Point()} : e.PointsAndCentre(g))
+            box.Grow(g.Coords(p));
     return 2e-4 * NormInf(box.Size());
 }
 
@@ -2653,24 +2654,26 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    sk.CircularPattern([\"Line.1\", \"Line.2\"], px.origin, 4, angle=30, id=\"ribs\")"))
         .def("LinearPattern", NamingIds("LinearPattern", +[](S &s, const py::object &ids, const py::object &direction, size_t count, double spacing,
                                  const py::object &direction2, const std::optional<size_t> &count2, const std::optional<double> &spacing2,
-                                 const py::object &keep, const py::object &internal, const std::optional<std::string> &id) -> S & {
+                                 const py::object &keep, const py::object &internal, const std::optional<std::string> &id, bool reverse,
+                                 bool reverse2) -> S & {
             const std::vector<std::string> list = RefsIn(s, ids, "LinearPattern");
             std::optional<sketch::PatternDir2> second;
             if (!direction2.is_none() || count2 || spacing2) {
                 if (direction2.is_none() || !count2 || !spacing2)
                     throw py::type_error("LinearPattern: dir2=, count2= and spacing2= go together, a second direction takes all three");
-                second = sketch::PatternDir2{RefIn(s, direction2, "LinearPattern"), *count2, *spacing2};
-            }
+                second = sketch::PatternDir2{RefIn(s, direction2, "LinearPattern"), *count2, *spacing2, reverse2};
+            } else if (reverse2)
+                throw py::type_error("LinearPattern: reverse2= turns the second direction round; give dir2=, count2= and spacing2= with it");
             s.AddPattern(list, RefIn(s, direction, "LinearPattern"), count, spacing, true, TieArg(keep, "LinearPattern", "auto_constraint"),
-                         TieArg(internal, "LinearPattern", "internal_constraints"), UserId(id), false, second);
+                         TieArg(internal, "LinearPattern", "internal_constraints"), UserId(id), false, second, reverse);
             return s;
         }), py::arg("ids"), py::arg("dir"), py::arg("count"), py::arg("spacing"), py::arg("dir2") = py::none(), py::arg("count2") = py::none(),
              py::arg("spacing2") = py::none(), py::arg("auto_constraint") = py::bool_(HasConstraints<S>),
              py::arg("internal_constraints") = py::bool_(HasConstraints<S>),
-             py::arg("id") = py::none(), ref,
+             py::arg("id") = py::none(), py::kw_only(), py::arg("reverse") = false, py::arg("reverse2") = false, ref,
              Doc("LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, "
                  "spacing2: float | None = None, auto_constraint: bool = " + ties + ", internal_constraints: bool = " + ties + ", "
-                 "id: str | None = None) -> " + sk + "\n\n"
+                 "id: str | None = None, *, reverse: bool = False, reverse2: bool = False) -> " + sk + "\n\n"
                  "Add count instances of the elements in a row, the original the first; with dir2 a grid of count by count2.\n\n"
                  "The pattern is 'LinearPattern.N' (or id), the copies named after their sources by their step "
                  "('LinearPattern.1.3.hole'), in a grid by their two steps ('LinearPattern.1.2.1.hole', "
@@ -2691,13 +2694,16 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    internal_constraints: show the constraints among the originals on the copies "
                  "('LinearPattern.1.3.<id>', derived), or with auto_constraint=False give the copies those constraints; "
                  "default True in a Sketch, False in a QuickSketch.\n"
-                 "    id: replaces LinearPattern.N.\n\n"
+                 "    id: replaces LinearPattern.N.\n"
+                 "    reverse: True places the copies the other way along dir (against px.H to the left, against px.V "
+                 "down, a line from its end towards its start); spacing stays a length.\n"
+                 "    reverse2: the same along dir2.\n\n"
                  "Raises:\n"
-                 "    TypeError: dir2, count2 and spacing2 are not given together.\n"
+                 "    TypeError: dir2, count2 and spacing2 are not given together, or reverse2 without them.\n"
                  "    ValueError: count (with count2: count times count2) is below 2; dir or dir2 is no line.\n\n"
                  "Examples:\n"
                  "    sk.LinearPattern(\"hole\", px.H, 5, 10)\n"
-                 "    sk.LinearPattern(\"hole\", px.H, 4, 10, dir2=px.V, count2=3, spacing2=8)"))
+                 "    sk.LinearPattern(\"hole\", px.H, 4, 10, dir2=px.V, count2=3, spacing2=8, reverse2=True)"))
         .def("Offset", NamingIds("Offset", +[](S &s, const py::object &source, const py::object &d,
                                                const py::object &sides, OffsetForm ends, OffsetForm corners, const py::kwargs &kw) -> S & {
             HelpersOf(s, kw, "Offset", {});

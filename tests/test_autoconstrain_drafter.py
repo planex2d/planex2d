@@ -360,11 +360,11 @@ def step_texts(sk):
     return {d.id: _dimensions.Text(d, None, False) for d in _dimensions.Dimensions(sk) if "Pattern" in d.id}
 
 
-def test_a_grid_shows_each_step_with_its_count_and_total():
+def test_a_grid_shows_each_step_with_its_count():
     sk = px.Sketch()
     sk.Circle((2, 3), 0.5, id="hole")
     sk.LinearPattern(["hole"], px.H, 4, 2.0, dir2=px.V, count2=3, spacing2=1.5)
-    assert step_texts(sk) == {"LinearPattern.1.spacing": "3× 2 (= 6)", "LinearPattern.1.spacing2": "2× 1,5 (= 3)"}
+    assert step_texts(sk) == {"LinearPattern.1.spacing": "3× 2", "LinearPattern.1.spacing2": "2× 1,5"}
 
 
 def test_a_partial_circular_pattern_shows_its_step_and_a_full_one_none():
@@ -372,7 +372,7 @@ def test_a_partial_circular_pattern_shows_its_step_and_a_full_one_none():
     sk.Circle((0, 0), 5, id="bore")
     sk.Circle((8, 0), 0.5, id="hole")
     sk.CircularPattern(["hole"], "bore.center", 5, angle=40)
-    assert step_texts(sk) == {"CircularPattern.1.angle": "4× 40° (= 160°)"}
+    assert step_texts(sk) == {"CircularPattern.1.angle": "4× 40°"}
     full = px.Sketch()
     full.Circle((0, 0), 5, id="bore")
     full.Circle((8, 0), 0.5, id="hole")
@@ -380,13 +380,13 @@ def test_a_partial_circular_pattern_shows_its_step_and_a_full_one_none():
     assert step_texts(full) == {}
 
 
-def test_a_step_s_total_is_written_in_the_drawing_s_millimeters():
+def test_a_step_is_written_in_the_drawing_s_millimeters():
     from planex import _dimensions, _drawing
     sk = px.Sketch()
     sk.Circle((0.002, 0.003), 0.0005, id="hole")
     sk.LinearPattern(["hole"], px.H, 7, 0.012)
     (d,) = [d for d in _dimensions.Dimensions(sk) if d.id == "LinearPattern.1.spacing"]
-    assert _dimensions.Text(_drawing._in_mm(d, 1e3), None, False) == "6× 12 (= 72)"
+    assert _dimensions.Text(_drawing._in_mm(d, 1e3), None, False) == "6× 12"
 
 
 def test_a_point_within_tol_of_an_axis_is_put_on_it_not_dimensioned_from_it():
@@ -406,3 +406,24 @@ def test_a_spline_too_long_for_the_solver_is_joined_without_a_tangent():
         sk.AutoConstrain(dimensional=False)
         assert bool(sk.constraints.get("Tangent")) == tangent
         assert sk.Measure("s.end", "l.start")["distance"] == 0.0
+
+
+def test_an_axis_no_kept_relation_uses_goes_and_an_end_on_an_edge_is_placed_along_it():
+    # the corner block seen from the front: the cut ends on the right side, which stays one line
+    sk = px.Sketch((0, 0))
+    sk.Line(80, 0).Line(0, 40).Line((50, 40)).Line((0, 40)).Close()
+    sk.Move((50, 40)).Line((80, 25), id="cut")
+    sk.AutoConstrain(geometric={**HV, "symmetric": True})
+    assert (sk.dof, sk.redundant) == (0, [])
+    assert not any(g["construction"] for g in sk._Drawing() if g["kind"] == "Line")
+    assert not {"Angle", "Symmetric"} & {c["kind"] for c in sk._Constraints()}
+    assert any(c["kind"] == "Distance" and abs(c["value"] - 25) < 1e-9 for c in sk._Constraints())
+
+
+def test_a_drawing_counts_mirror_images_as_one_feature_repeated():
+    from planex import _dimensions
+    arc = lambda x, y: {"kind": "Arc", "center": (x, y), "r": 8.0}
+    everything = {"a": arc(52, 32), "b": arc(-52, 32), "c": arc(-52, -32), "d": arc(52, -32), "e": arc(10, 5)}
+    constraints = [{"kind": "Symmetric", "refs": ["a.start", "d.end", "H"]}, {"kind": "Coincident", "refs": ["top.mid", "V"]}]
+    assert _dimensions._counts(everything, constraints) == {"a": 4, "b": 4, "c": 4, "d": 4, "e": 1}
+    assert _dimensions._counts(everything, []) == dict.fromkeys(everything, 1)

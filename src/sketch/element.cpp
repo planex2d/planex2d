@@ -127,6 +127,12 @@ namespace planex2d::sketch {
             const planex2d::Curve<double, Vertex> f = Curve(g);
             return f.At(SplineParamAt(g, f, point), 1);
         }
+        if (kind == ElementKind::OffsetCurve) {
+            const OffsetCurveData &c = g.offsetCurves[OffsetCurveIndex()];
+            const CurveEval e = Evaluator(g);
+            const Vertex d = e.At(c.Range(g, e.f)[g.coordsOf[c.range.toPoint] == g.coordsOf[point]], 1);
+            return c.reversed ? d * -1.0 : d;
+        }
         const Vertex r = g.Coords(point) - g.Coords(Center());
         return {-r.y, r.x};
     }
@@ -135,6 +141,15 @@ namespace planex2d::sketch {
             return 0.0;
         if (kind == ElementKind::Arc || kind == ElementKind::Circle)
             return 1.0 / g.values[Radius()];
+        if (kind == ElementKind::OffsetCurve) {
+            const OffsetCurveData &c = g.offsetCurves[OffsetCurveIndex()];
+            const CurveEval source{Curve(g)};
+            const double u = c.Range(g, source.f)[g.coordsOf[c.range.toPoint] == g.coordsOf[point]];
+            const Vertex d1 = source.At(u, 1);
+            const double speed = Norm(d1), k = Cross(d1, source.At(u, 2)) / (speed * speed * speed);
+            // offset by d to the left, a curve bending by k bends by k / (1 - d k)
+            return k / (1.0 - g.values[c.distance] * c.side * k) * (c.reversed ? -1.0 : 1.0);
+        }
         const planex2d::Curve<double, Vertex> f = Curve(g);
         const double u = SplineParamAt(g, f, point);
         const Vertex d1 = f.At(u, 1), d2 = f.At(u, 2);

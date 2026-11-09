@@ -228,6 +228,34 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "Examples:\n"
              "    sk.Update()\n"
              "    sk.Update({\"w\": 12, \"phi\": 30}, steps=10)")
+        .def("Drag", NamingIds("Drag", +[](ConstraintSketch &s, const py::object &points, const py::object &to) -> ConstraintSketch & {
+            if (IsRef(points))
+                return s.Drag({RefIn(s, points, "Drag")}, {PointArg(s.Axes(), to, "Drag")});
+            const std::vector<std::string> ids = RefsIn(s, points, "Drag");
+            if (!py::isinstance<py::sequence>(to) || IsPointLike(to))
+                throw py::type_error("Drag: " + py::repr(to).cast<std::string>() + " is no list of places, one per point");
+            std::vector<Vertex> places;
+            for (const py::handle &h : to)
+                places.push_back(PointArg(s.Axes(), h, "Drag"));
+            if (places.size() != ids.size())
+                throw py::value_error("Drag: " + std::to_string(ids.size()) + " points, " + std::to_string(places.size()) + " places");
+            return s.Drag(ids, places);
+        }), py::arg("points"), py::arg("to"), ref,
+             "Drag(points: Id | Ids, to: Point | list[Point]) -> Sketch\n\n"
+             "Move points to new places, as a mouse drag does: each point goes to its place, the elements that end at it "
+             "stretch and turn, and the rest moves only where the constraints make it. Where the constraints keep a point "
+             "from its place, it goes as near as they let it; with no solution at all nothing moves. Adds no constraint; "
+             "Update and Constrain move the drawn shapes along instead. An offset is held to no cusp and no crossing of its "
+             "curves while dragged; whether it keeps the shape it was made with is checked by the next change after the "
+             "drag, which raises if it does not.\n\n"
+             "Args:\n"
+             "    points: a point, or several.\n"
+             "    to: its place (h, v), or one place per point.\n\n"
+             "Raises:\n"
+             "    ValueError: an id that is no point; not one place per point.\n\n"
+             "Examples:\n"
+             "    sk.Drag(\"Line.2.end\", (25, 15))\n"
+             "    sk.Drag([\"Line.1.start\", \"Line.1.end\"], [(0, 5), (20, 5)])")
         .def("RigidGroup", NamingIds("RigidGroup", +[](ConstraintSketch &s, const py::object &ids, const std::optional<std::string> &id) -> ConstraintSketch & {
             Prepare(s, ids);
             return s.RigidGroup(RefsIn(s, ids, "RigidGroup"), UserId(id));

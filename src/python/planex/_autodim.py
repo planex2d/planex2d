@@ -141,7 +141,7 @@ def _patterns(edges, tol):
         for order, step, full in runs:
             if order[0] in used:
                 continue
-            motif = _motif(order, step, data, touching, member_run)
+            motif = _motif(order, step, data, touching, member_run, tol)
             if motif is None:
                 continue
             members = set()
@@ -155,12 +155,13 @@ def _patterns(edges, tol):
     return out + _linear(data, touching, used, tol)
 
 
-def _motif(order, step, data, touching, member_run):
-    """a circular pattern's first instance: the edge alone for a circle, else the edges walked from it along the outline
-    to its next copy"""
+def _motif(order, step, data, touching, member_run, tol):
+    """a circular pattern's first instance: a circle with the circles about its centre that repeat with it (a
+    counterbored hole), else the edges walked from it along the outline to its next copy"""
     first, nxt, copies = order[0], order[1], set(order)
     if data[first]["kind"] == "circle":
-        return [first]
+        return [first] + [i for i in _concentric(first, member_run, data, tol)
+                          if len(member_run[i][0]) == len(order) and abs(member_run[i][1] - step) <= 1e-6]
     for start in touching[first]:
         walk, prev, cur = [first], first, start
         while True:
@@ -261,7 +262,8 @@ def _linear(data, touching, used, tol):
         k, j, n, m, u, v, g = place[i]
         if (k, j) != (0, 0) or i in used:
             continue
-        motif = _component(i, data, touching) or [i]
+        motif = _component(i, data, touching) or [i] + [q for q in _concentric(i, place, data, tol)
+                                                         if place[q][:4] == (0, 0, n, m) and np.allclose(place[q][4], u)]
         if not all(q in place and place[q][:4] == (0, 0, n, m) and np.allclose(place[q][4], u) for q in motif):
             continue
         members = set()
@@ -272,6 +274,14 @@ def _linear(data, touching, used, tol):
         used |= members
         out.append({"kind": "linear", "u": u, "count": n, "v": v, "count2": m, "motif": motif, "members": sorted(members)})
     return out
+
+
+def _concentric(i, others, data, tol):
+    """the circles among others about the centre of the circle i"""
+    if data[i]["kind"] != "circle":
+        return []
+    return [j for j in others if j != i and data[j]["kind"] == "circle"
+            and np.linalg.norm(data[j]["pts"][0] - data[i]["pts"][0]) <= tol]
 
 
 def _component(i, data, touching):
@@ -475,69 +485,17 @@ def _given(sk, sketched, k, shift, tol):
     return out
 
 
-def _chamfers(sk, tol):
-    """the sketch's 45 degree chamfers whose angle it dimensions, each with its leg as a dimension: a distance on the
-    chamfer as long as the leg, else the leg (from the chamfer's start to the edge at its end) in place of a distance on
-    the chamfer or its corners that the sketch then needs no more; {the leg's id: (the angle's id, the chamfer's middle,
-    the direction out of the part)}"""
-    lines = {g["id"]: (_pt(g["start"]), _pt(g["end"])) for g in sk._Drawing() if g["kind"] == "Line" and not g["construction"]}
-    out = {}
-    for i, (s, e) in lines.items():
-        joints = [[(j, "start" if np.linalg.norm(a - p) <= tol else "end") for j, (a, b) in lines.items()
-                   if j != i and min(np.linalg.norm(a - p), np.linalg.norm(b - p)) <= tol] for p in (s, e)]
-        cut = next(((x, y, corner) for x in joints[0] for y in joints[1]
-                    if (corner := _corner(lines, x, y, s, e)) is not None), None)
-        if cut is None:
-            continue
-        (side, side_end), (edge, edge_end), corner = cut
-        constraints = [c for c in sk._Constraints() if not c.get("derived") and c["value"] is not None]
-        angle = next((c["id"] for c in constraints if c["kind"] == "Angle" and i in c["refs"]
-                      and abs(abs(c["value"]) - 45) <= 1e-6), None)
-        if angle is None:
-            continue
-        leg = float(np.linalg.norm(e - s)) * math.sqrt(0.5)
-        # the distances that place the chamfer: on it or on the other lines that end where it does (the edge between
-        # the next chamfer's face and the part's), then the lengths of the two it cuts, then on its corners
-        near = {i, f"{i}.start", f"{i}.end"} | {j for j, _ in joints[0] + joints[1]} - {side, edge}
-        ends = {f"{j}.{end}" for j, end in joints[0] + joints[1]}
-        distances = [c for c in constraints if c["kind"] == "Distance"]
-        lengths = [c for c in distances if len(c["refs"]) == 1 and c["refs"][0] in (side, edge)]
-        on = [c for c in distances if near & set(c["refs"])] + lengths + \
-             [c for c in distances if not near & set(c["refs"]) and c not in lengths and ends & set(c["refs"])]
-        found = next((c["id"] for c in on if abs(c["value"] - leg) <= tol), None)
-        if found is None:
-            found = _swap(sk, on, f"{i}.start", edge, leg, f"chamfer{len(out) + 1}")
-        if found is not None:
-            middle = (s + e) / 2
-            out[found] = (angle, middle, (corner - middle) / np.linalg.norm(corner - middle))
-    return out
-
-
-def _corner(lines, x, y, s, e):
-    """the corner a chamfer from s to e cut off, where the line x ends at s and the line y at e: the lines square to
-    each other, the chamfer at 45 degrees to them, their corner beyond both ends; else None"""
-    (a, a_end), (b, b_end) = x, y
-    u = (e - s) / np.linalg.norm(e - s)
-    v, w = ((q - p) / np.linalg.norm(q - p) for p, q in (lines[a], lines[b]))
-    if abs(v @ w) > 1e-6 or abs(abs(u @ v) - math.sqrt(0.5)) > 1e-6:
-        return None
-    corner = s + v * ((e - s) @ v)
-    far_a = lines[a][1] if a_end == "start" else lines[a][0]
-    far_b = lines[b][1] if b_end == "start" else lines[b][0]
-    return corner if (corner - s) @ (far_a - s) < 0 and (corner - e) @ (far_b - e) < 0 else None
-
-
-def _swap(sk, on, point, edge, leg, id):
-    """id, a new distance leg from point to the line edge, once it takes the place of one of the distances on with the
-    sketch still fully defined and nothing more redundant; else None, the sketch as it was (an automatic distance put
-    back under a new id)"""
+def _swap(sk, on, refs, value, id):
+    """id, a new distance value between refs, once it takes the place of one of the distances on with the sketch still
+    fully defined and nothing more redundant; else None, the sketch as it was (an automatic distance put back under a
+    new id)"""
     import planex as px
 
     before = set(sk.redundant)
     for c in on:
         sk.Remove(c["id"])
         try:
-            sk.Constrain(point, edge, px.Distance, leg, id=id)
+            sk.Constrain(*refs, px.Distance, value, id=id)
         except (ValueError, RuntimeError):
             pass
         made = id in {k["id"] for k in sk._Constraints()}
@@ -551,25 +509,32 @@ def _swap(sk, on, point, edge, leg, id):
 
 
 def Chamfered(found, chamfers):
-    """the generated sketch's dimensions (Dimensions) with each chamfer's angle and leg (_chamfers) as one callout of
-    kind "chamfer": its value the leg, at the chamfer's middle (c), out of the part along a"""
+    """the generated sketch's dimensions (Dimensions) with a callout of kind "chamfer" per chamfer seen (_chamfer_view):
+    its value the leg (r the other leg where they differ), at the chamfer's middle (c), out of the part along a"""
     from ._dimensions import Dimension
 
-    by_id = {d.id: d for d in found}
-    pairs = {leg: angle for leg, (angle, _, _) in chamfers.items() if leg in by_id and angle in by_id}
-    out = [d for d in found if d.id not in pairs and d.id not in pairs.values()]
-    for leg, angle in pairs.items():
-        d = Dimension(leg, "chamfer", by_id[leg].value, over=by_id[leg].over or by_id[angle].over,
-                      refs=by_id[leg].refs + by_id[angle].refs)
-        d.c, d.a = chamfers[leg][1], chamfers[leg][2]
+    out = list(found)
+    for c in chamfers:
+        d = Dimension(c["id"], "chamfer", c["legs"][0])
+        d.r = 0.0 if c["equal"] else c["legs"][1]
+        d.c, d.a, d.chain, d.end_on = c["c"], c["a"], c["chain"], c["end_on"]
         out.append(d)
     return out
 
 
+def Diametral(found, diameters):
+    """the generated sketch's dimensions (Dimensions) with the distances across a turned axis (_diameters) written as
+    diameters: "⌀25" """
+    for d in found:
+        if d.id in diameters and d.kind == "linear":
+            d.prefix = "⌀"
+    return found
+
+
 def _dimensioned(drawing, wires, shift, tol):
     """the view's sketch with its origin at shift in the view's coordinates (_sketch), the view's own sketches' dimensions
-    and relations on it (_given), then every relation but equal lengths and the dimensions a drafter gives, a 45
-    degree chamfer by its angle and leg (_chamfers); with the ids of the dimensions given and the chamfers"""
+    and relations on it (_given), then every relation but equal lengths and the dimensions a drafter gives; with the
+    ids of the dimensions given"""
     import planex as px
 
     plane = drawing.plane
@@ -584,7 +549,7 @@ def _dimensioned(drawing, wires, shift, tol):
     while ours := [r for r in sk.redundant if (r.startswith("CircularPattern.") and r.endswith(".angle"))
                    or r.startswith("pattern")]:
         sk.Remove(ours[-1])
-    return sk, given, _chamfers(sk, tol)
+    return sk, given
 
 
 def _axes(sk, kinds):
@@ -594,33 +559,398 @@ def _axes(sk, kinds):
 
 
 def ViewSketch(drawing):
-    """the sketch that dimensions a view of a solid (_dimensioned): its visible lines, arcs and circles (_merged), each
-    pattern as one instance and a pattern of it; on the view's plane, its origin moved to the datum along
-    an axis a dimension measures from and no point of the part lies on (the part's place on the plane is no size, a
-    section's plane through its middle no line it has), and auto constrained anew; with the ids of the dimensions taken
-    from the view's own sketches (they draw them), the axes (0 for V, 1 for H) the part is symmetric about or measured
-    from and no edge of it lies along, which the view draws as center lines, and its chamfers (_chamfers)"""
+    """the sketch that dimensions a view of a solid (_dimensioned): its visible lines, arcs and circles (_merged), of
+    the fold lines only those of faces round about a center line the view draws, along a turned axis no other lines
+    (_along; a section keeps its cut's), each pattern as one instance and a pattern of it; on the view's plane, its
+    origin moved to the datum along an axis a dimension measures from and no point of the part lies on (the part's place
+    on the plane is no size, a section's plane through its middle no line it has), and auto constrained anew; with the
+    ids of the dimensions taken from the view's own sketches (they draw them), the axes (0 for V, 1 for H) the part is
+    symmetric about or measured from and no edge of it lies along, which the view draws as center lines, its chamfers'
+    callouts (_chamfer_view) and its diameters across a turned axis (_diameters)"""
     import planex as px
 
     solid, plane = drawing._solid, drawing.plane
     tol = 1e-6 * solid.size
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", px.PlanexWarning)
-        wires = _wires([e for w in solid.wires["visible"] for e in w.edges], plane, tol)
-        data = [d for w in wires for e in w.edges if (d := _data(e.edge)) is not None]
-        pts = np.array([p for d in data for p in d["pts"]]) if data else np.zeros((0, 2))
-        shift = np.zeros(2)
-        for _ in range(3):
-            sk, given, chamfers = _dimensioned(drawing, wires, shift, tol)
-            off = [k for k in _axes(sk, None) if not np.any(np.abs(pts[:, k] - shift[k]) <= tol)]
-            if not off or not data:
+        folds = solid.wires.get("folds", [])
+        edges, chamfers = _chamfer_view(drawing, [e for w in solid.wires["visible"] for e in w.edges], folds, tol)
+        axes = _turned_axes(folds, edges, plane, tol)
+        sk, given, shift, data = _settled(drawing, edges, tol, axes)
+        centres = _centre_lines(sk, _drawn(sk, data, shift, tol), plane, shift) + [(o - shift, a, q, u) for o, a, q, u in axes]
+        odd = [f for f in folds if not (f[2] is not None and f[2][2]) and not any(_round_about(f[2], q, u, tol) for _, _, q, u in centres)]
+        turned = [(o + shift, a, rounds) for o, a, q, u in centres if (rounds := [f for f in folds if _round_about(f[2], q, u, tol)])]
+        lines = [d["pts"] for e in edges if (d := _data(e.edge)) is not None and d["kind"] == "line"]
+        along = set() if drawing._section else {k for k, e in enumerate(edges) if _along(e, turned, lines, tol)}
+        if odd or along:
+            kept = [e for k, e in enumerate(edges) if k not in along and not any(_matches(e, f, tol) for f in odd)]
+            kept += _whole([f for f in folds if f not in odd], plane, tol)
+            sk, given, shift, data = _settled(drawing, kept, tol, axes)
+            centres = _centre_lines(sk, _drawn(sk, data, shift, tol), plane, shift) + [(o - shift, a, q, u) for o, a, q, u in axes]
+        drawn = _drawn(sk, data, shift, tol) | {1 if abs(a[1]) <= 1e-9 else 0 for o, a, _, _ in axes
+                                               if abs(a[0]) <= 1e-9 or abs(a[1]) <= 1e-9}
+        turned = [(o, a, [(_pt(f[0]) - shift, _pt(f[1]) - shift) for f in folds if _round_about(f[2], q, u, tol)])
+                  for o, a, q, u in centres]
+        diameters = _diameters(sk, turned, tol)
+    for c in chamfers:
+        c["c"] = c["c"] - shift
+    return sk, given, drawn, chamfers, diameters
+
+
+def _settled(drawing, edges, tol, turned=()):
+    """the view's sketch of edges (_dimensioned) with its origin on the turned axes along H or V (_turned_axes), else
+    moved to the datum along an axis a dimension measures from and no point of the part lies on; with the ids given,
+    the shift and the edges' data"""
+    wires = _wires(edges, drawing.plane, tol)
+    data = [d for w in wires for e in w.edges if (d := _data(e.edge)) is not None]
+    pts = np.array([p for d in data for p in d["pts"]]) if data else np.zeros((0, 2))
+    shift, held = np.zeros(2), set()
+    for o, a, _, _ in turned:
+        for k in (0, 1):
+            if abs(a[1 - k]) <= 1e-9 and 1 - k not in held:
+                shift[1 - k] = o[1 - k]
+                held.add(1 - k)
+    for _ in range(3):
+        sk, given = _dimensioned(drawing, wires, shift, tol)
+        off = [k for k in _axes(sk, None) - held if not np.any(np.abs(pts[:, k] - shift[k]) <= tol)]
+        if not off or not data:
+            break
+        for k in off:
+            shift[k] = _datum(data)[k]
+    return sk, given, shift, data
+
+
+def _drawn(sk, data, shift, tol):
+    """the axes (0 for V, 1 for H) the sketch is symmetric about or measured from and no line lies along"""
+    lines = [d for d in data if d["kind"] == "line"]
+    return {k for k in _axes(sk, ("Symmetric", "Distance"))
+            if not any(all(abs(p[k] - shift[k]) <= tol for p in d["pts"]) for d in lines)}
+
+
+def _centre_lines(sk, drawn, plane, shift):
+    """the center lines the view draws: the axes drawn and the sketch's own symmetry axes, each as (a point and the
+    direction in the sketch, a point and the direction in 3D)"""
+    h, v = np.asarray(tuple(plane.h), float), np.asarray(tuple(plane.v), float)
+    out = [(np.zeros(2), np.array([1.0, 0.0] if k else [0.0, 1.0])) for k in drawn]
+    lines = {g["id"]: g for g in sk._Drawing() if g["kind"] == "Line" and g["construction"]}
+    axes = {c["refs"][-1] for c in sk._Constraints() if c["kind"] == "Symmetric"} | \
+           {c["refs"][1] for c in sk._Constraints() if c["kind"] == "Coincident" and c["refs"][0].endswith(".mid")}
+    for i in axes & set(lines):
+        a, b = _pt(lines[i]["start"]), _pt(lines[i]["end"])
+        out.append((a, (b - a) / np.linalg.norm(b - a)))
+    return [(o, a, _lift(plane, o + shift), a[0] * h + a[1] * v) for o, a in out]
+
+
+def _chamfer_view(drawing, edges, folds, tol):
+    """the view's edges without its chamfer lines (on a chamfer's edges found in 3D, or a fold line between them, and
+    not on the sharp edge it cuts off), the lines that meet a chamfer seen end-on taken on to the sharp corner; with a
+    callout per chamfer seen: its id, chain, legs, middle and the way out of the part in the view's coordinates, and
+    whether seen end-on"""
+    import planex as px
+
+    solid, plane = drawing._solid, drawing.plane
+    if getattr(solid, "chains", None) is None:
+        solid.chains = px._planex._Chamfers(solid.shape, 2e-3 / drawing.unit)
+    if not solid.chains:
+        return edges, []
+    h, v = np.asarray(tuple(plane.h), float), np.asarray(tuple(plane.v), float)
+    zero = _lift(plane, (0.0, 0.0))
+
+    def seen(line):
+        pts = np.asarray(line, float) - zero
+        return np.stack([pts @ h, pts @ v], axis=1)
+
+    near = min(1e-3 * solid.size, 0.25 * min(min(c["legs"]) for c in solid.chains))
+    on, sharp = {}, {}
+    for k, c in enumerate(solid.chains):
+        on[k] = np.concatenate([np.stack([p[:-1], p[1:]], axis=1) for p in map(seen, c["lines"]) if len(p) > 1])
+        ends = []
+        for p in map(seen, c["sharp"]):
+            if len(p) > 1:
+                p = np.vstack([p[0] - 2 * (p[1] - p[0]), p, p[-1] + 2 * (p[-1] - p[-2])])
+                ends.append(np.stack([p[:-1], p[1:]], axis=1))
+        sharp[k] = np.concatenate(ends) if ends else np.zeros((0, 2, 2))
+    removed = {}
+    for i, e in enumerate(edges):
+        pts = _samples(e)
+        if pts is None:
+            continue
+        for k in on:
+            fold = any(_matches(e, f, tol) for f in folds) and _within(pts[[0, -1]], on[k], near).all()
+            if (fold or _within(pts, on[k], near).all()) and not _within(pts, sharp[k], near).all():
+                removed[i] = k
                 break
-            for k in off:
-                shift[k] = _datum(data)[k]
-        lines = [d for d in data if d["kind"] == "line"]
-        drawn = {k for k in _axes(sk, ("Symmetric", "Distance"))
-                 if not any(all(abs(p[k] - shift[k]) <= tol for p in d["pts"]) for d in lines)}
-    return sk, given, drawn, chamfers
+    gone = [(k, np.array([d["pts"]])) for i, k in removed.items() if (d := _data(edges[i].edge)) is not None and d["kind"] == "line"]
+    for i, e in enumerate(edges):
+        d = _data(e.edge)
+        if i in removed or d is None or d["kind"] != "line":
+            continue
+        pts = _samples(e)
+        k = next((k for k, segment in gone if _within(pts, segment, near).all()), None)
+        if k is not None:
+            removed[i] = k
+    kept = [e for i, e in enumerate(edges) if i not in removed]
+    callouts = {}
+    for i, k in removed.items():
+        d = _data(edges[i].edge)
+        if d is None or d["kind"] != "line":
+            continue
+        a, b = d["pts"]
+        if not len(sharp[k]):
+            continue
+        x = _closest((a + b) / 2, sharp[k])
+        if np.linalg.norm(x - (a + b) / 2) <= tol or abs(_cross(b - a, x - a)) <= tol * np.linalg.norm(b - a):
+            continue
+        corner = _to_corner(kept, a, b, x, plane, tol)
+        if corner is not None:
+            kept = corner
+            callouts[k] = ((a + b) / 2, (x - (a + b) / 2) / np.linalg.norm(x - (a + b) / 2), True)
+    kept = _closed(kept, [edges[i] for i in removed], tol)
+    for i, k in removed.items():
+        pts = _samples(edges[i])
+        if k in callouts or pts is None or not len(sharp[k]):
+            continue
+        middle = pts[len(pts) // 2]
+        out = _closest(middle, sharp[k]) - middle
+        if np.linalg.norm(out) > tol:
+            callouts[k] = (middle, out / np.linalg.norm(out), False)
+    found = []
+    for k, (middle, way, end_on) in sorted(callouts.items()):
+        legs = solid.chains[k]["legs"]
+        found.append({"id": f"chamfer{k + 1}", "chain": f"chain{k}", "legs": legs, "c": middle, "a": way, "end_on": end_on,
+                      "equal": abs(legs[0] - legs[1]) <= 1e-3 * max(legs) + tol})
+    return kept, found
+
+
+def _closed(kept, removed, tol):
+    """the kept edges with the removed ones back that end where a kept edge would end alone (a gap no sharp corner
+    closes): the one going on straight from it, else all there, until none does (an outline that is a chamfer's edge,
+    two chamfers meeting); edges and ends compared within ten times tol, a view having most edges more than once"""
+    near = 10 * tol
+
+    def ends(e):
+        d = _data(e.edge)
+        return None if d is None or d["kind"] not in ("line", "arc") else (d["pts"][0], d["pts"][1])
+
+    def same(p, q):
+        return min(np.linalg.norm(p[0] - q[0]) + np.linalg.norm(p[1] - q[1]),
+                   np.linalg.norm(p[0] - q[1]) + np.linalg.norm(p[1] - q[0])) <= near
+
+    back = list(removed)
+    while True:
+        lines = []
+        for e in kept:
+            p = ends(e)
+            if p is not None and not any(same(p, q) for q in lines):
+                lines.append(p)
+        pts = np.array([x for p in lines for x in p]) if lines else np.zeros((0, 2))
+        found = []
+        for p, q in lines:
+            for x, y in ((p, q), (q, p)):
+                if np.sum(np.linalg.norm(pts - x, axis=1) <= near) != 1:
+                    continue
+                at = [e for e in back if (r := ends(e)) is not None and min(np.linalg.norm(r[0] - x), np.linalg.norm(r[1] - x)) <= near]
+                on = [e for e in at if abs(_cross(x - y, ends(e)[1] - ends(e)[0])) <= 1e-6 * np.linalg.norm(x - y)
+                      * np.linalg.norm(ends(e)[1] - ends(e)[0])]
+                found += [e for e in (on or at) if all(e is not f for f in found)]
+        if not found:
+            return kept
+        kept = kept + found
+        back = [e for e in back if all(e is not f for f in found)]
+
+
+def _cross(u, w):
+    return float(u[0] * w[1] - u[1] * w[0])
+
+
+def _samples(e):
+    """points along the view's edge e (a line, an arc or a circle); None for another"""
+    d = _data(e.edge)
+    if d is None:
+        return None
+    if d["kind"] == "line":
+        a, b = d["pts"]
+        return np.array([a + (b - a) * s for s in np.linspace(0, 1, 5)])
+    c, r = d["pts"][-1], d["size"]
+    if d["kind"] == "circle":
+        turns = np.linspace(0, 2 * math.pi, 9)[:-1]
+    else:
+        t0, t1 = _angle(d["pts"][0], c), _angle(d["pts"][1], c)
+        sweep = (t1 - t0) % (2 * math.pi) if d["ccw"] else -((t0 - t1) % (2 * math.pi))
+        turns = t0 + sweep * np.linspace(0, 1, 5)
+    return np.stack([c[0] + r * np.cos(turns), c[1] + r * np.sin(turns)], axis=1)
+
+
+def _within(pts, segments, near):
+    """for each point whether it lies within near of one of the segments (n x 2 x 2)"""
+    if not len(segments):
+        return np.zeros(len(pts), bool)
+    a, b = segments[:, 0], segments[:, 1]
+    ab = b - a
+    length = np.maximum((ab * ab).sum(axis=1), 1e-300)
+    out = []
+    for p in pts:
+        s = np.clip(((p - a) * ab).sum(axis=1) / length, 0, 1)
+        out.append(np.min(np.linalg.norm(a + s[:, None] * ab - p, axis=1)) <= near)
+    return np.array(out)
+
+
+def _closest(p, segments):
+    a, b = segments[:, 0], segments[:, 1]
+    ab = b - a
+    s = np.clip(((p - a) * ab).sum(axis=1) / np.maximum((ab * ab).sum(axis=1), 1e-300), 0, 1)
+    q = a + s[:, None] * ab
+    return q[np.argmin(np.linalg.norm(q - p, axis=1))]
+
+
+def _to_corner(kept, a, b, x, plane, tol):
+    """the kept edges with the lines ending at a or at b that lie on the straight line from there to x (the sharp corner
+    a chamfer from a to b seen end-on cut off, its sharp edge seen end-on) taken on to x; None where not both ends have
+    such a line (lines of other chamfers ending there point elsewhere)"""
+    import planex as px
+
+    found = {}
+    for i, e in enumerate(kept):
+        d = _data(e.edge)
+        if d is None or d["kind"] != "line" or d["size"] <= tol:
+            continue
+        for q, r in ((d["pts"][0], d["pts"][1]), (d["pts"][1], d["pts"][0])):
+            for end in (0, 1):
+                p = (a, b)[end]
+                if np.linalg.norm(r - p) <= tol and np.linalg.norm(x - p) > tol \
+                        and abs(_cross(r - q, x - p)) <= 1e-6 * np.linalg.norm(r - q) * np.linalg.norm(x - p) and (r - q) @ (x - p) > 0:
+                    found[i] = (q, end)
+    if {end for _, end in found.values()} != {0, 1}:
+        return None
+    line = lambda p, q: px.Wires([px.Line(tuple(p), tuple(q), plane=plane)], tol)[0].edges[0]
+    return [e for k, e in enumerate(kept) if k not in found] + [line(q, x) for q, _ in found.values()]
+
+
+def _turned_axes(folds, edges, plane, tol):
+    """the axes of a turned part seen from the side: an axis in the view's plane that convex fold lines are round
+    about, which bound the view across it on both sides alike (a shaft's or a disc's outline, not a corner's fillet or
+    a boss on a bar); each as a point and the direction in the view's coordinates and in 3D"""
+    h, v = np.asarray(tuple(plane.h), float), np.asarray(tuple(plane.v), float)
+    zero = _lift(plane, (0.0, 0.0))
+    data = [d for e in edges if (d := _data(e.edge)) is not None]
+    out = []
+    for f in folds:
+        if f[2] is None or f[2][1] is None or not f[2][2]:
+            continue
+        q, u = np.asarray(f[2][0], float), np.asarray(f[2][1], float)
+        a = np.array([u @ h, u @ v])
+        if abs(np.linalg.norm(a) - 1) > 1e-9 or any(_round_about((q, u), p, w, tol) for _, _, p, w in out):
+            continue
+        o, n = np.array([(q - zero) @ h, (q - zero) @ v]), np.array([-a[1], a[0]])
+        offs = [float(n @ (p - o)) for d in data for p in (d["pts"] if d["kind"] != "circle" else
+                                                           [d["pts"][0] + d["size"] * n, d["pts"][0] - d["size"] * n])]
+        bounds = [float(n @ (_pt(g[0]) - o)) for g in folds if _round_about(g[2], q, u, tol) and g[2][2]]
+        if offs and abs(max(offs) + min(offs)) <= tol and any(abs(b - max(offs)) <= tol for b in bounds) \
+                and any(abs(b - min(offs)) <= tol for b in bounds):
+            out.append((o, a, q, u))
+    return out
+
+
+def _round_about(axis, q, u, tol):
+    """whether a fold line's face with axis (a point and a direction, None for a sphere's centre) is round about the
+    line through q along u"""
+    if axis is None:
+        return False
+    w = np.asarray(axis[0], float) - q
+    if np.linalg.norm(w - (w @ u) * u) > tol:
+        return False
+    return axis[1] is None or np.linalg.norm(np.cross(np.asarray(axis[1], float), u)) <= 1e-6
+
+
+def _along(e, turned, lines, tol):
+    """whether the view's edge e is a line along a turned axis (a point and its direction in the view, the fold lines
+    round about it) that is no such fold line and has no mirror image across it among the view's lines: a flute's or a
+    keyway's edge on the outline, sized where its feature is seen round or flat (a keyway's walls seen edge-on are a
+    pair across the axis and keep their width)"""
+    d = _data(e.edge)
+    if d is None or d["kind"] != "line" or d["size"] <= tol:
+        return False
+    s, f = d["pts"]
+    for o, a, rounds in turned:
+        if abs(a[0] * (f - s)[1] - a[1] * (f - s)[0]) > tol or any(_matches(e, g, tol) for g in rounds):
+            continue
+        n = np.array([-a[1], a[0]])
+        off, span = float(n @ (s - o)), sorted((float(a @ (s - o)), float(a @ (f - o))))
+        mirrored = any(abs(float(n @ (p - o)) + off) <= tol and abs(float(n @ (q - p))) <= tol
+                       and min(span[1], max(float(a @ (p - o)), float(a @ (q - o))))
+                       - max(span[0], min(float(a @ (p - o)), float(a @ (q - o)))) > tol for p, q in lines)
+        if abs(off) > tol and not mirrored:
+            return True
+    return False
+
+
+def _whole(folds, plane, tol):
+    """lines over the gaps between the pieces of one fold line, on one face and one straight line (a shaft's outline a
+    keyway or a flute cuts), as edges to add to a view's"""
+    import planex as px
+
+    groups = {}
+    for f in folds:
+        a, b = _pt(f[0]), _pt(f[1])
+        if f[2] is None or np.linalg.norm(b - a) <= tol:
+            continue
+        u = (b - a) / np.linalg.norm(b - a)
+        u = u if u[0] > tol or (abs(u[0]) <= tol and u[1] > 0) else -u
+        key = (f[2][3], round(float(a[0] * u[1] - a[1] * u[0]) / tol), round(float(u[0]) * 1e6), round(float(u[1]) * 1e6))
+        groups.setdefault(key, []).append((a, b, u))
+    out = []
+    for pieces in groups.values():
+        if len(pieces) > 1:
+            u = pieces[0][2]
+            along = [float(p @ u) for a, b, _ in pieces for p in (a, b)]
+            foot = pieces[0][0] - (pieces[0][0] @ u) * u
+            out.append(px.Wires([px.Line(tuple(foot + min(along) * u), tuple(foot + max(along) * u), plane=plane)], tol)[0].edges[0])
+    return out
+
+
+def _matches(e, fold, tol):
+    """whether the view's edge e is the fold line (start, end, axis)"""
+    a, b = np.asarray(fold[0], float), np.asarray(fold[1], float)
+    d = _data(e.edge)
+    if d is None:
+        return False
+    if d["kind"] == "circle":
+        return np.linalg.norm(a - b) <= tol and abs(np.linalg.norm(a - d["pts"][0]) - d["size"]) <= tol
+    s, f = d["pts"][:2]
+    return min(max(np.linalg.norm(s - a), np.linalg.norm(f - b)), max(np.linalg.norm(s - b), np.linalg.norm(f - a))) <= tol
+
+
+def _diameters(sk, turned, tol):
+    """the ids of the distances across a turned axis (o, a, its fold lines), between a line on a fold line round about
+    it and its mirror image, the largest first: the distance there, or a new one in place of a distance between lines
+    along the axis (_swap)"""
+    lines = {g["id"]: (_pt(g["start"]), _pt(g["end"])) for g in sk._Drawing() if g["kind"] == "Line" and not g["construction"]}
+    out = set()
+    for o, a, folds in turned:
+        n = np.array([-a[1], a[0]])
+        along = {i: (float(n @ (s - o)), sorted((float(a @ (s - o)), float(a @ (e - o)))))
+                 for i, (s, e) in lines.items() if abs(float(n @ (e - s))) <= tol}
+        round_ = {i for i, (off, span) in along.items() for f, g in folds
+                  if abs(float(n @ (f - o)) - off) <= tol and abs(float(n @ (g - o)) - off) <= tol
+                  and min(span[1], max(float(a @ (f - o)), float(a @ (g - o))))
+                  - max(span[0], min(float(a @ (f - o)), float(a @ (g - o)))) > tol}
+        pairs = sorted(((i, j, 2 * off) for i, (off, span) in along.items() for j, (other, there) in along.items()
+                        if off > tol and abs(off + other) <= tol and {i, j} <= round_
+                        and min(span[1], there[1]) - max(span[0], there[0]) > tol),
+                       key=lambda p: -p[2])
+        for i, j, value in pairs:
+            distances = [c for c in sk._Constraints() if c["kind"] == "Distance" and not c.get("derived")
+                         and c["value"] is not None and c["id"] not in out]
+            have = next((c["id"] for c in distances if set(c["refs"]) == {i, j}), None)
+            if have is not None:
+                out.add(have)
+                continue
+            steps = [c for c in distances if len(c["refs"]) == 2 and set(c["refs"]) <= set(along)]
+            steps.sort(key=lambda c: not {i, j} & set(c["refs"]))
+            made = _swap(sk, steps, (i, j), value, f"diameter{len(out) + 1}")
+            if made is not None:
+                out.add(made)
+    return out
 
 
 def _rank(view):
@@ -631,6 +961,11 @@ def _rank(view):
         return 3
     side = _side(view.plane)
     return {"front": 0, "top": 1, "other": 4}.get(side, 2)
+
+
+def _circular(view):
+    """whether the view's generated sketch has a circular pattern, which it sees round"""
+    return view._auto is not None and any(g["id"].startswith("CircularPattern.") for g in view._auto._Drawing())
 
 
 def _lift(plane, p):
@@ -647,10 +982,15 @@ def _canonical3(u):
 
 def _size_of(view, d, tol):
     """what a dimension of a view measures in 3D: ("linear", direction, (from, to) along it), ("round", axis, centre,
-    radius), ("angle", the plane's normal, the vertex, the value) or ("chamfer", the plane's normal, its middle, its
-    leg); None for another"""
+    radius) (also a turned part's diameter seen from the side), ("angle", the plane's normal, the vertex, the value) or
+    ("chamfer", the plane's normal, its middle, its leg); None for another"""
     plane = view.plane
     n = _canonical3(tuple(plane.normal))
+    if d.kind == "linear" and d.u is not None and d.prefix == "⌀":
+        h, v = np.asarray(tuple(plane.h), float), np.asarray(tuple(plane.v), float)
+        axis = _canonical3(-d.u[1] * h + d.u[0] * v)
+        c = _lift(plane, (np.asarray(d.p, float) + np.asarray(d.q, float)) / 2)
+        return ("round", axis, c - (c @ axis) * axis, abs(float(d.value)) / 2)
     if d.kind == "linear" and d.u is not None:
         h, v = np.asarray(tuple(plane.h), float), np.asarray(tuple(plane.v), float)
         u = _canonical3(d.u[0] * h + d.u[1] * v)
@@ -662,14 +1002,15 @@ def _size_of(view, d, tol):
         c = _lift(plane, d.c)
         return ("angle", n, c - (c @ n) * n, round(abs(float(d.value)), 6))
     if d.kind == "chamfer":
-        c = _lift(plane, d.c)
-        return ("chamfer", n, c - (c @ n) * n, round(float(d.value), 9))
+        return ("chamfer", getattr(d, "chain", None), round(float(d.value), 9), round(float(d.r), 9))
     return None
 
 
 def _same(a, b, tol):
     if a[0] != b[0]:
         return False
+    if a[0] == "chamfer":
+        return a[1] is not None and a[1:] == b[1:]
     if a[0] == "linear":
         return np.allclose(a[1], b[1], atol=1e-9) and np.allclose(a[2], b[2], atol=tol)
     if a[0] == "round":
@@ -690,14 +1031,16 @@ def _across(a, rounds, tol):
 
 def Repeats(views):
     """for each view (by its index), the ids of the generated dimensions another view on the sheet already shows: the
-    sizes of the views' own sketches first, then the generated ones in the views' order (_rank), a diameter or radius in
-    the view where its circle is round; a view keeps all of its own"""
+    sizes of the views' own sketches first, then the generated ones in the views' order (a view with a circular pattern
+    first, _circular, then _rank), a turned part's diameter in the view along its axis (_diameters), another diameter
+    or radius in the view where its circle is round, a chamfer once, where it is seen end-on, and none of a size the
+    general note gives (GeneralChamfers); a view keeps all of its own"""
     out = {k: set() for k in range(len(views))}
     sized = [v._solid.size for v in views if v._auto is not None]
     if not sized:
         return out
     tol = 1e-6 * max(sized)
-    order = sorted(range(len(views)), key=lambda k: (_rank(views[k]), k))
+    order = sorted(range(len(views)), key=lambda k: (not _circular(views[k]), _rank(views[k]), k))
     # the sizes taken, with the view that took them: None for a view's own sketch, which counts for every view
     taken, generated = [], []
     for k in order:
@@ -707,13 +1050,27 @@ def Repeats(views):
             if size is None:
                 continue
             if d.id in auto:
-                generated.append((k, d.id, size))
+                generated.append((k, d.id, size, d.prefix == "⌀" or getattr(d, "end_on", False)))
             else:
                 taken.append((None, size))
-    rounds = [(j, s) for j, s in taken if s[0] == "round"] + [(k, s) for k, _, s in generated if s[0] == "round"]
-    for k, i, size in sorted(generated, key=lambda t: t[2][0] != "round"):
+    rounds = [(j, s) for j, s in taken if s[0] == "round"] + [(k, s) for k, _, s, _ in generated if s[0] == "round"]
+    for k, i, size, _ in sorted(generated, key=lambda t: (not t[3], t[2][0] != "round")):
         if any(_same(size, s, tol) for j, s in taken if j != k) or _across(size, [s for j, s in rounds if j != k], tol):
             out[k].add(i)
         else:
             taken.append((k, size))
+    for ids in GeneralChamfers(views).values():
+        for k, i in ids:
+            out[k].add(i)
     return out
+
+
+def GeneralChamfers(views):
+    """the chamfer sizes three or more chamfers of a sheet's views have, which the sheet gives in a general note:
+    {(leg, the other leg where they differ, else 0): [(view index, callout id), ...]}"""
+    sizes = {}
+    for k, v in enumerate(views):
+        for c in getattr(v, "_chamfers", []):
+            legs = (round(float(c["legs"][0]), 9), 0.0 if c["equal"] else round(float(c["legs"][1]), 9))
+            sizes.setdefault(legs, {}).setdefault(c["chain"], []).append((k, c["id"]))
+    return {legs: [x for ids in chains.values() for x in ids] for legs, chains in sizes.items() if len(chains) >= 3}

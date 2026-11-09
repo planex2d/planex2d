@@ -1377,7 +1377,7 @@ namespace planex2d {
         // keep (the constraint sketch): tied to the original, see ConstraintSketch
         BasicSketch &AddPattern(const std::vector<std::string> &ids, const std::string &ref, size_t count, double step, bool linear,
                                 bool keep, bool internal, const std::optional<std::string> &id, bool = false,
-                                const std::optional<sketch::PatternDir2> &second = std::nullopt) {
+                                const std::optional<sketch::PatternDir2> &second = std::nullopt, bool reverse = false) {
             const std::string call = linear ? "LinearPattern" : "CircularPattern";
             CheckPattern(call, count, step, second);
             if (keep)
@@ -1394,7 +1394,8 @@ namespace planex2d {
                 std::vector<size_t> edges;
                 for (const auto &[k, j] : PatternSteps(count, second ? second->count : 0)) {
                     const std::string prefix = StepPrefix(scope, k, j, second.has_value());
-                    const sketch::Copies made = PlaceCopy(originals, r, linear, step, k, prefix, r2, second ? second->step : 0.0, j);
+                    const sketch::Copies made = PlaceCopy(originals, r, linear, reverse ? -step : step, k, prefix, r2,
+                                                          second ? (second->reverse ? -second->step : second->step) : 0.0, j);
                     if (internal)
                         ConstraintsCopied(prefix, false);
                     CopyWires(ids, made, prefix);
@@ -2159,7 +2160,6 @@ namespace planex2d {
                     AddElement(s.AddLine(ends[0].second, ends[1].second), "Connect", opt);
                     return;
                 }
-                CheckBlendArms({ends[0].first, ends[1].first}, call);
                 AddElement(s.AddBlend(ends[0].second, ends[1].second, {{ends[0].first, ends[1].first}, sketch::none, continuity == sketch::Kind::Curvature}),
                            "Connect", opt);
             });
@@ -2507,7 +2507,6 @@ namespace planex2d {
         virtual void CornerMade(const ChamferRule &, const sketch::CornerParts &) {}
         // the blend takes the arc's place: its ends, id and properties
         virtual void CornerMade(const CurvatureFilletRule &, const sketch::CornerParts &c) {
-            CheckBlendArms({c.arms[0], c.arms[1]}, "Fillet");
             const sketch::Element arc = s.elements[c.made];
             s.AddBlend(arc.Start(), arc.End(), {{c.arms[0], c.arms[1]}});
             s.elements[c.made] = s.elements.back();
@@ -2571,12 +2570,6 @@ namespace planex2d {
                 j = pb.size() - 1 - j;
             }
             return {{{ea, pa[i]}, {eb, pb[j]}}};
-        }
-        // a blend joins lines, arcs and splines, not offset curves
-        void CheckBlendArms(const std::array<size_t, 2> &arms, const std::string &call) const {
-            for (size_t arm : arms)
-                if (s.elements[arm].kind == sketch::ElementKind::OffsetCurve)
-                    throw std::invalid_argument(call + ": '" + elementIds[arm] + "' is an offset curve; px.Curvature joins lines, arcs and splines");
         }
 
         // the new element between two elements of a corner joins the wires that hold both, between them

@@ -37,6 +37,8 @@ namespace planex2d::cs {
         std::string ref2;
         size_t count = 0, count2 = 0;
         std::vector<std::pair<size_t, size_t>> steps;
+        // the copies go against the line ref (ref2)
+        bool reverse = false, reverse2 = false;
 
         bool IsGrid() const { return !ref2.empty(); }
 

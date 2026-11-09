@@ -1,5 +1,72 @@
 # Changelog
 
+## v0.3.3
+
+### Added
+
+- `sk.Drag(points, to)` on `px.Sketch`: moves points to new places as a mouse drag in a sketcher does. The point goes
+  to its place, the elements that end at it stretch and turn, and the rest moves only where the constraints make it
+  (a corner of a free polyline moves alone; a corner of a horizontal/vertical rectangle changes its width and height).
+  Where the constraints keep a point from its place it goes as near as they let it, with no error. A drag adds no
+  constraint; `Update` and `Constrain` still move drawn shapes along whole.
+- `sk.LinearPattern(..., reverse=True)` places the copies the other way along `dir` (to the left of `px.H`, down
+  `px.V`, from a line's end towards its start), `reverse2=True` the same along `dir2`; the spacing stays a length.
+- `sk.Connect(a, b, px.Tangent)`, `px.Curvature` Connects and curvature fillets join offset curves as they join
+  splines, following the offset when its distance changes.
+
+### Changed
+
+- Trimming an end off a fixed line or arc keeps the piece left fixed where it lies (the cut point too, so the cutter
+  keeps running through it); the Fix used to go with a warning. A cut out of the middle keeps the Fix on the line as
+  before.
+- Removing the last piece of an offset removes the whole offset: its points, ties and distance, as a line takes its
+  end points along. Before, the points stayed and only `Remove` of the offset took them.
+- `sk.Drag` of a spline that has an offset takes about 1.3 ms a frame (was about 17 ms): while dragged, an offset is
+  held to no cusp and no crossing of its curves; whether it keeps the shape it was made with is checked by the next
+  change after the drag, which raises if it does not.
+- Drawings: a pattern's step reads `6× 12`, `4× 51.43°`, without the total in parentheses (an auxiliary dimension
+  only); the callouts are shorter and easier to place.
+- `dw.AutoDimension()`: a turned part's diameters are given in the view along its axis, written `⌀25`, in place of the
+  steps between neighbouring diameters, and the view where those circles are round does not repeat them; the axis is
+  drawn as a center line. A disc or a flange counts as turned: its outer diameter moves to the front view.
+- `dw.AutoDimension()`: silhouette lines of curved faces get dimensions where the face is a convex face of revolution
+  (a shaft's outline, a fillet seen side-on) or is round about a center line the view draws; others (a flute, a
+  blade) are drawn without dimensions, their sizes come from the view where they are seen round. In the view along a
+  turned part's axis, a line along the axis gets dimensions only where it has a mirror image across the axis (a
+  keyway's walls give its width; a flute's edge gives none).
+- Sheets: of two views that show the same size, the one with a circular pattern seen round keeps it, then front, top,
+  side views and sections as before.
+- Drawings: `n×` counts circles and arcs that are mirror images about an axis the sketch is symmetric about, besides
+  `px.Equal` partners and pattern copies: a plate's four symmetric corners read `4× R8`.
+- `dw.AutoDimension()`: chamfers are found on the solid in 3D (a chain of narrow faces between two faces, the same legs
+  all along, at most a tenth of the narrower face it cuts or 2 mm), seen end-on or side-on; their lines are drawn but
+  not dimensioned, sizes go to the sharp corners, each chamfer gets one callout `1 × 45°` per sheet, and a size three
+  or more chamfers share goes into a general note `Unspecified chamfers 0,4 × 45°` above the title block. A larger 45°
+  bevel is dimensioned as geometry.
+
+### Fixed
+
+- `dw.AutoDimension()`: an end face between two 45° chamfers was taken for a chamfer of the corner they form
+  (`12,728 × 45°` on a shaft's end, in place of its `1 × 45°`); a 45° angle now serves one chamfer.
+- `dw.AutoDimension()`: a counterbored hole (two concentric circles) is one instance of its pattern; the pattern's
+  step showed once per circle.
+- `sk.AutoConstrain()`: a symmetry axis line or pitch circle it adds goes again when the relations kept tie no two
+  elements together through it (it showed as a center line with a length of its own).
+- `sk.AutoConstrain()`: where a line ends on another between that one's ends, the distance along it is a dimension it
+  can give, so a round value comes before an angle there (a corner block's `25` in place of `26.565°`).
+- `sk.Split` of a line where another line already ends on it, or at a cut point an earlier split left (both lines of
+  an X split), left a redundant coincidence and warned about it; the older coincidence now goes, as with `sk.Trim`.
+  The two cut points stay tied by a coincidence of their own, which can be removed to let them part.
+- The drawn paths of a sketch's curves no longer get coarser after a far point was removed (the drawing tolerance
+  counted the removed point).
+- A `px.Symmetric` whose symmetry line was split kept working but lost its sign in plots.
+- A selection's `propagate=px.Tangent` (and `px.Curvature`) stopped at every joint between the pieces of a spline in a
+  shape (a self-crossing spline's loops, a spline cut by `px.Glue`).
+- A closed spline crossing itself exactly where its approximation has joints on both passes (a symmetric figure eight)
+  was taken for one wire by `px.Spline`, `sk.Wire` and `sk.Wires(unify=False)`; it now raises as any other crossing.
+- An offset of a chain through a curvature Connect (`sk.Connect(a, b, px.Curvature)`) raised "internal error, the
+  offset's ties are not independent"; it offsets as through a tangent Connect.
+
 ## v0.3.2
 
 ### Added

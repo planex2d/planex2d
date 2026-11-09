@@ -625,7 +625,8 @@ def _signs(sketch, everything, k=None, font=10):
             continue
         drawn = [r for r in refs if r not in ("H", "V")]
         kind, items = c["kind"], []
-        if any(undrawn(r) for r in drawn) and kind not in ("Coincident", "Concentric", "Fix", "FixH", "FixV") and c["id"] not in drafted:
+        marked = refs[:2] if kind in ("Symmetric", "SymmetricCarriers") and len(refs) == 3 else drawn
+        if any(undrawn(r) for r in marked) and kind not in ("Coincident", "Concentric", "Fix", "FixH", "FixV") and c["id"] not in drafted:
             continue
         if kind == "Coincident":
             places = [p for p in (point(r) for r in refs if r not in paths) if p is not None]

@@ -436,6 +436,8 @@ namespace planex2d {
             }
             Vertex ExactPointAt(double u) const { return data->curve.At(u); }
             Vertex ExactDirectionAt(double u) const { return data->curve.Direction(u); }
+            double StartParam() const { return data->params[first]; }
+            double EndParam() const { return data->params[last]; }
             double ExactCurvatureAt(double u) const { return data->curve.Curvature(u); }
             // closed to Start() and End() by lines, so that the stretches of one loop add up
             double ExactSignedArea(const Vertex &o) const {
