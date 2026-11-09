@@ -388,8 +388,8 @@ def test_dxf_has_real_dimension_entities(tmp_path):
     msp = doc.modelspace()
     assert doc.units == 4 and doc.header["$LTSCALE"] == 2 and doc.dimstyles.get("DIN").dxf.dimscale == 2
     shown = sorted(e.text for d in msp.query("DIMENSION") for e in doc.blocks.get(d.dxf.geometry) if e.dxftype() == "MTEXT")
-    assert shown == sorted(["12", "12", "20", "45", "50", "80", "(39,806°)", "3× %%c6", "2× 14 (= 28)"])
-    assert sorted(d.dxf.text for d in msp.query("DIMENSION"))[:3] == ["(<>)", "2× <> (= 28)", "3× <>"]
+    assert shown == sorted(["12", "12", "20", "45", "50", "80", "(39,806°)", "3× %%c6", "2× 14"])
+    assert sorted(d.dxf.text for d in msp.query("DIMENSION"))[:3] == ["(<>)", "2× <>", "3× <>"]
     assert len(msp.query("CIRCLE")) == 3 and len(msp.query("LINE")) == 5
     px.Drawing(plate(0.001)).WriteDXF(tmp_path / "plate.dxf")
     plate_msp = ezdxf.readfile(tmp_path / "plate.dxf").modelspace()

@@ -151,6 +151,15 @@ namespace planex2d {
         if (flat.Size() < 2)
             return std::nullopt;
         const double tol = flat.Tol();
+        std::vector<Vertex> ends;
+        for (size_t i = 0; i < flat.Size(); ++i)
+            for (const bool end : {false, true})
+                ends.push_back(Wire::EndOf(flat[i], end));
+        std::vector<size_t> at;
+        std::vector<size_t> count(VertexIdsOf(ends, tol, at), 0);
+        for (size_t k = 0; k < ends.size(); ++k)
+            if (++count[at[k]] > 2)
+                return std::pair{source[(size_t)(std::find(at.begin(), at.end(), at[k]) - at.begin()) / 2], source[k / 2]};
         Grid grid = flat.EdgeGrid();
         std::vector<uint32_t> nearby;
         for (size_t i = 0; i < flat.Size(); ++i) {

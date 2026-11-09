@@ -854,6 +854,22 @@ namespace planex2d::cs {
             values = std::move(x.value);
             return r;
         }
+        SolveResult SolveDragged(const std::vector<size_t> &dragged, bool held) {
+            // a change of a dragged unknown counts as much as 10 times that change of another, the two scales of
+            // ShapedSystem
+            constexpr double pulled = 0.1;
+            Build();
+            Unknowns x = SolverUnknowns();
+            for (size_t u : dragged) {
+                if (held)
+                    x.fixed[u] = 1;
+                else
+                    x.scale[u] *= pulled;
+            }
+            const SolveResult r = SolveConstraints(*this, x, size_);
+            values = std::move(x.value);
+            return r;
+        }
         // built: nothing changed since Build (a solve that took no step)
         ConstraintAnalysis Analyze(bool complete = true, bool built = false) {
             if (!built)

@@ -40,14 +40,25 @@ namespace planex2d {
         }
     };
 
+    // an end of edge e on its exact curve; a spline piece's direction and curvature at its parameter on the whole
+    // spline, since its end vertex lies only within the approximation's tolerance of the curve
+    inline ChainEnd EndOf(const Edge &e, bool start) {
+        const double sign = start ? 1.0 : -1.0;
+        if (const Spline *s = std::get_if<Spline>(&e)) {
+            const double u = start ? s->StartParam() : s->EndParam();
+            return {start ? s->Start() : s->End(), s->ExactDirectionAt(u) * sign, s->ExactCurvatureAt(u) * sign};
+        }
+        const ExactCurve c(e);
+        const double u = start ? c.First() : c.Last();
+        return {c.At(u), c.Direction(u) * sign, c.Curvature(u) * sign};
+    }
+
     // the ends of a chain of edges in order, on its exact curves; none for a closed chain (a circle, a closed spline,
     // a loop)
     inline std::optional<std::array<ChainEnd, 2>> EndsOf(const EdgeList &chain, double tol) {
         if (chain.empty() || chain.HasCircle())
             return std::nullopt;
-        const ExactCurve first(chain.front()), last(chain.back());
-        const ChainEnd start{first.At(first.First()), first.Direction(first.First()), first.Curvature(first.First())};
-        const ChainEnd end{last.At(last.Last()), last.Direction(last.Last()) * -1.0, -last.Curvature(last.Last())};
+        const ChainEnd start = EndOf(chain.front(), true), end = EndOf(chain.back(), false);
         if (start.at.IsClose(end.at, tol))
             return std::nullopt;
         return std::array{start, end};

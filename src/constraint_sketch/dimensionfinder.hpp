@@ -23,7 +23,7 @@ namespace planex2d::cs {
 
     class DimensionFinder {
     public:
-        explicit DimensionFinder(const System &s) : s(s), rounding(Tol(s.Size())) {
+        explicit DimensionFinder(const System &s, std::vector<char> drawn = {}) : s(s), rounding(Tol(s.Size())), drawn(std::move(drawn)) {
             Features();
             roundStep = RoundStep();
             Lines();
@@ -42,6 +42,7 @@ namespace planex2d::cs {
                     CentreToEdges(out);
                 ParallelLines(hv, out);
                 Lengths(hv, out);
+                EndsAlong(hv, out);
             }
             std::stable_partition(out.begin(), out.end(), [&](const Constraint &c) { return IsRound(c); });
             return out;
@@ -404,6 +405,24 @@ namespace planex2d::cs {
                     step.push_back(Valued({sketch::Kind::Distance, {{l.e}}}));
             Append(step, false, out);
         }
+        void EndsAlong(bool hv, std::vector<Constraint> &out) const {
+            std::vector<Constraint> step;
+            const auto isDrawn = [&](size_t k) { return drawn.empty() || drawn[k]; };
+            for (const LineData &l : lines) {
+                if (l.IsHV(rounding) != hv || !isDrawn(l.e))
+                    continue;
+                for (const Feature &p : corners) {
+                    if (!isDrawn(p.ref.element))
+                        continue;
+                    const double t = Dot(p.at - l.a, l.Dir());
+                    if (t <= rounding || t >= l.Length() - rounding || std::abs(Cross(l.Dir(), p.at - l.a)) > rounding)
+                        continue;
+                    step.push_back(Valued({sketch::Kind::Distance, {p.ref, {l.e, sketch::Part::Start}}}));
+                    step.push_back(Valued({sketch::Kind::Distance, {p.ref, {l.e, sketch::Part::End}}}));
+                }
+            }
+            Append(step, false, out);
+        }
 
         const System &s;
         const double rounding;
@@ -414,6 +433,7 @@ namespace planex2d::cs {
         std::optional<Feature> datum;
         std::optional<size_t> originLine;
         bool origin = false;
+        const std::vector<char> drawn;
     };
 
 }

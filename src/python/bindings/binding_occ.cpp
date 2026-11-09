@@ -5,6 +5,7 @@
 #include <BRepAdaptor_Surface.hxx>
 #include <TopAbs.hxx>
 
+#include "integrations/netgenocc/chamfers.hpp"
 #include "integrations/netgenocc/prism.hpp"
 #include "integrations/netgenocc/shapecheck.hpp"
 #include "integrations/netgenocc/splinefit.hpp"
@@ -252,8 +253,52 @@ void BindOCC(py::module_ &m) {
         out["visible"] = ToCore("WireList", WireList{v.visible});
         out["hidden"] = ToCore("WireList", WireList{v.hidden});
         out["smooth"] = ToCore("WireList", WireList{v.smooth});
+        py::list folds;
+        for (size_t k = 0; k < v.folds.Size(); ++k) {
+            const FoldAxis &f = v.foldAxes[k];
+            const gp_Pnt p = f.axis.Location();
+            const gp_Dir d = f.axis.Direction();
+            const py::object axis = !f.round ? py::object(py::none())
+                                             : py::make_tuple(py::make_tuple(p.X(), p.Y(), p.Z()),
+                                                              f.anyAxis ? py::object(py::none()) : py::object(py::make_tuple(d.X(), d.Y(), d.Z())),
+                                                              f.convex, f.face);
+            folds.append(py::make_tuple(Tuple2(v.folds.Endpoint(2 * k)), Tuple2(v.folds.Endpoint(2 * k + 1)), axis));
+        }
+        out["folds"] = folds;
         return out;
-    }, py::arg("shape"), py::arg("plane"), "px.Drawing's view of a solid: its visible, hidden and smooth edges on the plane");
+    }, py::arg("shape"), py::arg("plane"),
+          "px.Drawing's view of a solid: its visible, hidden and smooth edges on the plane, and its visible "
+          "fold lines as (start, end, axis), axis the (point, direction, convex, face) its face (an index) is round about, "
+          "direction None for a sphere, or None");
+    m.def("_Chamfers", [](const py::object &shape, double floor) {
+        const TopoDS_Shape s = ShapeArg(shape, "Drawing");
+        std::vector<Chamfer> found;
+        {
+            py::gil_scoped_release release;
+            found = ChamferFinder(s, floor).Chains();
+        }
+        const auto points = [](const std::vector<std::vector<gp_Pnt>> &lines) {
+            py::list out;
+            for (const std::vector<gp_Pnt> &line : lines) {
+                py::list pts;
+                for (const gp_Pnt &p : line)
+                    pts.append(py::make_tuple(p.X(), p.Y(), p.Z()));
+                out.append(pts);
+            }
+            return out;
+        };
+        py::list out;
+        for (const Chamfer &c : found) {
+            py::dict d;
+            d["legs"] = py::make_tuple(c.legA, c.legB);
+            d["lines"] = points(c.lines);
+            d["sharp"] = points(c.sharp);
+            out.append(d);
+        }
+        return out;
+    }, py::arg("shape"), py::arg("floor"),
+          "px.Drawing's chamfers of a solid: per chain of chamfer faces its legs, its edges and the sharp edge it cuts "
+          "off, as points in 3d");
     m.def("_Shading", [](const py::object &shape, const py::object &axes, double deflection) {
         const TopoDS_Shape s = ShapeArg(shape, "Drawing");
         const AxisSystem a = AxesArg(axes, "Drawing");

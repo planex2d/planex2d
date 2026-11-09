@@ -1091,7 +1091,7 @@
   "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.LinearPattern": [
-  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = False, internal_constraints: bool = False, id: str | None = None) -> QuickSketch"
+  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = False, internal_constraints: bool = False, id: str | None = None, *, reverse: bool = False, reverse2: bool = False) -> QuickSketch"
  ],
  "px.QuickSketch.Location": [
   "Location(id: Id, /) -> tuple[float, float]"
@@ -1639,6 +1639,9 @@
   "Direction(d: tuple[float, float], /) -> Sketch",
   "Direction(dh: float, dv: float, /) -> Sketch"
  ],
+ "px.Sketch.Drag": [
+  "Drag(points: Id | Ids, to: Point | list[Point]) -> Sketch"
+ ],
  "px.Sketch.Expression": [
   "Expression(text: str, rhs: str | None = None, *, id: str | None = None) -> Sketch"
  ],
@@ -1683,7 +1686,7 @@
   "Line(*ends: Point | Id | float | Constraint, until: Id | Shape | SketchUntil | None = None, parallel: Id | Shape | None = None, perpendicular: Id | Shape | None = None, angle: float | tuple[float, Id] | None = None, coincident: Id | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, distance: float | tuple[float, Point] | None = None, through: Point | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.LinearPattern": [
-  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = True, internal_constraints: bool = True, id: str | None = None) -> Sketch"
+  "LinearPattern(ids: Ids, dir: Id, count: int, spacing: float, dir2: Id | None = None, count2: int | None = None, spacing2: float | None = None, auto_constraint: bool = True, internal_constraints: bool = True, id: str | None = None, *, reverse: bool = False, reverse2: bool = False) -> Sketch"
  ],
  "px.Sketch.Location": [
   "Location(id: Id, /) -> tuple[float, float]"

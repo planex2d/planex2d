@@ -108,9 +108,9 @@ def test_a_sheet_shows_each_size_once_front_first():
     assert view_values(views[2]) == ["20", "30"]
 
 
-def test_a_diameter_stays_in_the_view_where_its_circle_is_round():
+def test_a_turned_part_s_diameter_goes_to_the_view_along_its_axis_not_where_its_circle_is_round():
     front, top = sheet_values(*(px.Drawing(disc(), plane, unit=px.mm).AutoDimension() for plane in (px.Front, px.Top)))
-    assert "⌀80" in top and "80" not in front and "10" in front
+    assert "⌀80" in front and "⌀80" not in top and "10" in front
 
 
 def test_a_bolt_circle_is_one_hole_and_a_pattern_on_its_pitch_circle():
@@ -170,29 +170,31 @@ def test_auto_dimension_needs_a_view_of_a_solid_along_a_plane():
 
 
 def test_a_45_degree_chamfer_is_one_callout_of_its_leg_and_another_keeps_its_two_dimensions():
-    top = px.Drawing(chamfered(), px.Top, unit=px.mm).AutoDimension()
+    top = px.Drawing(chamfered(2.0, 2.0), px.Top, unit=px.mm).AutoDimension()
     assert top._auto.dof == 0
-    # the leg in place of the top edge's 57, the angle on the callout
-    assert view_values(top) == ["20", "3 × 45°", "60"]
+    # the sizes to the sharp corner, the chamfer on one callout
+    assert view_values(top) == ["2 × 45°", "20", "60"]
     callout = next(s for s in top._strokes(1.0, _Lettering()) if any("×" in t for _, _, t in s.texts))
     (tip, bend, _), (_, end, _) = callout.lines
     # from the chamfer's middle out of the part, at 45 degrees, then along to the value
-    assert np.allclose(tip, (58.5, 18.5)) and np.allclose(bend - tip, (bend - tip)[0] * np.ones(2)) and (bend - tip)[0] > 0
+    assert np.allclose(tip, (59, 19)) and np.allclose(bend - tip, (bend - tip)[0] * np.ones(2)) and (bend - tip)[0] > 0
+    # 3 by 3 on a plate 20 high is no chamfer (over 2 mm and a tenth of the side it cuts): its angle and length
+    assert view_values(px.Drawing(chamfered(), px.Top, unit=px.mm).AutoDimension()) == ["20", "45°", "57", "60"]
     assert abs(end[1] - bend[1]) < 1e-9 and callout.arrows and callout.entity is None
     # 5 along the top, 3 down the side: the lengths of the edges it cuts, no callout
     assert view_values(px.Drawing(chamfered(5.0, 3.0), px.Top, unit=px.mm).AutoDimension()) == ["17", "20", "55", "60"]
 
 
 def test_place_and_hide_take_a_chamfer_s_callout_and_a_sheet_shows_it_once():
-    top = px.Drawing(chamfered(), px.Top, unit=px.mm).AutoDimension()
+    top = px.Drawing(chamfered(2.0, 2.0), px.Top, unit=px.mm).AutoDimension()
     chamfer = next(d.id for d in top._shown() if d.kind == "chamfer")
     callout = next(s for s in top.Place(chamfer, "n")._strokes(1.0, _Lettering()) if s.id == chamfer)
     (tip, bend, _), _ = callout.lines
     assert abs(bend[0] - tip[0]) < 1e-9 and bend[1] > tip[1]
-    assert "3 × 45°" not in view_values(top.Hide(chamfer))
-    bottom = px.Drawing(chamfered(), px.Plane(origin=(0, 0, 0), normal=(0, 0, -1), axis=(1, 0, 0)), unit=px.mm)
-    shown = sheet_values(px.Drawing(chamfered(), px.Top, unit=px.mm).AutoDimension(), bottom.AutoDimension())
-    assert sum("3 × 45°" in v for v in shown) == 1
+    assert "2 × 45°" not in view_values(top.Hide(chamfer))
+    bottom = px.Drawing(chamfered(2.0, 2.0), px.Plane(origin=(0, 0, 0), normal=(0, 0, -1), axis=(1, 0, 0)), unit=px.mm)
+    shown = sheet_values(px.Drawing(chamfered(2.0, 2.0), px.Top, unit=px.mm).AutoDimension(), bottom.AutoDimension())
+    assert sum("2 × 45°" in v for v in shown) == 1
 
 
 def test_an_isometric_goes_into_the_free_corner_between_the_side_and_the_top_view():
@@ -265,7 +267,7 @@ def test_a_distance_a_chamfer_s_leg_cannot_replace_comes_back_under_a_new_id():
     c = next(c for c in sk._Constraints() if c["id"] == "Distance.1")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", px.PlanexWarning)
-        assert _autodim._swap(sk, [c], "a.start", "a", 1.0, "chamfer1") is None
+        assert _autodim._swap(sk, [c], ("a.start", "a"), 1.0, "chamfer1") is None
     assert distances() == before and sk.dof == 0
 
 
@@ -277,3 +279,52 @@ def test_a_line_ending_a_hair_inside_a_circle_it_touches_leaves_no_stub():
     touch, far = (22 * n[0] - 2e-12 * n[0], 22 * n[1] - 2e-12 * n[1]), (100 + 16 * n[0], 16 * n[1])
     loose = [e for w in (px.Circle((0, 0), 22), px.Line(touch, far)) for e in w.edges]
     assert sorted(round(e.mass, 1) for w in _wires(loose, px.XY, 1e-4) for e in w.edges) == [69.1, 69.1, 99.8]
+
+
+def shaft():
+    """a shaft along x: 20 long of diameter 20 with a 1 x 45 degree chamfer at its free end, then 10 of diameter 30"""
+    part = occ.Cylinder(occ.Pnt(0, 0, 0), occ.X, r=10, h=21) + occ.Cylinder(occ.Pnt(20, 0, 0), occ.X, r=15, h=10)
+    return part.MakeChamfer([part.edges.Min(occ.X)], 1)
+
+
+def keyed():
+    """a shaft of diameter 25 and 60 long along x with a keyway 8 wide and 32 long, round ended, 4 deep on top"""
+    key = occ.Box(occ.Pnt(18, -4, 8.5), occ.Pnt(42, 4, 20))
+    for x in (18, 42):
+        key = key + occ.Cylinder(occ.Pnt(x, 0, 8.5), occ.Z, r=4, h=12)
+    return occ.Cylinder(occ.Pnt(0, 0, 0), occ.X, r=12.5, h=60) - key
+
+
+def counterbored():
+    """a disc of diameter 100 and 10 thick with four holes of diameter 6.6, counterbored 11 and 5 deep, 40 degrees
+    apart on a circle of diameter 70"""
+    part = occ.Cylinder(occ.Pnt(0, 0, 0), occ.Z, r=50, h=10)
+    for k in range(4):
+        x, y = 35 * math.cos(math.radians(40 * k)), 35 * math.sin(math.radians(40 * k))
+        part = part - occ.Cylinder(occ.Pnt(x, y, -1), occ.Z, r=3.3, h=12) - occ.Cylinder(occ.Pnt(x, y, 5), occ.Z, r=5.5, h=6)
+    return part
+
+
+def test_a_turned_part_s_diameters_are_given_along_its_axis_and_its_chamfer_once():
+    front = px.Drawing(shaft(), px.Front, unit=px.mm).AutoDimension()
+    assert front._auto.dof == 0
+    shown = view_values(front)
+    assert {"⌀20", "⌀30", "1 × 45°"} <= set(shown)
+    # no radial step 5 between the diameters, no end face taken for a chamfer of the corner its two chamfers make
+    assert "5" not in shown and not any(v.startswith("12,") for v in shown)
+    front, left = sheet_values(*(px.Drawing(shaft(), plane, unit=px.mm).AutoDimension() for plane in (px.Front, px.Left)))
+    assert {"⌀20", "⌀30"} <= set(front) and not {"⌀20", "⌀30"} & set(left)
+
+
+def test_lines_along_a_turned_axis_that_are_no_fold_lines_get_no_dimensions():
+    front = px.Drawing(keyed(), px.Front, unit=px.mm).AutoDimension()
+    assert front._auto.dof == 0
+    assert view_values(front) == ["60", "⌀25"]
+
+
+def test_a_counterbored_hole_is_one_instance_of_its_pattern_and_its_view_comes_first():
+    from planex import _autodim
+    top = px.Drawing(counterbored(), px.Top, unit=px.mm).AutoDimension()
+    assert top._auto.dof == 0
+    assert [v for v in view_values(top) if v.endswith("°")] == ["3× 40°"]
+    assert _autodim._circular(top) and not _autodim._circular(px.Drawing(counterbored(), px.Front, unit=px.mm).AutoDimension())

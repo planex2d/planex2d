@@ -27,6 +27,7 @@ namespace planex2d::sketch {
         std::string ref;
         size_t count = 1;
         double step = 0.0;
+        bool reverse = false;
     };
 
     struct IdTarget {
