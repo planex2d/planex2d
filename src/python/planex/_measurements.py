@@ -77,7 +77,9 @@ def _measure_doc(doc):
     lines.insert(k, MEASURE_FORM)
     at = lines.index("Examples:")
     x = lines[at + 1].strip().partition(".Measure(")[0]
-    lines[at + 2:] = ["    %s.Measure(px.measurements.MinThickness(), id=\"wall\")" % x]
+    field = {"edge": "lambda e: e.mass, id=\"length\"", "wire": "px.measurements.EnclosingCircle(), id=\"ring\"",
+             "selection": "px.measurements.EnclosingCircle(), id=\"ring\""}
+    lines[at + 2:] = ["    %s.Measure(%s)" % (x, field.get(x, "px.measurements.MinThickness(), id=\"wall\""))]
     if "Raises:" in lines:
         lines.insert(_section_end(lines, "Raises:"), MEASURE_RAISES)
     else:

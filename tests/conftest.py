@@ -8,13 +8,13 @@ import time
 
 import pytest
 
-FUZZ_SECONDS = 30.0
+FUZZ_SECONDS = 120.0
 NETGEN_IMPORT = re.compile(r"^(?:import|from) (?:netgen|ngsolve)\b", re.M)
 
 
 def pytest_addoption(parser):
     parser.addoption("--fuzz-seconds", type=float, default=None,
-                     help="time budget of all randomized fuzz tests together, in seconds (default 30, or "
+                     help="time budget of all randomized fuzz tests together, in seconds (default 120, or "
                           "$PLANEX_FUZZ_SECONDS)")
 
 

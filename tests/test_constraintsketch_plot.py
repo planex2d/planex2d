@@ -197,3 +197,22 @@ def test_constraints_on_a_circle_trim_split_are_drawn():
     sk.Trim(("ring", (0, 3))).Trim(("ring", (0, -3)))
     svg = sk.ToSVG(show_constraints=True)
     assert "ring" not in [g["id"] for g in sk._Drawing()] and "◎" in svg
+
+
+def test_the_signs_between_curves_a_blend_a_spline_and_two_lines():
+    sk = px.Sketch()
+    sk.Move((0, 0)).Line((10, 0), id="a").Line((10, 6), id="b")
+    sk.Fillet("a.end", 2, px.Curvature)
+    sk.Move((0, 3)).Line((4, 3), id="c")
+    sk.Constrain("a", "c", px.Distance, 3, id="gap")
+    sk.Move((14, 0)).Spline([(16, 2), (18, 0)], id="s").Line((20, -2), px.Tangent, id="tail")
+    sk.Move((24, 0)).Spline([(26, 2), (28, 0)], id="s2").Line((30, -2), id="tail2")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sk.Constrain("s2", "tail2", px.Curvature)
+    svg = px.ToSVG(sk, show_constraints=True)
+    assert ">G2<" in svg and "gap = 3" in svg
+    assert any(x.startswith("Tangent") and '"tail"' in x for x in titles(svg))
+    matplotlib = pytest.importorskip("matplotlib")
+    matplotlib.use("Agg")
+    assert sk.Plot(show_constraints=True) is not None

@@ -344,3 +344,74 @@ def test_union_of_spline_faces_touching_at_one_point_keeps_both_faces():
     for u in (a + b, b + a):
         assert sorted(f.mass for f in u.faces) == pytest.approx([a.mass] * 2, rel=1e-12)
         assert len(u.ToOCCShape().faces) == 2
+
+
+def test_a_corner_a_hair_inside_another_triangles_side_touches_it():
+    a = px.FromPolyline([(0, 0), (1, -3.0716796285182624e-18), (0.50000000000000011, 0.86602540378443871)], closed=True).Face()
+    b = px.FromPolyline([(0.68999999999991346, 0.53693575034630203), (1.6899999999999133, 0.53693575034630203),
+                         (2.655925826288982, 0.79575479544882288)], closed=True).Face()
+    assert len((a + b).faces) == 2 and (a + b).mass == pytest.approx(a.mass + b.mass, rel=1e-12)
+    assert (a * b).mass == pytest.approx(0, abs=1e-24)
+    assert (a - b).mass == pytest.approx(a.mass, rel=1e-12) and (b - a).mass == pytest.approx(b.mass, rel=1e-12)
+
+
+def test_a_disc_inside_a_large_face_whose_corner_lies_a_hair_inside_it():
+    a = px.Circle((0, 0), 0.8).Face()
+    b = px.FromPolyline([(-1976.3694531330818, 207.70377912694198), (-1807.238846774224, -587.9931639832905),
+                         (-1102.7503156669304, -994.7298070590911), (1.0643134930197675, -0.850650808352107),
+                         (0.9691306063488128, -0.7956969431102324), (0.7999999999899501, 0.0),
+                         (1.1736191374560576, 0.336408182401596), (-1102.1557998065475, 993.7786791923684),
+                         (-1103.3448315273115, 993.7786791923685)], closed=True).Face()
+    assert (a * b).mass == pytest.approx(a.mass, rel=1e-9)
+    assert ((a * b) - a).mass == pytest.approx(0, abs=1e-9)
+    assert (a - b).mass == pytest.approx(0, abs=1e-9)
+    assert (b - a).mass == pytest.approx(b.mass - a.mass, rel=1e-12)
+    assert (a + b).mass == pytest.approx(b.mass, rel=1e-12)
+
+
+
+def test_a_lune_along_a_hole_s_edge_united_with_the_face_around_that_hole():
+    # the lune lies 1e-11 wide along the hole's left half; at its tips it is thinner than tol along 6e-5 of the circle
+    top, bottom = (0.2200000416283601, 0.4410511776651386), (0.2200000416283601, 0.3210511776651675)
+    c0, cb, c2 = (0.2200000000000001, 0.38105117766515306), (0.2199999999900001, 0.38105117766515306), (0.2200000010000001, 0.38105117766515306)
+    p1, p2 = (0.2500067089537772, 0.43300882847595024), (0.24999329254599026, 0.4330165744425976)
+    lo, hi = (0.22000000050000013, 0.32105117766515306), (0.21999999966733283, 0.44105117766515306)
+    lune = px.Wire([px.Arc(top, bottom, c0), px.Arc(bottom, top, cb, True)]).Face()
+    rest = px.Wire([px.Line((1, 0), p1), px.Arc(p1, lo, c2, True), px.Arc(lo, hi, c0, True), px.Arc(hi, p2, c2, True),
+                    px.Line(p2, (-0.4999999989999999, 0.8660254032070884)),
+                    px.Line((-0.4999999989999999, 0.8660254032070884), (-0.4999999990000004, -0.8660254032070881)),
+                    px.Line((-0.4999999990000004, -0.8660254032070881), (1, 0))]).Face()
+    for union in (lune + rest, rest + lune):
+        assert union.mass == pytest.approx(rest.mass, rel=1e-12) and len(union.faces) == 1
+    assert (rest - lune).mass == pytest.approx(rest.mass - lune.mass, abs=1e-15)
+    assert (lune * rest).mass == pytest.approx(lune.mass, abs=1e-15)
+
+
+def test_rounded_squares_whose_sides_lie_within_tol_unite_without_a_slit():
+    def rounded(x, y):
+        square = px.Move((x - 0.4, y - 0.4)).Rectangle(0.8, 0.8).Face().Offset(0.1, inplace=False)
+        return square.Rotated((0, 0), math.degrees(1.0))
+
+    pair = rounded(0, 0) + rounded(1 + 1e-14, 0)
+    assert len(pair.faces) == 1 and [len(w.edges) for w in pair.wires] == [14]
+    parts = [rounded((k % 3) * (1 + 1e-14), (k // 3) * (1 + 1e-14)) for k in range(5)]
+    for union in (px.Unify(parts), parts[0] + parts[1] + parts[2] + parts[3] + parts[4]):
+        assert len(union.faces) == 1 and len(union.faces[0].wires) == 2
+        assert union.mass == pytest.approx(5 * parts[0].mass, rel=1e-12)
+
+
+def test_a_needle_thinner_than_tol_far_out_collapses_and_the_rest_stays():
+    # moved to 1e3, where tol is about 1e-11, the needle (1e-11 wide at its base) is thinner than that along its length
+    a = px.Wire([px.Arc((1.125, -0.21650635094610968), (1.125, 0.21650635094610965), (1.0, 0.0)),
+                 px.Line((1.125, 0.21650635094610965), (-0.375, 1.0825317547305484)),
+                 px.Arc((-0.375, 1.0825317547305484), (-0.75, 0.8660254037844388), (-0.5, 0.8660254037844387)),
+                 px.Line((-0.75, 0.8660254037844388), (-0.75, -0.8660254037844383)),
+                 px.Arc((-0.75, -0.8660254037844383), (-0.375, -1.082531754730548), (-0.5, -0.8660254037844384)),
+                 px.Line((-0.375, -1.082531754730548), (1.125, -0.21650635094610968))]).Face().Translated((1000, 0))
+    b = px.FromPolyline([(1.0, -5e-12), (1.6, 0.0), (1.0, 5e-12), (-0.5, 0.8660254037844387), (-0.5, -0.8660254037844384)],
+                        closed=True).Face().Translated((1000, 0))
+    union, common, rest = a + b, a * b, a - b
+    assert union.mass == pytest.approx(a.mass, rel=1e-12) and len(union.faces) == 1
+    assert common.mass + rest.mass == pytest.approx(a.mass, rel=1e-12)
+    for r in (union, common, rest, b - a):
+        assert len(px.Glue([r]).edges) == len(r.edges)

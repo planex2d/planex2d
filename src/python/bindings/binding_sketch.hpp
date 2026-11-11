@@ -1805,8 +1805,9 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    TypeError: another form of arguments, or an unknown keyword.\n"
                  "    ValueError: dir has no length.\n\n"
                  "Examples:\n"
-                 "    sk.Move((10, 0)).Line(5)\n"
-                 "    sk.Move(\"Line.1.end\", px.Coincident, dir=(0, 1))"))
+                 "    sk.Move((10, 0)).Line(5)\n" +
+                 std::string(HasConstraints<S> ? "    sk.Move(\"Line.1.end\", px.Coincident, dir=(0, 1))"
+                                               : "    sk.Move(\"Line.1.end\", dir=(0, 1))")))
         .def("Line", &DrawLine<S>, ref,
              Doc("Line(l: float, /, *flags: Constraint, **options) -> " + sk + "\n"
                  "Line(dh: float, dv: float, /, *flags: Constraint, **options) -> " + sk + "\n"
@@ -2048,13 +2049,13 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    sk.Keyhole((0, 0), (0, 10), 2, 3, id=\"hook\")"))
         .def("Polygon", [](S &s, const py::args &args, const py::kwargs &kw) -> S & { return DrawPolygon(s, "Polygon", args, kw); }, ref,
              Doc("Polygon(r: float, n: int, /, *flags: Constraint, **options) -> " + sk + "\n"
-                 "Polygon(h: float, v: float, r: float, n: int, /, *flags: Constraint, **options) -> " + sk + "\n"
+                 "Polygon(center: Point, r: float, n: int, /, *flags: Constraint, **options) -> " + sk + "\n"
                  "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, "
                  "coincident: Id | None = None, through: Point | None = None, "
                  "tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> " + sk + "\n\n"
                  "Draw a regular polygon of n equal sides, its corners on a circle.\n\n"
                  "Every form of Circle, with the number of sides n as the last number. The circle is a construction "
-                 "element, Polygon.k.circle, of radius r around the pen's position, around (h, v) or placed by the "
+                 "element, Polygon.k.circle, of radius r around the pen's position, around a center (h, v) or placed by the "
                  "helpers; the first corner is on it along the pen's drawing direction from its center, the others "
                  "follow counterclockwise. Polygon.k.Line.1 to .Line.n run from the first corner, and Polygon.k is their "
                  "wire (sk('Polygon.1'), Offset, Remove, the patterns). The pen and its direction stay. A Sketch keeps "
@@ -2064,10 +2065,8 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "Args:\n"
                  "    n: the number of sides, an int of at least 3.\n"
                  "    r: the radius of the circle the corners are on.\n"
-                 "    h: the center's h.\n"
-                 "    v: the center's v.\n"
                  "    flags: as for Circle, which draws the circle.\n"
-                 "    center: as for Circle.\n"
+                 "    center: as for Circle: the center, a point (h, v), or center= also a point id.\n"
                  "    concentric: as for Circle.\n"
                  "    coincident: as for Circle.\n"
                  "    through: as for Circle.\n"
@@ -2080,10 +2079,10 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    ValueError: n is below 3; the circle cannot be placed; id is taken.\n\n"
                  "Examples:\n"
                  "    sk.Polygon(5, 6)\n"
-                 "    sk.Polygon(0, 0, 5, 8, id=\"gear\")"))
+                 "    sk.Polygon((0, 0), 5, 8, id=\"gear\")"))
         .def("Hexagon", [](S &s, const py::args &args, const py::kwargs &kw) -> S & { return DrawPolygon(s, "Hexagon", args, kw); }, ref,
              Doc("Hexagon(af: float, /, *flags: Constraint, **options) -> " + sk + "\n"
-                 "Hexagon(h: float, v: float, af: float, /, *flags: Constraint, **options) -> " + sk + "\n"
+                 "Hexagon(center: Point, af: float, /, *flags: Constraint, **options) -> " + sk + "\n"
                  "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, "
                  "coincident: Id | None = None, through: Point | None = None, "
                  "tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> " + sk + "\n\n"
@@ -2096,10 +2095,8 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "sk.Update()). Remove(\"Hexagon.1\") removes the whole hexagon.\n\n"
                  "Args:\n"
                  "    af: the width across flats; positive.\n"
-                 "    h: the center's h.\n"
-                 "    v: the center's v.\n"
                  "    flags: as for Circle, which draws the circle.\n"
-                 "    center: as for Circle.\n"
+                 "    center: as for Circle: the center, a point (h, v), or center= also a point id.\n"
                  "    concentric: as for Circle.\n"
                  "    coincident: as for Circle.\n"
                  "    through: as for Circle.\n"
@@ -2112,7 +2109,7 @@ inline void BindDrawing(py::class_<S> &sketch) {
                  "    ValueError: af is not positive; the circle cannot be placed; id is taken.\n\n"
                  "Examples:\n"
                  "    sk.Hexagon(13)\n"
-                 "    sk.Hexagon(10, 5, 13, id=\"nut\")"))
+                 "    sk.Hexagon((10, 5), 13, id=\"nut\")"))
         .def("Circle", [](S &s, const py::args &args, const py::kwargs &kw) -> S & { return DrawCircle(s, args, kw); }, ref,
              Doc("Circle(r: float, /, *flags: Constraint, **options) -> " + sk + "\n"
                  "Circle(center: Point, r: float, /, *flags: Constraint, **options) -> " + sk + "\n"
@@ -2965,8 +2962,8 @@ inline void BindDrawing(py::class_<S> &sketch) {
              "Construction elements are left out, crossings cut, stretches drawn twice by closed wires cancel, an open "
              "wire's stretch on another edge is left out, holes by nesting.\n\n"
              "Raises:\n"
-             "    ValueError: the region has several parts (Shape() keeps them all); in mode='strict' while the sketch "
-             "can still move.\n\n"
+             "    ValueError: the region has several parts (Shape() keeps them all); the drawn elements bound no region "
+             "because a wire is open; in mode='strict' while the sketch can still move.\n\n"
              "Examples:\n"
              "    face = sk.Face()")
         .def("Shape", [](S &s) {

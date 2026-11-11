@@ -57,8 +57,8 @@ def test_a_face_is_one_region():
             sketch.Face()
         assert len(sketch.Shape().faces) == 2
         assert isinstance(px.QuickSketch().Move((0, 0)).Rectangle(1, 1).Face(), px.Face)
-    with pytest.warns(px.PlanexWarning, match="open wire"):
-        assert px.Face([px.Move((0, 0)).Line((1, 0)).Wire()]).mass == 0
+    with pytest.raises(ValueError, match="bound no region, a wire is open"):
+        px.Face([px.Move((0, 0)).Line((1, 0)).Wire()])
     with pytest.raises(ValueError, match="different planes"):
         px.Face([outer, px.Line((0, 0), (1, 1), plane=occ.Axes((0, 0, 1), occ.Z, occ.X))])
 

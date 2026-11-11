@@ -56,31 +56,44 @@ namespace planex2d {
         using BasicSketch::Mirror;
 
         // the elements mirrored in place (MirrorElements); the constraints among them keep holding (an angle between two
-        // of them turns the other way, the sides and pairings taken anew), the sketch solves again; where the other
-        // constraints do not allow the mirrored place it raises and nothing changes
+        // of them turns the other way, an offset's side too, the sides and pairings taken anew), the sketch solves again;
+        // where the other constraints do not allow the mirrored place it raises and nothing changes
         ConstraintSketch &Mirror(const std::vector<std::string> &ids, const std::string &axis) {
             Flush();
-            const std::vector<size_t> elements = Originals(ids, "Mirror");
-            const std::set<size_t> mine(elements.begin(), elements.end());
+            const std::vector<size_t> elements = Originals(WithSlotSpines(ids), "Mirror");
             const ConstraintSketch saved = *this;
             const std::vector<std::pair<size_t, Vertex>> targets = MirrorElements(elements, axis);
+            std::set<size_t> mine(elements.begin(), elements.end()), moved;
+            for (const auto &[q, p] : targets)
+                moved.insert(s.coordsOf[q]);
+            for (size_t e = 3; e < s.elements.size(); ++e)
+                if (s.elements[e].kind == sketch::ElementKind::Point && moved.contains(s.coordsOf[s.elements[e].Point()]))
+                    mine.insert(e);
             std::vector<size_t> holding;
             for (size_t c = 0; c < s.constraints.size(); ++c) {
                 cs::Constraint &k = s.constraints[c];
                 if (k.refs.empty() || k.kind == sketch::Kind::Expression)
                     continue;
-                const bool internal = std::all_of(k.refs.begin(), k.refs.end(), [&](const sketch::Ref &r) { return mine.contains(r.element); });
+                const auto in = [&](const sketch::Ref &r) { return mine.contains(r.element); };
+                // an offset's element carries only its distance: the ties of an offset mirrored whole are among the elements
+                const auto along = [&](const sketch::Ref &r) { return in(r) || s.elements[r.element].kind == sketch::ElementKind::Offset; };
+                const bool internal = std::all_of(k.refs.begin(), k.refs.end(), along) && std::any_of(k.refs.begin(), k.refs.end(), in);
                 // what may hold them where they are: a tie to the rest, or one of an element alone (Fix, Horizontal)
-                if (k.refs.size() == 1 ? internal : std::any_of(k.refs.begin(), k.refs.end(), [&](const sketch::Ref &r) { return mine.contains(r.element); }) && !internal)
+                if (k.refs.size() == 1 ? internal : std::any_of(k.refs.begin(), k.refs.end(), in) && !internal)
                     holding.push_back(c);
                 if (!internal)
                     continue;
                 if (k.kind == sketch::Kind::Angle && k.refs.size() == 2 && k.valueAt == sketch::none)
                     k.value = -k.value;
+                if (k.kind == sketch::Kind::Offset)
+                    k.sign = -k.sign;
                 s.Refreeze(c);
             }
             analysis.reset();
-            bool held = s.Solve().solved && !OutOfDomain();
+            const bool solved = s.Solve().solved;
+            if (solved)
+                RetakeTurnedOffsets(mine);
+            bool held = solved && !OutOfDomain();
             for (const auto &[q, p] : targets)
                 held = held && Coords(q).IsClose(p, Tol(std::max(NormInf(p), 1.0)));
             if (!held) {
@@ -1394,6 +1407,25 @@ namespace planex2d {
                 }
             }
             return std::nullopt;
+        }
+        // the offsets a mirror turned over whole, source and all: the shape they have now, a one-sided offset of an open
+        // chain on its other side
+        void RetakeTurnedOffsets(const std::set<size_t> &mine) {
+            const auto in = [&](const std::string &id) { return mine.contains(byId.at(id).index); };
+            for (auto &[name, info] : offsetInfos) {
+                if (!std::all_of(info.sources.begin(), info.sources.end(), in) || !std::all_of(info.elements.begin(), info.elements.end(), in))
+                    continue;
+                if (!info.closed && info.towards.size() == 1)
+                    info.towards.front() = -info.towards.front();
+                sketch::OffsetChain source{{}, info.forward, info.closed};
+                for (const std::string &id : info.sources)
+                    source.elements.push_back(byId.at(id).index);
+                const double d = s.values[s.elements[byId.at(name).index].Distance()];
+                const sketch::OffsetSides sides = SidesOf(source, SourceEdges(source), d, info.towards, info.forms, "Mirror");
+                info.shape = sketch::ShapeOf(sides);
+                info.pieces = sketch::SidePieces(sides);
+                info.checked = OffsetState(name, info);
+            }
         }
         // what changes between the pieces an offset was made with and those it would have now
         std::string ShapeChange(const cs::OffsetInfo &info, const std::set<std::tuple<int, size_t, int>> &now, const sketch::OffsetChain &source, double d) const {

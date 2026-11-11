@@ -87,7 +87,8 @@ namespace planex2d::cs {
             }
             for (size_t k = 3; k < s.elements.size(); ++k) {
                 const sketch::Element &e = s.elements[k];
-                if (e.kind == sketch::ElementKind::Line || e.kind == sketch::ElementKind::Arc || e.kind == sketch::ElementKind::Spline) {
+                if (e.kind == sketch::ElementKind::Line || e.kind == sketch::ElementKind::Arc ||
+                    (e.kind == sketch::ElementKind::Spline && !e.IsPeriodicBSpline(s))) {
                     const std::array<size_t, 2> ends = e.Ends(s);
                     add(corners, {k, sketch::Part::Start}, ends[0], 0.0);
                     add(corners, {k, sketch::Part::End}, ends[1], 0.0);
@@ -116,7 +117,8 @@ namespace planex2d::cs {
             std::vector<size_t> first(s.values.size(), s.elements.size());
             for (size_t k = 3; k < s.elements.size(); ++k) {
                 const sketch::Element &e = s.elements[k];
-                if (e.kind != sketch::ElementKind::Line && e.kind != sketch::ElementKind::Arc && e.kind != sketch::ElementKind::Spline)
+                if ((e.kind != sketch::ElementKind::Line && e.kind != sketch::ElementKind::Arc && e.kind != sketch::ElementKind::Spline) ||
+                    e.IsPeriodicBSpline(s))
                     continue;
                 for (const size_t point : e.Ends(s)) {
                     const size_t u = s.coordsOf[point];

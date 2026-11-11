@@ -396,6 +396,16 @@ def test_dxf_has_real_dimension_entities(tmp_path):
     assert max(abs(e.dxf.end.x - e.dxf.start.x) for e in plate_msp.query("LINE")) == pytest.approx(60)
 
 
+def test_notes_in_the_lower_corners_and_a_table_of_data():
+    sh = px.Sheet(px.Drawing(plate(), unit=px.mm))
+    plain = sh._footer()[1]
+    sh.Notes("All edges deburred", "Exercise 01").Table([("Module", 2), ("Teeth", 24)], at=(80, 40))
+    assert sh._shown_notes() == ("All edges deburred", "Exercise 01")
+    assert sh._footer()[1] > plain
+    shown = [t.get_text() for t in sh._figure().axes[0].texts]
+    assert {"All edges deburred", "Exercise 01", "Module", "2", "Teeth", "24"} <= set(shown)
+
+
 def test_a_title_block_is_filled_in(tmp_path):
     ezdxf = pytest.importorskip("ezdxf")
     sh = px.Sheet(px.Drawing(plate(), unit=px.mm), frame=True).Title(title="Plate", Number="P-1", revision=2)
@@ -888,3 +898,81 @@ def test_a_zone_the_sheet_has_not_names_its_zones():
             sh.Add(box(px.XZ, 10, 10), zone=zone)
     with pytest.raises(ValueError, match="at or zone, not both"):
         sh.Add(box(px.XZ, 10, 10), at=(0, 0), zone="A1")
+
+
+def test_an_arc_slots_width_is_drawn_across_the_middle_of_its_sides():
+    sk = px.Sketch()
+    sk.Move((10, 0)).ArcSlot(10, 90, 4, id="slot")
+    (d,) = [d for d in px.Drawing(sk, unit=px.mm)._dims if d.id == "slot.w"]
+    assert d.kind == "linear" and d.value == pytest.approx(4)
+    assert np.linalg.norm(d.q - d.p) == pytest.approx(4)
+
+
+def test_a_curvature_blends_radius_is_drawn_on_the_blend():
+    sk = plate()
+    sk.Fillet("bottom.end", 8, px.Curvature)
+    assert texts(strokes(px.Drawing(sk, unit=px.mm))["Fillet.1.r"]) == ["R8"]
+
+
+def test_a_diameter_from_outside_runs_between_extension_lines():
+    s = strokes(px.Drawing(plate(), unit=px.mm).Place("d", across=12))["d"]
+    assert texts(s) == ["⌀10"]
+    a, b = dimension_line(s)
+    assert np.linalg.norm(b - a) >= 10 - 1e-9
+    assert s.entity["kind"] == "linear"
+
+
+def test_an_angles_arc_goes_at_the_radius_placed():
+    c = {d.id: d for d in dims.Dimensions(part())}["a"].c
+    s = strokes(px.Drawing(part(), unit=px.mm).Place("a", 30))["a"]
+    assert s.arcs and all(np.linalg.norm(np.asarray(p) - c) == pytest.approx(30) for p in s.arcs[0])
+
+
+def test_what_a_drawing_cannot_take_is_refused():
+    with pytest.raises(ValueError, match="a section cuts an OCC solid"):
+        px.Drawing(plate(), section=True)
+    dw = px.Drawing(plate(), unit=px.mm)
+    with pytest.raises(TypeError, match="Drawing.Add: a px.Sketch"):
+        dw.Add(px.Move((0, 0)).Rectangle(1, 1).Face())
+    other = px.Sketch()
+    other.Circle((0, 0), 1, id="c")
+    with pytest.raises(ValueError, match="is no element of the drawing's sketches"):
+        dw.Center(other("c"))
+    with pytest.raises(ValueError, match="font 'nofont.ttf' is no file"):
+        px.Sheet(dw, font="nofont.ttf")
+
+
+def test_a_placed_dimension_the_sketch_no_longer_has_is_named_at_the_update():
+    sk = plate()
+    dw = px.Drawing(sk, unit=px.mm).Place("hx", 15)
+    sk.Remove("hx")
+    with pytest.raises(ValueError, match="'hx' is no dimension of the drawing's sketches"):
+        dw.Update()
+
+
+def test_a_title_block_draws_its_circles_and_arcs(tmp_path):
+    ezdxf = pytest.importorskip("ezdxf")
+    paths = []
+    for extra in (False, True):
+        doc = ezdxf.new()
+        msp = doc.modelspace()
+        msp.add_lwpolyline([(0, 0), (-80, 0), (-80, 30), (0, 30)], close=True)
+        msp.add_attdef("TITLE", (-60, 20), dxfattribs={"height": 3.5})
+        if extra:
+            msp.add_circle((-70, 10), 5)
+            msp.add_arc((-50, 10), 5, 0, 180)
+        doc.saveas(tmp_path / f"block{extra}.dxf")
+        sh = px.Sheet(px.Drawing(plate(), unit=px.mm)).Title(str(tmp_path / f"block{extra}.dxf"), title="Bracket")
+        svg = sh._repr_svg_()
+        paths.append(svg.count("<path") + svg.count("<polyline"))
+    assert paths[1] == paths[0] + 2
+
+
+def test_a_sheet_of_a_solid_writes_visible_hidden_and_center_lines_to_dxf(tmp_path):
+    occ = pytest.importorskip("netgen.occ")
+    ezdxf = pytest.importorskip("ezdxf")
+    part = occ.Box((0, 0, 0), (40, 20, 10)) - occ.Cylinder((20, 10, 0), occ.Z, r=4, h=10)
+    sh = px.Sheet(px.Drawing(part, px.Front, unit=px.mm, hidden=True), px.Drawing(part, px.Top, unit=px.mm))
+    sh.WriteDXF(tmp_path / "s.dxf")
+    layers = {e.dxf.layer for e in ezdxf.readfile(tmp_path / "s.dxf").modelspace()}
+    assert {"Visible", "Hidden", "Center"} <= layers

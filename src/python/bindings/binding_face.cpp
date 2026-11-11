@@ -19,11 +19,13 @@ void BindFace(py::class_<Face> &face) {
              "    wires: the wires that bound the region.\n"
              "    view: a face of a shape (shape.faces[0]).\n\n"
              "Raises:\n"
-             "    ValueError: the region has several parts; px.Shape(wires) keeps them all.\n\n"
+             "    ValueError: the region has several parts (px.Shape(wires) keeps them all); the wires bound no region "
+             "because a wire is open.\n\n"
              "Examples:\n"
              "    px.Face([outline, hole])\n"
              "    px.Face(shape.faces[0])")
-        .def(py::init([](const WireList &wires) { return wires.Region().SingleFace("Face(wires)"); }), py::arg("wires"), "")
+        .def(py::init([](const WireList &wires) { return wires.Region("Face(wires)").SingleFace("Face(wires)"); }),
+             py::arg("wires"), "")
         .def_property_readonly("lines", &Face::Lines, "lines: list[LineEdge]\n\nThe lines among the edges, copies.")
         .def_property_readonly("arcs", &Face::Arcs, "arcs: list[ArcEdge]\n\nThe arcs among the edges, copies.")
         .def_property_readonly("circles", &Face::Circles, "circles: list[CircleEdge]\n\nThe circles among the edges, copies.")

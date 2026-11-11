@@ -19,6 +19,7 @@ namespace planex2d::sketch {
     inline std::string Element::KindName(const Geometry &g) const { return IsFitted(g) ? "Curve" : IsPoled(g) ? "BSpline" : ElementKindName(kind); }
     inline bool Element::IsFitted(const Geometry &g) const { return kind == ElementKind::Spline && g.splines[SplineIndex()].fitted.has_value(); }
     inline bool Element::IsPoled(const Geometry &g) const { return kind == ElementKind::Spline && g.splines[SplineIndex()].poled.has_value(); }
+    inline bool Element::IsPeriodicBSpline(const Geometry &g) const { return IsPoled(g) && !IsPiece(g) && g.splines[SplineIndex()].closed; }
     inline const SplinePiece *Element::Piece(const Geometry &g) const {
         return kind == ElementKind::Spline && PieceIndex() ? &g.pieces[PieceIndex() - 1] : nullptr;
     }
@@ -40,7 +41,7 @@ namespace planex2d::sketch {
     }
     inline std::array<Vertex, 2> Element::EndCoords(const Geometry &g) const {
         // a periodic spline by its poles runs through none of them: its ends where its curve starts
-        if (kind == ElementKind::Spline && !IsPiece(g) && g.splines[SplineIndex()].poled && g.splines[SplineIndex()].closed) {
+        if (IsPeriodicBSpline(g)) {
             const Vertex start = SplinePoints(g).front();
             return {start, start};
         }

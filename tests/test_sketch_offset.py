@@ -856,3 +856,11 @@ def test_the_examples_of_the_docstring():
     sk.Move((0, 30)).Spline([(10, 35), (20, 30)], id="s")
     sk.Offset("s", (1.5, (10, 40)), id="bead")
     assert len(edges_of(sk, "wall")) == 4 and edges_of(sk, "bead") == ["bead.s"] and sk["wall.d"] == 3
+
+
+def test_a_sketch_offset_of_a_chain_touching_itself_points_to_px_offset():
+    for sk in (px.Sketch(auto_constraint=False), px.QuickSketch()):
+        sk.Move((0, 0)).Line((0, 30)).Line((12, 30)).Arc((12, 15)).Line((0, 15)).Line((14, 0))
+        with pytest.raises(ValueError, match=r"px\.Offset\(sketch\.Wires\(\), d\)"):
+            sk.Offset("Chain.1", 1.0, both_sides=True)
+        assert px.Face(px.Offset(sk.Wires(), 1.0)).mass == pytest.approx(193.24921, rel=1e-8)

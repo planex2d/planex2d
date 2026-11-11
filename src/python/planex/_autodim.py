@@ -114,6 +114,8 @@ def _patterns(edges, tol):
     the kind, the motif (the edges of the first instance), the members (every instance's edges) and the pattern's
     centre, step, count and full, or u, count, v and count2"""
     data = [_data(e) for e in edges]
+    touching = _touching(data, tol)
+    data = _counterclockwise(data, touching, tol)
     centres, held = [], []
     for d in data:
         if d is not None and d["kind"] in ("arc", "circle"):
@@ -124,7 +126,6 @@ def _patterns(edges, tol):
                 held.append(set())
                 at = len(centres) - 1
             held[at].add((d["kind"], round(d["size"] / tol)))
-    touching = _touching(data, tol)
     used, out = set(), []
     for c, own in zip(centres, held):
         groups = {}
@@ -177,6 +178,43 @@ def _motif(order, step, data, touching, member_run, tol):
                 break
             prev, cur = cur, options[0]
     return None
+
+
+def _reversed(d):
+    """an edge record run the other way"""
+    return {**d, "pts": [d["pts"][1], d["pts"][0]] + d["pts"][2:], **({"ccw": not d["ccw"]} if "ccw" in d else {})}
+
+
+def _counterclockwise(data, touching, tol):
+    """the records with every closed group of edges chained and running counterclockwise: a view's edges come each its
+    own way, and a pattern tells a square's opposite sides apart by their directions"""
+    out, seen = list(data), set()
+    for i, d in enumerate(data):
+        group = None if d is None or i in seen else _component(i, data, touching)
+        if group is None:
+            continue
+        seen.update(group)
+        loop, cur = [i], i
+        while True:
+            end = out[cur]["pts"][1]
+            near = lambda p: np.linalg.norm(p - end) <= 2 * tol
+            nxt = next((j for j in touching[cur] if j not in loop and (near(out[j]["pts"][0]) or near(out[j]["pts"][1]))), None)
+            if nxt is None:
+                break
+            if not near(out[nxt]["pts"][0]):
+                out[nxt] = _reversed(out[nxt])
+            loop.append(nxt)
+            cur = nxt
+        area = 0.0
+        for j in loop:
+            area += _cross(out[j]["pts"][0], out[j]["pts"][1]) / 2
+            if out[j]["kind"] == "arc":
+                t = _sweep(out[j])
+                area += (1 if out[j]["ccw"] else -1) * out[j]["size"] ** 2 / 2 * (t - math.sin(t))
+        if area < 0:
+            for j in loop:
+                out[j] = _reversed(out[j])
+    return out
 
 
 def _move_key(d, tol):

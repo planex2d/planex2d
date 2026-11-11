@@ -267,3 +267,15 @@ def test_sketch_wire_of_an_offset_on_both_sides_raises_and_its_loops_are_wires()
         sk.Wire("w")
     outer = sk.Wire("w.right")
     assert outer.IsClosed() and px.Face([outer]).mass == pytest.approx(12 * 7 - 4 + math.pi, rel=1e-12)
+
+
+def test_wires_of_lines_within_tol_of_each_other_are_cut_once_for_all():
+    # B lies within tol of A from its start to about 0.37 and C ends on B 1.9e-14 below A: A's piece cut at B's ends
+    # turns onto B and must meet C's end and B's pieces as B does
+    a = px.Line((1.0, 0.0), (0.0, 0.0))
+    b = px.Line((0.9199999999999999, -7e-15), (0.32, -1.3e-14))
+    c = px.Line((0.728, -1.892e-14), (0.0, -1.25))
+    for order in ([a, b, c], [c, b, a]):
+        pieces = [e for w in px.Wires(order) for e in w.edges]
+        assert len(pieces) == 5
+        assert len([e for w in px.Wires(pieces) for e in w.edges]) == 5

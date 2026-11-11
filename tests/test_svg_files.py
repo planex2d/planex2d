@@ -130,3 +130,18 @@ def test_an_arc_near_a_half_turn_reads_back_exactly(tmp_path):
     px.WriteSVG(w, tmp_path / "a.svg", unit=px.mm)
     back = px.FromSVG(tmp_path / "a.svg")
     assert sum(b.mass for b in back) == pytest.approx(w.mass, rel=1e-12)
+
+
+def test_a_cubic_bspline_goes_out_as_bezier_pieces_and_comes_back_exactly(tmp_path):
+    pytest.importorskip("svgelements")
+    lens = px.Face(px.ClosedOpenWires(px.BSpline([(10, 10), (20, 30), (40, 30), (60, 20), (70, 10)])))
+    holed = px.Move((0, 0)).Rectangle(80, 40).Face() - lens
+    for obj in (lens, holed):
+        obj.WriteSVG(tmp_path / "a.svg", unit=px.mm)
+        assert (tmp_path / "a.svg").read_text().count(" C ") == 4
+        assert area(px.FromSVG(tmp_path / "a.svg")) == pytest.approx(obj.mass, rel=1e-12)
+
+
+def test_nothing_to_draw_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="WriteSVG: there is nothing to draw"):
+        px.WriteSVG([], tmp_path / "a.svg")

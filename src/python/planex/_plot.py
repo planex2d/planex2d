@@ -559,7 +559,7 @@ def PlotField(field: Any, mesh: Any = None, obj: Any = None, /, on: str = "faces
 
     Examples:
         px.PlotField(gf, face, contours=10)
-        px.PlotField(MinThickness(), shape, on="edges")
+        px.PlotField(px.measurements.MinThickness(), shape, on="edges")
     """
     if mesh is not None and not _is_mesh(mesh):
         if obj is not None:

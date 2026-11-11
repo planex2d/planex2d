@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+import math
+
 import pytest
 
 import planex as px
@@ -146,3 +148,14 @@ def test_a_mirror_takes_over_the_coincidence_that_puts_a_point_on_its_axis():
     lug.Update({"eye_height": 70})
     assert lug.locations["eye.end"][0] == pytest.approx(0, abs=1e-9)
     assert lug.locations["left.eye.end"] == pytest.approx(lug.locations["eye.end"], abs=1e-9)
+
+
+@pytest.mark.constraints
+def test_mirror_turns_a_slot_over_and_its_width_still_drives_it():
+    sk = px.Sketch()
+    sk.Move((2, 30)).Slot(6, 2, id="slot")
+    sk.Mirror("slot", px.V)
+    (x0, y0), (x1, y1) = sk.Shape().bounding_box
+    assert (x0, y0, x1, y1) == pytest.approx((-9, 29, -1, 31), abs=TOL)
+    sk["slot.w"] = 3
+    assert sk.Shape().mass == pytest.approx(6 * 3 + math.pi * 1.5 ** 2, rel=1e-12)

@@ -492,7 +492,7 @@ namespace planex2d {
 
         // the region bounded by the wires, holes by nesting; stretches drawn twice by closed wires cancel, an open
         // wire's stretch on another edge is left out
-        Wire Region() const;
+        Wire Region(const char *call = nullptr) const;
     };
 
 }

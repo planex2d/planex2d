@@ -738,3 +738,20 @@ def test_the_default_colormap_is_the_docs_map(backend):
         assert colormap_shown(backend, colormap=["white", "black"])(0.0) == to_rgba("white")
     with pytest.raises(ValueError, match="colormap 'nope'"):
         colormap_shown(backend, colormap="nope")
+
+
+def test_a_colormap_object_is_taken_as_it_is_and_a_list_needs_colors():
+    matplotlib = pytest.importorskip("matplotlib")
+    matplotlib.use("Agg")
+    gray = matplotlib.colormaps["gray"]
+    assert colormap_shown("matplotlib", colormap=gray) is gray
+    with pytest.raises(ValueError, match="a list of colors, not"):
+        colormap_shown("matplotlib", colormap=[object()])
+
+
+def test_a_strict_sketch_is_drawn_while_it_can_still_move():
+    matplotlib = pytest.importorskip("matplotlib")
+    matplotlib.use("Agg")
+    sk = px.Sketch(mode="strict")
+    sk.Move((0, 0)).Line((3, 0)).Line((3, 2))
+    assert sk.Plot() is not None and sk.mode == "strict"

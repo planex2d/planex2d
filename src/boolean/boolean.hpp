@@ -50,8 +50,19 @@ namespace planex2d {
                 state.push_back({mask, std::visit([&](const auto &x) { return x.Box().Overlaps(other, tol); }, e)});
             }
         };
-        add(a, 1, boxb);
-        add(b, 2, boxa);
+        // the operands cut in an order of their own, by their boxes, not the caller's: a + b and b + a cut the same pairs
+        // in the same order, so their pieces agree also where a crossing's place is poorly determined
+        const bool bFirst = boxb.x0 != boxa.x0 ? boxb.x0 < boxa.x0
+                            : boxb.y0 != boxa.y0 ? boxb.y0 < boxa.y0
+                            : boxb.x1 != boxa.x1 ? boxb.x1 < boxa.x1
+                                                 : boxb.y1 < boxa.y1;
+        if (bFirst) {
+            add(b, 2, boxa);
+            add(a, 1, boxb);
+        } else {
+            add(a, 1, boxb);
+            add(b, 2, boxa);
+        }
         CutCircles(c, state);
         Grid grid = c.EdgeGrid();
         CutRecord rec;
@@ -87,7 +98,7 @@ namespace planex2d {
             const unsigned char other = froma ? 2 : 1;
             const Vertex m = MidPointOf(c[k]);
             return state[k].needsCutting && (froma ? boxb : boxa).IsInside(m) &&
-                   (CrossingParity<false, false>(grid, c, state, m, other) & other) != 0;
+                   (CrossingParity<false>(grid, c, state, m, other) & other) != 0;
         };
         const std::vector<signed char> side = SidesByRuns(c, state, rec, ids, snapTol, inside);
         for (size_t k = 0; k < c.Size(); ++k) {
@@ -99,8 +110,8 @@ namespace planex2d {
                     Vertex m = x.MidPoint();
                     Vertex t = x.Tangent(m);
                     bool vertical = std::abs(t.x) >= std::abs(t.y);
-                    unsigned char odd = vertical ? CrossingParity<true, true>(grid, c, state, m, 3)
-                                                 : CrossingParity<false, true>(grid, c, state, m, 3);
+                    unsigned char odd = vertical ? CrossingParity<true>(grid, c, state, m, 3, k)
+                                                 : CrossingParity<false>(grid, c, state, m, 3, k);
                     return ((odd & 1) != 0) == ((odd & 2) != 0);
                 }, c[k]);
                 r.side[k] = same ? PieceSide::SharedSame : PieceSide::SharedOpposite;

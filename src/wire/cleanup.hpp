@@ -196,52 +196,63 @@ namespace planex2d {
             Append(std::move(merged[k]), mergedOwner[k]);
     }
 
-    // joins start from the edges use selects; the joined edge takes the place of the first
+    // joins start from the edges use selects; the joined edge takes the place of the first. In passes until none joins:
+    // a join decides at the scale of the two edges it joins, so a short piece one neighbour refused may join the edge
+    // the other neighbour became
     template <class F>
     void Wire::MergeOnCarriers(F use) {
         static Timer t("planex MergeOnCarriers");
         Region reg(t);
-        const size_t n = edges.size();
-        std::vector<Vertex> pts = Endpoints();
-        Grid grid = Grid::Of(pts, 0.0);
-        auto partner = [&](size_t k) -> std::optional<size_t> {
-            std::optional<size_t> found;
-            size_t count = 0;
-            grid.ForCell(pts[k], [&](size_t j) {
-                if (j / 2 != k / 2 && pts[j] == pts[k]) {
-                    found = j;
-                    ++count;
+        std::vector<bool> selected(edges.size());
+        for (size_t i = 0; i < edges.size(); ++i)
+            selected[i] = use(i);
+        for (bool joined = true; joined;) {
+            joined = false;
+            const size_t n = edges.size();
+            std::vector<Vertex> pts = Endpoints();
+            Grid grid = Grid::Of(pts, 0.0);
+            auto partner = [&](size_t k) -> std::optional<size_t> {
+                std::optional<size_t> found;
+                size_t count = 0;
+                grid.ForCell(pts[k], [&](size_t j) {
+                    if (j / 2 != k / 2 && pts[j] == pts[k]) {
+                        found = j;
+                        ++count;
+                    }
+                });
+                return count == 1 ? found : std::nullopt;
+            };
+            std::vector<bool> removed(n, false);
+            for (size_t i = 0; i < n; ++i) {
+                if (removed[i] || !selected[i] || HasPartition(PropsOf(edges[i])))
+                    continue;
+                Edge current = edges[i];
+                bool any = false;
+                for (size_t k : {2 * i + 1, 2 * i}) {
+                    for (;;) {
+                        std::optional<size_t> j = partner(k);
+                        if (!j || *j / 2 == i || removed[*j / 2] || Owner(*j / 2) != Owner(i) ||
+                            !SameProperties(PropsOf(current), PropsOf(edges[*j / 2])) || HasPropsAt(current, pts[k]) ||
+                            Marked(EndpointProps(*j)))
+                            break;
+                        std::optional<Edge> e = std::visit([&](const auto &a, const auto &b) { return Joined(a, b, pts[k]); },
+                                                           current, edges[*j / 2]);
+                        if (!e)
+                            break;
+                        current = std::move(*e);
+                        removed[*j / 2] = true;
+                        any = true;
+                        k = *j ^ 1;
+                    }
                 }
-            });
-            return count == 1 ? found : std::nullopt;
-        };
-        std::vector<bool> removed(n, false);
-        for (size_t i = 0; i < n; ++i) {
-            if (removed[i] || !use(i) || HasPartition(PropsOf(edges[i])))
-                continue;
-            Edge current = edges[i];
-            bool any = false;
-            for (size_t k : {2 * i + 1, 2 * i}) {
-                for (;;) {
-                    std::optional<size_t> j = partner(k);
-                    if (!j || *j / 2 == i || removed[*j / 2] || Owner(*j / 2) != Owner(i) ||
-                        !SameProperties(PropsOf(current), PropsOf(edges[*j / 2])) || HasPropsAt(current, pts[k]) ||
-                        Marked(EndpointProps(*j)))
-                        break;
-                    std::optional<Edge> e = std::visit([&](const auto &a, const auto &b) { return Joined(a, b, pts[k]); },
-                                                       current, edges[*j / 2]);
-                    if (!e)
-                        break;
-                    current = std::move(*e);
-                    removed[*j / 2] = true;
-                    any = true;
-                    k = *j ^ 1;
+                if (any) {
+                    edges[i] = std::move(current);
+                    joined = true;
                 }
             }
-            if (any)
-                edges[i] = std::move(current);
+            Erase(removed);
+            planex2d::Erase(selected, removed);
         }
-        Erase(removed);
     }
 
     inline void Wire::MergeOnCarriers() {

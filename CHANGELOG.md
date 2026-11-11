@@ -1,5 +1,81 @@
 # Changelog
 
+## v0.3.4
+
+### Added
+
+- `px.Offset(parts, d, both_sides=px.Auto, ends=px.Round, corners=px.Round)`: the offset of several wires as one, by
+  default on both sides of every wire, open or closed; where their bands overlap they are one region, and the wires
+  returned are its boundary. Of several faces or shapes: each grown or shrunk by d, all united, as a Shape.
+
+### Changed
+
+- `px.Face(wires)`, `wire.Face()`, `px.Shape(wires)` and the sketches' `Face()` raise `ValueError` when the wires bound
+  no region because a wire is open; the message names the open ends, how far apart the closest two are, and
+  `px.ClosedOpenWires(wires)`. They gave an empty face (or shape) and a warning. An open line beside a closed outline
+  still gives the outline's face with the warning.
+
+### Fixed
+
+- The documented forms of `sk.Polygon` and `sk.Hexagon` take the center as one point, `sk.Polygon((0, 0), 5, 8)` and
+  `sk.Hexagon((10, 5), 13)`, as Circle does; the examples of `Wire.Trim`, `EdgeView.Measure` and `Wire.Measure` run.
+  So do those of `QuickSketch.Move` (without `px.Coincident`, which a QuickSketch has not), `Sketch.Expression` (`h` is
+  a reserved id), `px.PlotField` and `px.Find`.
+- `faceView.Filleted(...)` and `faceView.Chamfered(...)` take the view's own vertices as corners; they refused them as
+  vertices of another object.
+- A periodic `sk.BSpline` drawn with its first pole on another element's end raised "px.Tangent: no solution": the
+  automatic relations took that pole for the curve's ends. A periodic B-spline has no ends; its poles are points.
+- Booleans of two faces where a corner of one lies on an edge of the other within a few tolerances, or where a hole
+  touches its outline at a point: every result could come out empty or nearly so (a triangle's corner 1e-13 inside
+  another's side: a + b, a - b and a * b all empty). The sides of the pieces at such a point follow their directions.
+- Booleans where two faces share a stretch only a few tolerances long, as near copies or a sliver a hair wide leave it:
+  a result could lose a face or come out empty (`(a + b) + b` of a polygon and its copy with a corner moved 5e-8; the
+  union of near copies of a face with a hole filled the hole; a face against its own offset by about the tolerance).
+- A difference (and an intersection or difference taken face by face) is snapped at its end as the other booleans
+  are: two ends within the tolerance of each other could stay two points (a rectangle minus its copy moved by about the
+  tolerance).
+- `Split` of a face with holes by a cutter that reaches into a hole: the piece around it came back as two faces, its
+  outline without the hole and the hole itself. `Trim(..., keep_largest=True)` sizes such pieces the same way now.
+- `Sketch.Mirror(slot, axis)` of a slot (or arc slot, keyhole) in a `px.Sketch` raised "the constraints hold the
+  elements where they are": its spine goes along now, and an offset mirrored whole keeps its width on the other side.
+- `Drawing.AutoDimension`: square (and other non-round) holes in a row or grid are dimensioned as one hole and a
+  pattern, as round ones are.
+- Booleans, `px.Glue` and `px.Wires` of two circles or arcs that overlap by more than rounding but no more than the
+  tolerance (two circles touching, one moved into the other by about 1e-14 near the origin, 1e-11 at coordinates
+  near 1000): one circle was lost (`a + b` gave one disc, `a - b` nothing). Such a lens is one shared stretch only
+  where it lies on both edges; two arcs that share their ends the long way round keep both.
+- Booleans of a small face touching a much larger one at a corner a hair inside it (a disc 0.8 across at a corner of
+  a face 2000 across): the common part could run outside the small face, its arc swung onto another circle. An arc
+  of more than half a turn whose end is moved within the tolerance keeps its circle.
+- Booleans of a thin sliver along a hole's edge (a lune 1e-11 wide, thinner than the tolerance at its tips) with the
+  face around that hole: the union came back empty. Two discs touching at a point united with a copy of one moved by
+  about the tolerance kept only one disc.
+- `face.Offset(d)` and `shape.Offset(d)` by about the tolerance: an internal error ("the raw offset path has a gap"),
+  an empty result (an 8-corner star offset by -2e-14), or an extra face of 1e-28 at a corner. An offset within the
+  tolerance now leaves the faces as they are; a little larger, it moves the outline by d.
+- Booleans and `px.Unify` where two edges lie within the tolerance of each other only at the result's scale (rounded
+  squares 1e-14 apart, a needle or slot about the tolerance wide at coordinates near 1000): a slit of no width stayed
+  in the result, so a hole between four squares came out as a face of its own, a union with such a needle was
+  empty, and `px.Glue` of a result removed edges the boolean kept. Such slits now go, and the edges they ended
+  between join again.
+- The offsets of several wires cover one region again (an unintended change of v0.3.0, when `wire.Offset` began to
+  return a Wire): a face of the offset wires of a sketch's `sk.Wires()`, or of two crossing lines, made every overlap
+  a hole. `px.Offset(wires, d)` gives the boundary of the region their bands cover, as the offsets returned as Shapes
+  did before.
+- Curves that meet almost tangentially (a disc against a small corner arc, two rounded faces, splines' pieces):
+  the same crossing could come out twice, 1e-13 apart, so `px.Glue` kept tiny pieces, `a.Relate(b)` and
+  `b.Relate(a)` disagreed, an outline ran several tolerances off a crossing, and `px.Wires` of its own pieces cut
+  them again. Lines within the tolerance of each other (one split by a third line) gave `px.Wires` one stretch twice.
+- `a + b` and `b + a` (and the other symmetric booleans and `Relate`) of a face and a copy turned or moved by about the
+  tolerance give the same pieces; one more edge one way round was possible.
+- The docstrings of `edge.PointAt`, `edge.TangentAt` and `edge.midpoint` say that on a spline they lie on the
+  approximation planex cuts it with (within `config.spline_tol` of the curve); `Measure(at=...)` gives the curve's
+  own point.
+- A sketch's `Offset` of a chain that crosses or touches itself, whose offset falls into pieces, says that a sketch's
+  offset cannot hold it and names `px.Offset(sketch.Wires(), d)` for the chain as wires (it said "cannot hold yet").
+- A boolean's result kept two collinear edges where a piece shorter than the tolerance's reach sat between them (one
+  operand's side passing about the tolerance beside the other's corner); `px.Glue` of it gave one edge.
+
 ## v0.3.3
 
 ### Added

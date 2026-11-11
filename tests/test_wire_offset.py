@@ -50,3 +50,37 @@ def test_the_offset_takes_a_distance_and_a_side_switch():
         px.Line((0, 0), (1, 0)).Offset(0)
     with pytest.raises(TypeError, match=r"Offset\(both_sides=1\): True or False"):
         px.Line((0, 0), (1, 0)).Offset(1, both_sides=1)
+
+
+def test_the_offset_of_several_wires_is_the_boundary_of_the_region_their_bands_cover():
+    cross = px.Offset([px.Line((0, 0), (10, 0)), px.Line((5, -5), (5, 5))], 1.0)
+    assert all(isinstance(w, px.Wire) for w in cross)
+    assert px.Shape(cross).mass == pytest.approx(2 * (20 + math.pi) - 4)
+    assert px.Face(cross).mass == pytest.approx(2 * (20 + math.pi) - 4)
+    sk = px.Sketch(auto_constraint=False)
+    sk.Move((0, 0)).Line((0, 30)).Line((12, 30)).Arc((12, 15)).Line((0, 15)).Line((14, 0))
+    stroke = px.Face(px.Offset(sk.Wires(), 1.0))
+    assert stroke.mass == pytest.approx(px.Unify([w.Offset(1.0, both_sides=True).Face() for w in sk.Wires()]).mass)
+    assert stroke.mass == pytest.approx(193.24921, rel=1e-8)
+    assert len(stroke.wires) == 2
+
+
+def test_the_offset_of_several_wires_takes_both_sides_of_closed_ones_too():
+    ring = px.Offset([px.Circle((0, 0), 2)], 0.5)
+    assert px.Shape(ring).mass == pytest.approx(math.pi * (2.5 ** 2 - 1.5 ** 2))
+    rails = px.Offset([px.Line((0, 0), (10, 0)), px.Circle((20, 0), 2)], 1.0, both_sides=False)
+    assert sorted(round(sum(e.mass for e in w.edges), 9) for w in rails) == [10.0, round(2 * math.pi * 3, 9)]
+
+
+def test_the_offset_of_several_faces_is_their_offsets_united():
+    a, b = px.Circle((0, 0), 1).Face(), px.Circle((1.5, 0), 1).Face()
+    grown = px.Offset([a, b], 0.5)
+    assert isinstance(grown, px.Shape)
+    assert grown.mass == pytest.approx(px.Unify([a.Offset(0.5, inplace=False), b.Offset(0.5, inplace=False)]).mass)
+    with pytest.raises(ValueError, match="one side"):
+        px.Offset([a, b], 0.5, both_sides=True)
+    with pytest.raises(TypeError, match="wires and faces"):
+        px.Offset([a, px.Line((0, 0), (1, 0))], 0.5)
+    with pytest.raises(ValueError, match="nonzero and finite"):
+        px.Offset([px.Line((0, 0), (1, 0))], 0)
+    assert px.Offset([], 1.0) == []

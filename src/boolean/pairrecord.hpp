@@ -18,6 +18,41 @@ namespace planex2d {
 
     inline bool VertexLess(const Vertex &p, const Vertex &q) { return p.x < q.x || (p.x == q.x && p.y < q.y); }
 
+    // an edge k by its two ends, the lesser first
+    struct EdgeSpan {
+        Vertex lo;
+        Vertex hi;
+        uint32_t k;
+    };
+
+    // the spans of the edges use selects that have two ends, sorted: edges between the same two vertices next to each
+    // other
+    template <class F>
+    std::vector<EdgeSpan> SortedSpans(const Wire &w, F use) {
+        std::vector<EdgeSpan> spans;
+        for (size_t k = 0; k < w.Size(); ++k) {
+            if (!use(k))
+                continue;
+            auto [p, q] = std::visit([](const auto &x) { return std::pair{x.Start(), x.End()}; }, w[k]);
+            if (p == q)
+                continue;
+            if (VertexLess(q, p))
+                std::swap(p, q);
+            spans.push_back({p, q, (uint32_t)k});
+        }
+        std::sort(spans.begin(), spans.end(), [](const EdgeSpan &a, const EdgeSpan &b) {
+            return a.lo != b.lo ? VertexLess(a.lo, b.lo) : a.hi != b.hi ? VertexLess(a.hi, b.hi) : a.k < b.k;
+        });
+        return spans;
+    }
+    // the end of the run of spans from a between the same two vertices
+    inline size_t SameSpansEnd(const std::vector<EdgeSpan> &spans, size_t a) {
+        size_t b = a + 1;
+        while (b < spans.size() && spans[b].lo == spans[a].lo && spans[b].hi == spans[a].hi)
+            ++b;
+        return b;
+    }
+
     // the vertices the cut put onto others, each with the one standing for all of them
     class VertexMerges {
         private:
@@ -88,34 +123,14 @@ namespace planex2d {
     // congruent cut keeps it: the cut of another pair made them after their own pair was decided. Two of one input
     // there cancel
     inline void ShareCongruent(Wire &w, Grid &grid, std::vector<CutState> &state, bool drop, double tol) {
-        struct Span {
-            Vertex lo;
-            Vertex hi;
-            uint32_t k;
-        };
-        std::vector<Span> spans;
-        for (size_t k = 0; k < w.Size(); ++k) {
-            if (state[k].excluded || !state[k].needsCutting)
-                continue;
-            auto [p, q] = std::visit([](const auto &x) { return std::pair{x.Start(), x.End()}; }, w[k]);
-            if (p == q)
-                continue;
-            if (VertexLess(q, p))
-                std::swap(p, q);
-            spans.push_back({p, q, (uint32_t)k});
-        }
-        std::sort(spans.begin(), spans.end(), [](const Span &a, const Span &b) {
-            return a.lo != b.lo ? VertexLess(a.lo, b.lo) : a.hi != b.hi ? VertexLess(a.hi, b.hi) : a.k < b.k;
-        });
-        auto bulge = [&](const Span &s) {
+        const std::vector<EdgeSpan> spans = SortedSpans(w, [&](size_t k) { return !state[k].excluded && state[k].needsCutting; });
+        auto bulge = [&](const EdgeSpan &s) {
             const Vertex m = MidPointOf(w[s.k]);
             const Vertex d = s.hi - s.lo;
             return Cross(d, m - (s.lo + s.hi) * 0.5) / Norm(d);
         };
         for (size_t a = 0; a < spans.size();) {
-            size_t b = a + 1;
-            while (b < spans.size() && spans[b].lo == spans[a].lo && spans[b].hi == spans[a].hi)
-                ++b;
+            const size_t b = SameSpansEnd(spans, a);
             for (size_t x = a; x < b; ++x)
                 for (size_t y = x + 1; y < b; ++y) {
                     const uint32_t i = spans[x].k, j = spans[y].k;
@@ -239,7 +254,7 @@ namespace planex2d {
     }
 
     // the side of each piece of one operand near the other (-1: not decided here): the side changes only at the
-    // crossings the cut recorded, one inside test per run of linked pieces, on its longest piece
+    // crossings the cut recorded where no edge ends, one inside test per run of linked pieces, on its longest piece
     template <class F>
     std::vector<signed char> SidesByRuns(const Wire &c, const std::vector<CutState> &state, const CutRecord &rec,
                                          const VertexMerges &ids, double tol, F inside) {
@@ -259,10 +274,10 @@ namespace planex2d {
                 }, c[k]);
         auto byVertex = [](const auto &p, const auto &q) { return VertexLess(p.first, q.first); };
         std::sort(ends.begin(), ends.end(), byVertex);
-        std::vector<std::pair<Vertex, PairKind>> through;
+        std::vector<std::pair<Vertex, std::optional<PairKind>>> through;
         for (const PairEvent &e : rec.events)
-            if (e.la == Location::Inside && e.lb == Location::Inside && e.kind != PairKind::Overlap)
-                through.emplace_back(ids.Of(e.at), e.kind);
+            if (e.kind != PairKind::Overlap)
+                through.emplace_back(ids.Of(e.at), e.la == Location::Inside && e.lb == Location::Inside ? std::optional(e.kind) : std::nullopt);
         std::sort(through.begin(), through.end(), byVertex);
 
         SideLinks links(n);
@@ -289,11 +304,11 @@ namespace planex2d {
                         links.Link(o[k], o[0], 0);
                 continue;
             }
-            const auto at = std::equal_range(through.begin(), through.end(), std::pair{v, PairKind::Crossing}, byVertex);
-            const bool known = at.first != at.second &&
+            const auto at = std::equal_range(through.begin(), through.end(), std::pair{v, std::optional<PairKind>()}, byVertex);
+            const bool known = at.first != at.second && at.first->second &&
                                std::all_of(at.first, at.second, [&](const auto &e) { return e.second == at.first->second; });
             if (known && own[0].size() == 2 && own[1].size() == 2) {
-                const unsigned char p = at.first->second == PairKind::Crossing ? 1 : 0;
+                const unsigned char p = *at.first->second == PairKind::Crossing ? 1 : 0;
                 links.Link(own[0][1], own[0][0], p);
                 links.Link(own[1][1], own[1][0], p);
                 continue;

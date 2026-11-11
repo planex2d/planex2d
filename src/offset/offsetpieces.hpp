@@ -400,7 +400,8 @@ namespace planex2d {
             }
         }
         if (runs > 1)
-            throw std::invalid_argument(call + ": that side of the offset falls into pieces, which an offset cannot hold yet");
+            throw std::invalid_argument(call + ": that side of the offset falls into pieces, which a sketch's offset cannot hold; "
+                                        "px.Offset(sketch.Wires(), d) offsets the chain as wires");
         return out;
     }
 

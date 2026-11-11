@@ -164,7 +164,8 @@ def test_cut_in_is_removed():
 
 
 def test_every_overlap_of_a_wire_is_removed():
-    # the bottom drawn three times goes completely: an open U bounds no region (pairs cancelling would leave a square)
+    # the bottom drawn three times goes completely: an open U bounds no region (pairs cancelling would leave a square);
+    # the wire drawn is closed, so it warns
     wp = px.MoveTo(0, 0).Line((4, 0)).Line((0, 0)).Line((4, 0)).Line((4, 4)).Line((0, 4)).Close()
     with pytest.warns(px.PlanexWarning, match="open wire with 2 open ends"):
         assert is_empty(wp.Face())

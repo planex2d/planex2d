@@ -41,14 +41,18 @@ namespace planex2d {
                 radius = Norm(start - center);
                 sweep = Param(end);
             }
-            // the center onto the chord's bisector, the nearest center both ends lie on
-            void Recenter() {
+            // the center onto the chord's bisector, the nearest center both ends lie on. Beyond a half turn the far side
+            // moves with the center, and near a full turn the short chord's bisector is ill-conditioned: there the center
+            // stays where it would move farther than the ends did
+            void Recenter(double moved) {
                 Vertex chord = end - start;
                 double l = Norm(chord);
                 if (l > 0.0) {
                     Vertex m = (start + end) * 0.5;
                     Vertex nb = Vertex{-chord.y, chord.x} / l;
-                    center = m + nb * Dot(center - m, nb);
+                    Vertex c = m + nb * Dot(center - m, nb);
+                    if (Param(end) <= std::numbers::pi || Norm(c - center) <= moved)
+                        center = c;
                 }
             }
             // v relative to the center lies on the arc: between a and b, or beyond pi not strictly between b and a
@@ -68,7 +72,7 @@ namespace planex2d {
                 IsFinite("Arc", {start.x, start.y, end.x, end.y, center.x, center.y});
                 const double rs = Norm(start - center), re = Norm(end - center);
                 if (std::abs(re - rs) > Tol(NormInf(center) + std::max(rs, re)))
-                    Recenter();
+                    Recenter(std::abs(re - rs));
                 Update();
             }
             const Vertex &Start() const { return start; }
@@ -88,18 +92,23 @@ namespace planex2d {
                         box.Grow(center + v);
                 return box;
             }
+            // a piece on the same center keeps the radius: a crossing near tangency moves by about radius / half the lens
+            // times a change in it, so the pieces of one circle must decide with its radius bit for bit
             template <bool recomputeCenter = false>
             void Trim(const Vertex &a, const Vertex &b) {
                 if constexpr (recomputeCenter) {
                     if (a == start && b == end)
                         return;
+                    const double moved = std::max(Norm(a - start), Norm(b - end));
                     start = a;
                     end = b;
-                    Recenter();
+                    Recenter(moved);
+                    Update();
+                } else {
+                    start = a;
+                    end = b;
+                    sweep = Param(end);
                 }
-                start = a;
-                end = b;
-                Update();
             }
             void Rotate(const Vertex &c, double cosVal, double sinVal) {
                 start = Rotated(start, c, cosVal, sinVal);

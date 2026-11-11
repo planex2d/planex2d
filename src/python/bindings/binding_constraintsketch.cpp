@@ -290,14 +290,14 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "tan, asin, acos, atan2 (angles in degrees), exp, log (natural), sinh, cosh, tanh, asinh, acosh, atanh, pi and the units mm, cm, m, um, inch, mil (as px.mm, ...). "
              "Removing a dimension it uses removes it, with a warning.\n\n"
              "Args:\n"
-             "    text: the equation (\"h = w/2\"), or its left side when rhs is given.\n"
+             "    text: the equation (\"height = w/2\"), or its left side when rhs is given.\n"
              "    rhs: the right side.\n"
              "    id: the expression's id, default Expression.N.\n\n"
              "Raises:\n"
              "    ValueError: an expression out of its domain (the sqrt of a negative, ...); an invalid id.\n\n"
              "Examples:\n"
-             "    sk.Expression(\"h = w/2\")\n"
-             "    sk.Expression(\"h\", \"w/2 + 3\", id=\"half\")")
+             "    sk.Expression(\"height = w/2\")\n"
+             "    sk.Expression(\"height\", \"w/2 + 3\", id=\"half\")")
         .def_property_readonly("expressions", [](const ConstraintSketch &s) {
             py::dict out;
             for (const auto &[id, text] : s.Expressions())

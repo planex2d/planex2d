@@ -67,6 +67,7 @@ namespace planex2d::sketch {
         std::string KindName(const Geometry &g) const;
         bool IsFitted(const Geometry &g) const;
         bool IsPoled(const Geometry &g) const;
+        bool IsPeriodicBSpline(const Geometry &g) const;
         const SplinePiece *Piece(const Geometry &g) const;
         bool IsPiece(const Geometry &g) const { return Piece(g) != nullptr; }
         std::array<size_t, 2> Ends(const Geometry &g) const;

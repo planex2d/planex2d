@@ -24,7 +24,7 @@ except ImportError as _e:
 from . import _occ
 from ._planex import (Arc, ArcEdge, Circle, CircleEdge, Constraint, Curve, EdgeView, EdgesView, Ellipse, Face, FaceView,
                       FacesView, FromNumpy, FromPolyline, GetTransformation, Glue, H, Intersect, Line, LineEdge, Move,
-                      OCCGeometry, Pad, Plane, PlanexWarning, Pocket, Project, QuickSketch, ResetIdCounters, Rotation,
+                      OCCGeometry, Offset, Pad, Plane, PlanexWarning, Pocket, Project, QuickSketch, ResetIdCounters, Rotation,
                       Shape, Spline, SplineEdge, Subtract, SymmetricDifference, Translation, Unify, V, Vertex, VertexView,
                       VerticesView, Wire, Wires, XY, XZ, YZ, ZX, origin)
 from ._planex import Bottom, Front, Left, Rear, Right, Top
@@ -123,7 +123,7 @@ __all__ = ["Angle", "Arc", "ArcEdge", "Auto", "Bottom", "Chamfer", "Circle", "Ci
            "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
            "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FixH", "FixV", "Flat", "FromBrep", "FromCATPart", "FromDXF", "FromKiCad", "FromLevelSet",
            "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "Front", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
-           "Intersect3d", "Isometric", "Left", "Line", "LineEdge", "Minimal", "Move", "OCCGeometry", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
+           "Intersect3d", "Isometric", "Left", "Line", "LineEdge", "Minimal", "Move", "OCCGeometry", "Offset", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
            "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "Rear", "ResetIdCounters",
            "Right", "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricDifference",
            "SymmetricCarriers", "Tangent", "ToSVG", "ToShapely", "Top", "Translation", "Unify", "V", "Vertex", "VertexView",
