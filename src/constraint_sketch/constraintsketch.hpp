@@ -1929,8 +1929,8 @@ namespace planex2d {
                     AddConstraint({kind, {corner}}, fix + ".corner");
         }
 
-        // constraints on an end of the cut element a that went to another piece follow it there; of a line or arc a Fix
-        // holds the piece a keeps where it lies, the others that held its old ends go, with a warning
+        // constraints on an end of the cut element a that went to another piece follow it there; of a line, arc or circle
+        // a Fix holds the piece a keeps where it lies, the others that held its old ends go, with a warning
         void PiecesCut(size_t a, const sketch::Element &old, const std::vector<size_t> &pieces, const std::string &id, const std::string &call) override {
             const bool circle = old.kind == sketch::ElementKind::Circle, line = old.kind == sketch::ElementKind::Line;
             const bool curve = old.kind == sketch::ElementKind::Spline || old.kind == sketch::ElementKind::OffsetCurve;
@@ -1981,7 +1981,7 @@ namespace planex2d {
                 const bool ends = sketch::IsFix(k.kind) || (line && (k.kind == sketch::Kind::Equal || (k.kind == sketch::Kind::Distance && k.refs.size() == 1))) ||
                                   s.IsSweep(k) ||
                                   (k.kind == sketch::Kind::Symmetric && k.refs.size() == 3 && !k.refs[0].IsPoint(s) && !k.refs[0].IsRound(s));
-                if (whole && ends && !circle && !curve) {
+                if (whole && ends && !curve) {
                     if (kept && KeptAtCorner(c, *kept))
                         continue;
                     if (sketch::IsFix(k.kind)) {

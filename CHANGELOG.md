@@ -78,6 +78,9 @@
 - `sk.Diagnose()` reported ends that are already joined as missing coincidents when they lie within the gap of each
   other: a closed outline with an arc or line shorter than the gap (a fillet stretch 0.04 long, gap 0.44) gave three
   per short element. A missing coincident now needs at least one of the two ends to be open.
+- `sk.Trim` of a circle held by `px.Fix` raised "px.Coincident: no solution" where it left one arc (a fixed circle cut
+  by lines that end on it or run through it). The arc it leaves keeps the circle's id and stays fixed where it lies,
+  its ends at the cut points, as a fixed line or arc trimmed at one end does.
 
 ## v0.3.3
 
