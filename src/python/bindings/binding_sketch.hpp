@@ -3007,7 +3007,7 @@ inline void BindDrawing(py::class_<S> &sketch) {
            "Only the drawn lines, arcs, circles and splines are looked at; construction elements, points, the origin and "
            "the axes are not. The keys, always all five: 'open_ends', an end of a line, arc or open spline no other "
            "element's end meets (at the end); 'missing_coincident', ends of two elements closer than gap but not one "
-           "point (at the middle between them); 'crossings', two elements meeting where not both end, an end on "
+           "point, at least one of them open (at the middle between them);'crossings', two elements meeting where not both end, an end on "
            "another element included (at the point); 'overlaps', two elements sharing a stretch (at its middle); "
            "'degenerate', a line shorter than the rounding, an arc or circle of about no radius or an arc of about no "
            "length, a spline with a point twice in a row (at its middle; left out of the other checks). sk.Plot("

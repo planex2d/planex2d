@@ -75,6 +75,9 @@
   offset cannot hold it and names `px.Offset(sketch.Wires(), d)` for the chain as wires (it said "cannot hold yet").
 - A boolean's result kept two collinear edges where a piece shorter than the tolerance's reach sat between them (one
   operand's side passing about the tolerance beside the other's corner); `px.Glue` of it gave one edge.
+- `sk.Diagnose()` reported ends that are already joined as missing coincidents when they lie within the gap of each
+  other: a closed outline with an arc or line shorter than the gap (a fillet stretch 0.04 long, gap 0.44) gave three
+  per short element. A missing coincident now needs at least one of the two ends to be open.
 
 ## v0.3.3
 

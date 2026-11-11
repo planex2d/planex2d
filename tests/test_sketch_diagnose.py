@@ -56,6 +56,22 @@ def test_missing_coincident_below_the_default_gap(cls):
     assert _ids(sk.Diagnose(gap=1e-3), "missing_coincident") == [("a", "b")]
 
 
+def test_ends_joined_through_a_short_arc_are_no_missing_coincident(cls):
+    sk = cls().Move((0, 0)).Line(10, id="a").Arc(5, 0.45, id="c").Line(10, id="b")
+    found = sk.Diagnose(gap=1)
+    assert found["missing_coincident"] == []
+    assert _ids(found, "open_ends") == [("a",), ("b",)]
+    assert _only(found, "open_ends")
+
+
+def test_open_end_beside_a_joint_is_a_missing_coincident(cls):
+    sk = cls().Move((0, 0)).Line((1, 0), id="a").Line((1, 1), id="b").Move((1 + 1e-4, 0)).Line((2, 0), id="c")
+    found = sk.Diagnose()
+    assert _ids(found, "missing_coincident") == [("a", "c"), ("b", "c")]
+    assert _ids(found, "open_ends") == [("a",), ("b",), ("c",), ("c",)]
+    assert _only(found, "open_ends", "missing_coincident")
+
+
 def test_crossing_lines(cls):
     found = cls().Move((0, 0)).Line((2, 2), id="a").Move((0, 2)).Line((2, 0), id="b").Diagnose()
     assert _ids(found, "crossings") == [("a", "b")]
