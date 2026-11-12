@@ -78,11 +78,13 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
              "Args:\n"
              "    face: the one face.\n"
              "    wires: the wires that bound the regions.\n\n"
+             "Raises:\n"
+             "    ValueError: the wires bound no region because a wire is open.\n\n"
              "Examples:\n"
              "    px.Shape(face)\n"
              "    px.Shape([outline, hole])")
         .def(py::init<const Face &>(), py::arg("face"), "")
-        .def(py::init([](const WireList &wires) { return Shape(wires.Region(), nullptr); }), py::arg("wires"), "")
+        .def(py::init([](const WireList &wires) { return Shape(wires.Region("Shape(wires)"), nullptr); }), py::arg("wires"), "")
         .def_property_readonly("lines", [](const Shape &s) { return s.Edges().All<Line>(); }, "lines: list[LineEdge]\n\nThe lines among the edges, copies.")
         .def_property_readonly("arcs", [](const Shape &s) { return s.Edges().All<Arc>(); }, "arcs: list[ArcEdge]\n\nThe arcs among the edges, copies.")
         .def_property_readonly("circles", [](const Shape &s) { return s.Edges().All<Circle>(); }, "circles: list[CircleEdge]\n\nThe circles among the edges, copies.")
@@ -398,4 +400,71 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
           "Examples:\n"
           "    px.SymmetricDifference([a, b])\n"
           "    px.SymmetricDifference([layer1, layer2, layer3])");
+    m.def("Offset", [](const py::iterable &parts, double d, const py::object &bothSides, OffsetForm ends, OffsetForm corners) -> py::object {
+        const std::optional<bool> both =
+            IsPlainAuto(bothSides, "Offset", "both_sides") ? std::nullopt : std::optional(TieArg(bothSides, "Offset", "both_sides"));
+        std::vector<Wire> wires;
+        ShapeList faces;
+        for (const py::handle &h : parts) {
+            if (IsA<Wire>(h))
+                wires.push_back(h.cast<Wire>());
+            else if (IsA<Face>(h) || IsA<Shape>(h))
+                AddShapes(h, faces, false);
+            else
+                throw py::type_error("Offset(parts): " + py::repr(h).cast<std::string>() + " is not a Wire, Face or Shape");
+        }
+        if (!wires.empty() && !faces.empty())
+            throw py::type_error("Offset(parts): wires and faces together; the offset of wires is wires, of faces a Shape: "
+                                 "offset them apart");
+        if (!faces.empty()) {
+            if (both.value_or(false))
+                throw py::value_error("Offset(parts, both_sides=True): faces are offset on one side, grown or shrunk by d; "
+                                      "px.Offset(face.wires, d) takes both sides of their outlines");
+            ShapeList grown;
+            for (const Shape &s : faces)
+                grown.push_back(OffsetFaces(s, d, CornersOf(corners)));
+            return py::cast(Combined(std::move(grown), &Unify, false));
+        }
+        std::erase_if(wires, [](const Wire &w) { return w.Empty(); });
+        py::list out;
+        if (wires.empty())
+            return out;
+        for (const Wire &w : wires)
+            if (!w.Axes().IsClose(wires.front().Axes()))
+                throw py::value_error("Offset(parts): the wires lie on different planes; move them onto one plane first");
+        const OffsetEnd e = EndsOf(ends);
+        const OffsetCorner c = CornersOf(corners);
+        Wire offset;
+        {
+            py::gil_scoped_release release;
+            offset = OffsetCurves(std::span<const Wire>(wires), d, both.value_or(true), e, c);
+        }
+        for (Wire &w : offset.OrderedChains())
+            out.append(py::cast(std::move(w)));
+        return out;
+    }, py::arg("parts"), py::pos_only(), py::arg("d"), py::arg("both_sides") = PlainAuto(), py::arg("ends") = OffsetForm::Round,
+          py::arg("corners") = OffsetForm::Round,
+          "Offset(parts: list[Wire] | list[Face | Shape], /, d: float, both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, "
+          "corners: OffsetForm = px.Round) -> list[Wire] | Shape\n\n"
+          "The offset of several wires as one, or of several faces united.\n\n"
+          "Wires: each chain as wire.Offset makes it, by default on both sides of every wire, open or closed. Where their "
+          "bands overlap they are one region: the wires returned are its boundary, cut where the bands cross and without "
+          "the edges inside, so px.Shape(...) of them is the region the bands cover. both_sides=False takes one side of "
+          "every wire (an open chain's run along its left for d > 0, a closed chain's loop outside). Faces and shapes: "
+          "each grown by d (shrunk for d < 0) as face.Offset, all united.\n\n"
+          "Args:\n"
+          "    parts: wires, or faces and shapes.\n"
+          "    d: the distance; for wires on one side: d > 0 an open chain's left (along its direction) or a closed chain's "
+          "outside, d < 0 the other side; for faces d > 0 grows, d < 0 shrinks.\n"
+          "    both_sides: px.Auto or True: both sides of every wire; False: one side. Faces always grow or shrink on one "
+          "side.\n"
+          "    ends: the open ends of wires taken both sides: px.Round, px.Flat or px.Square.\n"
+          "    corners: px.Round, px.Sharp or px.Chamfer.\n\n"
+          "Raises:\n"
+          "    TypeError: an item is not a Wire, Face or Shape, or wires and faces are given together.\n"
+          "    ValueError: d is 0 or not finite (wires), both_sides is True for faces, the wires lie on different planes, "
+          "ends is px.Sharp or px.Chamfer, corners is px.Flat or px.Square.\n\n"
+          "Examples:\n"
+          "    outline = px.Offset(sk.Wires(), 1.0)\n"
+          "    grown = px.Offset([face, other], 0.5)");
 }

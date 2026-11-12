@@ -148,7 +148,8 @@ namespace planex2d::sketch {
                             throw std::invalid_argument(call + ": the offset of " +
                                                         (IsAround(p.kind) ? "the corner where " + IdOf(Element(p.k % n)) + " starts"
                                                                                              : IdOf(Element(p.k))) +
-                                                        " falls into pieces, which an offset cannot hold yet");
+                                                        " falls into pieces, which a sketch's offset cannot hold; "
+                                                        "px.Offset(sketch.Wires(), d) offsets the chain as wires");
                         if (const std::string side = Label(fixed, p); !side.empty())
                             labels.insert(side);
                     }

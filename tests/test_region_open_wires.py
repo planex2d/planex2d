@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+import re
 import warnings
 
 import pytest
@@ -120,3 +121,40 @@ def test_a_pen_that_retraces_an_edge_keeps_the_region():
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert areas(s.Shape()) == [8]
+
+
+def open_l():
+    return px.Wire([px.Line((0, 0), (2, 0)), px.Line((2, 0), (2, 1))])
+
+
+def open_u():
+    return px.Wire([px.Line((0, 1), (0, 0)), px.Line((0, 0), (2, 0)), px.Line((2, 0), (2, 1))])
+
+
+@pytest.mark.parametrize("make, call, apart", [
+    (lambda: px.Face([open_l()]), "Face(wires)", "2.24"),
+    (lambda: open_l().Face(), "Face()", "2.24"),
+    (lambda: px.Shape([open_u()]), "Shape(wires)", "2"),
+    (lambda: px.QuickSketch().Move((0, 1)).Line((0, 0)).Line((2, 0)).Line((2, 1)).Face(), "Face()", "2"),
+    pytest.param(lambda: px.Sketch((0, 1)).Line((0, 0)).Line((2, 0)).Line((2, 1)).Face(), "Face()", "2",
+                 marks=pytest.mark.constraints, id="Sketch"),
+], ids=["Face(wires)", "wire.Face()", "Shape(wires)", "QuickSketch", "Sketch"])
+def test_a_face_of_an_open_wire_raises(make, call, apart):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ValueError, match=r"%s: the wires bound no region, a wire is open \(2 open ends, the closest %s "
+                                             r"apart\); close it with Close\(\) or px.ClosedOpenWires\(wires\)"
+                                             % (re.escape(call), apart)):
+            make()
+
+
+def test_a_wire_open_by_a_hair_raises_and_names_the_gap():
+    gap = px.Wire([px.Line((0, 0), (2, 0)), px.Line((2, 0), (2, 1)), px.Line((2, 1), (0, 1)), px.Line((0, 1), (0, 1e-3))])
+    with pytest.raises(ValueError, match=r"2 open ends, the closest 0.001 apart"):
+        px.Face([gap])
+    assert px.Face(px.ClosedOpenWires([gap])).mass == pytest.approx(2)
+
+
+def test_an_open_line_beside_a_closed_outline_still_warns_and_keeps_the_region():
+    with pytest.warns(px.PlanexWarning, match="open wire with 2 open ends"):
+        assert px.Face([rect_wire(), px.Line((10, 0), (12, 1))]).mass == pytest.approx(8)

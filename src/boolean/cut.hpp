@@ -260,11 +260,25 @@ namespace planex2d {
         return false;
     }
 
+    inline Vertex Between(const Line &e, const Vertex &p, const Vertex &q, double tol) {
+        const Vertex r = e.End() - e.Start();
+        return e.PointAtFraction(0.5 * (ParamOn(e, p, tol) + ParamOn(e, q, tol)) / Dot(r, r));
+    }
+    inline Vertex Between(const Arc &e, const Vertex &p, const Vertex &q, double tol) {
+        return e.PointAt(0.5 * (ParamOn(e, p, tol) + ParamOn(e, q, tol)));
+    }
+
+    template <class E>
+    bool LiesOn(const E &e, const Vertex &x, double tol) {
+        return e.OnCarrier(x, tol) && Position(e, x, tol) != Location::Off;
+    }
+
     // the pair's points at xs, the carriers' crossings or touch point: every end of either edge within tol of the other
     // edge (a T-junction where it lies) and each x where it lies on both edges; a point replaces another only within
-    // tol of it, an end before an x, and a crossing only within its own uncertainty. Two of them apart along both edges bound the stretch both edges share (the two
-    // farthest apart); else the first is the pair's point there. other: the pair's second crossing, the ends nearer to
-    // it are its own
+    // tol of it, an end before an x, and a crossing only within its own uncertainty. Two of them apart along both edges
+    // bound the stretch both edges share (the two farthest apart) where each edge's middle between them lies on the
+    // other, else both are the pair's points (two arcs the long way round share the ends, not the path); one point
+    // alone is the pair's point there. other: the pair's second crossing, the ends nearer to it are its own
     template <class A, class B>
     void AddMeeting(PairDecision &d, const A &a, const B &b, std::initializer_list<Vertex> xs, const Vertex *other,
                     PairKind kind, double tol) {
@@ -297,6 +311,11 @@ namespace planex2d {
         // a stretch has its ends apart along both edges; points apart only across them are one point along the curves
         if (i == j || Along(a, at[i], at[j], tol) <= tol || Along(b, at[i], at[j], tol) <= tol) {
             AddPairPoint(d, a, b, at.Empty() ? x : at[0], kind, tol);
+            return;
+        }
+        if (!LiesOn(b, Between(a, at[i], at[j], tol), tol) || !LiesOn(a, Between(b, at[i], at[j], tol), tol)) {
+            AddPairPoint(d, a, b, at[i], kind, tol);
+            AddPairPoint(d, a, b, at[j], kind, tol);
             return;
         }
         d.sameDirection = (ParamOn(a, at[i], tol) < ParamOn(a, at[j], tol)) == (ParamOn(b, at[i], tol) < ParamOn(b, at[j], tol));
@@ -385,7 +404,16 @@ namespace planex2d {
         return d;
     }
 
+    // either way round the same points: the formulas below round differently with a and b swapped, and near tangency
+    // the crossings move by about radius / half the lens times that
     inline PairDecision Decide(const Arc &a, const Arc &b, double tol) {
+        const Vertex ca = a.Center(), cb = b.Center();
+        if (cb.x < ca.x || (cb.x == ca.x && (cb.y < ca.y || (cb.y == ca.y && b.Radius() < a.Radius())))) {
+            PairDecision d = Decide(b, a, tol);
+            for (size_t k = 0; k < d.n; ++k)
+                std::swap(d.pts[k].la, d.pts[k].lb);
+            return d;
+        }
         PairDecision d;
         const Vertex dc = b.Center() - a.Center();
         const double dd = Norm(dc);
@@ -504,6 +532,9 @@ namespace planex2d {
         EdgeList a, b;
         std::vector<bool> aShared;
         bool bShared = false;
+        // a (b) was split at a point off it beyond rounding: its pieces turn by up to tol
+        bool aOff = false;
+        bool bOff = false;
 
         bool AShared(size_t k) const { return k < aShared.size() && aShared[k]; }
     };
@@ -698,6 +729,7 @@ namespace planex2d {
         Intervals oa, ob;
         double ta = tol;
         double tb = tol;
+        const double rounding = tol / config::state->k;
         auto identify = [&](const Vertex &end, const Vertex &x) {
             if (end != x)
                 rec.identified.push_back({end, x});
@@ -719,13 +751,15 @@ namespace planex2d {
                 if (ua[k] < 0.0 || ub[k] < 0.0)
                     continue;
                 on[k] = true;
-                if (ea == Location::Inside)
+                if (ea == Location::Inside) {
                     sa.Add(ua[k], p.at);
-                else
+                    out.aOff = out.aOff || a.Distance(p.at) > rounding;
+                } else
                     identify(ea == Location::AtStart ? a.Start() : a.End(), p.at);
-                if (eb == Location::Inside)
+                if (eb == Location::Inside) {
                     sb.Add(ub[k], p.at);
-                else
+                    out.bOff = out.bOff || b.Distance(p.at) > rounding;
+                } else
                     identify(eb == Location::AtStart ? b.Start() : b.End(), p.at);
                 rec.events.push_back({p.at, p.kind, ea, eb, d.sameDirection});
             }

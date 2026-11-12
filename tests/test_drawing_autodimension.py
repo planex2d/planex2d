@@ -328,3 +328,35 @@ def test_a_counterbored_hole_is_one_instance_of_its_pattern_and_its_view_comes_f
     assert top._auto.dof == 0
     assert [v for v in view_values(top) if v.endswith("°")] == ["3× 40°"]
     assert _autodim._circular(top) and not _autodim._circular(px.Drawing(counterbored(), px.Front, unit=px.mm).AutoDimension())
+
+
+def test_notches_round_a_rim_are_one_notch_and_a_circular_pattern():
+    part = occ.Cylinder(occ.Pnt(0, 0, 0), occ.Z, r=40, h=10)
+    for k in range(6):
+        part = part - occ.Box(occ.Pnt(34, -3, -1), occ.Pnt(41, 3, 11)).Rotate(occ.Axis(occ.Pnt(0, 0, 0), occ.Z), 60 * k)
+    top = px.Drawing(part, px.Top, unit=px.mm).AutoDimension()
+    assert top._auto.dof == 0 and top._auto.redundant == []
+    assert any(t.startswith("6×") for t in view_values(top))
+
+
+def holes_in_a_grid(nx, ny, square):
+    """a 60 x 60 x 5 plate with nx by ny holes 15 apart, square 4 x 4 or round of diameter 4"""
+    part = occ.Box(occ.Pnt(0, 0, 0), occ.Pnt(60, 60, 5))
+    for i in range(nx):
+        for j in range(ny):
+            if square:
+                part = part - occ.Box(occ.Pnt(10 + 15 * i, 10 + 15 * j, -1), occ.Pnt(14 + 15 * i, 14 + 15 * j, 6))
+            else:
+                part = part - occ.Cylinder(occ.Pnt(12 + 15 * i, 12 + 15 * j, -1), occ.Z, r=2, h=7)
+    return part
+
+
+def test_a_grid_of_round_holes_is_one_hole_and_a_linear_pattern_both_ways():
+    top = px.Drawing(holes_in_a_grid(3, 2, square=False), px.Top, unit=px.mm).AutoDimension()
+    assert top._auto.dof == 0 and top._auto.redundant == []
+    assert {"6× ⌀4", "2× 15"} <= set(view_values(top))
+
+
+def test_a_row_of_square_holes_is_one_hole_and_a_linear_pattern():
+    top = px.Drawing(holes_in_a_grid(3, 1, square=True), px.Top, unit=px.mm).AutoDimension()
+    assert top._auto.dof == 0 and any(t.startswith("2× ") for t in view_values(top))

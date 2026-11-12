@@ -209,3 +209,17 @@ def test_offset_works_in_place_unless_asked_for_a_new_object():
     with pytest.raises(ValueError, match="inplace=False"):
         px.Move((0, 0)).Rectangle(2, 2).Face().Offset(-1.5)
 
+
+
+def test_an_offset_by_about_the_tolerance_moves_the_outline_by_that_much():
+    star = px.FromPolyline([(0.5625, 0.0), (0.27618248648025295, 0.4168011926105597), (0.04613417973165101, 0.49786708814751723),
+                            (-0.19489293664633964, 0.46045275897247684), (-0.9529420004271565, 0.30315267411304364),
+                            (-0.6816955027099618, -0.5485583301573429), (0.09226835946330154, -0.9957341762950346),
+                            (0.5523649729605058, -0.8336023852211195)], closed=True).Face()
+    triangle = px.FromPolyline([(1, 0), (-0.5, 0.8660254037844387), (-0.5, -0.8660254037844384)], closed=True).Face()
+    for face in (star, triangle):
+        perimeter = sum(e.mass for e in face.edges)
+        for d in (-2e-14, -1e-14, -5e-15, 5e-15, 1e-14, 2e-14):
+            o = face.Offset(d, inplace=False)
+            assert len(o.faces) == 1 and abs(o.mass - face.mass) <= abs(d) * perimeter + 1e-15
+            assert ((face - o) if d > 0 else (o - face)).mass <= 1e-15

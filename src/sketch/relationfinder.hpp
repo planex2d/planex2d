@@ -135,7 +135,7 @@ namespace planex2d::sketch {
                 const Element &e = g.elements[k];
                 if (e.kind == ElementKind::Point)
                     AddAt(e.Point(), {k}, std::nullopt);
-                if (e.kind == ElementKind::Line || e.kind == ElementKind::Arc || e.kind == ElementKind::Spline) {
+                if (e.kind == ElementKind::Line || e.kind == ElementKind::Arc || (e.kind == ElementKind::Spline && !e.IsPeriodicBSpline(g))) {
                     const std::array<size_t, 2> ends = e.Ends(g);
                     AddAt(ends[0], {k, Part::Start}, End{k, false});
                     AddAt(ends[1], {k, Part::End}, End{k, true});

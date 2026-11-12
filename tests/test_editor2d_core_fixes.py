@@ -71,6 +71,53 @@ def test_a_fixed_line_trimmed_at_one_end_stays_fixed_where_its_piece_lies():
     assert sk("Line.1.end")[0].p == pytest.approx((20, 0), abs=TOL)
 
 
+def trimmed_quietly(sk, *args):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", px.PlanexWarning)
+        sk.Trim(*args)
+    assert "Fix.1" in constraints_of(sk)
+
+
+def arc_of(sk, name):
+    return [sk(f"{name}.{part}")[0].p for part in ("start", "end", "center")]
+
+
+def test_a_fixed_circle_trimmed_where_trimmed_lines_end_stays_fixed_where_its_arc_lies():
+    sk = px.Sketch(auto_constraint=False)
+    sk.Circle((0, 0), 175, px.Fix, id="ring")
+    sk.Move((0, -265)).Line((0, 300), id="side")
+    sk.Trim(("side", (0, 77.8)))
+    trimmed_quietly(sk, ("ring", (-175, 0)))
+    held = [(0, -175), (0, 175), (0, 0)]
+    assert arc_of(sk, "ring") == [pytest.approx(p, abs=TOL) for p in held]
+    assert sk.dof == 2
+    sk.Drag("side.start", (30, -265))
+    assert arc_of(sk, "ring") == [pytest.approx(p, abs=TOL) for p in held]
+
+
+def test_a_fixed_circle_trimmed_between_two_line_ends_on_it_keeps_its_long_arc():
+    sk = px.Sketch()
+    sk.Circle((0, 0), 10, px.Fix, id="bore")
+    sk.Move((-2, 12)).Line((-2, 96 ** 0.5), id="left")
+    sk.Move((2, 12)).Line((2, 96 ** 0.5), id="right")
+    trimmed_quietly(sk, ("bore", (0, 10)))
+    held = [(-2, 96 ** 0.5), (2, 96 ** 0.5), (0, 0)]
+    assert arc_of(sk, "bore") == [pytest.approx(p, abs=TOL) for p in held]
+    assert sk.dof == 4
+    sk.Drag("left.start", (-5, 15))
+    assert arc_of(sk, "bore") == [pytest.approx(p, abs=TOL) for p in held]
+
+
+def test_a_fixed_circle_cut_four_times_trimmed_by_a_quarter():
+    sk = px.Sketch(auto_constraint=False)
+    sk.Circle((0, 0), 175, px.Fix, id="ring")
+    sk.Move((0, -265)).Line((0, 300), id="side")
+    sk.Move((-265, 0)).Line((300, 0), id="across")
+    trimmed_quietly(sk, ("ring", (-120, 120)))
+    assert arc_of(sk, "ring") == [pytest.approx(p, abs=TOL) for p in [(-175, 0), (0, 175), (0, 0)]]
+    assert sk.dof == 6
+
+
 def test_removing_an_offset_s_last_piece_removes_the_whole_offset():
     sk = px.Sketch()
     sk.Move((0, 0)).Spline([(10, 8), (20, 0)])

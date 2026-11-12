@@ -185,3 +185,15 @@ def test_a_bspline_takes_degree_plus_one_poles_and_fitting_knots():
         px.Sketch().BSpline(POLES[:3])
     with pytest.raises(ValueError, match="4 poles of degree 3 need 8 knots, there are 2"):
         px.Sketch().BSpline(POLES, [0, 1])
+
+
+def test_a_periodic_bspline_has_no_ends_for_the_relations_it_gets():
+    sk = px.Sketch()
+    sk.Move((0, 0)).Line((10, 0)).Line((10, 5)).Line((0, 5)).Close()
+    sk.BSpline(CAM, periodic=True, id="cam")
+    assert sk.Location("cam.p0") == pytest.approx((0, 0), abs=TOL)
+    free = px.Sketch(auto_constraint=False)
+    free.Move((0, 0)).Line((10, 0)).Line((10, 5)).Line((0, 5)).Close()
+    free.BSpline(CAM, periodic=True, id="cam")
+    found = free.SuggestConstraints()
+    assert found and not any(f["kind"] == "Tangent" and '"cam"' in f["call"] for f in found)

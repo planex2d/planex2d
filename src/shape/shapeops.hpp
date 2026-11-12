@@ -358,7 +358,9 @@ namespace planex2d {
         FaceList out;
         const std::vector<FaceList> others = shapes.Rest().FaceLists();
         for (const Face &f : shapes.front().Faces()) {
-            FaceList regions = Boolean(f.Edges(), rest, op).Faces();
+            Wire region = Boolean(f.Edges(), rest, op);
+            Snap(region);
+            FaceList regions = region.Faces();
             std::vector<FaceList> operands{{f}};
             operands.insert(operands.end(), others.begin(), others.end());
             std::invoke(assign, regions, operands);
@@ -407,9 +409,11 @@ namespace planex2d {
                                   for (Face &r : regions)
                                       r.SetProps(operands.front().front().Props());
                               });
-        Wire region = rest.empty() ? shapes.front().FaceEdges()
-                                   : Boolean(shapes.front().FaceEdges(), BalancedBoolean(std::move(rest), BooleanOp::Union, multithreaded),
-                                             BooleanOp::Difference);
+        if (rest.empty())
+            return Result(axes, shapes.front().FaceEdges(), {shapes.front()}, &FaceList::InheritProps);
+        Wire region = Boolean(shapes.front().FaceEdges(), BalancedBoolean(std::move(rest), BooleanOp::Union, multithreaded),
+                              BooleanOp::Difference);
+        Snap(region);
         return Result(axes, std::move(region), {shapes.front()}, &FaceList::InheritProps);
     }
 

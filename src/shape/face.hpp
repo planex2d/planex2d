@@ -229,7 +229,7 @@ namespace planex2d {
         return std::move(faces.front());
     }
 
-    inline Wire WireList::Region() const {
+    inline Wire WireList::Region(const char *call) const {
         if (empty())
             return Wire();
         Wire all(front().Axes());
@@ -243,7 +243,7 @@ namespace planex2d {
         std::vector<bool> open;
         for (const Wire &w : *this)
             open.resize(open.size() + w.Size(), !w.HasEvenDegrees(tol));
-        return InitialClean(all, open);
+        return InitialClean(all, open, call);
     }
 
 }

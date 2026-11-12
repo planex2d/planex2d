@@ -917,6 +917,9 @@
   "OCCGeometry(shape: Shape, /, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
   "OCCGeometry(sketch: Sketch | QuickSketch, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry"
  ],
+ "px.Offset": [
+  "Offset(parts: list[Wire] | list[Face | Shape], /, d: float, both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round) -> list[Wire] | Shape"
+ ],
  "px.OffsetForm": [
   "(no signature)"
  ],
@@ -1070,7 +1073,7 @@
  ],
  "px.QuickSketch.Hexagon": [
   "Hexagon(af: float, /, *flags: Constraint, **options) -> QuickSketch",
-  "Hexagon(h: float, v: float, af: float, /, *flags: Constraint, **options) -> QuickSketch",
+  "Hexagon(center: Point, af: float, /, *flags: Constraint, **options) -> QuickSketch",
   "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Intersect3d": [
@@ -1127,7 +1130,7 @@
  ],
  "px.QuickSketch.Polygon": [
   "Polygon(r: float, n: int, /, *flags: Constraint, **options) -> QuickSketch",
-  "Polygon(h: float, v: float, r: float, n: int, /, *flags: Constraint, **options) -> QuickSketch",
+  "Polygon(center: Point, r: float, n: int, /, *flags: Constraint, **options) -> QuickSketch",
   "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> QuickSketch"
  ],
  "px.QuickSketch.Polylines": [
@@ -1665,7 +1668,7 @@
  ],
  "px.Sketch.Hexagon": [
   "Hexagon(af: float, /, *flags: Constraint, **options) -> Sketch",
-  "Hexagon(h: float, v: float, af: float, /, *flags: Constraint, **options) -> Sketch",
+  "Hexagon(center: Point, af: float, /, *flags: Constraint, **options) -> Sketch",
   "Hexagon(af: float, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Intersect3d": [
@@ -1722,7 +1725,7 @@
  ],
  "px.Sketch.Polygon": [
   "Polygon(r: float, n: int, /, *flags: Constraint, **options) -> Sketch",
-  "Polygon(h: float, v: float, r: float, n: int, /, *flags: Constraint, **options) -> Sketch",
+  "Polygon(center: Point, r: float, n: int, /, *flags: Constraint, **options) -> Sketch",
   "Polygon(n: int, /, *flags: Constraint, center: Point | None = None, concentric: Id | None = None, coincident: Id | None = None, through: Point | None = None, tangent: Id | Shape | tuple[Id, Id] | None = None, reverse: bool = False, **options) -> Sketch"
  ],
  "px.Sketch.Polylines": [

@@ -186,13 +186,15 @@ inline OffsetCorner CornersOf(OffsetForm f) {
     return f == OffsetForm::Round ? OffsetCorner::Round : f == OffsetForm::Sharp ? OffsetCorner::Sharp : OffsetCorner::Chamfer;
 }
 
-// the faces with the band of width |d| along their boundaries added (d > 0) or taken away (d < 0), its corners as given
+// the faces with the band of width |d| along their boundaries added (d > 0) or taken away (d < 0), its corners as given;
+// within the tolerance the faces as they are
 inline Shape OffsetFaces(const Shape &s, double d, OffsetCorner corners) {
     if (s.HasSharedFaces())
         throw py::value_error("Offset: the faces of the shape share edges (glued); px.Unify(shape) merges them first");
-    if (d == 0.0)
+    const Wire edges = s.FaceEdges();
+    if (std::abs(d) <= edges.Tol())
         return s;
-    ShapeList parts{s, Shape(s.FaceEdges().Offset(std::abs(d), OffsetEnd::Round, corners), nullptr)};
+    ShapeList parts{s, Shape(edges.Offset(std::abs(d), OffsetEnd::Round, corners), nullptr)};
     if (d > 0.0)
         return Combined(std::move(parts), &Unify, false);
     return Combined(std::move(parts), &Subtract, false);
@@ -207,7 +209,8 @@ inline const char *OffsetDoc(const std::string &cls, const std::string &returns,
                "meet (px.Sharp, without a limit: a corner of angle theta between its edges reaches abs(d) / sin(theta / 2) out from "
                "it), or the line between their ends (px.Chamfer).\n\n"
                "Args:\n"
-               "    d: the width of the band, a length; d > 0 grows, d < 0 shrinks, 0 changes nothing.\n"
+               "    d: the width of the band, a length; d > 0 grows, d < 0 shrinks, 0 (or a width within the tolerance) changes "
+               "nothing.\n"
                "    inplace: True changes this " + cls + " and returns it; False returns the offset as a new Shape and "
                "leaves this one.\n"
                "    corners: px.Round, px.Sharp or px.Chamfer.\n\n"
@@ -3068,8 +3071,8 @@ inline std::optional<Wire> TrimmedFace(const Face &f, const Wire &cutter, const 
     if (s.pieces.empty())
         return std::nullopt;
     std::vector<MassProps> mass;
-    for (const HalfEdges &piece : s.pieces)
-        mass.push_back(MassOf(EdgesOf(s.edges, piece), Wire(f.Axes())));
+    for (size_t k = 0; k < s.pieces.size(); ++k)
+        mass.push_back(MassOf(UnionOfPieces(s, {k}), Wire(f.Axes())));
     std::vector<size_t> chosen;
     if (r.kind == TrimRule::KeepLeft || r.kind == TrimRule::KeepRight) {
         for (size_t k = 0; k < s.pieces.size(); ++k)
@@ -3102,15 +3105,16 @@ inline std::optional<Wire> TrimmedWire(const Wire &w, const Wire &cutter, const 
     return out;
 }
 
-// every face and wire of the shape cut one by one: one shape per piece, the untouched parts as they are
+// every face and wire of the shape cut one by one: one shape per piece, the untouched parts as they are; a piece's
+// boundary without the cutter's stretches it has on both sides (one reaching into a hole)
 inline ShapeList SplitShape(const Shape &s, const Wire &cutter) {
     ShapeList out;
     for (const Face &f : s.Faces()) {
         FaceSplit split = SplitFace(f, cutter);
         if (split.pieces.empty())
             out.emplace_back(f);
-        for (const HalfEdges &piece : split.pieces)
-            out.emplace_back(Face(EdgesOf(split.edges, piece), f.Props()));
+        for (size_t k = 0; k < split.pieces.size(); ++k)
+            out.emplace_back(Face(UnionOfPieces(split, {k}), f.Props()));
     }
     for (const Wire &w : s.WireParts()) {
         WireSplit split = SplitWire(w, cutter);
@@ -3179,7 +3183,7 @@ inline const char *TrimDoc(const std::string &x) {
                "lies wholly on that side.\n"
                "    TypeError: the cutter or the point has the wrong form.\n\n"
                "Examples:\n"
-               "    " + x + ".Trim(px.Line((0, -5), (0, 5)), keep_left=True)\n"
+               "    " + x + ".Trim(px.Line((0, -5), (0, 5)), " + (x == "wire" ? "keep_largest" : "keep_left") + "=True)\n"
                "    " + x + ".Trim(cutter, keep_closest_to=(2, 1))");
 }
 

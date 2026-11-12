@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+import math
+
 import pytest
 
 import planex as px
@@ -146,3 +148,12 @@ def test_view_class_names():
     assert type(s.edges).__name__ == "EdgesView" and type(s.edges[0]).__name__ == "EdgeView"
     assert type(s.vertices).__name__ == "VerticesView" and type(s.vertices[0]).__name__ == "VertexView"
     assert repr(s.vertices[0]).startswith("VertexView(")
+
+
+def test_a_face_view_cuts_corners_of_a_copy_at_its_own_vertices():
+    s = px.Glue([px.QuickSketch((0, 0)).Rectangle(4, 4).Face(), px.QuickSketch((4, 0)).Rectangle(2, 4).Face()])
+    view = next(f for f in s.faces if abs(f.mass - 16) < 1e-9)
+    corner = next(v for v in view.vertices if abs(v.h) + abs(v.v) < 1e-12)
+    assert view.Filleted(corner, 0.5).mass == pytest.approx(16 - 0.25 * (1 - math.pi / 4), abs=1e-12)
+    assert view.Chamfered([corner], 1).mass == pytest.approx(15.5, abs=1e-12)
+    assert view.mass == pytest.approx(16, abs=1e-12)

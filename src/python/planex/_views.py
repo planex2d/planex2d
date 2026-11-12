@@ -6,7 +6,7 @@ working on Copy(); and px.Edge, for isinstance of any edge"""
 import abc
 import inspect
 
-from ._planex import ArcEdge, CircleEdge, EdgeView, Face, FaceView, LineEdge, SplineEdge, Unify
+from ._planex import ArcEdge, CircleEdge, EdgeView, Face, FaceView, LineEdge, SplineEdge, Unify, VertexView
 
 # these change a face in place; on a view they would change a copy
 IN_PLACE = ("Translate", "Rotate", "Mirror", "Scale", "Simplify", "FitArcs", "MergeCollinearEdges", "RemoveSmallGaps",
@@ -38,11 +38,22 @@ def _refused(name):
     return method
 
 
+def _points(at):
+    """corners given as the view's vertices, as their points: the copy that is cut has vertices of its own"""
+    if isinstance(at, VertexView):
+        return (at.h, at.v)
+    if isinstance(at, str) or not hasattr(at, "__iter__") or all(isinstance(c, (int, float)) for c in at):
+        return at
+    return [_points(c) for c in at]
+
+
 def _on_copy(name, attr):
     if isinstance(attr, property):
         return property(lambda self: getattr(self.Copy(), name), doc=attr.__doc__)
 
     def method(self, *args, **kwargs):
+        if name in ("Filleted", "Chamfered") and args:
+            args = (_points(args[0]),) + args[1:]
         return getattr(self.Copy(), name)(*args, **kwargs)
 
     method.__name__ = name

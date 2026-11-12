@@ -820,3 +820,26 @@ def test_a_warning_names_the_caller_s_line(tmp_path):
         px.FromKiCad(path)
     left_out = [w for w in caught if "left out" in str(w.message)]
     assert left_out and all(w.filename == __file__ for w in left_out)
+
+
+def test_a_trapezoid_pad_and_oval_drills_either_way(tmp_path):
+    body = '''(footprint "t:a" (layer "F.Cu") (at 10 10)
+  (pad "1" smd trapezoid (at 0 0) (size 2 1) (rect_delta 0.4 0) (layers "F.Cu") (net 1 "A")))
+ (footprint "t:b" (layer "F.Cu") (at 30 10)
+  (pad "2" thru_hole oval (at 0 0) (size 3 2) (drill oval 1.5 0.8) (layers "*.Cu") (net 1 "A"))
+  (pad "3" thru_hole oval (at 10 0) (size 2 3) (drill oval 0.8 1.5) (layers "*.Cu") (net 1 "A")))'''
+    copper = px.FromKiCad(kicad_board(tmp_path, body), layer="F.Cu")
+    trapezoid = next(f for f in copper.faces if box_mm(f)[0] == pytest.approx(9))
+    assert trapezoid.mass / MM2 == pytest.approx(2.0, rel=1e-9)
+    assert box_mm(trapezoid) == pytest.approx((9, -10.7, 11, -9.3), abs=1e-9)
+    ring = 2 + math.pi - (0.56 + 0.16 * math.pi)
+    assert sorted(f.mass / MM2 for f in copper.faces if f is not trapezoid)[-2:] == pytest.approx([ring, ring], rel=1e-9)
+
+
+def test_a_board_without_an_outline_and_a_stackup_of_no_thickness_are_named(tmp_path):
+    bare = tmp_path / "bare.kicad_pcb"
+    bare.write_text('(kicad_pcb (version 20241229) (generator "t")\n %s\n (net 0 "")\n)' % (LAYERS % ""))
+    with pytest.raises(ValueError, match="the board has no outline on Edge.Cuts"):
+        px.FromKiCad(str(bare), layer="Edge.Cuts")
+    with pytest.raises(ValueError, match="the thicknesses must be positive"):
+        px.FromKiCad(kicad_board(tmp_path, ""), layer=[-1.0])

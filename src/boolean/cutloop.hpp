@@ -35,8 +35,12 @@ namespace planex2d {
 
         // edges of one clean part (a Glue input) meet only at their shared ends, the cut leaves such pairs alone
         bool IsSamePart(const CutState &o) const { return part != noPart && part == o.part; }
-        // o is cut against this one
-        bool CanCut(const CutState &o) const { return !o.excluded && o.needsCutting && (mask & o.mask) == 0 && !IsSamePart(o); }
+        // o is cut against this one; a stretch both operands share still cuts an edge of one of them, where the other's
+        // vertex at its end lies on that edge
+        bool CanCut(const CutState &o) const {
+            const bool apart = (mask & o.mask) == 0 || ((mask | o.mask) == 3 && mask != o.mask);
+            return !o.excluded && o.needsCutting && apart && !IsSamePart(o);
+        }
     };
 
     // the circles the edges near them meet are cut into arcs at the meeting points, one point making two halves; a
@@ -89,10 +93,12 @@ namespace planex2d {
         state = std::move(split);
     }
 
-    // parity of the ray from m per operand: bit 1 odd for A, bit 2 for B; only edges with a parent in wanted count
-    template <bool vertical, bool onboundary>
+    // parity of the ray from m per operand: bit 1 odd for A, bit 2 for B; only edges with a parent in wanted count. m on
+    // the piece on (a shared piece's midpoint): its crossing at m does not count, every other edge's does however near
+    // m it passes
+    template <bool vertical>
     unsigned char CrossingParity(Grid &grid, const Wire &c, const std::vector<CutState> &state, const Vertex &m,
-                                 unsigned char wanted) {
+                                 unsigned char wanted, size_t on = std::numeric_limits<size_t>::max()) {
         static Timer t("planex Crossing", false);
         Region reg(t);
         unsigned char odd = 0;
@@ -100,7 +106,7 @@ namespace planex2d {
             const CutState &s = state[k];
             if (s.excluded || !(s.mask & wanted))
                 return;
-            if (RayParity<vertical, onboundary>(c[k], m))
+            if (k == on ? RayParity<vertical, true>(c[k], m) : RayParity<vertical, false>(c[k], m))
                 odd ^= s.mask;
         });
         return odd;
@@ -127,7 +133,8 @@ namespace planex2d {
     }
 
     // what the cut of w[i] and w[j] leaves: the pieces appended, a shared stretch kept once (drop: as InitialClean
-    // keeps it); pa, pb: the edges before the cut where one has a partition
+    // keeps it; an operand along it twice cancels there, as in ShareCongruent); pa, pb: the edges before the cut where
+    // one has a partition
     inline void Settle(Wire &w, Grid &grid, std::vector<CutState> &state, bool drop, size_t i, size_t j, CutResult r,
                        CutPieces &pieces, const std::optional<Edge> &pa, const std::optional<Edge> &pb) {
         auto append = [&](Edge &e, unsigned char mask, size_t parent, bool open) -> CutState & {
@@ -150,7 +157,7 @@ namespace planex2d {
         const Properties kept = cancel || (openA && openB) ? merged : openA ? PropsOf(w[j]) : PropsOf(w[i]);
         auto share = [&](Edge &e, CutState &s, unsigned char other) {
             if (!drop) {
-                s.mask |= other;
+                s.mask ^= other;
             } else if (cancel) {
                 s.drop = true;
             } else {
@@ -185,6 +192,8 @@ namespace planex2d {
         }
     }
 
+    // every pair once in index order; then the pieces of edges split at a point off them once more against every edge
+    // near them: they turned by up to tol, and what was decided on the edge before may not hold for them
     inline void CutAll(Wire &w, Grid &grid, std::vector<CutState> &state, bool drop, CutRecord *record = nullptr) {
         static Timer t("planex CutAll");
         Region reg(t);
@@ -198,6 +207,29 @@ namespace planex2d {
             if (!state[k].excluded && state[k].needsCutting)
                 scale = std::max(scale, LengthScaleOf(w[k]));
         const double tol = Tol(scale);
+        std::vector<bool> off;
+        const auto cut = [&](size_t i, size_t j) {
+            std::optional<Edge> pa, pb;
+            if (HasPartition(PropsOf(w[i])) || HasPartition(PropsOf(w[j]))) {
+                pa = w[i];
+                pb = w[j];
+            }
+            CutPieces pieces;
+            CutResult r = std::visit([&](auto &a, auto &b) { return Cut(a, b, pieces, rec, tol); }, w[i], w[j]);
+            if (r == CutResult::Untouched)
+                return;
+            const size_t firstNew = w.Size(), firstB = firstNew + pieces.a.size();
+            Settle(w, grid, state, drop, i, j, r, pieces, pa, pb);
+            off.resize(w.Size(), false);
+            if (pieces.aOff) {
+                off[i] = true;
+                std::fill(off.begin() + (std::ptrdiff_t)firstNew, off.begin() + (std::ptrdiff_t)firstB, true);
+            }
+            if (pieces.bOff) {
+                off[j] = true;
+                std::fill(off.begin() + (std::ptrdiff_t)firstB, off.end(), true);
+            }
+        };
         std::vector<uint32_t> nearby;
         for (size_t i = 0; i < w.Size(); ++i) {
             if (state[i].excluded || !state[i].needsCutting)
@@ -210,15 +242,25 @@ namespace planex2d {
                     break;
                 if (j <= i || !state[i].CanCut(state[j]))
                     continue;
-                std::optional<Edge> pa, pb;
-                if (HasPartition(PropsOf(w[i])) || HasPartition(PropsOf(w[j]))) {
-                    pa = w[i];
-                    pb = w[j];
+                cut(i, j);
+            }
+        }
+        // at most three more passes: a stack of edges within tol of each other settles within them
+        for (int pass = 0; pass < 3 && std::find(off.begin(), off.end(), true) != off.end(); ++pass) {
+            const std::vector<bool> again = std::exchange(off, std::vector<bool>(w.Size(), false));
+            for (size_t i = 0; i < again.size(); ++i) {
+                if (!again[i] || state[i].excluded || !state[i].needsCutting)
+                    continue;
+                nearby.clear();
+                grid.InBox(BoxOf(w[i]).Grown(tol), nearby);
+                std::sort(nearby.begin(), nearby.end());
+                for (uint32_t j : nearby) {
+                    if (state[i].excluded)
+                        break;
+                    if (j == i || (j < again.size() && again[j] && j < i) || !state[i].CanCut(state[j]))
+                        continue;
+                    cut(i, j);
                 }
-                CutPieces pieces;
-                CutResult r = std::visit([&](auto &a, auto &b) { return Cut(a, b, pieces, rec, tol); }, w[i], w[j]);
-                if (r != CutResult::Untouched)
-                    Settle(w, grid, state, drop, i, j, r, pieces, pa, pb);
             }
         }
     }

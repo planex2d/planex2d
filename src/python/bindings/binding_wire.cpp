@@ -193,12 +193,13 @@ void BindWire(py::module_ &m, py::class_<Wire> &wire) {
         .def_property_readonly("wires", &Wire::Wires, "wires: list[Wire]\n\nThe connected chains of the edges in traversal order, a list of wires.")
         .def_property_readonly("faces", [](const Wire &) { return FaceList{}; }, "faces: list[Face]\n\nAn empty list: a wire has no faces.")
         .def("Face", [](const Wire &w) {
-            return InitialClean(w, std::vector<bool>(w.Size(), !w.HasEvenDegrees(w.Tol()))).SingleFace("Face()");
+            return InitialClean(w, std::vector<bool>(w.Size(), !w.HasEvenDegrees(w.Tol())), "Face()").SingleFace("Face()");
         }, "Face() -> Face\n\n"
            "The region bounded by the edges: overlapping stretches removed (of an open wire one copy stays), crossings "
            "cut.\n\n"
            "Raises:\n"
-           "    ValueError: the region has several parts; px.Shape([wire]) keeps them all.\n\n"
+           "    ValueError: the region has several parts (px.Shape([wire]) keeps them all); the edges bound no region "
+           "because the wire is open.\n\n"
            "Examples:\n"
            "    face = wire.Face()")
         .def("Offset", [](const Wire &w, double d, const py::object &bothSides, OffsetForm ends, OffsetForm corners) {

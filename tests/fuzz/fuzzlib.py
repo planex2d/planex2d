@@ -15,7 +15,11 @@ import planex as px
 
 BATCH = 25
 KINDS = ("star", "rounded", "disc", "holed", "spline")
-RELATIONS = ("free", "translated", "half turn", "mirrored", "same", "edge shift", "nudged turn", "nudged shift")
+BOOLEAN_KINDS = KINDS + ("holey", "sharp", "slotted", "mixed")
+RELATIONS = ("free", "translated", "half turn", "mirrored", "same", "edge shift", "nudged turn", "nudged shift",
+             "tangent", "corner on edge", "corner on corner", "same circle", "turned about a corner", "one point moved",
+             "offset")
+RELATED = RELATIONS[9:]
 
 
 def run(body, strategy, budget, pinned=()):
@@ -61,7 +65,7 @@ def shapes(draw, kinds=KINDS):
 
 
 @st.composite
-def pairs(draw, kinds=KINDS):
+def pairs(draw, kinds=BOOLEAN_KINDS):
     a = draw(shapes())
     a = (draw(st.sampled_from(kinds)),) + a[1:]
     relation = draw(st.sampled_from(RELATIONS))
@@ -91,6 +95,8 @@ def build(spec):
     """the face (or Shape) of a shape spec"""
     kind, star, extra = spec
     cx, cy, rot, radii, gaps, scale = star
+    if kind in MADE:
+        return MADE[kind](star, extra)
     if kind == "disc":
         return px.QuickSketch().Circle((cx, cy), scale * (0.3 + extra)).Face()
     if kind == "spline":
@@ -131,6 +137,10 @@ def made_pair(spec):
         return a, build(b_spec)
     if relation == "same":
         return a, build(a_spec)
+    if relation == "tangent":
+        return a, touching(a, b_spec, pick)
+    if relation in RELATED:
+        return a, related(a, a_spec, relation, b_spec, pick)
     vs = vertices(a)
     p, q = vs[pick % len(vs)], vs[(pick * 7 + 3) % len(vs)]
     tiny = 10.0 ** -(3 + pick % 13)
@@ -150,6 +160,142 @@ def made_pair(spec):
     if relation == "mirrored":
         return a, a.Mirrored(s, (e[0] - s[0], e[1] - s[1]))
     return a, a.Translated((e[0] - s[0], e[1] - s[1]))
+
+
+def touching(a, b_spec, pick):
+    """b's disc, rounded shape or spline touching an edge of a from outside: its point farthest towards a at a point of
+    that edge, moved along the edge's normal by 10^-3 ... 10^-16 into the gap or the overlap"""
+    p, n = normal_at(a, a.edges[pick % len(a.edges)], 0.2 + 0.06 * ((pick * 7 + 3) % 11))
+    shift = (1.0 if pick % 2 else -1.0) * 10.0 ** -(3 + pick % 14)
+    target = (p[0] + shift * n[0], p[1] + shift * n[1])
+    kind, star, extra = b_spec
+    if kind == "spline":
+        b = build(b_spec)
+        x = farthest(b, n)
+        return b.Translated((target[0] - x[0], target[1] - x[1]))
+    if kind == "rounded":
+        b = build(b_spec)
+        # the rounded shape's arcs have one radius, about the polygon's corners: the corner farthest towards a holds
+        # the point farthest towards a
+        arc = min(b.arcs, key=lambda c: c.center.x * n[0] + c.center.y * n[1])
+        c, r = (arc.center.x, arc.center.y), arc.radius
+    else:
+        c, r = star[:2], star[5] * (0.3 + extra)
+        b = px.QuickSketch().Circle(c, r).Face()
+    return b.Translated((target[0] - (c[0] - r * n[0]), target[1] - (c[1] - r * n[1])))
+
+
+def normal_at(a, e, t):
+    """the point of a's edge e at the fraction t of its length and the normal there, pointing out of a"""
+    p, d = e.PointAt(t), e.TangentAt(t)
+    length = math.hypot(d.x, d.y)
+    n = (d.y / length, -d.x / length)
+    probe = 1e-6 * size(a)
+    if a.Contains(np.array([[p.x + probe * n[0], p.y + probe * n[1]]]))[0]:
+        n = (-n[0], -n[1])
+    return (p.x, p.y), n
+
+
+def farthest(obj, n):
+    """the point of obj's outline farthest along -n: the least x·n of a sample of each edge, then a golden-section
+    search beside it"""
+    best = None
+    for e in obj.edges:
+        def along(t):
+            p = e.PointAt(t)
+            return p.x * n[0] + p.y * n[1]
+
+        ts = np.linspace(0.0, 1.0, 65)
+        k = int(np.argmin([along(t) for t in ts]))
+        lo, hi = ts[max(k - 1, 0)], ts[min(k + 1, 64)]
+        g = (math.sqrt(5.0) - 1.0) / 2.0
+        for _ in range(60):
+            m1, m2 = hi - g * (hi - lo), lo + g * (hi - lo)
+            if along(m1) <= along(m2):
+                hi = m2
+            else:
+                lo = m1
+        t = 0.5 * (lo + hi)
+        if best is None or along(t) < best[0]:
+            p = e.PointAt(t)
+            best = (along(t), (p.x, p.y))
+    return best[1]
+
+
+def nudge(pick):
+    """how far a relation moves a shape off its exact place: 0 for every third pick, else 10^-3 ... 10^-16 to either
+    side"""
+    if pick % 3 == 0:
+        return 0.0
+    return (1.0 if pick % 2 else -1.0) * 10.0 ** -(3 + pick % 14)
+
+
+def moved_point(spec, pick):
+    """the shape spec with one star point moved out by 10^-3 ... 10^-15 of its radius: another outline running within
+    that everywhere near the first (a spline changes along its whole length)"""
+    kind, (cx, cy, rot, radii, gaps, scale), extra = spec
+    i = pick % len(radii)
+    radii = radii[:i] + (radii[i] * (1.0 + 10.0 ** -(3 + pick % 13)),) + radii[i + 1:]
+    return (kind, (cx, cy, rot, radii, gaps, scale), extra)
+
+
+def related(a, a_spec, relation, b_spec, pick):
+    """b for the relations that put two shapes' corners, arcs or outlines together: one of b's corners on an edge or a
+    corner of a, a disc on one of a's arcs, a turned about one of its corners (several edges through one point), a
+    with one point moved, a's offset; exact or nudged by pick"""
+    if relation == "one point moved":
+        return build(moved_point(a_spec, pick))
+    if relation == "offset":
+        d = 0.05 * a_spec[1][5] if pick % 3 == 0 else 10.0 ** -(3 + pick % 14)
+        return a.Offset(d if pick % 2 else -d, inplace=False)
+    if relation == "turned about a corner":
+        vs = vertices(a)
+        return a.Rotated(vs[pick % len(vs)], 10.0 + 340.0 * ((pick * 37) % 64) / 64)
+    if relation == "same circle" and a.arcs:
+        arc = a.arcs[pick % len(a.arcs)]
+        return px.Circle((arc.center.x + nudge(pick), arc.center.y), arc.radius).Face()
+    b = build(b_spec)
+    vb = vertices(b)
+    s = vb[(pick * 5 + 1) % len(vb)]
+    if relation == "corner on edge":
+        p, n = normal_at(a, a.edges[pick % len(a.edges)], 0.2 + 0.06 * ((pick * 7 + 3) % 11))
+        shift = nudge(pick)
+        return b.Translated((p[0] + shift * n[0] - s[0], p[1] + shift * n[1] - s[1]))
+    va = vertices(a)
+    t = va[pick % len(va)]
+    return b.Translated((t[0] + nudge(pick) - s[0], t[1] - s[1]))
+
+
+def known(spec):
+    """the pairs of known limitations, left out of the random runs (their cases are pinned): a spline face against a face
+    touching it, a corner on it or a near copy of itself (reshaped, nudged, offset by a hair)"""
+    a_spec, relation, b_spec, pick = spec
+    hair = relation == "offset" and pick % 3 != 0
+    corner = relation in ("corner on edge", "corner on corner", "same circle")
+    contact = relation in ("tangent", "one point moved") or relation.startswith("nudged") or corner or hair
+    return "spline" in (a_spec[0], b_spec[0]) and contact
+
+
+def unless_known(check, pairs_of=lambda spec: [spec], also=lambda spec: False):
+    """check for the random runs: a spec holding a known pair, or one also names, is left out"""
+    def body(spec):
+        if not also(spec) and not any(known(p) for p in pairs_of(spec)):
+            check(spec)
+    return body
+
+
+def pairs_in_triple(spec):
+    return [spec[0], (spec[0][0],) + spec[1:]]
+
+
+def pair_of_moved(spec):
+    return [spec[0]]
+
+
+def known_moved(spec):
+    """a spline's nudged copy, a known limitation"""
+    a_spec, relation, b_spec, pick = spec[0]
+    return a_spec[0] == "spline" and relation.startswith("nudged")
 
 
 def area(obj):
@@ -173,7 +319,10 @@ def area_tol(*objs):
 
 
 def check_identities(spec):
-    a, b = build_pair(spec)
+    identities(*build_pair(spec))
+
+
+def identities(a, b):
     A, B = area(a), area(b)
     union, common, a_only, b_only = a + b, a * b, a - b, b - a
     U, I, D, E = area(union), area(common), area(a_only), area(b_only)
@@ -232,11 +381,19 @@ def check_against_shapely(spec):
     if spec[1].startswith("nudged") and {spec[0][0], spec[2][0]} & {"rounded", "disc"}:
         return
     a, b = build_pair(spec)
+    against_shapely(a, b, spec)
+
+
+def against_shapely(a, b, spec, straight=False):
+    """a + b, a * b and a - b against shapely's booleans of the inputs: the symmetric difference no larger than the
+    sampling (none for straight edges) and Tol(S) allow; where they disagree OCC referees"""
+    import shapely
+
     sample = 1e-6 * size(a, b)
     # shapely's overlay is not robust for edges one rounding unit apart (GEOS 3.13.1 returned one operand as the union
     # of a polygon and its mirror copy across a shared edge); snap rounding on a tiny grid is
     grid = 1e-12 * size(a, b)
-    tol = area_tol(a, b) + 4 * (sample + grid) * (perimeter(a) + perimeter(b))
+    tol = area_tol(a, b) + 4 * ((0.0 if straight else sample) + grid) * (perimeter(a) + perimeter(b))
     ops = {"union": shapely.union, "common": shapely.intersection, "difference": shapely.difference}
 
     def disagreement(name, ours):
@@ -849,3 +1006,695 @@ def check_band_thickness(spec):
     band = px.Shape([s.Wire().Offset(d, True, px.Round, px.Round)])
     got = band.Measure(px.measurements.MinThickness())
     assert abs(got - 2 * d) <= 1e-9 * size(band), (spec, "thinnest", got, 2 * d)
+
+
+def tol_of(*objs):
+    """Tol(S) of the objects together"""
+    return px.config.k * px.config.eps * size(*objs)
+
+
+def two_within(pts, tol):
+    """two different points of pts within tol and within the Tol(S) of their own coordinates of each other (their
+    distance and the points), None if there are none: by cells of size tol"""
+    cells = {}
+    for k, (x, y) in enumerate(pts):
+        cells.setdefault((math.floor(x / tol), math.floor(y / tol)), []).append(k)
+    for (i, j), ks in cells.items():
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                for m in cells.get((i + di, j + dj), ()):
+                    for k in ks:
+                        d = math.dist(pts[k], pts[m])
+                        if 0.0 < d <= tol and d <= local_tol(pts[k], pts[m]):
+                            return d, tuple(pts[k]), tuple(pts[m])
+    return None
+
+
+def ends(obj):
+    return np.array([(v.x, v.y) for e in obj.edges for v in (e.start, e.end)]).reshape(-1, 2)
+
+
+def local_tol(*points):
+    """Tol(S) of the points' own coordinates, as planex takes it for an edge"""
+    return px.config.k * px.config.eps * max([1.0] + [abs(c) for p in points for c in p])
+
+
+def clean(obj, what):
+    """a result as the basic rule has it, each edge at the Tol(S) of its own coordinates: no edge shorter than that
+    (by its chord, as planex measures an edge it would drop; a closed one by its length),
+    the ends of its edges the same point or more than tol apart, every face with area, and glued again (its edges cut
+    against each other) the same edges and faces"""
+    es = list(obj.edges)
+    if not es:
+        return
+    tol = tol_of(obj)
+    short = [(math.dist((e.start.x, e.start.y), (e.end.x, e.end.y)) or e.mass,
+              local_tol((e.start.x, e.start.y), (e.end.x, e.end.y))) for e in es]
+    worst = min(short, key=lambda x: x[0] / x[1])
+    assert worst[0] > worst[1], (what, "an edge under its tol", worst)
+    lengths = np.array([e.mass for e in es])
+    close = two_within(ends(obj), tol)
+    assert close is None or close[0] > local_tol(close[1], close[2]), (what, "two ends within tol", close)
+    assert all(f.mass > 0.0 for f in obj.faces), (what, "a face without area")
+    recut = px.Glue([obj])
+    assert len(recut.edges) == len(es) and len(recut.faces) == len(obj.faces), \
+        (what, "glued again", len(es), len(recut.edges), len(obj.faces), len(recut.faces))
+    assert abs(sum(e.mass for e in recut.edges) - lengths.sum()) <= tol * len(es), (what, "glued again, longer")
+
+
+OPS = (("a + b", lambda x, y: x + y), ("a * b", lambda x, y: x * y), ("a - b", lambda x, y: x - y),
+       ("b - a", lambda x, y: y - x))
+
+
+def check_clean(spec):
+    a, b = build_pair(spec)
+    for name, op in OPS:
+        clean(op(a, b), name)
+
+
+@st.composite
+def triples(draw):
+    """a pair and a third shape in a relation of its own to the pair's first"""
+    return (draw(pairs()), draw(st.sampled_from(RELATIONS)), draw(shapes()), draw(st.integers(0, 64)))
+
+
+def check_chains(spec):
+    """three shapes and results as inputs: the union associative, the common part distributive over it, a difference by
+    a union two differences, a shape split by another put back together, a repeated operation the same"""
+    pair = spec[0]
+    a, b = build_pair(pair)
+    _, c = build_pair((pair[0],) + spec[1:])
+    tol = 4 * area_tol(a, b, c)
+
+    def same(x, y, what):
+        assert abs(area(x) - area(y)) <= tol, (what, area(x), area(y), tol)
+
+    ab = a + b
+    abc = ab + c
+    same(abc, a + (b + c), "(a + b) + c")
+    same(a * (b + c), a * b + a * c, "a * (b + c)")
+    same(a - (b + c), (a - b) - c, "a - (b + c)")
+    back = (a - b) + a * b
+    assert area(back - a) <= tol and area(a - back) <= tol, ("(a - b) + a * b", area(back - a), area(a - back), tol)
+    same(ab + b, ab, "(a + b) + b")
+    same((a * b) * b, a * b, "(a * b) * b")
+    clean(abc, "(a + b) + c")
+    clean(back, "(a - b) + a * b")
+
+
+@st.composite
+def moved_pairs(draw):
+    """a pair and a similarity: scaled by 10^-3 ... 10^3, turned, maybe mirrored, moved 10^0 ... 10^6 from the
+    origin"""
+    return (draw(pairs()), draw(st.integers(-3, 3)), draw(st.floats(0.0, 2 * math.pi)), draw(st.booleans()),
+            draw(st.integers(0, 6)), draw(st.floats(0.0, 2 * math.pi)))
+
+
+def similar(obj, scale, turn, mirror, far, heading):
+    o = obj.Scaled((0.0, 0.0), 10.0 ** scale).Rotated((0.0, 0.0), math.degrees(turn))
+    if mirror:
+        o = o.Mirrored((0.0, 0.0), (math.cos(turn), math.sin(turn)))
+    return o.Translated((10.0 ** far * math.cos(heading), 10.0 ** far * math.sin(heading)))
+
+
+def check_moved(spec):
+    """T(a) op T(b) is T(a op b) for a similarity T: as much area, scaled, and no farther apart than the tolerances of
+    both places allow"""
+    pair, *t = spec
+    a, b = build_pair(pair)
+    ta, tb = similar(a, *t), similar(b, *t)
+    squared = 10.0 ** (2 * t[0])
+    tol = area_tol(ta, tb) + squared * area_tol(a, b)
+    for name, op in OPS:
+        here, there = op(a, b), op(ta, tb)
+        assert abs(area(there) - squared * area(here)) <= tol, (name, area(there), squared * area(here), tol)
+        if here.faces and there.faces:
+            moved = similar(here, *t)
+            off = area(moved - there) + area(there - moved)
+            assert off <= 2 * tol, (name, "apart", off, tol)
+        clean(there, name)
+
+
+@st.composite
+def crowds(draw):
+    """5 ... 50 discs or rounded squares on a turned grid whose spacing makes neighbours touch, overlap or stand apart
+    by 10^-3 ... 10^-16, or 5 ... 30 random shapes on top of each other"""
+    if draw(st.booleans()):
+        return ("grid", draw(st.integers(5, 50)), draw(st.sampled_from(("disc", "rounded"))), draw(st.integers(0, 64)),
+                draw(st.floats(0.0, 2 * math.pi)))
+    return ("heap", tuple(draw(st.lists(shapes(), min_size=5, max_size=30))))
+
+
+def crowd(spec):
+    if spec[0] == "heap":
+        parts = [build(s) for s in spec[1]]
+        for p in parts:
+            valid(p)
+        return parts
+    _, n, kind, pick, turn = spec
+    side = math.ceil(math.sqrt(n))
+    spacing = 0.75 if pick % 5 == 4 else 1.0 + nudge(pick)
+    parts = []
+    for i in range(n):
+        x, y = (i % side) * spacing, (i // side) * spacing
+        if kind == "disc":
+            f = px.Circle((x, y), 0.5).Face()
+        else:
+            f = px.Move((x - 0.4, y - 0.4)).Rectangle(0.8, 0.8).Face().Offset(0.1, inplace=False)
+        parts.append(f.Rotated((0.0, 0.0), math.degrees(turn)))
+    return parts
+
+
+def check_crowd(spec):
+    """px.Unify of many shapes: within a time limit, as the operations one by one and as shapely's union, the same
+    multithreaded; px.Glue's faces cover it once; clean"""
+    import shapely
+
+    parts = crowd(spec)
+    tol = area_tol(*parts) * len(parts)
+    start = time.perf_counter()
+    u = px.Unify(parts, multithreaded=False)
+    took = time.perf_counter() - start
+    assert took <= 2.0 + 0.2 * len(parts), ("slow", len(parts), took)
+    folded = parts[0]
+    for p in parts[1:]:
+        folded = folded + p
+    assert abs(area(u) - area(folded)) <= tol, ("one by one", area(u), area(folded), tol)
+    threaded = px.Unify(parts, multithreaded=True)
+    assert abs(area(threaded) - area(u)) <= tol, ("multithreaded", area(threaded), area(u), tol)
+    assert len(threaded.edges) == len(u.edges), ("multithreaded edges", len(threaded.edges), len(u.edges))
+    glued = px.Glue(parts)
+    assert abs(sum(f.mass for f in glued.faces) - area(u)) <= tol, ("glue", sum(f.mass for f in glued.faces), area(u))
+    sample = 1e-6 * size(*parts)
+    theirs = shapely.union_all([shapely_of(p, sample) for p in parts])
+    off = shapely.symmetric_difference(shapely_of(u, sample), theirs).area
+    assert off <= tol + 4 * sample * sum(perimeter(p) for p in parts), ("shapely", off)
+    clean(u, "unify")
+
+
+def outline(obj):
+    return sorted((e.start.x, e.start.y, e.end.x, e.end.y, e.mass) for e in obj.edges)
+
+
+def off_outline(points, obj):
+    """how far each point lies from obj's outline"""
+    return np.min([e.Distance(points) for e in obj.edges], axis=0)
+
+
+def check_same_answer(spec, by_order=True):
+    """an operation done twice gives the same edges to the last bit; b + a and b * a as many edges and faces as a + b
+    and a * b, each vertex on the other's outline within four tol (a crossing at a small angle may lie elsewhere along
+    the edges, by its rounding over the angle's sine)"""
+    a, b = build_pair(spec)
+    tol = 4 * tol_of(a, b)
+    for name, op in OPS:
+        assert outline(op(a, b)) == outline(op(a, b)), (name, "twice")
+    if not by_order:
+        return
+    for name, x, y in (("a + b", a + b, b + a), ("a * b", a * b, b * a)):
+        assert (len(x.edges), len(x.faces)) == (len(y.edges), len(y.faces)), \
+            (name, "edges and faces", len(x.edges), len(y.edges), len(x.faces), len(y.faces))
+        if x.edges:
+            off = max(off_outline(ends(y), x).max(), off_outline(ends(x), y).max())
+            assert off <= tol, (name, "a vertex off the other's outline", off, tol)
+
+
+@st.composite
+def offset_inputs(draw):
+    """a shape and an offset distance: 10^-3 ... 10^-16 or 5 % of its size, outward or inward"""
+    return (draw(shapes()), draw(st.integers(2, 16)), draw(st.booleans()))
+
+
+def check_offset_inputs(spec):
+    """a shape against its offset: outward the offset holds it, inward it holds the offset; the area changes by no more
+    than d along the outline and round its corners, and a spline's fitted offset by up to spline_tol along it
+"""
+    shape, k, outward = spec
+    a = build(shape)
+    valid(a)
+    d = 0.05 * shape[1][5] if k == 2 else 10.0 ** -k
+    o = a.Offset(d if outward else -d, inplace=False)
+    tol = area_tol(a, o) if o.edges else area_tol(a)
+    inner, outer = (a, o) if outward else (o, a)
+    assert area(inner - outer) <= tol, ("inner outside the outer", area(inner - outer), tol)
+    assert abs(area(inner + outer) - area(outer)) <= tol, ("union", area(inner + outer), area(outer))
+    assert abs(area(inner * outer) - area(inner)) <= tol, ("common", area(inner * outer), area(inner))
+    grown = abs(area(o) - area(a))
+    fitted = 2 * px.config.spline_tol * size(a) * perimeter(a) if any(isinstance(e.edge, px.SplineEdge) for e in a.edges) else 0.0
+    assert grown <= abs(d) * (perimeter(a) + math.pi * abs(d) * len(a.edges)) + fitted + tol, ("the area changes by more than d along the outline", grown)
+
+
+CURVES = ("line", "arc", "circle", "spline")
+LINKS = ("free", "end on", "tangent", "small angle")
+
+
+@st.composite
+def curve_sets(draw):
+    """3 ... 12 curves in a box: lines, arcs, circles and open splines, each free or drawn from the one before it:
+    an end on it, tangent to it, or crossing it at an angle of 10^-3 ... 10^-15, exact or nudged"""
+    n = draw(st.integers(3, 12))
+    return tuple((draw(st.sampled_from(CURVES)), draw(st.sampled_from(LINKS)),
+                  tuple(draw(st.lists(coordinate(), min_size=8, max_size=8))), draw(st.integers(0, 64)))
+                 for _ in range(n))
+
+
+def free_curve(kind, xs):
+    p, q, m = (xs[0], xs[1]), (xs[2], xs[3]), (xs[4], xs[5])
+    if kind == "line":
+        assume(math.dist(p, q) > 0.05)
+        return px.Line(p, q)
+    r = 0.1 + 0.4 * abs(xs[6])
+    if kind == "circle":
+        return px.Circle(p, r)
+    if kind == "arc":
+        a0, a1 = xs[6], xs[6] + 0.5 + abs(xs[7])
+        return px.Arc((m[0] + r * math.cos(a0), m[1] + r * math.sin(a0)), (m[0] + r * math.cos(a1), m[1] + r * math.sin(a1)), m)
+    points = [p, m, q, (xs[6], xs[7])]
+    assume(min(math.dist(u, v) for u, v in zip(points, points[1:])) > 0.1)
+    try:
+        return px.Spline(points)
+    except ValueError:
+        assume(False)
+
+
+def linked_curve(prev, kind, link, xs, pick):
+    """a line drawn from the curve before: from a point of it (nudged off by pick), tangent to it there, or through it
+    at a small angle; a link to a line that would lie along it becomes a free curve"""
+    e = prev.edges[0]
+    t = 0.2 + 0.06 * ((pick * 7 + 3) % 11)
+    p, d = e.PointAt(t), e.TangentAt(t)
+    length = math.hypot(d.x, d.y)
+    u = (d.x / length, d.y / length)
+    n = (-u[1], u[0])
+    shift = nudge(pick)
+    at = (p.x + shift * n[0], p.y + shift * n[1])
+    if link == "end on":
+        far = (xs[0], xs[1])
+        assume(math.dist(at, far) > 0.05)
+        return px.Line(at, far)
+    straight = type(e.edge).__name__ == "LineEdge"
+    if link == "tangent" and straight:
+        return free_curve(kind, xs)
+    angle = 0.0 if link == "tangent" else 10.0 ** -(3 + pick % 13)
+    v = (u[0] * math.cos(angle) - u[1] * math.sin(angle), u[0] * math.sin(angle) + u[1] * math.cos(angle))
+    reach = 0.3 + abs(xs[2])
+    start = at if link == "tangent" and pick % 2 else (at[0] - reach * v[0], at[1] - reach * v[1])
+    return px.Line(start, (at[0] + reach * v[0], at[1] + reach * v[1]))
+
+
+def loose_curves(spec):
+    curves = []
+    for kind, link, xs, pick in spec:
+        if curves and link != "free":
+            curves.append(linked_curve(curves[-1], kind, link, xs, pick))
+        else:
+            curves.append(free_curve(kind, xs))
+    return curves
+
+
+def check_loose_curves(spec, again=True):
+    """px.Wires of loose curves: no edge shorter than tol, every piece on one of the curves, every curve covered by the
+    pieces, and the pieces cut again the same pieces (every crossing is already a vertex). A spline's PointAt and
+    midpoint lie on its approximation, within spline_tol x its box diagonal of the curve"""
+    curves = loose_curves(spec)
+    pieces = [e for w in px.Wires(curves) for e in w.edges]
+    tol = tol_of(*curves)
+    splines = any(kind == "spline" for kind, *_ in spec)
+    near = 1e3 * tol + (3 * px.config.spline_tol * size(*curves) if splines else 0.0)
+    lengths = np.array([e.mass for e in pieces])
+    assert lengths.min() > tol, ("an edge under tol", lengths.min(), tol)
+    mids = np.array([(e.midpoint.x, e.midpoint.y) for e in pieces])
+    off = np.min([c.Distance(mids) for c in curves], axis=0)
+    assert off.max() <= near, ("a piece off every curve", off.max())
+    for c in curves:
+        e = c.edges[0]
+        samples = np.array([(q.x, q.y) for q in (e.PointAt(t) for t in np.linspace(0.0, 1.0, 21))])
+        gap = np.min([pc.Distance(samples) for pc in pieces], axis=0)
+        assert gap.max() <= near, ("a curve not covered", gap.max())
+    if again:
+        recut = [e for w in px.Wires(pieces) for e in w.edges]
+        assert len(recut) == len(pieces), ("cut again", len(pieces), len(recut))
+
+
+def regular(c, r, n, turn):
+    return [(c[0] + r * math.cos(turn + 2 * math.pi * k / n), c[1] + r * math.sin(turn + 2 * math.pi * k / n))
+            for k in range(n)]
+
+
+def square(c, h):
+    return px.Move((c[0] - h / 2, c[1] - h / 2)).Rectangle(h, h).Face()
+
+
+def holey(star, extra):
+    """a regular polygon with one to three holes: apart, two squares sharing a side or a corner, a disc touching the
+    outline from inside, or a hole with an island in it"""
+    cx, cy, rot, radii, gaps, scale = star
+    n = len(radii)
+    face = polygon(regular((cx, cy), scale, n, rot))
+    h = 0.12 * scale
+    mode = int(extra * 1000) % 5
+    holes = 1 + int(extra * 10) % 3
+    spots = [(cx + 0.25 * scale * math.cos(rot + gaps[0] + 2 * math.pi * j / holes),
+              cy + 0.25 * scale * math.sin(rot + gaps[0] + 2 * math.pi * j / holes)) for j in range(holes)]
+    if mode == 0:
+        for p in spots:
+            face = face - (square(p, h) if radii[0] > 0.6 else px.Circle(p, h / 2).Face())
+    elif mode in (1, 2):
+        p = spots[0]
+        face = face - square(p, h) - square((p[0] + h, p[1] + (h if mode == 2 else 0.0)), h)
+    elif mode == 3:
+        inner = scale * math.cos(math.pi / n)
+        normal = rot + math.pi / n
+        r = h / 2
+        face = face - px.Circle((cx + (inner - r) * math.cos(normal), cy + (inner - r) * math.sin(normal)), r).Face()
+    else:
+        face = face - px.Circle((cx, cy), h).Face() + px.Circle((cx, cy), h / 2).Face()
+    return face
+
+
+def sharp(star, extra):
+    """a star polygon with a spike at its first point, its base 10^-3 ... 10^-12 of its size wide, or with a corner of at
+    most 90 degrees cut off by an edge of eight Tol(S), its ends more than five Tol(S) off the neighbouring sides"""
+    cx, cy, rot, radii, gaps, scale = star
+    points = star_points(star)
+    p = points[0]
+    d = math.hypot(p[0] - cx, p[1] - cy)
+    u = ((p[0] - cx) / d, (p[1] - cy) / d)
+    t = (-u[1], u[0])
+    k = int(extra * 1e4)
+    if k % 2:
+        n = len(points)
+        for i in range(n):
+            q, r, o = points[i - 1], points[i], points[(i + 1) % n]
+            u1 = (q[0] - r[0], q[1] - r[1])
+            u2 = (o[0] - r[0], o[1] - r[1])
+            l1, l2 = math.hypot(*u1), math.hypot(*u2)
+            angle = math.acos(max(-1.0, min(1.0, (u1[0] * u2[0] + u1[1] * u2[1]) / (l1 * l2))))
+            if angle <= math.pi / 2:
+                tol = px.config.k * px.config.eps * max([1.0] + [abs(c) for x in points for c in x])
+                e = 8 * tol / (2 * math.sin(angle / 2))
+                cut = [(r[0] + e * u1[0] / l1, r[1] + e * u1[1] / l1), (r[0] + e * u2[0] / l2, r[1] + e * u2[1] / l2)]
+                return polygon(points[:i] + cut + points[i + 1:])
+    w = scale * 10.0 ** -(3 + k % 10)
+    tip = (p[0] + 0.6 * d * u[0], p[1] + 0.6 * d * u[1])
+    base = [(p[0] - w / 2 * t[0], p[1] - w / 2 * t[1]), tip, (p[0] + w / 2 * t[0], p[1] + w / 2 * t[1])]
+    return polygon(base + points[1:])
+
+
+def slotted(star, extra):
+    """a star polygon with a slot from its centre outwards, 10^-3 ... 10^-12 of its size wide"""
+    cx, cy, rot, radii, gaps, scale = star
+    w = scale * 10.0 ** -(3 + int(extra * 1e4) % 10)
+    slot = px.Move((cx, cy - w / 2)).Rectangle(scale * (0.3 + extra), w).Face().Rotated((cx, cy), math.degrees(rot))
+    return polygon(star_points(star)) - slot
+
+
+def mixed(star, extra):
+    """a star polygon 1000 times larger, a small star cut out at one corner and a small disc added at another"""
+    cx, cy, rot, radii, gaps, scale = star
+    big = (1000 * cx, 1000 * cy, rot, radii, gaps, 1000 * scale)
+    points = star_points(big)
+    small = polygon(star_points((points[0][0], points[0][1], rot, radii, gaps, scale)))
+    return polygon(points) - small + px.Circle(points[1 % len(points)], scale * (0.3 + extra)).Face()
+
+
+MADE = {"holey": holey, "sharp": sharp, "slotted": slotted, "mixed": mixed}
+
+
+OPERATIONS = ("+", "-", "*", "offset", "move", "mirror", "scale")
+
+
+def known_program(spec):
+    """the sharp kind, whose 8 tol chamfer a program scales below what a clean input keeps"""
+    return "sharp" in {s[0] for s in spec[0]}
+
+
+@st.composite
+def programs(draw):
+    """a pool of two to four shapes and 5 ... 30 operations on it, each result added to the pool"""
+    pool = tuple(draw(st.lists(shapes(BOOLEAN_KINDS), min_size=2, max_size=4)))
+    n = draw(st.integers(5, 30))
+    return (pool, tuple((draw(st.sampled_from(OPERATIONS)), draw(st.integers(0, 63)), draw(st.integers(0, 63)),
+                         draw(st.integers(0, 64))) for _ in range(n)))
+
+
+def check_program(spec):
+    """a program of operations, every result an input of later ones: after each step a boolean as shapely's, an offset
+    holding or held by its input, a move, mirror or scaling keeping the area (scaled); booleans and offsets clean"""
+    shapes_, steps = spec
+    pool = [build(s) for s in shapes_]
+    for p in pool:
+        valid(p)
+    for step, (op, i, j, pick) in enumerate(steps):
+        x, y = pool[i % len(pool)], pool[j % len(pool)]
+        what = (step, op)
+        vx, vy = vertices(x), vertices(y)
+        if op in ("+", "-", "*"):
+            r = x + y if op == "+" else x - y if op == "-" else x * y
+            against_shapely(x, y, (spec, what))
+        elif op == "offset":
+            d = size(x) * (0.05 if pick % 3 == 0 else 10.0 ** -(3 + pick % 3))
+            r = x.Offset(d if pick % 2 else -d, inplace=False)
+            inner, outer = (x, r) if pick % 2 else (r, x)
+            assert area(inner - outer) <= area_tol(x), (what, "offset not nested", area(inner - outer))
+        elif op == "move":
+            p, q = vx[pick % len(vx)], vy[(pick * 7 + 3) % len(vy)]
+            r = x.Translated((q[0] - p[0], q[1] - p[1]))
+            assert abs(area(r) - area(x)) <= area_tol(x, r), (what, area(r), area(x))
+        elif op == "mirror":
+            p, q = vx[pick % len(vx)], vx[(pick + 1) % len(vx)]
+            if p == q:
+                continue
+            r = x.Mirrored(p, (q[0] - p[0], q[1] - p[1]))
+            assert abs(area(r) - area(x)) <= area_tol(x, r), (what, area(r), area(x))
+        else:
+            f = (0.5, 2.0, 1.0 / 3.0)[pick % 3]
+            r = x.Scaled(vx[pick % len(vx)], f)
+            assert abs(area(r) - f * f * area(x)) <= area_tol(x, r), (what, area(r), f * f * area(x))
+        if op in ("+", "-", "*", "offset"):
+            clean(r, what)
+        if r.faces:
+            pool.append(r)
+
+
+@st.composite
+def grid_pairs(draw):
+    """two unions of one to four rectangles with corners on a grid of step 1, 0.25, 0.1 or 1/3, the second turned by
+    0, 90, 45 or 30 degrees about a grid point"""
+    def rects():
+        return tuple(draw(st.tuples(st.integers(0, 6), st.integers(0, 6), st.integers(1, 4), st.integers(1, 4)))
+                     for _ in range(draw(st.integers(1, 4))))
+    return (draw(st.sampled_from((1.0, 0.25, 0.1, 1.0 / 3.0))), rects(), rects(), draw(st.sampled_from((0, 90, 45, 30))),
+            draw(st.integers(0, 6)), draw(st.integers(0, 6)))
+
+
+def grid_shape(step, rects):
+    faces = [px.Move((x * step, y * step)).Rectangle(w * step, h * step).Face() for x, y, w, h in rects]
+    shape = faces[0]
+    for f in faces[1:]:
+        shape = shape + f
+    return shape
+
+
+def check_grid(spec):
+    """corners on a grid: corners on corners, edges along edges, corners on edges; the identities, shapely exact for
+    straight edges, clean results"""
+    step, ra, rb, turn, gx, gy = spec
+    a = grid_shape(step, ra)
+    b = grid_shape(step, rb).Rotated((gx * step, gy * step), turn)
+    identities(a, b)
+    against_shapely(a, b, spec, straight=True)
+    for name, op in OPS:
+        clean(op(a, b), name)
+
+
+@st.composite
+def circle_polygons(draw):
+    """a disc and a regular polygon of 3 ... 1000 corners on its circle or around it, maybe nudged out or in by
+    10^-3 ... 10^-16 of the radius"""
+    return (draw(st.floats(0.1, 10.0)), draw(st.sampled_from((3, 4, 5, 6, 8, 12, 24, 64, 100, 360, 1000))),
+            draw(st.booleans()), draw(st.floats(0.0, 2 * math.pi)),
+            draw(coordinate()), draw(coordinate()), draw(st.integers(0, 64)))
+
+
+def check_circle_polygon(spec):
+    """a disc against its inscribed polygon (every corner on the circle) or its circumscribed one (every side touching
+    it): exact areas, or shapely's when nudged; clean results"""
+    r, n, inscribed, phase, cx, cy, pick = spec
+    nudged = nudge(pick)
+    radius = (r if inscribed else r / math.cos(math.pi / n)) * (1.0 + nudged)
+    a = px.Circle((cx, cy), r).Face()
+    b = polygon(regular((cx, cy), radius, n, phase))
+    if nudged == 0.0:
+        disc, poly = math.pi * r * r, area(b)
+        inner = poly if inscribed else disc
+        same_areas(a, b, inner, area(b) - inner)
+    else:
+        identities(a, b)
+        against_shapely(a, b, spec)
+    for name, op in OPS:
+        clean(op(a, b), name)
+
+
+def same_areas(a, b, common, b_only):
+    tol = area_tol(a, b)
+    A = area(a)
+    for name, got, want in (("a + b", a + b, A + b_only), ("a * b", a * b, common), ("a - b", a - b, A - common),
+                            ("b - a", b - a, b_only)):
+        assert abs(area(got) - want) <= tol, (name, area(got), want, tol)
+
+
+@st.composite
+def cut_faces(draw):
+    """a face and a polyline of one to four segments across its box, or two polylines"""
+    return (draw(shapes(("star", "rounded", "disc", "holed", "holey"))),
+            tuple(draw(st.tuples(st.floats(-0.2, 1.2), st.floats(-0.2, 1.2))) for _ in range(draw(st.integers(2, 5)))),
+            tuple(draw(st.tuples(st.floats(-0.2, 1.2), st.floats(-0.2, 1.2))) for _ in range(draw(st.integers(2, 5)))))
+
+
+def across(face, points):
+    """the polyline through the points given as fractions of the face's box, rounded to thousandths: two polylines
+    then lie on each other exactly or apart, never within rounding (where shapely's exact union differs)"""
+    (x0, y0), (x1, y1) = face.bounding_box
+    pts = [(x0 + round(u, 3) * (x1 - x0), y0 + round(v, 3) * (y1 - y0)) for u, v in points]
+    assume(all(math.dist(p, q) > 1e-3 * (x1 - x0 + y1 - y0) for p, q in zip(pts, pts[1:])))
+    s = px.QuickSketch().Move(pts[0])
+    for p in pts[1:]:
+        s.Line(p)
+    try:
+        return s.Wire(), pts
+    except ValueError:
+        assume(False)
+
+
+def check_wire_cuts(spec):
+    """a face and a polyline: px.Glue and Split keep the area and give as many faces, as many as shapely's split where
+    the polyline's ends lie off the outline (GEOS may not split at a line ending on it); two polylines united as long
+    as shapely's union of the lines (a polyline that runs back over itself is one line, as the sketch cuts it)"""
+    import shapely
+    from shapely.ops import split as cut_by
+
+    shape, first, second = spec
+    f = build(shape)
+    g = valid(f)
+    w, pts = across(f, first)
+    glued = px.Glue([f, w])
+    tol = area_tol(f) + 4 * 1e-6 * size(f) * perimeter(f)
+    assert abs(sum(x.mass for x in glued.faces) - area(f)) <= tol, ("glue area", sum(x.mass for x in glued.faces), area(f))
+    pieces = f.Split(w)
+    assert abs(sum(p.mass for p in pieces) - area(f)) <= tol, ("split area", sum(p.mass for p in pieces), area(f))
+    assert sum(len(p.faces) for p in pieces) == len(glued.faces), \
+        ("split and glue", [len(p.faces) for p in pieces], len(glued.faces))
+    if min(g.boundary.distance(shapely.Point(p)) for p in (pts[0], pts[-1])) > 1e-9 * size(f):
+        theirs = sorted(p.area for part in shapely.get_parts(g)
+                        for p in shapely.get_parts(cut_by(part, shapely.LineString(pts))))
+        ours = sorted(x.mass for x in glued.faces)
+        big = [a for a in theirs if a > 1e3 * tol]
+        assert len([a for a in ours if a > 1e3 * tol]) == len(big), ("glue pieces", ours, theirs)
+    v, qts = across(f, second)
+    both = w + v
+    length = shapely.union_all([shapely.LineString(pts), shapely.LineString(qts)]).length
+    assert abs(sum(e.mass for e in both.edges) - length) <= 1e-9 * size(f), ("united wires", sum(e.mass for e in both.edges), length)
+
+
+def collapsing(shape, tol):
+    """the length of the spike or slot of a shape spec no wider than a few tol, which may collapse at that tol (a needle
+    thinner than tol collapses, the rest stays), else 0"""
+    kind, star, extra = shape
+    k = int(extra * 1e4)
+    if kind not in ("sharp", "slotted") or (kind == "sharp" and k % 2):
+        return 0.0
+    cx, cy, scale = star[0], star[1], star[5]
+    if scale * 10.0 ** -(3 + k % 10) > 4 * tol:
+        return 0.0
+    if kind == "slotted":
+        return scale * (0.3 + extra)
+    p = star_points(star)[0]
+    return 0.6 * math.hypot(p[0] - cx, p[1] - cy)
+
+
+def check_measures(spec):
+    """the booleans and the measurements agree: away from the boundaries, a + b's signed distance is the least of a's
+    and b's outside both, a * b's the largest inside both, a - b's max(d_a, -d_b) inside a and outside b (but for a spike
+    or slot thinner than the pair's tol, which may collapse); Contains as the sign says; the relations as the areas say"""
+    a, b = build_pair(spec)
+    tol = tol_of(a, b)
+    rng = np.random.default_rng(spec[3])
+    (x0, y0), (x1, y1) = (a + b).bounding_box
+    pts = np.column_stack((rng.uniform(x0, x1, 60), rng.uniform(y0, y1, 60)))
+    da, db = a.Distance(pts, signed=True), b.Distance(pts, signed=True)
+    margin = 1e-6 * size(a, b)
+    near = 1e3 * tol + max(collapsing(spec[0], tol), collapsing(spec[2], tol))
+    for name, r, where, want in (("a + b", a + b, (da > margin) & (db > margin), np.minimum(da, db)),
+                                 ("a * b", a * b, (da < -margin) & (db < -margin), np.maximum(da, db)),
+                                 ("a - b", a - b, (da < -margin) & (db > margin), np.maximum(da, -db))):
+        if not where.any() or not r.faces:
+            continue
+        got = r.Distance(pts[where], signed=True)
+        assert np.abs(got - want[where]).max() <= near, (name, "signed distance", np.abs(got - want[where]).max())
+        sure = np.abs(got) > margin
+        assert (r.Contains(pts[where][sure]) == (got[sure] < 0)).all(), (name, "Contains against the sign")
+    big = 1e3 * area_tol(a, b)
+    if area(a * b) > big:
+        assert a.Intersects(b) and not a.IsDisjoint(b), ("intersects", area(a * b))
+    if a.IsDisjoint(b):
+        assert area(a * b) <= area_tol(a, b), ("disjoint", area(a * b))
+    if a.Covers(b):
+        assert area(b - a) <= area_tol(a, b), ("covers", area(b - a))
+    if area(b - a) > big:
+        assert not a.Covers(b), ("not covering", area(b - a))
+
+
+SKETCHED = ("free", "corner on corner", "corner on edge", "turned about a corner", "half turn", "nudged shift")
+
+
+@st.composite
+def sketch_pairs(draw):
+    """two solved sketches (rectangle, triangle, side-angle-side) and how the second is placed against the first"""
+    def closed():
+        spec = draw(sketch_specs())
+        assume(spec[0] != "bend")
+        return spec
+    return (closed(), closed(), draw(st.sampled_from(SKETCHED)), draw(st.integers(0, 64)))
+
+
+def sketched(spec):
+    family, *values = spec
+    sk, ids = sketch_of(family)
+    if family == "triangle":
+        assume(sum(values) - 2 * max(values) > 0.05 * max(values))
+    for name, v in zip(ids, values):
+        sk[name] = v
+    sk.Update()
+    shape = sk.Shape()
+    assume(len(shape.faces) > 0)
+    return shape
+
+
+def placed(a, b, relation, pick):
+    """b placed against a as the relation says (the objects' own corners and edges)"""
+    va, vb = vertices(a), vertices(b)
+    t, s = va[pick % len(va)], vb[(pick * 5 + 1) % len(vb)]
+    if relation == "free":
+        return b
+    if relation == "corner on corner":
+        return b.Translated((t[0] + nudge(pick) - s[0], t[1] - s[1]))
+    if relation == "corner on edge":
+        p, n = normal_at(a, a.edges[pick % len(a.edges)], 0.2 + 0.06 * ((pick * 7 + 3) % 11))
+        return b.Translated((p[0] + nudge(pick) * n[0] - s[0], p[1] + nudge(pick) * n[1] - s[1]))
+    if relation == "turned about a corner":
+        return a.Rotated(t, 10.0 + 340.0 * ((pick * 37) % 64) / 64)
+    if relation == "half turn":
+        return a.Rotated(t, 180)
+    tiny = 10.0 ** -(3 + pick % 13)
+    return a.Translated((tiny, tiny))
+
+
+def check_sketch_pair(spec):
+    """shapes from solved sketches, the second placed against the first: the identities, as shapely's, clean"""
+    a = sketched(spec[0])
+    b = placed(a, sketched(spec[1]), spec[2], spec[3])
+    identities(a, b)
+    against_shapely(a, b, spec, straight=True)
+    for name, op in OPS:
+        clean(op(a, b), name)

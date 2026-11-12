@@ -1322,8 +1322,15 @@ namespace planex2d {
         }
         BasicSketch &Mirror(const std::vector<std::string> &ids, const std::string &axis) {
             Flush();
-            MirrorElements(Originals(ids, "Mirror"), axis);
+            MirrorElements(Originals(WithSlotSpines(ids), "Mirror"), axis);
             return *this;
+        }
+        // a slot's id names its outline; the spine its sides are offset from goes with it (as Remove takes it)
+        std::vector<std::string> WithSlotSpines(std::vector<std::string> ids) const {
+            for (size_t k = 0, n = ids.size(); k < n; ++k)
+                if (IsSlot(ids[k]))
+                    ids.push_back(ids[k] + ".spine");
+            return ids;
         }
         // copies of the elements (with the points their lines and arcs end at, each copied once) mirrored at the
         // carrier of axis, under the call's scope (Mirrored.N or id) named after their sources (Mirrored.1.Line.1), with
@@ -2235,7 +2242,7 @@ namespace planex2d {
         }
         // the drawn edges as Edges(); a group with a point an odd number of element ends reach is an open wire, which
         // cancels nothing
-        Wire Region() {
+        Wire Region(const char *call = nullptr) {
             Flush();
             std::vector<char> openGroup(s.elements.size(), 0);
             for (const std::vector<size_t> &g : Groups()) {
@@ -2261,9 +2268,9 @@ namespace planex2d {
                         AddUncrossed(w, x);
                     open.resize(w.Size(), openGroup[e]);
                 }
-            return InitialClean(w, open);
+            return InitialClean(w, open, call);
         }
-        planex2d::Face Face() { return Region().SingleFace("Face()"); }
+        planex2d::Face Face() { return Region("Face()").SingleFace("Face()"); }
         planex2d::Shape Shape() { return planex2d::Shape(Region(), nullptr); }
 
         bool IsElement(const std::string &id) const {
@@ -3140,9 +3147,7 @@ namespace planex2d {
                     if (s.elements[it->second.index].kind == sketch::ElementKind::Circle && *p != sketch::Part::Center)
                         throw std::invalid_argument("no element '" + text + "': a circle has no start, end or mid point; its point is '" +
                                                     text.substr(0, dot) + ".center'");
-                    if (const sketch::Element &el = s.elements[it->second.index];
-                        el.kind == sketch::ElementKind::Spline && !el.IsPiece(s) && s.splines[el.SplineIndex()].poled && s.splines[el.SplineIndex()].closed &&
-                        (*p == sketch::Part::Start || *p == sketch::Part::End))
+                    if (s.elements[it->second.index].IsPeriodicBSpline(s) && (*p == sketch::Part::Start || *p == sketch::Part::End))
                         throw std::invalid_argument("no element '" + text + "': a periodic BSpline has no start or end and runs through none of its "
                                                     "poles, '" + text.substr(0, dot) + ".p0', ...");
                     const sketch::Ref r{it->second.index, *p};

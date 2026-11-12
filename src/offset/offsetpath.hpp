@@ -156,6 +156,11 @@ namespace planex2d {
         // a fold back (turn 0, the headings opposite) has its outside ahead, on either side
         const bool fold = std::abs(turn) <= 1e-12 && Dot(t1, t2) < 0.0;
         if (!fold && s * turn > 0.0) {
+            // legs of length s no longer than tol would both be left out, and the gap between a and b with them
+            if (std::abs(s) <= tol) {
+                path.AddLine(a, b, p, tol);
+                return;
+            }
             path.AddLine(a, v, p, tol);
             path.AddLine(v, b, p, tol);
             return;
@@ -274,15 +279,18 @@ namespace planex2d {
     }
 
     // how much the winding number of the raw loops grows across edge i of their arrangement, from its right to its left:
-    // the raw edges through its middle, +1 each running its way, -1 each running against it
+    // the raw edges through its middle, +1 each running its way, -1 each running against it. One whose nearest point is
+    // its end only ends near the middle of a piece no longer than about tol (a corner's arc at an offset of about tol)
     inline int WindingStep(const Wire &cut, size_t i, const Wire &raw, Grid &grid, double tol) {
         const Vertex m = MidPointOf(cut[i]), normal = LeftNormal(cut[i], m);
+        const double rounding = tol / config::state->k;
         std::vector<uint32_t> nearby;
         grid.InBox(BBox::Of(m, m).Grown(tol), nearby);
         int step = 0;
         for (uint32_t r : nearby) {
             const Vertex q = NearestPointOf(raw[r], m);
-            if (q.IsClose(m, tol))
+            const bool end = !IsClosedEdge(raw[r]) && (q.IsClose(StartOf(raw[r]), rounding) || q.IsClose(EndOf(raw[r]), rounding));
+            if (q.IsClose(m, tol) && !end)
                 step += Dot(LeftNormal(raw[r], q), normal) > 0.0 ? 1 : -1;
         }
         return step;

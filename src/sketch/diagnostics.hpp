@@ -190,8 +190,12 @@ namespace planex2d::sketch {
             const double size = box.IsEmpty() ? 0.0 : std::max(box.Size().x, box.Size().y);
             return 1e-3 * (size > 0.0 ? size : 1.0);
         }
+        bool IsOnePoint(const End &a, const End &b) const {
+            return g.coordsOf[a.point] == g.coordsOf[b.point] || a.at.IsClose(b.at, tol);
+        }
         // the ends sorted along h: an end is met by another element's end at its place (one unknown, or within the
-        // rounding); ends of two elements closer than the gap and not one point are a missing coincident
+        // rounding); ends of two elements closer than the gap and not one point are a missing coincident when one of
+        // them is met by none
         void Ends() {
             std::vector<End> ends;
             for (size_t k = 0; k < g.elements.size(); ++k)
@@ -202,18 +206,16 @@ namespace planex2d::sketch {
             const double reach = std::max(Gap(), tol);
             std::vector<char> met(ends.size(), 0);
             for (size_t i = 0; i < ends.size(); ++i)
+                for (size_t j = i + 1; j < ends.size() && ends[j].at.x - ends[i].at.x <= reach; ++j)
+                    if (ends[i].element != ends[j].element && IsOnePoint(ends[i], ends[j]))
+                        met[i] = met[j] = 1;
+            for (size_t i = 0; i < ends.size(); ++i)
                 for (size_t j = i + 1; j < ends.size() && ends[j].at.x - ends[i].at.x <= reach; ++j) {
                     const End &a = ends[i], &b = ends[j];
-                    if (a.element == b.element)
+                    if (a.element == b.element || (met[i] && met[j]) || IsOnePoint(a, b) || Norm(b.at - a.at) >= Gap())
                         continue;
-                    if (g.coordsOf[a.point] == g.coordsOf[b.point] || a.at.IsClose(b.at, tol)) {
-                        met[i] = met[j] = 1;
-                        continue;
-                    }
-                    if (Norm(b.at - a.at) < Gap()) {
-                        const auto [first, second] = std::minmax(a.element, b.element);
-                        out.missingCoincident.push_back({{first, second}, (a.at + b.at) * 0.5});
-                    }
+                    const auto [first, second] = std::minmax(a.element, b.element);
+                    out.missingCoincident.push_back({{first, second}, (a.at + b.at) * 0.5});
                 }
             for (size_t i = 0; i < ends.size(); ++i)
                 if (!met[i])

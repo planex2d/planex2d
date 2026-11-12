@@ -164,6 +164,19 @@ def test_a_slit_thinner_than_min_distance_is_filled():
     assert s.IsValid()
 
 
+def test_clean_and_defeature_close_a_slit_thinner_than_min_distance_when_asked():
+    slit = square(0, 0, 1) - rect(0.475, 0.5, 0.05, 0.6)
+    s = px.DeformableShape(slit, 0.1)
+    assert abs(s.mass - (1 - 0.05 * 0.5)) < 1e-9
+    assert s.Clean() is True
+    assert abs(s.mass - 1) < 1e-9 and len(s.Shape().wires) == 1 and s.IsValid()
+    assert s.Clean() is False
+    d = px.DeformableShape(slit, 0.1)
+    assert d.Defeature() is True
+    assert abs(d.mass - 1) < 1e-9 and len(d.Shape().wires) == 1 and d.IsValid()
+    assert d.Defeature() is False
+
+
 def test_a_thin_part_of_the_given_shape_stays_unless_it_gets_thinner():
     dumbbell = square(0, 0, 1) + rect(1, 0.475, 0.5, 0.05) + square(1.5, 0, 1)
     s = px.DeformableShape(dumbbell, 0.1)

@@ -1086,8 +1086,6 @@ def _taking_selections(cls, name):
     def call(self, *args, **kwargs):
         if args:
             args = (as_target(args[0]),) + args[1:]
-        elif "target" in kwargs:
-            kwargs["target"] = as_target(kwargs["target"])
         return f(self, *args, **kwargs)
 
     setattr(cls, name, call)
@@ -1233,7 +1231,7 @@ def Find(id: str) -> Any:
         ValueError: no object has the id, several objects have it, or the rest names no element.
 
     Examples:
-        px.Find("Sketch.1")
+        px.Find("plate")
         px.Find("both.plate.Line.2")
     """
     from ._compound import _ALL

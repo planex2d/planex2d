@@ -101,19 +101,24 @@ def test_remove_edges_smaller_reaches_occgeometry():
     assert len(px.OCCGeometry(p, remove_edges_smaller=0).shape.edges) == 5
 
 
+def square_and_a_loose_line():
+    """a face of a closed square beside an open line warns "open wire" (an open wire alone raises)"""
+    return px.Face([px.Move((0, 0)).Rectangle(1, 1).Wire(), px.Line((2, 0), (3, 0))])
+
+
 def test_warnings_are_controlled_by_python_filters_only():
     assert not hasattr(px.config, "print_warnings")
     assert not hasattr(px.config, "throw_on_warnings")
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("ignore", px.PlanexWarning)
-        px.Move((0, 0)).Line((1, 0)).Wire().Face()
+        square_and_a_loose_line()
     assert record == []
 
 
 def test_warnings_go_to_python_with_the_caller_as_location():
     assert issubclass(px.PlanexWarning, UserWarning)
     with pytest.warns(px.PlanexWarning, match="open wire") as record:
-        px.Move((0, 0)).Line((1, 0)).Wire().Face()
+        px.Face([px.Move((0, 0)).Rectangle(1, 1).Wire(), px.Line((2, 0), (3, 0))])
     assert record[0].filename == __file__
 
 
@@ -121,7 +126,7 @@ def test_error_filter_raises_the_warning():
     with warnings.catch_warnings():
         warnings.simplefilter("error", px.PlanexWarning)
         with pytest.raises(px.PlanexWarning, match="open wire"):
-            px.Move((0, 0)).Line((1, 0)).Wire().Face()
+            square_and_a_loose_line()
 
 
 def with_rounding_edges(x):

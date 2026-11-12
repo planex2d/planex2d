@@ -75,7 +75,8 @@ void BindEdges(py::module_ &m) {
             r.Get();
             return VertexView{r.wire, 2 * r.i + (end ? 1 : 0)};
         }, py::keep_alive<0, 1>(), py::arg("end"), "for .start, .end and the selectors: the vertex at the start or the end")
-        .def_property_readonly("midpoint", [](const EdgeView &r) { return PointAtFraction(r.Get(), 0.5); }, "midpoint: Vertex\n\nThe point halfway along the edge.")
+        .def_property_readonly("midpoint", [](const EdgeView &r) { return PointAtFraction(r.Get(), 0.5); }, "midpoint: Vertex\n\nThe point halfway along the edge; on a spline, on the approximation planex cuts it with, within "
+                               "config.spline_tol of the curve.")
         .def_property_readonly("center", [](const EdgeView &r) {
             const std::optional<CircleCarrier> k = CarrierOf(r.Get());
             if (!k)
@@ -88,7 +89,8 @@ void BindEdges(py::module_ &m) {
             return PointAtFraction(r.Get(), t);
         }, py::arg("t"),
            "PointAt(t: float) -> Vertex\n\n"
-           "The point at the fraction t of the edge's length.\n\n"
+           "The point at the fraction t of the edge's length. On a spline it lies on the approximation planex cuts the "
+           "spline with, within config.spline_tol of the curve; Measure(at=...) gives the curve's own point.\n\n"
            "Args:\n"
            "    t: the fraction of the length in [0, 1]: 0 the start, 0.5 the midpoint, 1 the end.\n\n"
            "Raises:\n"
@@ -116,7 +118,8 @@ void BindEdges(py::module_ &m) {
             return TangentAtFraction(r.Get(), t);
         }, py::arg("t"),
            "TangentAt(t: float) -> Vertex\n\n"
-           "The unit tangent in the edge's direction at the fraction t of its length.\n\n"
+           "The unit tangent in the edge's direction at the fraction t of its length. On a spline it is the tangent of the "
+           "approximation planex cuts the spline with; Measure(at=...) gives the curve's own.\n\n"
            "Args:\n"
            "    t: the fraction of the length in [0, 1]: 0 the start, 1 the end.\n\n"
            "Raises:\n"

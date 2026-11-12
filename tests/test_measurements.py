@@ -200,3 +200,29 @@ def test_a_thin_wall_between_samples_is_found_where_another_sample_is_thinner():
     assert min(data["values"][:-1]) > 0.6
     # the place to about the square root of the value's precision: the wall widens quadratically from the neck
     assert data["value"] == pytest.approx(0.5, abs=1e-9) and data["discs"][-1][:2] == pytest.approx((21.25, 20), abs=1e-6)
+
+
+def test_a_name_no_element_has_is_refused_with_the_names_there_are():
+    face = px.Move((0, 0)).Rectangle(4, 2).Face()
+    face.edges[0].name = "base"
+    assert face.Measure(pm.Clearance("base", "Line.3")) == pytest.approx(2)
+    with pytest.raises(ValueError, match="'bse': no element with that id or name"):
+        face.Measure(pm.Clearance("bse", "Line.3"))
+
+
+def test_a_hull_takes_a_face_of_a_shape_a_sketch_and_nothing_else():
+    shape = px.Glue([px.Move((0, 0)).Rectangle(4, 2).Face(), px.Move((4, 0)).Rectangle(2, 2).Face()])
+    box = shape.faces[0].Measure(pm.EnclosingRectangle())
+    assert box["length"] * box["width"] == pytest.approx(shape.faces[0].mass)
+    sk = px.QuickSketch()
+    sk.Move((0, 0)).Line((3, 0)).Line((0, 4))
+    assert sk.Measure(pm.EnclosingCircle())["radius"] == pytest.approx(2.5)
+    with pytest.raises(TypeError, match="of a Face, Shape, Wire, edge or sketch, not a"):
+        pm.ConvexHull()(px.Vertex((0, 0)))
+
+
+def test_a_vertex_where_three_edges_meet_has_no_corner_angle():
+    shape = px.Glue([px.Move((0, 0)).Rectangle(4, 2).Face(), px.Move((4, 0)).Rectangle(2, 2).Face()])
+    three = [v for v in shape.vertices if abs(v.h - 4) < 1e-12]
+    assert len(three) == 2 and all(v.angle is None for v in three)
+    assert sorted(v.angle for v in shape.vertices if v.angle is not None) == pytest.approx([90] * 4)

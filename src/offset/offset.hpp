@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <vector>
 
@@ -121,29 +122,35 @@ namespace planex2d {
         return InRunOrder(pieces, tol);
     }
 
-    // the offset as edges, as the sketch's Offset makes it, per chain: both sides (an open chain's band, its ends and
-    // corners as given; a closed chain's two loops) or one side (an open chain on its left for d > 0, its right for d < 0,
-    // without caps; a closed chain outside for d > 0, inside for d < 0); bothSides none: both sides of an open chain, one
-    // of a closed one. The bands taken both sides are one region where they overlap, as Offset makes it
-    inline Wire Wire::OffsetCurves(double d, std::optional<bool> bothSides, OffsetEnd ends, OffsetCorner corners) const {
+    // the offset as edges, as the sketch's Offset makes it, per chain of every wire: both sides (an open chain's band,
+    // its ends and corners as given; a closed chain's two loops) or one side (an open chain on its left for d > 0, its
+    // right for d < 0, without caps; a closed chain outside for d > 0, inside for d < 0); bothSides none: both sides of
+    // an open chain, one of a closed one. The bands taken both sides are one region where they overlap, also the bands
+    // of different wires, as Offset makes it. The wires lie on one plane
+    inline Wire OffsetCurves(std::span<const Wire> wires, double d, std::optional<bool> bothSides, OffsetEnd ends, OffsetCorner corners) {
         if (!(d != 0.0) || !std::isfinite(d))
             throw std::invalid_argument("offset distance must be nonzero and finite");
-        const double tol = planex2d::Tol(Box().NormInf() + std::abs(d));
+        BBox box;
+        for (const Wire &w : wires)
+            box.Grow(w.Box());
+        const double tol = planex2d::Tol(box.NormInf() + std::abs(d));
+        const AxisSystem &axes = wires.front().Axes();
         Wire bands(axes), out(axes);
-        for (const Loop &loop : Loops()) {
-            EdgeList chain;
-            for (auto [i, along] : loop.edges)
-                chain.push_back(along ? edges[i] : ReversedOf(edges[i]));
-            if (bothSides.value_or(!loop.closed)) {
-                for (EdgeList &part : RawBand(std::move(chain), loop.closed, std::abs(d), ends, corners, false, tol))
-                    for (Edge &e : part)
-                        bands.Add(std::move(e));
-                continue;
+        for (const Wire &w : wires)
+            for (const Loop &loop : w.Loops()) {
+                EdgeList chain;
+                for (auto [i, along] : loop.edges)
+                    chain.push_back(along ? w[i] : ReversedOf(w[i]));
+                if (bothSides.value_or(!loop.closed)) {
+                    for (EdgeList &part : RawBand(std::move(chain), loop.closed, std::abs(d), ends, corners, false, tol))
+                        for (Edge &e : part)
+                            bands.Add(std::move(e));
+                    continue;
+                }
+                const EdgeList side = loop.closed ? LoopOffset(chain, d, corners, axes, tol).Edges() : OpenSideOffset(chain, d, corners, axes, tol);
+                for (const Edge &e : side)
+                    out.Add(e);
             }
-            const EdgeList side = loop.closed ? LoopOffset(chain, d, corners, axes, tol).Edges() : OpenSideOffset(chain, d, corners, axes, tol);
-            for (const Edge &e : side)
-                out.Add(e);
-        }
         if (!bands.Empty())
             for (const Edge &e : PositiveRegion(bands))
                 out.Add(e);
@@ -151,6 +158,9 @@ namespace planex2d {
         for (Edge &e : InRunOrder(out.Edges(), tol))
             ordered.Add(std::move(e));
         return ordered;
+    }
+    inline Wire Wire::OffsetCurves(double d, std::optional<bool> bothSides, OffsetEnd ends, OffsetCorner corners) const {
+        return planex2d::OffsetCurves(std::span<const Wire>(this, 1), d, bothSides, ends, corners);
     }
 
 }
