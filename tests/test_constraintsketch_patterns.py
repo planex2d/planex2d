@@ -263,8 +263,16 @@ def test_a_copy_of_a_drawing_joins_each_of_its_corners_once(copy):
     assert len(pairs) == len(set(pairs))
 
 
+def about_a_hub(sk, ids):
+    # turned about a fixed point away from the arcs' centre: about their own centre, whether a copy's arc is concentric
+    # with its original is decided by the last bits of the centres Arc(start, end, r) computes
+    sk.Vertex("hub", (0, -200))
+    sk.Constrain("hub", px.Fix)
+    sk.CircularPattern(ids, "hub", 3)
+
+
 @pytest.mark.parametrize("copy", [
-    lambda sk, ids: sk.CircularPattern(ids, "origin", 3),
+    about_a_hub,
     lambda sk, ids: sk.LinearPattern(ids, "H", 3, 100),
 ], ids=["circular", "linear"])
 def test_a_tied_copy_adds_no_relation_its_original_lacks(copy):
