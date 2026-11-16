@@ -864,3 +864,25 @@ def test_a_sketch_offset_of_a_chain_touching_itself_points_to_px_offset():
         with pytest.raises(ValueError, match=r"px\.Offset\(sketch\.Wires\(\), d\)"):
             sk.Offset("Chain.1", 1.0, both_sides=True)
         assert px.Face(px.Offset(sk.Wires(), 1.0)).mass == pytest.approx(193.24921, rel=1e-8)
+
+
+def test_an_offset_on_an_over_constrained_sketch_names_the_suspended_constraints():
+    # the docs' twisted impeller blade with auto constraints on: the circles drawn at the pen, on the arc's end, are tied
+    # to it, so putting their centres on the origin contradicts the arc's fixed start and radius
+    sk = px.Sketch(auto_constraint=True)
+    sk.Circle(22, id="inlet", construction=True)
+    sk.Constrain("inlet.center", "origin", px.Coincident)
+    sk.Constrain("inlet", px.Diameter, 44)
+    sk.Move((22, 0)).Arc((2, 58), 50, id="line", construction=True)
+    sk.Constrain("line.start", "inlet", px.Coincident)
+    sk.Constrain("line.start", "H", px.Coincident)
+    sk.Constrain("line", px.Radius, 50)
+    with pytest.warns(px.PlanexWarning, match="over-constrained"):
+        sk.Circle(58, id="outlet", construction=True)
+        sk.Constrain("outlet.center", "origin", px.Coincident)
+    assert sk.status == "over"
+    with pytest.raises(ValueError, match=r"Offset\('line'\): the sketch is over-constrained \(.* suspended, "
+                                         r"contradicting the other constraints\); an offset needs constraints that hold"):
+        sk.Offset("line", 1.5, id="blade")
+    with pytest.raises(ValueError, match="blade"):
+        sk("blade")

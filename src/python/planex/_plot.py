@@ -102,6 +102,30 @@ def _scene(obj, line_col, arc_col, spline_col, face_col, mark_edges_smaller, mar
     return polylines, faces, marks
 
 
+def _hover(views):
+    """(xs, ys, texts): points along every edge, about a hundredth of the drawing apart (one at the middle of a short
+    one), each with its edge's id and name"""
+    from ._svg import _along
+
+    tol = _sampling(views)
+    paths = [points(v.edge, tol) for v in views]
+    corners = [p for path in paths for p in path]
+    if not corners:
+        return [], [], []
+    size = max(max(p[0] for p in corners) - min(p[0] for p in corners),
+               max(p[1] for p in corners) - min(p[1] for p in corners), 1e-12)
+    xs, ys, texts = [], [], []
+    for v, path in zip(views, paths):
+        text = v.id + (" (%s)" % v.name if v.name else "")
+        n = max(1, math.ceil(sum(math.dist(a, b) for a, b in zip(path, path[1:])) / (0.01 * size)))
+        for i in range(n):
+            (x, y), _ = _along(path, (i + 0.5) / n)
+            xs.append(x)
+            ys.append(y)
+            texts.append(text)
+    return xs, ys, texts
+
+
 def _highlighted(obj, views, highlight):
     """the indices of the drawn edges highlight names: indices, a boolean mask over them, or ids and selected edges or
     faces (one, a list or a selection; a face its edges)"""
@@ -154,7 +178,7 @@ def _draw_matplotlib(ax, polylines, faces, face_col, marks, legend, mesh_lines, 
     return ax
 
 
-def _draw_plotly(fig, polylines, faces, face_col, marks, legend, mesh_lines, face_label=None):
+def _draw_plotly(fig, polylines, faces, face_col, marks, legend, mesh_lines, face_label=None, hover=None):
     import plotly.graph_objects as go
 
     if fig is None:
@@ -171,6 +195,10 @@ def _draw_plotly(fig, polylines, faces, face_col, marks, legend, mesh_lines, fac
         xs, ys = _polylines(lines)
         fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=_css(col)), name=label or "edges",
                                  legendgroup=label or "edges", showlegend=entry(label), hoverinfo="skip"))
+    if hover:
+        xs, ys, texts = hover
+        fig.add_trace(go.Scatter(x=xs, y=ys, mode="markers", hovertext=texts, hoverinfo="text", name="edge ids",
+                                 legendgroup="edge ids", showlegend=False, marker=dict(size=10, color="black", opacity=0)))
     if mesh_lines is not None:
         xs, ys = _separated(mesh_lines)
         fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=MESH_COL, width=1), name="mesh",
@@ -411,7 +439,8 @@ def _draw(obj, ax, backend, legend, line_col=LINE_COL, arc_col=ARC_COL, spline_c
     """obj into ax with the backend: its edges and faces, the mesh's element edges, a field's colors (field: the
     arguments of the backend's field drawer after ax and obj); face_label: the legend entry of a fill that is not the
     default"""
-    draw_scene, draw_field = _DRAWERS[_backend(ax, backend)]
+    kind = _backend(ax, backend)
+    draw_scene, draw_field = _DRAWERS[kind]
     if field is not None:
         ax = draw_field(ax, obj, *field)
         face_col = None
@@ -419,7 +448,8 @@ def _draw(obj, ax, backend, legend, line_col=LINE_COL, arc_col=ARC_COL, spline_c
         outline = {(LINE_COL, None): [[tuple(p) for p in line] for line in obj.outline]} if len(obj.outline) else {}
         return draw_scene(ax, outline, [], None, [], legend, mesh_lines)
     polylines, faces, marks = _scene(obj, line_col, arc_col, spline_col, face_col, small, free, highlight)
-    return draw_scene(ax, polylines, faces, face_col, marks, legend, mesh_lines, face_label)
+    hover = {"hover": _hover(edge_views(obj))} if kind == "plotly" else {}
+    return draw_scene(ax, polylines, faces, face_col, marks, legend, mesh_lines, face_label, **hover)
 
 
 def Plot(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | str | Any, plane: Plane | None = None, /,

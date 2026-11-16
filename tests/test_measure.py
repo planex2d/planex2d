@@ -178,3 +178,18 @@ def test_area_center_and_inertia_far_from_the_origin():
         assert f.Measure()["area"] == pytest.approx(base.mass, rel=1e-14)
         assert [c - o for c, o in zip(f.center[:2], off)] == pytest.approx(base.center[:2], abs=1e-6)
         assert f.inertia[0][0] == pytest.approx(base.inertia[0][0], rel=1e-12)
+
+
+def test_a_shape_without_faces_warns_that_it_measures_its_edges():
+    outline = px.Glue([px.Move((0, 0)).Rectangle(40, 20).Wire()])
+    assert len(outline.faces) == 0
+    with pytest.warns(px.PlanexWarning, match=r"no faces: area 0.*px\.Face\(shape\.wires\)"):
+        m = outline.Measure()
+    assert m["type"] == "edges" and m["area"] == 0 and m["length"] == pytest.approx(120)
+    assert m["Ih"] == pytest.approx(2 * 20 ** 3 / 12 + 2 * 40 * 10 ** 2)
+    assert px.Face(outline.wires).Measure()["area"] == pytest.approx(800)
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        px.Move((0, 0)).Rectangle(40, 20).Wire().Measure()
+        px.Move((0, 0)).Rectangle(40, 20).Face().Measure()

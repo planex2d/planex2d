@@ -836,7 +836,7 @@
   "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> dict"
  ],
  "px.FromDXF": [
-  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Wire]"
+  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Face | Wire]"
  ],
  "px.FromKiCad": [
   "(path: str | os.PathLike, /, layer: str | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = 5e-08, merge_small_faces_instead: bool | None = True, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
@@ -857,7 +857,7 @@
   "FromPolyline(points: np.ndarray | list[Point], /, closed: bool = False, *, plane: Plane | None = None, name: str | None = None, maxh: float | None = None, col: tuple[float, ...] | None = None, minh: float | None = None, hpref: float | None = None, layer: int | None = None, partition: list[float] | None = None, id: str | None = None) -> Wire"
  ],
  "px.FromSVG": [
-  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None) -> list[Wire]"
+  "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, painted: bool = True) -> list[Face | Wire]"
  ],
  "px.FromShapely": [
   "(geom: Any, /, plane: Plane | None = None, tol: float = 1e-07, *, id: str | None = None) -> Shape | list[Wire] | Compound"

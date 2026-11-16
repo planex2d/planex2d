@@ -193,7 +193,7 @@ def test_closed_open_wires_closes_each_chain():
         px.ClosedOpenWires(px.Line((0, 0), (1, 0)))
 
 
-def test_from_dxf_cuts_the_outline_at_a_rib_ending_on_it(tmp_path):
+def test_from_dxf_keeps_the_outline_whole_where_a_rib_ends_on_it(tmp_path):
     ezdxf = pytest.importorskip("ezdxf")
     doc = ezdxf.new()
     msp = doc.modelspace()
@@ -204,7 +204,7 @@ def test_from_dxf_cuts_the_outline_at_a_rib_ending_on_it(tmp_path):
     assert isinstance(ws, list) and len(ws) == 2
     [outline] = [w for w in ws if w.IsClosed()]
     [rib] = [w for w in ws if not w.IsClosed()]
-    assert len(outline.edges) == 5 and {e.name for e in outline.edges} == {"outline"}
+    assert len(outline.edges) == 4 and {e.name for e in outline.edges} == {"outline"}
     assert len(rib.edges) == 1 and rib.edges[0].name == "rib"
     assert px.FromDXF(tmp_path / "rib.dxf", unit=px.m, layers=["none"]) == []
 

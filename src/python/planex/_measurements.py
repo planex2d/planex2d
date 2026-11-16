@@ -527,6 +527,10 @@ def add_measures():
                 return value
             if id is not None:
                 raise TypeError("Measure(f, id=...): id stores a measurement, a callable f")
+            if isinstance(self, px.Shape) and (args[0] if args else kwargs.get("name")) is None and not self.faces \
+                    and len(self.edges):
+                warn("Measure: the shape has no faces: area 0, its center and moments are of its edges' length; "
+                     "px.Face(shape.wires) makes the face", px.PlanexWarning)
             args = tuple(_measured(self, a, k == 1) if k < 2 else as_target(a) for k, a in enumerate(args))
             kwargs = {k: _measured(self, v, k == "to") if k in ("name", "to") else as_target(v) for k, v in kwargs.items()}
             return standard(self, *args, **kwargs)

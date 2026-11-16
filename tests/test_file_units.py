@@ -48,15 +48,16 @@ def test_dxf_and_svg_take_unit_and_scale(tmp_path):
     pytest.importorskip("ezdxf")
     pytest.importorskip("svgelements")
     plate().WriteDXF(tmp_path / "a.dxf", unit=px.mm)
-    assert px.Face(px.FromDXF(tmp_path / "a.dxf")).mass == pytest.approx(AREA, rel=1e-9)
-    assert px.Face(px.FromDXF(tmp_path / "a.dxf", scale=1)).mass == pytest.approx(800, rel=1e-9)
+    [face, outline] = px.FromDXF(tmp_path / "a.dxf")
+    assert face.mass == pytest.approx(AREA, rel=1e-9) and outline.Face().mass == pytest.approx(AREA, rel=1e-9)
+    assert px.FromDXF(tmp_path / "a.dxf", scale=1)[0].mass == pytest.approx(800, rel=1e-9)
     plate().WriteDXF(tmp_path / "b.dxf", unit=px.mm, scale=1)
-    assert px.Face(px.FromDXF(tmp_path / "b.dxf", scale=1)).mass == pytest.approx(AREA, rel=1e-9)
+    assert px.FromDXF(tmp_path / "b.dxf", scale=1)[0].mass == pytest.approx(AREA, rel=1e-9)
     with pytest.raises(TypeError, match=r"FromDXF\(unit=None\)"):
         px.FromDXF(tmp_path / "a.dxf", unit=None)
     plate().WriteSVG(tmp_path / "a.svg", unit=px.mm)
-    assert px.Face(px.FromSVG(tmp_path / "a.svg")).mass == pytest.approx(AREA, rel=1e-9)
-    assert px.Face(px.FromSVG(tmp_path / "a.svg", scale=1)).mass == pytest.approx(800, rel=1e-9)
+    assert px.FromSVG(tmp_path / "a.svg", painted=False)[0].mass == pytest.approx(AREA, rel=1e-9)
+    assert px.FromSVG(tmp_path / "a.svg", scale=1, painted=False)[0].mass == pytest.approx(800, rel=1e-9)
 
 
 def test_brep_takes_scale_only(tmp_path):

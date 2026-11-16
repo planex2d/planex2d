@@ -96,9 +96,9 @@ def test_calls_that_make_objects_take_an_id():
 def test_imports_count_in_their_own_kind(tmp_path):
     pytest.importorskip("ezdxf")
     px.WriteDXF(square(), tmp_path / "s.dxf")
-    [a], [b] = px.FromDXF(tmp_path / "s.dxf"), px.FromDXF(tmp_path / "s.dxf", id="drawing")
-    assert a.id == "DXF.1" and [e.id for e in a.edges] == ["DXF.1.Line.%d" % k for k in range(1, 5)]
-    assert b.id == "drawing.1"
+    [fa, a], [fb, b] = px.FromDXF(tmp_path / "s.dxf"), px.FromDXF(tmp_path / "s.dxf", id="drawing")
+    assert fa.id == "DXF.1" and a.id == "DXF.2" and [e.id for e in a.edges] == ["DXF.2.Line.%d" % k for k in range(1, 5)]
+    assert fb.id == "drawing.1" and b.id == "drawing.2"
 
 
 @pytest.mark.constraints

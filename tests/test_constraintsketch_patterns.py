@@ -230,3 +230,46 @@ def test_a_constraint_on_a_copy_moves_the_original_with_it():
     # the first copy stays at (0, 1), 60 degrees on from the original now: the original turns back to 30 degrees
     assert sk.Location("ring.1.bolt.center") == pytest.approx((0, 1), abs=1e-12)
     assert sk.Location("bolt.center") == pytest.approx((math.cos(math.radians(30)), 0.5), abs=1e-12)
+
+
+def band_drawn_piece_by_piece():
+    """a band from 20 to 40 degrees between r 30 and r 50, drawn one element at a time: its corners joined by the
+    automatic coincidences"""
+    def at(r, deg):
+        return (r * math.cos(math.radians(deg)), r * math.sin(math.radians(deg)))
+
+    sk = px.Sketch(auto_constraint=True)
+    sk.Arc(at(50, 20), at(50, 40), 50, id="outer")
+    sk.Move(at(50, 40)).Line(at(30, 40), id="side")
+    sk.Arc(at(30, 20), at(30, 40), 30, id="inner")
+    sk.Move(at(30, 20)).Line(at(50, 20), id="back")
+    return sk, ["outer", "side", "inner", "back"]
+
+
+def coincident_pairs(sk):
+    return [frozenset(c["refs"]) for c in sk._Constraints() if c.get("kind") == "Coincident"]
+
+
+@pytest.mark.parametrize("copy", [
+    lambda sk, ids: sk.CircularPattern(ids, "origin", 3),
+    lambda sk, ids: sk.LinearPattern(ids, "H", 3, 100),
+    lambda sk, ids: sk.Mirrored(ids, "V"),
+    lambda sk, ids: sk.Mirrored(ids, "V", auto_constraint=False),
+], ids=["circular", "linear", "mirror", "untied mirror"])
+def test_a_copy_of_a_drawing_joins_each_of_its_corners_once(copy):
+    sk, ids = band_drawn_piece_by_piece()
+    copy(sk, ids)
+    pairs = coincident_pairs(sk)
+    assert len(pairs) == len(set(pairs))
+
+
+@pytest.mark.parametrize("copy", [
+    lambda sk, ids: sk.CircularPattern(ids, "origin", 3),
+    lambda sk, ids: sk.LinearPattern(ids, "H", 3, 100),
+], ids=["circular", "linear"])
+def test_a_tied_copy_adds_no_relation_its_original_lacks(copy):
+    sk, ids = band_drawn_piece_by_piece()
+    dof = sk.dof
+    copy(sk, ids)
+    assert sk.dof == dof
+    assert not [c for c in sk._Constraints() if c.get("kind") == "Concentric"]
