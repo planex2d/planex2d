@@ -101,7 +101,7 @@ class TestPlotly:
         p = px.Compound([square(0, 0, 3) - square(1, 1, 1), px.Line(px.Vertex((5, 5)), px.Vertex((5.001, 5)))])
         fig = p.Plot(backend="plotly", face_col="C0", mark_edges_smaller=0.01, mark_free_edges=True, highlight=[0],
                      line_col="type")
-        assert [t.name for t in fig.data] == ["lines", "edges < 0.01", "free edges", "marked edges"]
+        assert [t.name for t in fig.data] == ["lines", "edge ids", "edges < 0.01", "free edges", "marked edges"]
         assert fig.data[0].line.color == "rgba(0,0,0,1.0)"
         assert sum(x is None for x in fig.data[0].x) == 9
         assert len(fig.layout.shapes) == 1
@@ -141,9 +141,23 @@ class TestPlotly:
     def test_property_based_colors(self):
         wp = px.Move((0, 0)).Line(1, col=(1, 0, 0)).Line(0, 1).Close()
         fig = wp.Wire().Plot(backend="plotly", line_col="property")
-        colors = {t.line.color for t in fig.data}
+        colors = {t.line.color for t in fig.data if t.mode == "lines"}
         assert colors == {"rgba(255,0,0,1.0)", "rgba(0,0,0,1.0)"}
         assert not any(t.showlegend for t in fig.data)
+
+    def test_every_edge_shows_its_id_and_name_all_along_it(self):
+        # plotly's tooltip needs a point within 20 px: invisible markers lie along every edge, a hundredth of the
+        # drawing apart, as in the sketch plot
+        face = px.Move((0, 0)).Line(100, name="bottom").Line(0, 1).Line(-100, 0).Close().Face()
+        fig = face.Plot(backend="plotly")
+        [hover] = [t for t in fig.data if t.name == "edge ids"]
+        assert hover.mode == "markers" and hover.hoverinfo == "text" and not hover.showlegend
+        texts = list(hover.hovertext)
+        assert sorted(set(texts)) == sorted([e.id + (" (bottom)" if e.name else "") for e in face.edges])
+        along = sorted(x for x, h in zip(hover.x, texts) if h.endswith("(bottom)"))
+        assert len(along) >= 100 and along[0] < 1 and along[-1] > 99
+        assert max(b - a for a, b in zip(along, along[1:])) <= 1.0 + 1e-9
+        assert sum(1 for h in texts if h == face.edges[1].id) == 1
 
 
 def test_unknown_backend():

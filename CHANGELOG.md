@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.4.0
+
+### Added
+
+- Plotly plots of faces, shapes and wires show an edge's id and name when the mouse is over it, all along the edge
+  (`Face.1.Line.3 (outline)`), as sketch plots show their elements' ids.
+
+### Changed
+
+- `px.FromSVG` reads an SVG as it looks: a fill is the face its path encloses by the path's fill rule (nonzero or
+  evenodd), a stroke the band of its width with its caps and joins, later paint covers earlier, and the paint of one
+  color and layer is one face. `painted=False` reads the paths as drawn: a filled path's faces and a stroked path's
+  wires, each subpath one chain, nothing joined across paths. It returned wires chained from every segment as loose
+  edges, so an outline drawn as separate lines came back open or closed by chance where other lines touched it, and
+  fills, stroke widths and closed subpaths were not read. Both return a list of faces and wires; CAD, laser and plotter
+  files and those `px.WriteSVG` writes read with `painted=False` (exactly, for `px.WriteSVG`'s). Text that is not
+  converted to paths is left out with a warning; a stroke's miter limit, dashes and transparency are not read.
+- `px.FromDXF` reads a drawing as the file draws it: each entity is one wire, closed where the file closes it;
+  separate entities are joined where exactly two ends meet within `tol`, and nothing is cut against other entities, so
+  a bore with its centre lines is a closed circle and two lines, and the result is the same in any entity order. It
+  cut every entity against every other one and chained the pieces, so a circle or a closed polyline crossed by a
+  centre line came back broken, outlines that touch were merged, and a drawing sheet read differently by entity
+  order. Hatches (solid or patterned), SOLIDs and polylines drawn with a width are now read as faces; the result is a
+  list of faces and wires in the file's order, and a file `px.WriteDXF` wrote reads back as its faces and its edges.
+  Code that took the result for wires filters it (`[w for w in r if isinstance(w, px.Wire)]`).
+- `Measure()` of a shape without faces (a Glue of wires) warns that its area is 0 and its center and moments are those
+  of its edges' length, and names `px.Face(shape.wires)`; it gave these numbers without a word.
+
+### Fixed
+
+- `sk.Offset` on a sketch whose constraints contradict raises a `ValueError` that names the suspended constraints; it
+  reported an internal error ("the offset's ties have no solution").
+- `sk.Mirrored`, `sk.LinearPattern` and `sk.CircularPattern` with automatic constraints on: each copy got every
+  coincidence of its joints twice (its own copy and an automatic one on the same points), and relations its original
+  does not have (two arcs of a linear pattern's copy made concentric), which through the copy's tie held the original
+  too. A copy now carries its original's constraints only; the automatic constraints relate it to what lies outside
+  it (the original, the other copies, the rest of the sketch), and none is added where a constraint of its kind
+  already holds the same places. Patterns get faster with it (six copies of six arcs and a circle: 2.0 s, was 5.5 s).
+
 ## v0.3.4
 
 ### Added

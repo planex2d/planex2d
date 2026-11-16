@@ -554,7 +554,7 @@ namespace planex2d {
                 const std::set<std::string> have = ConstraintKeys();
                 const size_t first = s.constraints.size();
                 for (const sketch::FoundRelation &r : found) {
-                    if (have.contains(KeyOf(r.kind, r.refs)))
+                    if (have.contains(PlaceKeyOf(r.kind, r.refs)))
                         continue;
                     const size_t k = s.Add({r.kind, r.refs});
                     const std::string name = NewId(sketch::KindName(r.kind), std::nullopt);
@@ -615,8 +615,19 @@ namespace planex2d {
         std::set<std::string> ConstraintKeys() const {
             std::set<std::string> out;
             for (const cs::Constraint &c : s.constraints)
-                out.insert(KeyOf(c.kind, c.refs));
+                out.insert(PlaceKeyOf(c.kind, c.refs));
             return out;
+        }
+        // all of refs in one copy a tied mirror or pattern of the call made: its relations are the copied ones
+        bool IsInOneCopy(const std::vector<sketch::Ref> &refs, const std::map<std::string, std::string> &copies) const {
+            std::optional<std::string> copy;
+            for (const sketch::Ref &r : refs) {
+                const auto it = copies.find(elementIds[r.element]);
+                if (it == copies.end() || (copy && *copy != it->second))
+                    return false;
+                copy = it->second;
+            }
+            return copy.has_value();
         }
 
         // a constraint a drawing call implies (its helpers, auto_constraint): left out quietly when it follows from the
@@ -1721,6 +1732,7 @@ namespace planex2d {
                 removedInCall = 0;
                 touched.clear();
                 mirroredInCall.clear();
+                copyOfCall.clear();
                 cutRedundant.reset();
             }
         }
@@ -1750,6 +1762,7 @@ namespace planex2d {
         void RelationsOfCall() {
             std::vector<std::string> joints;
             joints.swap(touched);
+            const std::map<std::string, std::string> copies = std::exchange(copyOfCall, {});
             if (!autoConstraint)
                 return;
             std::vector<char> isNew(s.elements.size(), 0);
@@ -1767,7 +1780,7 @@ namespace planex2d {
                 return;
             const std::set<std::string> have = ConstraintKeys();
             for (const sketch::FoundRelation &r : AutoRelations(*autoConstraint, std::move(isNew)))
-                if (!have.contains(KeyOf(r.kind, r.refs)))
+                if (!have.contains(PlaceKeyOf(r.kind, r.refs)) && !IsInOneCopy(r.refs, copies))
                     ConstrainImplied({r.kind, r.refs});
         }
         void SplineAdded(size_t e) override {
@@ -2007,6 +2020,11 @@ namespace planex2d {
         // with symmetry every pair of points (and circle centres) is symmetric about the axis and every arc and circle
         // copy of equal radius, so the copies follow the originals
         void MirrorTied(const sketch::Copies &made, const sketch::Ref &axis) override {
+            const std::string copy = elementIds[made.elements.empty() ? made.points.front().second : made.elements.front().second];
+            for (const auto &[o, c] : made.points)
+                copyOfCall[elementIds[c]] = copy;
+            for (const auto &[o, c] : made.elements)
+                copyOfCall[elementIds[c]] = copy;
             for (const auto &[o, c] : made.points)
                 if (!made.placed.contains(o))
                     AddTie({sketch::Kind::Symmetric, {{o}, {c}, axis}});
@@ -2042,6 +2060,8 @@ namespace planex2d {
             const std::string prefix = StepPrefix(elementIds[pattern], k, j, info.IsGrid());
             const int along = info.reverse ? -(int)k : (int)k, along2 = info.reverse2 ? -(int)j : (int)j;
             const sketch::Copies made = PlaceCopy(originals, r, linear, info.reverse ? -step : step, k, prefix, r2, info.reverse2 ? -step2 : step2, j);
+            for (size_t e = elements; e < elementIds.size(); ++e)
+                copyOfCall[elementIds[e]] = prefix;
             CopyWires(info.given, made, prefix);
             const auto tie = [&] { return elementIds[pattern] + ".copy." + std::to_string(++info.ties); };
             const auto copyOf = [&](const sketch::Ref &a, const sketch::Ref &b) {
@@ -2106,6 +2126,15 @@ namespace planex2d {
             if (!s.Solve().solved) {
                 if (const std::optional<std::string> cusp = ChainCusp(source, edges, ad, towards))
                     throw std::invalid_argument(call + ": " + *cusp);
+                if (!conflicts.empty()) {
+                    std::vector<std::string> suspended;
+                    for (const auto &[id, with] : conflicts)
+                        suspended.push_back(id);
+                    throw std::invalid_argument(call + ": the sketch is over-constrained (" + Joined(suspended) +
+                                                (suspended.size() > 1 ? " are" : " is") + " suspended, contradicting the other "
+                                                "constraints); an offset needs constraints that hold: remove or change the "
+                                                "suspended ones first");
+                }
                 throw std::logic_error(call + ": internal error, the offset's ties have no solution");
             }
             analysis = s.Analyze();
@@ -3075,6 +3104,8 @@ namespace planex2d {
         std::map<std::string, cs::MirrorInfo> mirrors;
         // the mirrors of the call that runs, (scope, axis): what their joins repeat goes when it ends
         std::vector<std::pair<std::string, std::string>> mirroredInCall;
+        // the elements of the tied copies the call made, id: the copy's first element id
+        std::map<std::string, std::string> copyOfCall;
         // the redundant constraints a cut makes while it runs, reported when it has taken over what they repeat
         std::optional<std::vector<std::string>> cutRedundant;
         // the sharp corners whose elements had a Fix (FixH, FixV): the corner is fixed too, under the id of the Fix and

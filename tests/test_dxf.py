@@ -12,11 +12,20 @@ import planex as px  # noqa: E402
 from helpers import ends, point, polygon_area, seg, square  # noqa: E402
 
 
+def faces_of(items):
+    return [x for x in items if isinstance(x, px.Face)]
+
+
+def wires_of(items):
+    return [x for x in items if isinstance(x, px.Wire)]
+
+
 def test_dxf_round_trip_keeps_lines_arcs_layers_and_colors(tmp_path):
     wp = px.Move((0, 0)).Line(2, name="bottom", col=(1, 0, 0)).Arc(1, 180, name="arc").Close(name="rest")
     p = wp.Face()
     p.WriteDXF(tmp_path / "p.dxf")
-    [back] = px.FromDXF(tmp_path / "p.dxf")
+    face, back = px.FromDXF(tmp_path / "p.dxf")
+    assert isinstance(face, px.Face) and face.mass == pytest.approx(p.mass, rel=1e-13)
     assert isinstance(back, px.Wire)
     assert back.IsClosed()
     assert sorted(e.name for e in back.edges) == ["arc", "bottom", "rest"]
@@ -131,9 +140,11 @@ def test_read_takes_the_unit_the_file_names(tmp_path):
     plate = px.QuickSketch().Move((0, 0)).Line((40 * px.mm, 0)).Arc(10 * px.mm, 180).Close().Face()
     for unit in (px.mm, px.inch, px.m, px.mil):
         plate.WriteDXF(tmp_path / "p.dxf", unit=unit)
-        assert px.Face(px.FromDXF(tmp_path / "p.dxf")).mass == pytest.approx(plate.mass, rel=1e-12)
+        [face] = faces_of(px.FromDXF(tmp_path / "p.dxf"))
+        assert face.mass == pytest.approx(plate.mass, rel=1e-12)
+        assert px.Face(wires_of(px.FromDXF(tmp_path / "p.dxf"))).mass == pytest.approx(plate.mass, rel=1e-12)
     plate.WriteDXF(tmp_path / "mm.dxf", unit=px.mm)
-    assert px.Face(px.FromDXF(tmp_path / "mm.dxf", unit=px.m)).mass == pytest.approx(plate.mass * 1e6, rel=1e-12)
+    assert px.Face(wires_of(px.FromDXF(tmp_path / "mm.dxf", unit=px.m))).mass == pytest.approx(plate.mass * 1e6, rel=1e-12)
 
 
 def test_read_of_a_file_without_a_unit_warns_and_takes_meters(tmp_path):
@@ -178,4 +189,143 @@ def test_names_that_are_no_layer_names_are_written_with_underscores(tmp_path):
     sq = px.QuickSketch().Rectangle(1, 1, name="in/out").Face()
     with pytest.warns(px.PlanexWarning, match="'in/out' -> 'in_out'"):
         px.WriteDXF(sq, tmp_path / "n.dxf")
-    assert {e.name for w in px.FromDXF(tmp_path / "n.dxf") for e in w.edges} == {"in_out"}
+    assert {e.name for w in wires_of(px.FromDXF(tmp_path / "n.dxf")) for e in w.edges} == {"in_out"}
+
+
+def entities_in(tmp_path, name, add, order=1):
+    """a DXF file of the entities add(msp) draws, in their order (order=1) or reversed (order=-1)"""
+    doc = ezdxf.new()
+    add(doc.modelspace())
+    if order == -1:
+        msp = doc.modelspace()
+        ents = list(msp)
+        for e in ents:
+            msp.unlink_entity(e)
+        for e in reversed(ents):
+            msp.add_entity(e)
+    doc.saveas(tmp_path / name)
+    return tmp_path / name
+
+
+def drawn(wires):
+    """the wires as sets of their closedness, edge count and box, rounded: what a reading gives, whatever its order"""
+    return sorted((w.IsClosed(), len(w.edges), tuple(round(c, 9) for p in w.bounding_box for c in p)) for w in wires)
+
+
+def test_a_bore_with_its_centre_lines_reads_as_three_wires_in_any_order(tmp_path):
+    def bore(msp):
+        msp.add_circle((0, 0), 10)
+        msp.add_line((-14, 0), (14, 0), dxfattribs={"layer": "center"})
+        msp.add_line((0, -14), (0, 14), dxfattribs={"layer": "center"})
+
+    for order in (1, -1):
+        ws = px.FromDXF(entities_in(tmp_path, "bore.dxf", bore, order), unit=px.m)
+        assert drawn(ws) == [(False, 1, (-14, 0, 14, 0)), (False, 1, (0, -14, 0, 14)), (True, 1, (-10, -10, 10, 10))]
+        [circle] = [w for w in ws if w.IsClosed()]
+        assert circle.Face().mass == pytest.approx(math.pi * 100, rel=1e-14)
+
+
+def test_a_closed_polyline_stays_whole_where_a_line_crosses_it_or_a_rib_ends_on_it(tmp_path):
+    def plate(msp):
+        msp.add_lwpolyline([(0, 0), (100, 0), (100, 60), (0, 60)], close=True)
+        msp.add_line((-5, 30), (105, 30))
+        msp.add_line((50, 0), (50, 40))
+
+    ws = px.FromDXF(entities_in(tmp_path, "plate.dxf", plate), unit=px.m)
+    assert drawn(ws) == [(False, 1, (-5, 30, 105, 30)), (False, 1, (50, 0, 50, 40)), (True, 4, (0, 0, 100, 60))]
+    assert px.Face([w for w in ws if w.IsClosed()]).mass == pytest.approx(6000, rel=1e-14)
+
+
+def test_loose_lines_join_where_two_ends_meet_and_end_where_three_meet_in_any_order(tmp_path):
+    def square_with_a_dimension(msp):
+        for a, b in [((10, -60), (60, -60)), ((60, -60), (60, -10)), ((60, -10), (10, -10)), ((10, -10), (10, -60)),
+                     ((60, -60), (72, -60)), ((60, -10), (72, -10)), ((68, -60), (68, -10))]:
+            msp.add_line(a, b)
+        msp.add_lwpolyline([(68, -10), (67.3, -15), (68.7, -15)], close=True)
+
+    readings = [drawn(px.FromDXF(entities_in(tmp_path, "sq.dxf", square_with_a_dimension, order), unit=px.m))
+                for order in (1, -1)]
+    assert readings[0] == readings[1]
+    assert readings[0] == [(False, 1, (60, -60, 60, -10)), (False, 1, (60, -60, 72, -60)), (False, 1, (60, -10, 72, -10)),
+                           (False, 1, (68, -60, 68, -10)), (False, 3, (10, -60, 60, -10)),
+                           (True, 3, (67.3, -15, 68.7, -10))]
+
+
+def test_outlines_of_two_materials_that_touch_stay_apart(tmp_path):
+    def heat_sink(msp):
+        for a, b in [((0, 0), (30, 0)), ((30, 0), (30, 4)), ((30, 4), (0, 4)), ((0, 4), (0, 0))]:
+            msp.add_line(a, b, dxfattribs={"layer": "aluminium"})
+        for a, b in [((10, 4), (20, 4)), ((20, 4), (20, 6)), ((20, 6), (10, 6)), ((10, 6), (10, 4))]:
+            msp.add_line(a, b, dxfattribs={"layer": "copper"})
+
+    ws = px.FromDXF(entities_in(tmp_path, "sink.dxf", heat_sink), unit=px.m)
+    assert all(w.IsClosed() for w in ws) and len(ws) == 2
+    glued = px.Glue([px.Face([w]) for w in ws])
+    assert sorted(f.mass for f in glued.faces) == pytest.approx([20, 120], rel=1e-14)
+    assert {w.edges[0].name for w in ws} == {"aluminium", "copper"}
+
+
+def test_write_dxf_reads_back_as_its_faces_and_its_edges(tmp_path):
+    plate = px.QuickSketch().Rectangle(40, 20).Circle((10, 10), 4).Face()
+    plate.name, plate.col = "steel", (0.2, 0.4, 0.6)
+    plate.WriteDXF(tmp_path / "p.dxf", unit=px.m)
+    items = px.FromDXF(tmp_path / "p.dxf", unit=px.m)
+    [face] = faces_of(items)
+    assert isinstance(items[0], px.Face) and face.mass == pytest.approx(plate.mass, rel=1e-13)
+    assert len(face.inner) == 1 and face.name == "steel" and face.col == pytest.approx([0.2, 0.4, 0.6, 1], abs=3e-3)
+    assert sorted(len(w.edges) for w in wires_of(items)) == [1, 4] and all(w.IsClosed() for w in wires_of(items))
+    assert px.Face(wires_of(items)).mass == pytest.approx(plate.mass, rel=1e-13)
+
+
+@pytest.mark.parametrize("style, area", [(0, 100 - 36 + 4), (1, 100 - 36), (2, 100)])
+def test_a_hatch_fills_by_its_island_style(tmp_path, style, area):
+    from ezdxf.lldxf import const
+
+    doc = ezdxf.new()
+    hatch = doc.modelspace().add_hatch(dxfattribs={"layer": "fill", "hatch_style": style})
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)], flags=const.BOUNDARY_PATH_EXTERNAL)
+    hole = hatch.paths.add_edge_path(flags=const.BOUNDARY_PATH_OUTERMOST)
+    for a, b in [((2, 2), (2, 8)), ((2, 8), (8, 8)), ((8, 8), (8, 2)), ((8, 2), (2, 2))]:
+        hole.add_line(a, b)
+    hatch.paths.add_polyline_path([(4, 4), (6, 4), (6, 6), (4, 6)], flags=const.BOUNDARY_PATH_DEFAULT)
+    doc.saveas(tmp_path / "h.dxf")
+    faces = px.FromDXF(tmp_path / "h.dxf", unit=px.m)
+    assert all(isinstance(f, px.Face) and f.name == "fill" for f in faces)
+    assert sum(f.mass for f in faces) == pytest.approx(area, rel=1e-14)
+
+
+def test_hatch_boundaries_of_arcs_ellipses_splines_and_bulges_are_exact(tmp_path):
+    doc = ezdxf.new()
+    msp = doc.modelspace()
+    disc = msp.add_hatch()
+    disc.paths.add_edge_path().add_arc((0, 0), 2, 0, 360)
+    slot = msp.add_hatch()
+    slot.paths.add_polyline_path([(10, 0, 1), (12, 0, 0), (12, 2, 1), (10, 2, 0)])
+    oval = msp.add_hatch()
+    oval.paths.add_edge_path().add_ellipse((20, 0), major_axis=(3, 0), ratio=0.5, start_angle=0, end_angle=360)
+    lens = msp.add_hatch()
+    path = lens.paths.add_edge_path()
+    path.add_line((30, 0), (34, 0))
+    path.add_spline(control_points=[(34, 0), (33, 2), (31, 2), (30, 0)], knot_values=[0, 0, 0, 0, 1, 1, 1, 1], degree=3)
+    doc.saveas(tmp_path / "arcs.dxf")
+    disc_f, slot_f, oval_f, lens_f = px.FromDXF(tmp_path / "arcs.dxf", unit=px.m)
+    assert disc_f.mass == pytest.approx(4 * math.pi, rel=1e-13)
+    assert slot_f.mass == pytest.approx(4 + math.pi, rel=1e-13)
+    assert oval_f.mass == pytest.approx(math.pi * 3 * 1.5, rel=1e-13)
+    # the area between the Bezier with poles (4, 0), (3, 2), (1, 2), (0, 0) and its chord
+    assert lens_f.mass == pytest.approx(21 / 5, rel=1e-13)
+
+
+def test_a_solid_and_a_wide_polyline_are_faces(tmp_path):
+    doc = ezdxf.new()
+    msp = doc.modelspace()
+    msp.add_solid([(0, 0), (1, 0), (0, 1), (1, 1)])
+    msp.add_solid([(5, 0), (7, 0), (5, 3)])
+    msp.add_lwpolyline([(10, 0), (20, 0), (20, 5)], dxfattribs={"const_width": 1})
+    msp.add_lwpolyline([(30, 0, 1, 0), (40, 0, 0, 0)], format="xyse")
+    doc.saveas(tmp_path / "s.dxf")
+    with pytest.warns(px.PlanexWarning, match="whose width changes along it is read as its line"):
+        square, triangle, band, line = px.FromDXF(tmp_path / "s.dxf", unit=px.m)
+    assert square.mass == pytest.approx(1, rel=1e-14) and triangle.mass == pytest.approx(3, rel=1e-14)
+    assert isinstance(band, px.Face) and band.mass == pytest.approx(15, rel=1e-13)
+    assert isinstance(line, px.Wire) and line.mass == pytest.approx(10, rel=1e-14)

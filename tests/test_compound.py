@@ -119,12 +119,13 @@ def test_making_a_compound_gives_no_ids():
     assert f.id == "Face.1" and c[0].id == "Face.2"
 
 
-def test_an_import_list_numbers_its_wires_in_its_kind(tmp_path):
+def test_an_import_list_numbers_its_faces_and_wires_in_its_kind(tmp_path):
     pytest.importorskip("ezdxf")
     px.ResetIdCounters()
     px.WriteDXF(px.Compound([square(0, 0), square(3, 0)]), tmp_path / "two.dxf")
     c = px.FromDXF(tmp_path / "two.dxf")
-    assert isinstance(c, list) and sorted(p.id for p in c) == ["DXF.1", "DXF.2"]
+    assert isinstance(c, list) and [type(p).__name__ for p in c] == ["Face", "Face", "Wire", "Wire"]
+    assert [p.id for p in c] == ["DXF.1", "DXF.2", "DXF.3", "DXF.4"]
 
 
 @pytest.mark.parametrize("copier", [lambda o: o.Copy(), copy.copy, copy.deepcopy], ids=["Copy", "copy", "deepcopy"])
