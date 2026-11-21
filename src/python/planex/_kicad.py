@@ -30,6 +30,8 @@ MM = 1e-3
 # an end touches an edge within planex's rounding tolerance for coordinates below 1 m, as the outline's
 # cleaning takes it
 TOUCH = 1e-14
+# KiCad takes outline ends this close as joined (its sources' chaining epsilon, ConvertOutlineToPolygon)
+CHAIN = 0.02 * MM
 _PTH, _NPTH = "pth", "npth"
 # the file versions of KiCad 9.0 (the oldest read) and of KiCad 10 (the newest tested); KiCad 10's first (its sources'
 # pcb_io_kicad_sexpr.h, "Start of 10.0 development")
@@ -221,10 +223,11 @@ RESOLUTION = 1e-6 * MM
 
 def _round_copper(shape):
     """(center, radius) of a copper part that is one full circle (a via, a round pad), else None"""
-    edges = list(shape.edges)
-    if len(edges) != 1 or not isinstance(edges[0].edge, px.CircleEdge):
+    if len(shape.edges) != 1:
         return None
-    c = edges[0].edge
+    c = shape.edges[0].edge
+    if not isinstance(c, px.CircleEdge):
+        return None
     return tuple(c.center), c.radius
 
 
@@ -394,13 +397,14 @@ def _converted(path, folder, start):
 
 
 class _Board:
-    def __init__(self, path, name=None):
+    def __init__(self, path, name=None, wanted=None):
         with open(path, encoding="utf-8") as f:
             root = _parse(f.read())
         path = path if name is None else name
         if not root or root[0] != "kicad_pcb":
             raise ValueError("FromKiCad(%r): not a KiCad board (.kicad_pcb)" % (path,))
         self.path = path
+        self.wanted = wanted
         version = _value(root, "version")
         if version is None or not version.isdigit() or int(version) < _OLDEST:
             raise ValueError("FromKiCad(%r): KiCad file version %s is older than KiCad 9 (%d); open the board in "
@@ -456,6 +460,11 @@ class _Board:
                     circles.setdefault(cell, []).extend(found)
             for s in _drawn([_on_circles(e, circles) for e in edges], filled, half):
                 self._add(layers, net, s)
+
+    def _wants(self, *layers):
+        """whether one of the layers is built: wanted None builds all, "*.Cu" every copper layer"""
+        w = self.wanted
+        return w is None or any(n in w or ("*.Cu" in w and n in self.copper) for n in layers)
 
     def _net(self, node):
         """the net name of an element: (net 3) refers to the table, (net "GND") or (net 3 "GND") names it"""
@@ -526,32 +535,34 @@ class _Board:
         """a track segment or arc: copper of its width, and on the solder mask the opening its mask margin (else the
         board's) widens"""
         w = _number(node, "width") * MM
+        path = None
         if node[0] == "segment":
             a, b = (_Frame()(_pair(node, k)) for k in ("start", "end"))
-            self._copper(node, _stroke(a, b, w))
         else:
             a, m, b = (_Frame()(_pair(node, k)) for k in ("start", "mid", "end"))
             path = _arc(a, m, b)
-            self._copper(node, _band(path, w / 2))
+        if self._wants(*self._layers(node)):
+            self._copper(node, _stroke(a, b, w) if path is None else _band(path, w / 2))
         mask = self._mask_of(node)
-        if mask is None:
+        if mask is None or not self._wants(mask):
             return
         opening = w + 2 * max(_number(node, "solder_mask_margin", self.mask_margin) * MM, -w / 2)
         if opening > 0:
-            self._draw(mask, _stroke(a, b, opening) if node[0] == "segment" else _band(path, opening / 2))
+            self._draw(mask, _stroke(a, b, opening) if path is None else _band(path, opening / 2))
 
     def _via(self, node):
         layers = [n for n in _first(node, "layers")[1:] if n in self.copper]
         span = self._span(layers[0], layers[-1]) if len(layers) >= 2 else layers
         at = _Frame()(_pair(node, "at"))
-        self._add(span, self._net(node), _disc(at, _number(node, "size") * MM / 2))
+        if self._wants(*span):
+            self._add(span, self._net(node), _disc(at, _number(node, "size") * MM / 2))
         drill = _number(node, "drill") * MM
         if drill > 0:
             self.holes.append((_drilled(_disc(at, drill / 2), _PTH), span))
         tented = _tented(_first(node, "tenting"), self.tented)
         opening = (_number(node, "size") + 2 * self.mask_margin) * MM
         for copper, mask, closed in (("F.Cu", "F.Mask", tented[0]), ("B.Cu", "B.Mask", tented[1])):
-            if copper in span and not closed and opening > 0:
+            if copper in span and not closed and opening > 0 and self._wants(mask):
                 self._draw(mask, _disc(at, opening / 2))
 
     def _zone(self, node):
@@ -563,16 +574,22 @@ class _Board:
             self.unfilled += 1
         for poly in filled:
             layer = _value(poly, "layer") or _value(node, "layer")
+            if layer is None or layer == "Edge.Cuts" or not self._wants(layer):
+                continue
             region = _closed_region(_first(poly, "pts"), _Frame())
             if layer in self.copper:
                 self._add([layer], net, region)
-            elif layer is not None and layer != "Edge.Cuts":
+            else:
                 self._draw(layer, region)
 
     def _graphic(self, node, frame, net):
         """a line, arc, circle, rectangle or polygon: copper (and its solder mask opening, widened by its mask margin,
         else the board's), the outline on Edge.Cuts, or a drawing on another layer"""
         layer = _value(node, "layer")
+        layers = self._layers(node)
+        mask = self._mask_of(node)
+        if layer != "Edge.Cuts" and not self._wants(*(layers or [layer])) and (mask is None or not self._wants(mask)):
+            return
         kind = node[0][3:]
         edges, filled = _outline(node, kind, frame)
         if edges is None:
@@ -581,7 +598,6 @@ class _Board:
             self.outline.extend(edges)
             return
         w = _width(node) * MM
-        layers = self._layers(node)
         if _value(node, "fill") in ("hatch", "reverse_hatch", "cross_hatch"):
             self._leave_out(layer if layer is not None or not layers else layers[0], "hatch")
         if not layers:
@@ -589,9 +605,9 @@ class _Board:
                 for s in _drawn(edges, filled, w / 2):
                     self._draw(layer, s)
             return
-        self.drawings.append((layers, net, edges, filled, w / 2))
-        mask = self._mask_of(node)
-        if mask is not None:
+        if self._wants(*layers):
+            self.drawings.append((layers, net, edges, filled, w / 2))
+        if mask is not None and self._wants(mask):
             margin = _number(node, "solder_mask_margin", self.mask_margin) * MM
             for s in _drawn(edges, filled, w / 2 + (margin if filled else max(margin, -w / 2))):
                 self._draw(mask, s)
@@ -623,13 +639,15 @@ class _Board:
         listed = _first(node, "layers")
         listed = listed[1:] if listed is not None else []
         spelled = dict.fromkeys(x for item in listed for x in _WILDCARDS.get(item, (item,)))
-        others = [n for n in spelled if not n.endswith(".Cu") and n != "Edge.Cuts"]
+        others = [n for n in spelled if not n.endswith(".Cu") and n != "Edge.Cuts" and self._wants(n)]
         drill = _first(node, "drill")
         offset = _pair(drill, "offset") if drill is not None else None
         shift = (offset[0] * MM, -offset[1] * MM) if offset else (0.0, 0.0)
-        pad = _pad_shape(node, shape, size) if kind != "np_thru_hole" or others else None
-        if kind != "np_thru_hole" and pad is not None:
-            self._add(self._layers(node), self._net(node), _placed(pad, angle, center, shift))
+        copper = self._layers(node) if kind != "np_thru_hole" else []
+        built = bool(copper) and self._wants(*copper)
+        pad = _pad_shape(node, shape, size) if built or others else None
+        if built and pad is not None:
+            self._add(copper, self._net(node), _placed(pad, angle, center, shift))
         if drill is not None and kind in ("thru_hole", "np_thru_hole"):
             hole = _drill(drill, _NPTH if kind == "np_thru_hole" else _PTH)
             if hole is not None:
@@ -700,6 +718,11 @@ class _Board:
             return px.Unify([openings.Offset(grow).Offset(-grow), openings])
         return openings
 
+    def cleaned(self, name, cleanup):
+        """the layer's Shape, a copper layer or the outline cleaned with the options (Simplify)"""
+        shape = self.shape(name)
+        return shape.Simplify(**cleanup) if name in self.copper or name == "Edge.Cuts" else shape
+
     def layer(self, name):
         """the copper of one layer: united per net (faces named by net), drilled"""
         nets = []
@@ -724,7 +747,7 @@ class _Board:
             raise ValueError("FromKiCad(%r): the board has no outline on Edge.Cuts" % (self.path,))
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            shape = px._RegionOfEdges(self.outline, chains=False)
+            shape = px._RegionOfEdges(self.outline, chains=False, gaps=CHAIN)
         for w in caught:
             opened = re.match(r"open wire with (\d+) open ends", str(w.message))
             stubs = _stubs(self.outline) if opened else []
@@ -743,11 +766,14 @@ class _Board:
 
 def _stubs(outline):
     """the lengths of the outline's stubs: from an end that touches no other edge back along its edge to the nearest end
-    of another edge on it (an outline line drawn on past the arc that ends on it)"""
+    of another edge on it (an outline line drawn on past the arc that ends on it); an end within CHAIN of another
+    edge's end is joined to it, no stub"""
     ends = [(k, tuple(p)) for k, w in enumerate(outline) for p in (w.edges[0].start, w.edges[0].end)]
     lengths = []
     for k, p in ends:
         if any(j != k and w.Distance(p) <= TOUCH for j, w in enumerate(outline)):
+            continue
+        if any(j != k and math.dist(p, q) <= CHAIN for j, q in ends):
             continue
         on = [math.dist(p, q) for j, q in ends if j != k and outline[k].Distance(q) <= TOUCH]
         if not on:
@@ -958,25 +984,29 @@ def _placed(shape, angle, center, shift=(0.0, 0.0)):
     return shape.Translated(center)
 
 
-# one form per kind of layer, so that a type checker knows the result: every layer a dict, one layer a Shape, a stackup
-# the board in 3d (an OCC shape); id= is the id wrapper's (_ids.with_id), declared for type checkers
+# one form per kind of layer, so that a type checker knows the result: every layer or a list of them a dict, one layer a
+# Shape, a stackup the board in 3d (an OCC shape); id= is the id wrapper's (_ids.with_id), declared for type checkers
 @overload
-def FromKiCad(path: str | os.PathLike, /, layer: None = None, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+def FromKiCad(path: str | os.PathLike, /, layer: None | list[str] = None, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
-              merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape]: ...
+              merge_collinear_closer: float | None = None,
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape]: ...
 @overload
 def FromKiCad(path: str | os.PathLike, /, layer: str, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
-              merge_collinear_closer: float | None = None, *, id: str | None = None) -> Shape: ...
+              merge_collinear_closer: float | None = None,
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> Shape: ...
 @overload
 def FromKiCad(path: str | os.PathLike, /, layer: list[float] | dict | Any, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
-              merge_collinear_closer: float | None = None, *, id: str | None = None) -> Any: ...
-def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any | None = None,
+              merge_collinear_closer: float | None = None,
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> Any: ...
+def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] | dict | Any | None = None,
               remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None,
               remove_free_edges: bool | None = None,
-              merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any:
+              merge_collinear_closer: float | None = None,
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any:
     """Reads a KiCad board (.kicad_pcb, KiCad 9 and later) in meters, y up: its layers as Shapes, or the board in 3d.
 
     A board of another program (a file that is no .kicad_pcb) is converted first with KiCad 10's kicad-cli (pcb
@@ -1003,15 +1033,16 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
     the top), drilled where a hole joins both, so the hole walls are faces named "pth" or "npth"; the copper layers are
     faces at their heights (B.Cu at z = 0), named by net.
 
-    The cleanup options are those of the OCC exports (ToOCCShape): the copper layers and the outline are cleaned with
-    them (Simplify), the other layers keep what KiCad prints, the 3d board is exported with them.
+    Only the layers asked for are built. The cleanup options are those of the OCC exports (ToOCCShape): the copper
+    layers and the outline are cleaned with them (Simplify), the other layers keep what KiCad prints; the 3d board is
+    built from the cleaned copper layers and outline.
 
     Args:
         path: the board file.
         layer: None: a dict {KiCad layer name: Shape}: the copper layers from the top (F.Cu, In1.Cu, ..., B.Cu), each
             even when empty, then the board outline "Edge.Cuts", then every other layer of the board's layer table
             that holds something, in the table's order. A layer name ("F.Cu", "F.SilkS", ...): that layer's Shape
-            alone. A stackup: the board in 3d as one glued OCC shape: a list of dielectric thicknesses in millimeters
+            alone. A list of layer names: a dict of those layers, in the list's order. A stackup: the board in 3d as one glued OCC shape: a list of dielectric thicknesses in millimeters
             from the top, as the manufacturer gives it (e.g. [0.2, 1.3, 0.2] for four copper layers), a stackup of
             px.stackups (a dict {number of copper layers: such a list}, e.g. px.stackups.jlc7628), or
             px.stackups.kicad (the stackup in the board file).
@@ -1026,9 +1057,13 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
             px.config.remove_free_edges.
         merge_collinear_closer: merges two lines whose common vertex is this close to the line through their far ends;
             None takes px.config.merge_collinear_closer.
+        fit_arcs: fits arcs to chains of short edges, such as a zone fill's polygon around a round pad: True, False or
+            a dict of FitArcs' options; None takes px.config.fit_arcs.
+        fit_splines: fits splines to chains of short edges: True, False or a dict of the fit's options (tol,
+            max_edge_length, max_edge_angle, ignore_edges_smaller); None takes px.config.fit_splines.
 
     Returns:
-        layer None: a dict of Shapes; a layer name: a Shape; a stackup: a netgen.occ shape.
+        layer None or a list of names: a dict of Shapes; a layer name: a Shape; a stackup: a netgen.occ shape.
 
     Raises:
         ValueError: a legacy board (before KiCad 6) or a file older than KiCad 9 (version 20241229): open and save it
@@ -1036,15 +1071,25 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
             have; a stackup without an entry for the board's number of copper layers, with another number of
             thicknesses than copper layers - 1, or with a thickness not positive; px.stackups.kicad and the file has
             no stackup or one that does not fit; the board has no outline on Edge.Cuts where one is needed.
+        TypeError: a list of both layer names and thicknesses.
         RuntimeError: a board of another program and no kicad-cli of KiCad 10 or later can be run.
 
     Examples:
         px.FromKiCad("board.kicad_pcb", layer="F.Cu")
-        px.FromKiCad("board.kicad_pcb", layer=px.stackups.jlc7628)
+        px.FromKiCad("board.kicad_pcb", layer=["F.Cu", "B.Cu", "Edge.Cuts"])
+        px.FromKiCad("board.kicad_pcb", layer=px.stackups.jlc7628, fit_arcs=True)
     """
     cleanup = {"remove_faces_smaller": remove_faces_smaller, "merge_small_faces_instead": merge_small_faces_instead,
                "remove_edges_smaller": remove_edges_smaller, "close_gaps_smaller": close_gaps_smaller,
-               "remove_free_edges": remove_free_edges, "merge_collinear_closer": merge_collinear_closer}
+               "remove_free_edges": remove_free_edges, "merge_collinear_closer": merge_collinear_closer,
+               "fit_arcs": fit_arcs, "fit_splines": fit_splines}
+    names = [layer] if isinstance(layer, str) else None
+    if isinstance(layer, (list, tuple)) and any(isinstance(n, str) for n in layer):
+        if not all(isinstance(n, str) for n in layer):
+            raise TypeError("FromKiCad(%r, layer=%r): a list of layer names or of dielectric thicknesses, not both"
+                            % (path, layer))
+        names = list(layer)
+    wanted = None if layer is None else set(names) if names is not None else {"*.Cu", "Edge.Cuts"}
     with open(path, "rb") as f:
         start = f.read(4096).lstrip()
     if start.startswith(b"PCBNEW-BOARD"):
@@ -1052,20 +1097,21 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
                          % (path,))
     fill = "fill the zones in KiCad (B) and save"
     if start.startswith(b"(kicad_pcb"):
-        board = _Board(path)
+        board = _Board(path, wanted=wanted)
     else:
         with tempfile.TemporaryDirectory() as folder:
             converted, refill = _converted(path, folder, start)
-            board = _Board(converted, path)
+            board = _Board(converted, path, wanted)
         if refill:
             fill = ("kicad-cli could not fill them (%s); open the board in KiCad, fill the zones (B) and save it as "
                     "a .kicad_pcb" % refill)
     if board.unfilled:
         warn("FromKiCad: %d zone%s not filled: %s" % (board.unfilled, "s" if board.unfilled > 1 else "", fill),
                       px.PlanexWarning)
-    if isinstance(layer, str) and layer not in board.order and layer != "Edge.Cuts":
-        raise ValueError("FromKiCad(%r, layer=%r): the board's layers are %s" % (path, layer, ", ".join(board.order)))
-    where = None if layer is None else [layer] if isinstance(layer, str) else board.copper
+    for name in names or []:
+        if name not in board.order and name != "Edge.Cuts":
+            raise ValueError("FromKiCad(%r, layer=%r): the board's layers are %s" % (path, name, ", ".join(board.order)))
+    where = None if layer is None else names if names is not None else board.copper
     counts = {}
     for name, found in board.left_out.items():
         if where is None or name in where:
@@ -1076,14 +1122,12 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[float] | dict | Any 
     if listed:
         warn("FromKiCad: %s left out (not supported yet)" % ", ".join(listed), px.PlanexWarning)
 
-    def cleaned(name):
-        shape = board.shape(name)
-        return shape.Simplify(**cleanup) if name in board.copper or name == "Edge.Cuts" else shape
-
     if layer is None:
-        return {name: cleaned(name) for name in board.names()}
+        return {name: board.cleaned(name, cleanup) for name in board.names()}
     if isinstance(layer, str):
-        return cleaned(layer)
+        return board.cleaned(layer, cleanup)
+    if names is not None:
+        return {name: board.cleaned(name, cleanup) for name in names}
     if layer is stackups.kicad:
         layer = board.dielectrics()
     elif isinstance(layer, dict):
@@ -1109,12 +1153,12 @@ def _stackup(board, thicknesses, cleanup):
     if all(set(board.copper) <= set(span) for _, span in board.holes):
         # every hole goes through the whole board: the copper is glued into the outline in planex and the dielectrics
         # are the outline extruded between these interfaces, without an OCC boolean
-        region = board.profile()
+        region = board.cleaned("Edge.Cuts", cleanup)
         region.name = None
         interfaces = []
         for name in board.copper:
             # the copper within the outline: a converted board's edge pads run past it, where no dielectric is
-            copper = board.layer(name)
+            copper = board.cleaned(name, cleanup)
             if copper.faces:
                 copper = copper * region
             interfaces.append(px.Glue([copper, region]) if copper.faces else region)

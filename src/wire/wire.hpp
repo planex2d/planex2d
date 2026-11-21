@@ -65,16 +65,19 @@ namespace planex2d {
             static Vertex EndOf(const Edge &e, bool end) {
                 return std::visit([&](const auto &x) { return end ? x.End() : x.Start(); }, e);
             }
-            static void MoveEnd(Edge &e, bool end, const Vertex &p) {
+            template <class E>
+            static void MoveEnds(E &x, const Vertex &a, const Vertex &b, double rounding, double tol = 0.0) {
+                if constexpr (std::is_same_v<E, Arc>)
+                    x.template Trim<true>(a, b, rounding, tol);
+                else
+                    x.template Trim<true>(a, b);
+            }
+            static void MoveEnd(Edge &e, bool end, const Vertex &p, double rounding = 0.0, double tol = 0.0) {
                 if (IsClosedEdge(e))
                     return;
                 std::visit([&](auto &x) {
-                    if constexpr (!IsCircle<decltype(x)>) {
-                        if (end)
-                            x.template Trim<true>(x.Start(), p);
-                        else
-                            x.template Trim<true>(p, x.End());
-                    }
+                    if constexpr (!IsCircle<decltype(x)>)
+                        MoveEnds(x, end ? x.Start() : p, end ? p : x.End(), rounding, tol);
                 }, e);
             }
 
@@ -88,11 +91,11 @@ namespace planex2d {
             }
 
         private:
-            void Move(std::vector<Vertex> &pts, Grid &grid, size_t j, const Vertex &p) {
+            void Move(std::vector<Vertex> &pts, Grid &grid, size_t j, const Vertex &p, double rounding, double tol) {
                 grid.Erase(j, pts[j]);
                 pts[j] = p;
                 grid.Insert(j, p);
-                MoveEnd(edges[j / 2], j % 2 == 1, p);
+                MoveEnd(edges[j / 2], j % 2 == 1, p, rounding, tol);
             }
             // a closed edge's start and end are one point: they match each other
             bool Matched(const std::vector<Vertex> &pts, const Grid &grid, size_t k) const {
@@ -402,6 +405,35 @@ namespace planex2d {
                 owners = std::move(splitOwners);
                 ++changed.n;
                 return from;
+            }
+            void SplitAt(const std::vector<std::vector<Vertex>> &at, double tol) {
+                EdgeList split;
+                std::vector<uint32_t> splitOwners;
+                for (size_t i = 0; i < edges.size(); ++i) {
+                    if (at[i].empty())
+                        split.push_back(edges[i]);
+                    else
+                        std::visit([&](const auto &e) {
+                            using E = std::decay_t<decltype(e)>;
+                            if constexpr (std::is_same_v<E, Spline>) {
+                                split.push_back(e);
+                            } else if constexpr (IsCircle<E>) {
+                                for (Arc &arc : e.Arcs(at[i], tol))
+                                    split.push_back(std::move(arc));
+                            } else {
+                                SplitPoints pts;
+                                for (const Vertex &p : at[i])
+                                    pts.Add(e.Param(p), p);
+                                for (E &piece : Split(e, pts, tol))
+                                    split.push_back(std::move(piece));
+                            }
+                        }, edges[i]);
+                    if (!owners.empty())
+                        splitOwners.resize(split.size(), owners[i]);
+                }
+                edges = std::move(split);
+                owners = std::move(splitOwners);
+                ++changed.n;
             }
             // the closed splines which marks as their two halves (Spline::Halves); per edge now, the index it had before
             // (empty: none)

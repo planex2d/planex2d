@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.4.2
+
+### Added
+
+- `px.FromKiCad` takes a list of layer names, `layer=["F.Cu", "B.Cu", "Edge.Cuts"]`, and returns a dict of those
+  layers in the list's order. It builds only the layers asked for, also for one layer and for the board in 3d: on a
+  board file of 4 MB one copper layer takes 1.2 s instead of 2.0 s, the board in 3d 5.6 s instead of 6.2 s.
+- `px.FromKiCad` takes `fit_arcs=` and `fit_splines=`, as the exports do: arcs or splines fitted to chains of short
+  edges, such as a zone fill's polygon around a round pad.
+
+### Changed
+
+- `px.FromKiCad` builds the board in 3d from the copper layers and the outline cleaned with its options (Simplify), as
+  it returns them in 2d; before, the copper went in uncleaned and the options only to the export of the layers. With
+  arcs fitted the layers have far fewer edges: a four-layer board with arcs fitted within 0.02 mm and edges below 5 um
+  removed builds in 1.8 s, without the fit in 2.6 s.
+
+### Fixed
+
+- `px.FromKiCad` in 3d with `fit_arcs=` or `fit_splines=` given as a dict ended Python with a segmentation fault.
+- The board in 3d (`px.FromKiCad` with a stackup) raised "StackedPrisms: a corner of the side walls is no vertex of
+  the interface" where a layer's copper met part of a drill hole: on that layer the hole's circle was arcs, and none of
+  them ended where the board outline's circle started. The outline and every copper layer now share their vertices on
+  the outline and the holes.
+- `px.Offset` and `wire.Offset` are faster where the offset has many loops: putting the offset's edges in order along
+  their loops took time growing with the square of the number of edges for each loop. The offset of a curl of 1000
+  lines that crosses itself (its 59 wires from `sk.Wires()`, 765 loops in the offset) takes 0.3 s, was 5.5 s; a zigzag
+  of 1000 lines 15 ms, was 29 ms.
+- Moving an end of an arc of more than half a turn could leave that end off the arc's circle, and the export then
+  failed (`StdFail_NotDone`); since v0.3.4. It happened in `Simplified(remove_edges_smaller=...)`, `CloseGaps`,
+  `px.Wire(edges, tol=)` and `w.Add(..., tol=)`: an arc of 321.5 degrees next to a line 0.00075 long, simplified with
+  `remove_edges_smaller=5e-3`, kept its centre and its end lay 0.00036 off its circle. An arc whose end moves now keeps
+  both ends on its circle: it keeps its centre only where the end moved within the rounding tolerance, otherwise it
+  gets the centre both ends lie on. A warning says where that centre lies farther from the old one than the call's
+  tolerance.
+- `px.FromKiCad` lost the board outline when the lines and arcs on Edge.Cuts missed each other by a little, as they do
+  in the file of many boards (by a few nanometres where KiCad rounds an arc's end, by micrometres where lines are
+  written to the micrometre): Edge.Cuts came back empty, and its export and the board in 3d raised "no edges". Outline
+  ends within 0.02 mm of each other are joined now, as KiCad joins them.
+- `px.FromKiCad` is faster: finding the round copper parts (vias, round pads) went through every edge of every copper
+  part. All layers of a board file of 4 MB take 2.5 s, were 2.9 s.
+
 ## v0.4.0
 
 ### Added

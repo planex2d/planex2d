@@ -100,6 +100,7 @@ namespace planex2d {
     // length goes
     template <class F>
     void ApplyIdentified(Wire &w, std::vector<CutState> &state, const VertexMerges &ids, F use) {
+        const double rounding = w.Tol();
         for (size_t k = 0; k < w.Size(); ++k) {
             if (state[k].excluded || !use(k))
                 continue;
@@ -110,7 +111,7 @@ namespace planex2d {
                         const Vertex s = ids.Of(e.Start());
                         const Vertex t = ids.Of(e.End());
                         if (s != e.Start() || t != e.End())
-                            e.template Trim<true>(s, t);
+                            Wire::MoveEnds(e, s, t, rounding);
                     }
                     if (e.Start() == e.End() && !closed)
                         state[k].excluded = true;

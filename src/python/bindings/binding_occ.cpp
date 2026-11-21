@@ -213,10 +213,14 @@ void BindOCC(py::module_ &m) {
 
     m.def("_StackedPrisms", [](const ShapeList &interfaces, const Shape &region, const std::vector<double> &z,
                                const std::vector<std::string> &names, EXPORT_PARAMS) {
+        // the options are Python objects (fit_arcs= a dict): read while the GIL is held
+        const ArcFit arcs = FitOf(fa, config::state->arc_fit, "fit_arcs");
+        const SplineFit fit = FitOf(fs, config::state->spline_fit, "fit_splines");
+        const Cleanup cleanup = Cleaning(re, cg, rf, mc, rfs, msf);
         TopoDS_Shape stack;
         {
             py::gil_scoped_release release;
-            stack = StackedPrisms(interfaces, region, z, names, EXPORT_OPTIONS);
+            stack = StackedPrisms(interfaces, region, z, names, arcs, fit, cleanup);
         }
         return TypedShape(stack);
     }, py::arg("interfaces"), py::arg("region"), py::arg("z"), py::arg("names"), EXPORT_ARGS,

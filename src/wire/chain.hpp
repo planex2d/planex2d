@@ -113,17 +113,18 @@ namespace planex2d {
         const ChainWalk walk = WalkChain(edges, tol, call, hint);
         if (walk.edges.empty())
             return w;
+        const double rounding = edges.Tol();
         const Vertex first = Wire::EndOf(edges[walk.edges.front().first], !walk.edges.front().second);
         Vertex joint = first;
         for (const auto &[k, along] : walk.edges) {
             Edge e = edges[k];
             if (!(Wire::EndOf(e, !along) == joint))
-                Wire::MoveEnd(e, !along, joint);
+                Wire::MoveEnd(e, !along, joint, rounding, tol);
             joint = Wire::EndOf(e, along);
             w.Add(std::move(e));
         }
         if (walk.closed && !(joint == first))
-            Wire::MoveEnd(w[w.Size() - 1], walk.edges.back().second, first);
+            Wire::MoveEnd(w[w.Size() - 1], walk.edges.back().second, first, rounding, tol);
         return w;
     }
 
@@ -281,7 +282,7 @@ namespace planex2d {
         EdgeList p = piece;
         auto snap = [&](const FreeEnd &f, const Vertex &to) {
             if (!(f.point == to))
-                Wire::MoveEnd(p[f.edge], f.atEnd, to);
+                Wire::MoveEnd(p[f.edge], f.atEnd, to, all.Tol(), t);
         };
         EdgeList out;
         if (atEnd) {

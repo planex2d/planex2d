@@ -839,7 +839,7 @@
   "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Face | Wire]"
  ],
  "px.FromKiCad": [
-  "(path: str | os.PathLike, /, layer: str | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = 5e-08, merge_small_faces_instead: bool | None = True, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
+  "(path: str | os.PathLike, /, layer: str | list[str] | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = 5e-08, merge_small_faces_instead: bool | None = True, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
  ],
  "px.FromLevelSet": [
   "(field: Any, /, edge_length: float | None, inside: str = 'positive', name: str = 'interface', project: bool = True, subdivide: int | Auto = px.Auto, plane: Plane | None = None, periodic: bool = True, *, id: str | None = None) -> Shape"

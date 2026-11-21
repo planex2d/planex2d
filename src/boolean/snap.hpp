@@ -51,7 +51,7 @@ namespace planex2d {
                 return;
             Vertex s = merge(e.Start(), k);
             Vertex t = merge(e.End(), k);
-            e.template Trim<true>(s, t);
+            Wire::MoveEnds(e, s, t, tol);
         };
         for (size_t k = 0; k < w.Size(); ++k)
             if (Arc *a = std::get_if<Arc>(&w[k]))

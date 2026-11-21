@@ -184,6 +184,53 @@ namespace planex2d {
         }
     }
 
+    inline void ShareCorners(Shape &region, ShapeList &interfaces, double tol) {
+        std::vector<Vertex> ends;
+        for (const Shape &s : interfaces)
+            for (const Edge &e : s.Edges()) {
+                ends.push_back(StartOf(e));
+                if (!IsClosedEdge(e))
+                    ends.push_back(EndOf(e));
+            }
+        Wire &r = region.Edges();
+        std::vector<std::vector<Vertex>> on(r.Size());
+        Grid endGrid = Grid::Of(ends, tol);
+        std::vector<uint32_t> nearby;
+        for (size_t i = 0; i < r.Size(); ++i)
+            if (const Circle *c = std::get_if<Circle>(&r[i])) {
+                nearby.clear();
+                endGrid.InBox(c->Box().Grown(tol), nearby);
+                for (uint32_t k : nearby)
+                    if (c->OnCarrier(ends[k], tol) && !ends[k].IsClose(c->Start(), tol))
+                        on[i].push_back(ends[k]);
+            }
+        r.SplitAt(on, tol);
+        const std::vector<Vertex> corners = r.Endpoints();
+        Grid cornerGrid = Grid::Of(corners, tol);
+        for (Shape &s : interfaces) {
+            Wire &w = s.Edges();
+            std::vector<std::vector<Vertex>> inside(w.Size());
+            for (size_t i = 0; i < w.Size(); ++i) {
+                nearby.clear();
+                cornerGrid.InBox(BoxOf(w[i]).Grown(tol), nearby);
+                std::visit([&](const auto &e) {
+                    using E = std::decay_t<decltype(e)>;
+                    for (uint32_t k : nearby) {
+                        const Vertex &p = corners[k];
+                        if constexpr (IsCircle<E>) {
+                            if (e.OnCarrier(p, tol) && !p.IsClose(e.Start(), tol))
+                                inside[i].push_back(p);
+                        } else if constexpr (!std::is_same_v<E, Spline>) {
+                            if (e.Locate(p, tol) == Location::Inside)
+                                inside[i].push_back(p);
+                        }
+                    }
+                }, w[i]);
+            }
+            w.SplitAt(inside, tol);
+        }
+    }
+
     // a stack of prisms of one region: interface k (faces, the copper of a PCB layer glued into the region) lies at
     // z[k] from the top, prism i between z[i] and z[i + 1] is the region extruded. Every interface is exported once and is
     // the top of the prism below and the bottom of the one above; the walls' edges and corners are the interfaces' own
@@ -195,14 +242,17 @@ namespace planex2d {
             throw std::invalid_argument("StackedPrisms: n interfaces need n heights and n - 1 names");
         // coordinates one rounding apart share a cell, distinct points of the geometry are far more than this apart
         const double q = 1e-9 * std::max(1.0, region.Box().NormInf());
+        Shape shared = region;
+        ShapeList faces = interfaces;
+        ShareCorners(shared, faces, q);
         std::vector<Interface> at;
         for (size_t k = 0; k < n; ++k)
-            at.push_back(InterfaceAt(interfaces[k], z[k], q, arcs, fit, cleanup));
+            at.push_back(InterfaceAt(faces[k], z[k], q, arcs, fit, cleanup));
         BRep_Builder builder;
         TopoDS_Compound all;
         builder.MakeCompound(all);
         for (size_t i = 0; i + 1 < n; ++i) {
-            Shape base = region;
+            Shape base = shared;
             base.Translate(Vector3{0.0, 0.0, z[i + 1]});
             const TopoDS_Shape face = ToOCCShape(base, arcs, fit, cleanup, false);
             BRepPrimAPI_MakePrism prism(face, gp_Vec(0.0, 0.0, z[i] - z[i + 1]));

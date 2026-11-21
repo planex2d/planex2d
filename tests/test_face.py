@@ -130,6 +130,48 @@ def test_remove_small_edges_removes_an_edge_whose_ends_collapse():
     assert is_empty(p)
 
 
+def arcs_with_a_gap():
+    """an arc of 45 degrees ending at the origin, 0.00075 from the start of an arc of 321.5 degrees, a line closing them"""
+    d = 0.00075
+    c1, c2 = (0.0, 0.127), (d + 0.42597, 0.127)
+    r2 = math.dist((d, 0.0), c2)
+    turn = math.atan2(-0.127, -0.42597) + math.radians(321.5)
+    end = (c2[0] + r2 * math.cos(turn), c2[1] + r2 * math.sin(turn))
+    start = (-0.127 * math.sqrt(0.5), 0.127 - 0.127 * math.sqrt(0.5))
+    return arc(start, (0.0, 0.0), c1), arc((d, 0.0), end, c2), line(end, start)
+
+
+def assert_arc_ends_on_their_circles_and_exported(s):
+    for a in s.arcs:
+        for p in (a.start, a.end):
+            assert math.dist(p, a.center) == pytest.approx(a.radius, abs=1e-15)
+    assert math.dist(max(s.arcs, key=lambda a: a.radius).center, (0.00075 + 0.42597, 0.127)) < 5e-3
+    assert area(s.ToOCCShape()) == pytest.approx(s.mass, rel=1e-9)
+
+
+def test_removing_a_small_edge_keeps_the_end_of_an_arc_beyond_a_half_turn_on_its_circle():
+    small, large, closing = arcs_with_a_gap()
+    f = px.Wire([small, line((0.0, 0.0), (0.00075, 0.0)), large, closing]).Face()
+    s = f.Simplified(remove_edges_smaller=5e-3)
+    assert len(s.edges) == 3
+    assert_arc_ends_on_their_circles_and_exported(s)
+
+
+def test_closing_a_gap_keeps_the_end_of_an_arc_beyond_a_half_turn_on_its_circle():
+    small, large, closing = arcs_with_a_gap()
+    w = px.Wire([large, closing, small])
+    w.CloseGaps(1e-3)
+    assert_arc_ends_on_their_circles_and_exported(w.Face())
+
+
+def test_joining_ends_within_tol_keeps_the_end_of_an_arc_beyond_a_half_turn_on_its_circle():
+    small, large, closing = arcs_with_a_gap()
+    # the start moves 0.00075 onto the small arc's end; the new center lies 0.00109 away, farther than tol
+    with pytest.warns(px.PlanexWarning, match="arc center moved by 0.00109"):
+        w = px.Wire([small, large, closing], tol=1e-3)
+    assert_arc_ends_on_their_circles_and_exported(w.Face())
+
+
 def test_export_removes_free_edges():
     """a wire is one chain: the only free edge a wire can have is its single edge"""
     p = square(0, 0).Wire()

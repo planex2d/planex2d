@@ -40,6 +40,7 @@ namespace planex2d {
         Region reg(t);
         if (tol <= 0.0)
             return;
+        const double rounding = Tol();
         std::vector<Vertex> pts = Endpoints();
         Grid grid = Grid::Of(pts, tol);
         for (size_t k = 0; k < pts.size(); ++k) {
@@ -61,7 +62,7 @@ namespace planex2d {
                 mid = mid + p;
             mid = mid / (double)places.size();
             for (size_t j : nearby)
-                Move(pts, grid, j, mid);
+                Move(pts, grid, j, mid, rounding, tol);
         }
     }
 
@@ -324,6 +325,7 @@ namespace planex2d {
         }
         if (!any)
             return;
+        const double rounding = Tol();
         std::vector<Vertex> pts = Endpoints();
         Grid grid = Grid::Of(pts, 0.0);
         // a spline's pieces go only where their whole run is no longer than tol
@@ -340,7 +342,7 @@ namespace planex2d {
                     at.push_back(j);
             });
             for (size_t j : at)
-                Move(pts, grid, j, to);
+                Move(pts, grid, j, to, rounding, tol);
         };
         const std::vector<size_t> run = SmallRuns(pts, grid, isSmall);
         std::vector<bool> onSide(n);

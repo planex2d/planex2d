@@ -117,7 +117,7 @@ namespace planex2d {
                 if (!edges.empty() && StartOf(e) != EndOf(edges.back())) {
                     if (!StartOf(e).IsClose(EndOf(edges.back()), tol))
                         throw std::logic_error("Offset: internal error, the raw offset path has a gap");
-                    Wire::MoveEnd(e, false, EndOf(edges.back()));
+                    Wire::MoveEnd(e, false, EndOf(edges.back()), tol);
                 }
                 SetProps(e, p);
                 edges.push_back(std::move(e));

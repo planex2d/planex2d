@@ -4,12 +4,15 @@
 #pragma once
 
 #include <cmath>
+#include <functional>
 #include <optional>
+#include <queue>
 #include <span>
 #include <stdexcept>
 #include <vector>
 
 #include "boolean/boolean.hpp"
+#include "core/grid.hpp"
 #include "offset/offsetpath.hpp"
 
 namespace planex2d {
@@ -70,26 +73,45 @@ namespace planex2d {
 
     // pieces in order along the runs they form, each run from a piece where no other ends
     inline EdgeList InRunOrder(const EdgeList &pieces, double tol) {
+        const size_t n = pieces.size();
+        std::vector<Vertex> starts(n), ends(n);
+        for (size_t k = 0; k < n; ++k) {
+            starts[k] = StartOf(pieces[k]);
+            ends[k] = EndOf(pieces[k]);
+        }
+        const Grid startGrid = Grid::Of(starts, tol), endGrid = Grid::Of(ends, tol);
+        std::vector<size_t> predecessors(n, 0);
+        std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> runStarts;
+        for (size_t k = 0; k < n; ++k) {
+            endGrid.ForNear(starts[k], [&](size_t j) {
+                if (ends[j].IsClose(starts[k], tol))
+                    ++predecessors[k];
+            });
+            if (predecessors[k] == 0)
+                runStarts.push(k);
+        }
+        std::vector<bool> used(n, false);
         EdgeList out;
-        std::vector<bool> used(pieces.size(), false);
-        const auto after = [&](const Vertex &p, bool atEnd) {
-            for (size_t k = 0; k < pieces.size(); ++k)
-                if (!used[k] && (atEnd ? EndOf(pieces[k]) : StartOf(pieces[k])).IsClose(p, tol))
-                    return k;
-            return pieces.size();
-        };
-        while (out.size() < pieces.size()) {
-            size_t k = 0;
-            while (used[k])
-                ++k;
-            for (size_t j = k; j < pieces.size(); ++j)
-                if (!used[j] && after(StartOf(pieces[j]), true) == pieces.size()) {
-                    k = j;
-                    break;
-                }
-            for (; k < pieces.size(); k = after(EndOf(pieces[k]), false)) {
+        size_t first = 0;
+        while (out.size() < n) {
+            while (!runStarts.empty() && used[runStarts.top()])
+                runStarts.pop();
+            while (used[first])
+                ++first;
+            size_t k = runStarts.empty() ? first : runStarts.top();
+            while (k < n) {
                 used[k] = true;
                 out.push_back(pieces[k]);
+                size_t next = n;
+                startGrid.ForNear(ends[k], [&](size_t j) {
+                    if (!starts[j].IsClose(ends[k], tol))
+                        return;
+                    if (--predecessors[j] == 0 && !used[j])
+                        runStarts.push(j);
+                    if (!used[j] && j < next)
+                        next = j;
+                });
+                k = next;
             }
         }
         return out;
