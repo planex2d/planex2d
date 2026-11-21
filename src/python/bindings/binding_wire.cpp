@@ -373,14 +373,16 @@ void BindWire(py::module_ &m, py::class_<Wire> &wire) {
           "Examples:\n"
           "    px.Wires([px.Line((0, 0), (2, 0)), px.Line((1, -1), (1, 1))])\n"
           "    px.Wires(edges, tol=1e-6)");
-    m.def("_RegionOfEdges", [](const py::object &edges, bool chains) {
+    m.def("_RegionOfEdges", [](const py::object &edges, bool chains, double gaps) {
         std::optional<AxisSystem> axes;
         EdgeList list = EdgesArg(edges, "_RegionOfEdges", axes);
         Wire bag(axes.value_or(AxisSystem()));
         for (Edge &e : list)
             bag.Add(std::move(e));
+        bag.RemoveSmallGaps(gaps);
         return Shape((chains ? bag.Wires() : WireList{bag}).Region(), nullptr);
-    }, py::arg("edges"), py::pos_only(), py::arg("chains") = true,
+    }, py::arg("edges"), py::pos_only(), py::arg("chains") = true, py::arg("gaps") = 0.0,
           "for the readers: the regions of loose edges as px.Shape of their uncut chains (chains=True) or of them as "
-          "one group, stretches drawn twice by closed groups cancelling");
+          "one group, stretches drawn twice by closed groups cancelling; ends within gaps of each other meet first "
+          "(as Wire.CloseGaps)");
 }

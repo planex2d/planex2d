@@ -78,6 +78,59 @@ def test_kicad_10_nets_by_name_and_unfilled_zones(tmp_path):
         px.FromKiCad(str(path), "F.Cu")
 
 
+def test_a_list_of_layers_gives_those_in_its_order():
+    every = px.FromKiCad(BOARD)
+    some = px.FromKiCad(BOARD, ["B.Cu", "Edge.Cuts"])
+    assert list(some) == ["B.Cu", "Edge.Cuts"]
+    for name, shape in some.items():
+        assert shape.mass == pytest.approx(every[name].mass, rel=1e-12)
+    with pytest.raises(ValueError, match="the board's layers are"):
+        px.FromKiCad(BOARD, ["F.Cu", "F.Nothing"])
+    with pytest.raises(TypeError, match="not both"):
+        px.FromKiCad(BOARD, ["F.Cu", 1.6])
+
+
+def test_only_the_layers_asked_for_are_built():
+    from planex._kicad import _Board
+    board = _Board(BOARD, wanted={"F.Cu"})
+    front = [p for parts in board.parts["F.Cu"].values() for p in parts]
+    back = [p for parts in board.parts["B.Cu"].values() for p in parts]
+    # what B.Cu holds are the vias and pads through both layers, the same shapes
+    assert board.drawn == {} and front and all(any(p is q for q in front) for p in back)
+    assert len(back) < sum(len(parts) for parts in _Board(BOARD).parts["B.Cu"].values())
+    assert board.outline and board.holes
+
+
+def round_pad_zone(tmp_path):
+    """a zone filled as KiCad fills it around a round pad: a 64-gon of radius 3 mm"""
+    ring = " ".join("(xy %.6f %.6f)" % (30 + 3 * math.cos(2 * math.pi * k / 64), 20 + 3 * math.sin(2 * math.pi * k / 64))
+                    for k in range(64))
+    return kicad_board(tmp_path, '(zone (net 1) (net_name "A") (layer "F.Cu") (polygon (pts %s))\n'
+                                 '  (filled_polygon (layer "F.Cu") (pts %s)))' % (ring, ring))
+
+
+def test_fit_arcs_fits_a_zone_fill_in_2d_and_before_the_3d_build(tmp_path):
+    path = round_pad_zone(tmp_path)
+    assert len(px.FromKiCad(path, "F.Cu").arcs) == 0
+    fitted = px.FromKiCad(path, "F.Cu", fit_arcs=True)
+    assert len(fitted.arcs) > 0 and len(fitted.lines) == 0
+    # a dict of options crashed the prisms (read without the GIL)
+    board = px.FromKiCad(path, [1.5], fit_arcs={"tol": 1e-6})
+    assert board.solids[0].mass == pytest.approx(60 * 40 * 1.5 * 1e-9, rel=1e-9)
+    assert any(f.name == "A" for f in board.faces)
+
+
+def test_copper_meeting_part_of_a_hole_stacks_in_3d(tmp_path):
+    # B.Cu's copper ends across the hole: in its interface the hole's circle is two arcs, neither ending at the seam
+    # the outline's circle has
+    body = ('(footprint "t:h" (layer "F.Cu") (at 30 20)\n'
+            '  (pad "" np_thru_hole circle (at 0 0) (size 1 1) (drill 1) (layers "*.Cu" "*.Mask")))\n'
+            ' (gr_rect (start 30 15) (end 40 25) (stroke (width 0) (type solid)) (fill yes) (layer "B.Cu") (net 1))')
+    board = px.FromKiCad(kicad_board(tmp_path, body), [1.5])
+    assert board.solids[0].mass == pytest.approx((60 * 40 - math.pi * 0.25) * 1.5 * 1e-9, rel=1e-9)
+    assert any(f.name == "npth" for f in board.faces)
+
+
 def test_stackup_in_3d():
     board = px.FromKiCad(BOARD, [1.6])
     assert [s.name for s in board.solids] == ["dielectric_1"]
@@ -798,6 +851,43 @@ def test_outline_lines_running_past_their_corner_arcs_are_left_out_with_a_count(
     assert "FromKiCad: 8 line ends on Edge.Cuts run past the outline (0.20 to 0.50 mm) and are left out" in texts
     assert not any("ClosedOpenWires" in t for t in texts)
     assert profile.mass / MM2 == pytest.approx(60 * 40 - 4 * (4 - math.pi), rel=1e-5)
+
+
+def outline_with_gaps(tmp_path, bottom, right, top):
+    """a 60 x 40 mm outline with round corners of 2 mm whose bottom, right and top lines start that far off the arcs"""
+    def line(a, b):
+        return '(gr_line (start %.6f %.6f) (end %.6f %.6f) (stroke (width 0.05) (type default)) (layer "Edge.Cuts"))' % (a + b)
+
+    def arc(a, m, b):
+        return ('(gr_arc (start %.6f %.6f) (mid %.6f %.6f) (end %.6f %.6f) (stroke (width 0.05) (type default)) '
+                '(layer "Edge.Cuts"))' % (a + m + b))
+
+    q = 2 - math.sqrt(2)
+    outline = [line((2 + bottom, 0), (58, 0)), line((60, 2 + right), (60, 38)), line((58 - top, 40), (2, 40)),
+               line((0, 38), (0, 2)), arc((0, 2), (q, q), (2, 0)), arc((58, 0), (60 - q, q), (60, 2)),
+               arc((60, 38), (60 - q, 40 - q), (58, 40)), arc((2, 40), (q, 40 - q), (0, 38))]
+    path = tmp_path / ("gaps_%d.kicad_pcb" % len(list(tmp_path.iterdir())))
+    path.write_text('(kicad_pcb (version 20241229) (generator "t")\n %s\n (setup )\n (net 0 "")\n %s\n)' %
+                    (LAYERS % "", "\n ".join(outline)))
+    return str(path)
+
+
+def test_outline_ends_kicad_joins_close_the_outline(tmp_path):
+    # the ends miss each other by 1 nm, 0.571 um and 5 um, as in boards KiCad itself takes as closed
+    path = outline_with_gaps(tmp_path, 1e-6, 0.000571, 0.005)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        profile = px.FromKiCad(path, "Edge.Cuts")
+    assert not any("open" in str(w.message) or "run past" in str(w.message) for w in caught)
+    assert [f.name for f in profile.faces] == ["profile"]
+    assert profile.mass / MM2 == pytest.approx(60 * 40 - 4 * (4 - math.pi), rel=1e-6)
+    assert len(profile.ToOCCShape().faces) == 1
+
+
+def test_an_outline_gap_wider_than_kicad_joins_stays_open(tmp_path):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert len(px.FromKiCad(outline_with_gaps(tmp_path, 0.05, 0, 0), "Edge.Cuts").faces) == 0
 
 
 def test_copper_on_and_past_the_outline_stacks_in_3d(tmp_path):

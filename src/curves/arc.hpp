@@ -43,15 +43,16 @@ namespace planex2d {
             }
             // the center onto the chord's bisector, the nearest center both ends lie on. Beyond a half turn the far side
             // moves with the center, and near a full turn the short chord's bisector is ill-conditioned: there the center
-            // stays where it would move farther than the ends did
-            void Recenter(double moved) {
+            // stays where it would move farther than the ends did and they stay on its circle within rounding
+            void Recenter(double moved, double rounding) {
                 Vertex chord = end - start;
                 double l = Norm(chord);
                 if (l > 0.0) {
                     Vertex m = (start + end) * 0.5;
                     Vertex nb = Vertex{-chord.y, chord.x} / l;
                     Vertex c = m + nb * Dot(center - m, nb);
-                    if (Param(end) <= std::numbers::pi || Norm(c - center) <= moved)
+                    if (Param(end) <= std::numbers::pi || Norm(c - center) <= moved ||
+                        std::abs(Norm(end - center) - Norm(start - center)) > rounding)
                         center = c;
                 }
             }
@@ -71,8 +72,9 @@ namespace planex2d {
                 : ccw(ccw), start(start), end(end), center(center) {
                 IsFinite("Arc", {start.x, start.y, end.x, end.y, center.x, center.y});
                 const double rs = Norm(start - center), re = Norm(end - center);
-                if (std::abs(re - rs) > Tol(NormInf(center) + std::max(rs, re)))
-                    Recenter(std::abs(re - rs));
+                const double off = std::abs(re - rs);
+                if (off > Tol(NormInf(center) + std::max(rs, re)))
+                    Recenter(off, off);
                 Update();
             }
             const Vertex &Start() const { return start; }
@@ -95,15 +97,21 @@ namespace planex2d {
             // a piece on the same center keeps the radius: a crossing near tangency moves by about radius / half the lens
             // times a change in it, so the pieces of one circle must decide with its radius bit for bit
             template <bool recomputeCenter = false>
-            void Trim(const Vertex &a, const Vertex &b) {
+            void Trim(const Vertex &a, const Vertex &b, double rounding = 0.0, double tol = 0.0) {
                 if constexpr (recomputeCenter) {
                     if (a == start && b == end)
                         return;
                     const double moved = std::max(Norm(a - start), Norm(b - end));
+                    const Vertex old = center;
                     start = a;
                     end = b;
-                    Recenter(moved);
+                    Recenter(moved, std::max(rounding, Tol(NormInf(center) + radius)));
                     Update();
+                    const double shift = Norm(center - old);
+                    if (tol > 0.0 && shift > tol)
+                        Warning() << "arc center moved by " << shift << ", farther than the tolerance " << tol
+                                  << ", to keep its moved end on its circle (center now at (" << center.x << ", "
+                                  << center.y << "))";
                 } else {
                     start = a;
                     end = b;

@@ -263,6 +263,10 @@ def test_a_copy_of_a_drawing_joins_each_of_its_corners_once(copy):
     assert len(pairs) == len(set(pairs))
 
 
+def concentric(sk):
+    return [c for c in sk._Constraints() if c.get("kind") == "Concentric"]
+
+
 def about_a_hub(sk, ids):
     # turned about a fixed point away from the arcs' centre: about their own centre, whether a copy's arc is concentric
     # with its original is decided by the last bits of the centres Arc(start, end, r) computes
@@ -277,7 +281,9 @@ def about_a_hub(sk, ids):
 ], ids=["circular", "linear"])
 def test_a_tied_copy_adds_no_relation_its_original_lacks(copy):
     sk, ids = band_drawn_piece_by_piece()
-    dof = sk.dof
+    dof, held = sk.dof, len(concentric(sk))
     copy(sk, ids)
     assert sk.dof == dof
-    assert not [c for c in sk._Constraints() if c.get("kind") == "Concentric"]
+    # the three instances hold the original's relations and no more; whether the band's own two arcs are concentric
+    # is decided by the last bits of their computed centres
+    assert len(concentric(sk)) == 3 * held

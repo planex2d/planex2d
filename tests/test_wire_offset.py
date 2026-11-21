@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 import math
+import time
 
 import pytest
 
@@ -63,6 +64,18 @@ def test_the_offset_of_several_wires_is_the_boundary_of_the_region_their_bands_c
     assert stroke.mass == pytest.approx(px.Unify([w.Offset(1.0, both_sides=True).Face() for w in sk.Wires()]).mass)
     assert stroke.mass == pytest.approx(193.24921, rel=1e-8)
     assert len(stroke.wires) == 2
+
+
+def test_the_offset_of_a_stroke_crossing_itself_many_times_is_quick():
+    pts = [(math.cos(0.37 * k) * (3 + 0.01 * k) + 0.05 * k, math.sin(0.37 * k) * (3 + 0.01 * k)) for k in range(1001)]
+    sk = px.QuickSketch().Move(pts[0])
+    for p in pts[1:]:
+        sk.Line(p)
+    start = time.perf_counter()
+    stroke = px.Offset(sk.Wires(), 0.2, both_sides=True)
+    assert time.perf_counter() - start < 3
+    bands = px.Unify([px.Face([px.Line(a, b).Offset(0.2)]) for a, b in zip(pts, pts[1:])])
+    assert px.Shape(stroke).mass == pytest.approx(bands.mass, rel=1e-9)
 
 
 def test_the_offset_of_several_wires_takes_both_sides_of_closed_ones_too():
