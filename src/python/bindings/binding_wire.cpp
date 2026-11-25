@@ -3,14 +3,12 @@
 
 #include "binding.hpp"
 
-// one row per edge of a kind, cols values each, as a float64 array (n, cols)
 inline py::array_t<double> Rows(const std::vector<double> &values, size_t cols) {
     py::array_t<double> a({(py::ssize_t)(values.size() / cols), (py::ssize_t)cols});
     std::copy(values.begin(), values.end(), a.mutable_data());
     return a;
 }
 
-// the construction data of the edges, one array per kind in the plane's (h, v), and the order along the wire
 inline py::dict NumpyOf(const Wire &w) {
     std::vector<double> lines, arcs, circles;
     std::vector<int64_t> order;
@@ -267,26 +265,27 @@ void BindWire(py::module_ &m, py::class_<Wire> &wire) {
             w.FitArcs(Arcs(true, l, a, tol, ig));
             return w;
         }, ARCFIT_ARGS, ref,
-           FitArcsDoc("Wire", "Replaces chains of at least three edges shorter than max_edge_length by arcs of at most 180 "
-                              "degrees (or lines) that stay within tol of the chain, in place.", "wire"))
+           FitArcsDoc("Wire", "Replaces chains of at least three lines by arcs of at most 180 degrees (or lines) that stay "
+                              "within tol of the chain, in place.", "wire"))
         .def("Simplify", [](Wire &w, EXPORT_PARAMS) -> Wire & { return w.Simplify(WIRE_EXPORT_OPTIONS); }, EXPORT_ARGS, ref,
              ExportDoc("Simplify", "Wire",
-                       "Defeatures the wire in place as the OCC exports do: gaps closed, collinear lines merged, arcs and "
+                       "Defeatures the wire in place as the OCC exports do: gaps closed, arcs fitted, collinear lines merged, "
                        "splines fitted, small edges removed, as enabled.\n\n"
-                       "Edges that touch no other edge at either end are removed only with remove_free_edges=True.",
+                       "Edges that touch no other edge at either end are removed only with remove_free_edges=True.\n\n"
+                       "remove_faces_smaller, remove_holes_smaller and merge_slivers_thinner work on the faces of a Shape and do nothing on a wire.",
                        "wire", true))
         .def("Simplified", [](const Wire &w, EXPORT_PARAMS) { return w.Cleaned(WIRE_EXPORT_OPTIONS); }, EXPORT_ARGS,
              ExportDoc("Simplified", "Wire", "A copy defeatured as Simplify does it; this wire is not changed.", "wire", true));
     wire.def("Polylines", [](const Wire &w, double tol) {
         CheckSampleTol("Polylines", tol);
         py::list out;
-        AddWireLoops(w, tol, out);
+        AddArrays(PolylinesOf(w, tol), out);
         return out;
     }, py::arg("tol"), PolylinesDoc("wire"));
     wire.def("ToPolyline", [](const Wire &w, double tol) {
         CheckSampleTol("ToPolyline", tol);
         py::list out;
-        AddWireLoops(w, tol, out);
+        AddArrays(PolylinesOf(w, tol), out);
         if (out.size() != 1)
             throw py::value_error("ToPolyline: the wire is " + std::to_string(out.size()) + " chains; Polylines(tol) gives them as a list");
         return py::object(out[0]);
@@ -307,7 +306,7 @@ void BindWire(py::module_ &m, py::class_<Wire> &wire) {
         return SplitShape(Shape(w.Axes(), {}, {w}), CutterIn(w.Axes(), cutter));
     }, py::arg("cutter"), py::pos_only(), SplitDoc("wire"))
         .def("Trim", [](const Wire &w, TRIM_PARAMS) {
-            return TrimShape(Shape(w.Axes(), {}, {w}), CutterIn(w.Axes(), cutter), RuleOf(w.Axes(), kc, rc, kl, ks, kleft, kright));
+            return TrimmedShape(Shape(w.Axes(), {}, {w}), CutterIn(w.Axes(), cutter), RuleOf(w.Axes(), kc, rc, kl, ks, kleft, kright));
         }, TRIM_ARGS, TrimDoc("wire"));
     BindRelations<Wire>(wire, [](const Wire &w) { return RelateOperand{1, w, {}}; });
     wire.def("ToNumpy", &NumpyOf,

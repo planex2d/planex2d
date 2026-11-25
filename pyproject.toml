@@ -59,8 +59,8 @@ wheel.packages = ["src/python/planex"]
 # compiled-in Eigen and Taskflow headers with their license files; not the Netgen submodule (Netgen comes from its
 # pip wheel), the docs, the notebooks or anything else of the repository
 sdist.exclude = ["*"]
-sdist.include = ["/pyproject.toml", "/CMakeLists.txt", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/README.md", "/src/**",
-                 "/tests/*.py", "/tests/data/**", "/tests/fuzz/**",
+sdist.include = ["/pyproject.toml", "/CMakeLists.txt", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/README.md", "/include/**",
+                 "/src/**", "/tests/*.py", "/tests/data/**", "/tests/fuzz/**",
                  "/tools/stubgen.py", "/external_dependencies/eigen/Eigen/**",
                  "/external_dependencies/eigen/COPYING.*", "/external_dependencies/taskflow/taskflow/**",
                  "/external_dependencies/taskflow/LICENSE"]

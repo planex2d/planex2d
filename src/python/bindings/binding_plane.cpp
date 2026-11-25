@@ -11,7 +11,6 @@ static std::string Text3(const Vector3 &v) {
 
 namespace {
 
-// a 3d point or direction: (x, y, z), a list or array of three numbers, a netgen Pnt, Vec or Dir
 bool IsXYZ(const py::handle &h) {
     if (occHooks->point(h) || occHooks->direction(h))
         return true;
@@ -25,87 +24,8 @@ bool IsXYZ(const py::handle &h) {
     }
 }
 
-double Scale(std::initializer_list<Vector3> points) {
-    double s = 0.0;
-    for (const Vector3 &p : points)
-        s = std::max({s, std::abs(p.x), std::abs(p.y), std::abs(p.z)});
-    return s;
-}
-
-struct Line3 {
-    Vector3 point, dir;
-};
-
-// a wire whose edges all lie on one straight line, as a point on it and its unit direction
-std::optional<Line3> StraightLine(const py::handle &h) {
-    if (!py::isinstance<Wire>(h))
-        return std::nullopt;
-    const Wire &w = h.cast<const Wire &>();
-    std::vector<Vector3> ends;
-    for (const Edge &e : w.Edges()) {
-        const Line *l = std::get_if<Line>(&e);
-        if (!l)
-            return std::nullopt;
-        ends.push_back(w.Axes().ToXYZ(l->Start()));
-        ends.push_back(w.Axes().ToXYZ(l->End()));
-    }
-    if (ends.empty() || !(Norm(ends[1] - ends[0]) > 0.0))
-        return std::nullopt;
-    const Line3 line{ends[0], Normalized(ends[1] - ends[0])};
-    double size = 0.0;
-    for (const Vector3 &q : ends)
-        size = std::max(size, Scale({q}));
-    for (const Vector3 &q : ends)
-        if (Norm(Cross(q - line.point, line.dir)) > Tol(size))
-            return std::nullopt;
-    return line;
-}
-
-// a normal without a plane to follow: toward +z, in the xy plane toward +x, along y toward +y
-Vector3 Upward(const Vector3 &n) {
-    const Vector3 u = Normalized(n);
-    constexpr double flat = 1e-12;
-    const double sign = std::abs(u.z) > flat ? u.z : std::abs(u.x) > flat ? u.x : u.y;
-    return sign < 0.0 ? -u : u;
-}
-
-// the plane through p with normal n, its origin and h by the rule of a sketch on a face: the global
-// origin projected and the global x axis projected (y if x lies along the normal), unless given
-AxisSystem Through(const Vector3 &p, const Vector3 &n, const std::optional<Vector3> &origin, const std::optional<Vector3> &axis) {
-    return SketchAxes(AxesAlong(p, n), origin.value_or(Vector3{0.0, 0.0, 0.0}), axis, "Plane");
-}
-
-AxisSystem TwoLines(const Line3 &a, const Line3 &b, const std::optional<Vector3> &origin, const std::optional<Vector3> &axis) {
-    const double size = Scale({a.point, b.point});
-    Vector3 n = Cross(a.dir, b.dir);
-    if (Norm(n) <= 1e-12) {
-        n = Cross(a.dir, b.point - a.point);
-        if (Norm(n) <= Tol(size))
-            throw py::value_error("Plane(line, line): the lines lie on one line, they span no plane");
-    } else if (std::abs(Dot(b.point - a.point, Normalized(n))) > Tol(size))
-        throw py::value_error("Plane(line, line): the lines neither meet nor are parallel");
-    return Through(a.point, Upward(n), origin, axis);
-}
-
-AxisSystem LineAndPoint(const Line3 &l, const Vector3 &q, const std::optional<Vector3> &origin, const std::optional<Vector3> &axis) {
-    const Vector3 n = Cross(l.dir, q - l.point);
-    if (Norm(n) <= Tol(Scale({l.point, q})))
-        throw py::value_error("Plane(line, point): the point lies on the line");
-    return Through(l.point, Upward(n), origin, axis);
-}
-
-AxisSystem ThreePoints(const Vector3 &p1, const Vector3 &p2, const Vector3 &p3, const std::optional<Vector3> &origin,
-                       const std::optional<Vector3> &axis) {
-    const double size = Scale({p1, p2, p3}), l = Norm(p2 - p1);
-    const Vector3 n = Cross(p2 - p1, p3 - p1);
-    if (!(l > Tol(size)) || Norm(n) / l <= Tol(size))
-        throw py::value_error("Plane(p1, p2, p3): the three points lie on one line");
-    return Through(p1, Upward(n), origin, axis);
-}
-
-// the plane parallel to a, its origin a's moved along the normal by d
-AxisSystem Moved(const AxisSystem &a, double d, const std::optional<Vector3> &origin, const std::optional<Vector3> &axis) {
-    return SketchAxes(AxisSystem(a.Origin() + a.Normal() * d, a.Normal(), a.XDirection()), origin, axis, "Plane");
+std::optional<Axis> StraightLine(const py::handle &h) {
+    return py::isinstance<Wire>(h) ? h.cast<const Wire &>().StraightLine() : std::nullopt;
 }
 
 AxisSystem PlaneFrom(const py::args &args, const py::kwargs &kw) {
@@ -136,21 +56,21 @@ AxisSystem PlaneFrom(const py::args &args, const py::kwargs &kw) {
     if (count == 3) {
         if (!IsXYZ(args[0]) || !IsXYZ(args[1]) || !IsXYZ(args[2]))
             throw py::type_error("Plane(p1, p2, p3): three points (x, y, z)");
-        return ThreePoints(*XYZArg(args[0], "Plane(p1)"), *XYZArg(args[1], "Plane(p2)"), *XYZArg(args[2], "Plane(p3)"), origin, axis);
+        return AxesThroughPoints(*XYZArg(args[0], "Plane(p1)"), *XYZArg(args[1], "Plane(p2)"), *XYZArg(args[2], "Plane(p3)"), origin, axis);
     }
     if (count != 2)
         throw py::type_error("Plane: at most three positional arguments: Plane(plane), Plane(plane, point), Plane(plane, offset), "
                              "Plane(line, line), Plane(line, point), Plane(p1, p2, p3), Plane(point, normal)");
     const py::handle a = args[0], b = args[1];
-    if (const std::optional<Line3> line = StraightLine(a)) {
+    if (const std::optional<Axis> line = StraightLine(a)) {
         if (py::isinstance<Wire>(b)) {
-            const std::optional<Line3> other = StraightLine(b);
+            const std::optional<Axis> other = StraightLine(b);
             if (!other)
                 throw py::value_error("Plane(line, line): the second wire is not one straight line");
-            return TwoLines(*line, *other, origin, axis);
+            return AxesThroughLines(*line, *other, origin, axis);
         }
         if (IsXYZ(b))
-            return LineAndPoint(*line, *XYZArg(b, "Plane(point)"), origin, axis);
+            return AxesThroughLineAndPoint(*line, *XYZArg(b, "Plane(point)"), origin, axis);
         if (IsNumber(b))
             throw py::type_error("Plane(line, offset): a straight wire is a line; the plane of the wire moved by the offset is "
                                  "Plane(px.Plane(wire), offset)");
@@ -162,15 +82,15 @@ AxisSystem PlaneFrom(const py::args &args, const py::kwargs &kw) {
         const Vector3 n = *XYZArg(b, "Plane(normal)");
         if (!(Norm(n) > 0.0))
             throw py::value_error("Plane(point, normal): the normal must not be zero");
-        return Through(*XYZArg(a, "Plane(point)"), n, origin, axis);
+        return AxesThrough(*XYZArg(a, "Plane(point)"), n, origin, axis);
     }
     if (py::isinstance<Wire>(a) && py::isinstance<Wire>(b))
         throw py::value_error("Plane(line, line): the first wire is not one straight line");
     const AxisSystem plane = AxesArg(a, "Plane");
     if (IsNumber(b))
-        return Moved(plane, b.cast<double>(), origin, axis);
+        return AxesMoved(plane, b.cast<double>(), origin, axis);
     if (IsXYZ(b))
-        return Moved(plane, Dot(*XYZArg(b, "Plane(point)") - plane.Origin(), plane.Normal()), origin, axis);
+        return AxesMoved(plane, Dot(*XYZArg(b, "Plane(point)") - plane.Origin(), plane.Normal()), origin, axis);
     throw py::type_error("Plane(plane, ...): the second is a point (x, y, z) or a number, the offset");
 }
 

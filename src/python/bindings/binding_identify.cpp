@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
-#include "shape/identification.hpp"
+#include "planex/shape/identification.hpp"
 
 static Affine2 AffineOf(const std::array<std::array<double, 2>, 2> &m, const std::array<double, 2> &v) {
     return {{m[0][0], m[0][1], m[1][0], m[1][1]}, {v[0], v[1]}};
 }
 
-// px.Auto (none: found at every export), a Transformation (px.Translation, px.Rotation, ...), or (matrix 2x2, vector 2)
 static std::optional<Affine2> TrafoArg(const py::object &t, const std::string &call) {
     if (IsPlainAuto(t, call, "trafo"))
         return std::nullopt;
@@ -193,7 +192,10 @@ void BindIdentify(py::module_ &m) {
             return "Transformation(matrix=((" + f(a.m[0]) + ", " + f(a.m[1]) + "), (" + f(a.m[2]) + ", " + f(a.m[3]) + ")), vector=(" +
                    f(a.t.x) + ", " + f(a.t.y) + "))";
         });
-    m.def("Translation", [](double dh, double dv) { return Affine2::Translation({dh, dv}); }, py::arg("dh"), py::arg("dv"),
+    m.def("Translation", [](double dh, double dv) {
+        IsFinite("Translation", {dh, dv});
+        return Affine2::Translation({dh, dv});
+    }, py::arg("dh"), py::arg("dv"),
           "Translation(dh: float, dv: float) -> Transformation\n"
           "Translation(d: tuple[float, float]) -> Transformation\n\n"
           "The move by (dh, dv) in the plane.\n\n"
@@ -204,8 +206,14 @@ void BindIdentify(py::module_ &m) {
           "Examples:\n"
           "    px.Translation(10, 0)\n"
           "    px.Translation((10, 0))");
-    m.def("Translation", [](std::array<double, 2> d) { return Affine2::Translation({d[0], d[1]}); }, py::arg("d"), "");
-    m.def("Rotation", [](double angle, const Vertex &center) { return Affine2::Rotation(center, angle); }, py::arg("angle"),
+    m.def("Translation", [](std::array<double, 2> d) {
+        IsFinite("Translation", {d[0], d[1]});
+        return Affine2::Translation({d[0], d[1]});
+    }, py::arg("d"), "");
+    m.def("Rotation", [](double angle, const Vertex &center) {
+        IsFinite("Rotation", {angle});
+        return Affine2::Rotation(center, angle);
+    }, py::arg("angle"),
           py::arg("center") = Vertex{0.0, 0.0},
           "Rotation(angle: float, center: Point = (0, 0)) -> Transformation\n\n"
           "The turn by angle counterclockwise about center in the plane.\n\n"

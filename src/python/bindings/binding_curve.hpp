@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "binding.hpp"
-#include "constraint_sketch/expression.hpp"
-#include "curves/parametricfit.hpp"
-#include "sketch/curveformula.hpp"
+#include "planex/constraint_sketch/expression.hpp"
+#include "planex/curves/parametricfit.hpp"
+#include "planex/sketch/curveformula.hpp"
 
 // the nodes _expressions._Parse gives: (operation, number), ("val", k) the k-th value
 inline std::vector<cs::Node> NodesOf(const std::vector<std::pair<std::string, double>> &nodes) {
@@ -32,15 +32,12 @@ inline std::vector<cs::Node> NodesOf(const std::vector<std::pair<std::string, do
     return out;
 }
 
-// Curve(point, range) as the messages name it
 inline std::string CurveText(const std::string &call, const py::handle &point, const py::handle &range) {
     return call + "(" + py::repr(point).cast<std::string>() + ", " + py::repr(range).cast<std::string>() + ")";
 }
-// the point of Curve given as a callable t -> (h, v), not as two expressions
 inline bool IsCurveCallable(const py::handle &point) {
     return !py::isinstance<py::str>(point) && !py::isinstance<py::tuple>(point) && !py::isinstance<py::list>(point) && py::hasattr(point, "__call__");
 }
-// the range (t0, t1): two numbers, or (strings: a formula's) expressions
 inline py::tuple CurveRange(const py::handle &range, const std::string &text, bool numbers) {
     if (!(py::isinstance<py::tuple>(range) || py::isinstance<py::list>(range)) || py::len(range) != 2)
         throw py::type_error(text + ": the range is (t0, t1), two numbers" + (numbers ? std::string() : " or expressions"));
@@ -52,8 +49,6 @@ inline py::tuple CurveRange(const py::handle &range, const std::string &text, bo
     return out;
 }
 
-// a curve's formula, its point (h, v) two expressions in t, read by _expressions._ParseCurve with names (those of
-// the sketch it is drawn in; numbers_only for a sketch or a call without dimensions)
 inline sketch::CurveFormula ParsedCurve(const py::handle &point, const py::handle &range, const std::string &text, const py::dict &names) {
     if (!(py::isinstance<py::tuple>(point) || py::isinstance<py::list>(point)) || py::len(point) != 2 || !py::isinstance<py::str>(point[py::int_(0)]) ||
         !py::isinstance<py::str>(point[py::int_(1)]))

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
-#include "constraint_sketch/analysis.hpp"
-#include "constraint_sketch/solver.hpp"
+#include "planex/constraint_sketch/analysis.hpp"
+#include "planex/constraint_sketch/solver.hpp"
 
 // constraints given by Python: (indices, rows, f) with f(values at indices) -> (residuals, Jacobian rows), for tests
 struct PyConstraintSystem {

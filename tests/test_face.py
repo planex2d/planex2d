@@ -220,7 +220,7 @@ def test_fit_splines_replaces_chains_of_small_edges():
     for k in range(1, n):
         wp.Line((math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n)))
     p = wp.Close().Face()
-    plain, fitted = p.ToOCCFace(), p.ToOCCFace(fit_splines=dict(max_edge_length=0.1))
+    plain, fitted = p.ToOCCFace(), p.ToOCCFace(fit_splines=dict(max_edge_length=0.1, tol=1e-5))
     assert len(plain.edges) == n
     assert len(fitted.edges) < n
     assert area(fitted) == pytest.approx(area(plain), rel=1e-4)
@@ -232,7 +232,7 @@ def test_fit_splines_runs_before_small_edges_are_removed():
     for k in range(1, n):
         wp.Line((math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n)))
     p = wp.Close().Face()
-    fitted = p.ToOCCFace(remove_edges_smaller=0.02, fit_splines=dict(max_edge_length=0.1))
+    fitted = p.ToOCCFace(remove_edges_smaller=0.02, fit_splines=dict(max_edge_length=0.1, tol=1e-5))
     assert len(fitted.edges) == 2
     assert area(fitted) == pytest.approx(area(p.ToOCCFace()), rel=1e-4)
 
@@ -276,7 +276,7 @@ def test_fit_splines_ignores_tiny_edges_in_the_angle_test():
     p = px.Wire()
     for a, b in zip(pts, pts[1:] + pts[:1]):
         p.Add(line(a, b))
-    fitted = p.ToOCCFace(merge_collinear_closer=0, fit_splines=dict(max_edge_length=0.1))
+    fitted = p.ToOCCFace(merge_collinear_closer=0, fit_splines=dict(max_edge_length=0.1, tol=1e-5))
     assert len(fitted.edges) == 2
     assert min(e.mass for e in fitted.edges) > 1
     assert area(fitted) == pytest.approx(area(p.ToOCCFace()), rel=1e-4)

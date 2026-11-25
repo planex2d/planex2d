@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#pragma once
+#include "planex/sketch/geometry.hpp"
 
 #include <array>
 #include <cmath>
 
-#include "curves/blend.hpp"
-#include "sketch/geometry.hpp"
+#include "planex/curves/blend.hpp"
 
 namespace planex2d::sketch {
 
-    inline Curve<double, Vertex> SplineData::Interpolated(const Geometry &g) const {
+    Curve<double, Vertex> SplineData::Interpolated(const Geometry &g) const {
         if (fitted)
             return fitted->PlacedAt(g.Coords(fitted->origin), g.values[fitted->angle]);
         if (blend) {
@@ -40,13 +39,8 @@ namespace planex2d::sketch {
         }
         return Interpolate(q, tangentAt, t, closed, style, settings);
     }
-    inline double SplineData::BlendSense(const Geometry &g, size_t i) const {
-        const Element &arm = g.elements[blend->arms[i]];
-        const bool atEnd = g.coordsOf[arm.Ends(g)[1]] == g.coordsOf[points[i]];
-        const double travel = arm.kind == ElementKind::Arc && !arm.ccw ? -1.0 : 1.0;
-        return atEnd == (i == 0) ? travel : -travel;
-    }
-    inline std::vector<Vertex> SplineData::Points(const Geometry &g) const {
+
+    std::vector<Vertex> SplineData::Points(const Geometry &g) const {
         std::vector<Vertex> out;
         if (fitted) {
             const Curve<double, Vertex> f = Interpolated(g);

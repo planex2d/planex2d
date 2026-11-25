@@ -78,6 +78,21 @@ def test_the_offset_of_a_stroke_crossing_itself_many_times_is_quick():
     assert px.Shape(stroke).mass == pytest.approx(bands.mass, rel=1e-9)
 
 
+def test_the_offset_is_about_as_quick_as_uniting_the_bands_of_its_edges():
+    pts = [(math.cos(0.37 * k) * (3 + 0.01 * k) + 0.05 * k, math.sin(0.37 * k) * (3 + 0.01 * k)) for k in range(1001)]
+    sk = px.QuickSketch().Move(pts[0])
+    for p in pts[1:]:
+        sk.Line(p)
+    wires = sk.Wires()
+    lines = [px.Face([px.Line(a, b).Offset(0.2)]) for a, b in zip(pts, pts[1:])]
+    start = time.perf_counter()
+    px.Unify(lines)
+    union = time.perf_counter() - start
+    start = time.perf_counter()
+    px.Offset(wires, 0.2, both_sides=True)
+    assert time.perf_counter() - start < 3 * union + 0.05
+
+
 def test_the_offset_of_several_wires_takes_both_sides_of_closed_ones_too():
     ring = px.Offset([px.Circle((0, 0), 2)], 0.5)
     assert px.Shape(ring).mass == pytest.approx(math.pi * (2.5 ** 2 - 1.5 ** 2))

@@ -3,7 +3,6 @@
 
 #include "binding.hpp"
 
-// the value all face groups share, none otherwise
 template <class G>
 static auto GroupsCommon(const Shape &s, G get) {
     return CommonOf(s.GroupCount(), [&](size_t k) { return s.GroupProps(k); }, get);
@@ -92,13 +91,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         .def_property_readonly("faces", py::cpp_function([](Shape &s) { return FacesView{&s}; }, py::keep_alive<0, 1>()),
                                "faces: FacesView\n\nThe faces, views whose properties, edges and vertices are the shape's.")
         .def_property_readonly("wires", &Shape::AllWires, "wires: list[Wire]\n\nThe loops of the faces and the connected chains of the wires, a list of wires.")
-        .def("_FreeWires", [](const Shape &s) {
-            WireList out;
-            for (const Wire &part : s.WireParts())
-                for (Wire &w : part.Wires())
-                    out.push_back(std::move(w));
-            return out;
-        }, "the connected chains of the edges on no face")
+        .def("_FreeWires", [](const Shape &s) { return s.WireParts().Chains(); }, "the connected chains of the edges on no face")
         .def_property_readonly("vertices", py::cpp_function([](Shape &s) { return VerticesView{&s.Edges()}; }, py::keep_alive<0, 1>()),
                                "vertices: VerticesView\n\nThe vertices, each once, in the order the edges reach them; one vertex where parts meet.")
         .def_property_readonly("edges", py::cpp_function([](Shape &s) { return EdgesView{&s.Edges()}; }, py::keep_alive<0, 1>()),
@@ -159,7 +152,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
              "    shape ^ face")
         .def("Offset", [](const py::object &self, double d, bool inplace, OffsetForm corners) -> py::object {
             Shape &s = self.cast<Shape &>();
-            Shape r = OffsetFaces(s, d, CornersOf(corners));
+            Shape r = OffsetFacesOf(s, d, corners);
             if (!inplace)
                 return py::cast(std::move(r));
             ReplaceKeepingId(s, std::move(r));
@@ -180,12 +173,13 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         .def("FitArcs", [](Shape &s, OptDouble tol, OptDouble l, OptDouble a, OptDouble ig) -> Shape & {
             return s.FitArcs(Arcs(true, l, a, tol, ig));
         }, ARCFIT_ARGS, ref,
-           FitArcsDoc("Shape", "Replaces chains of at least three edges of one part shorter than max_edge_length by arcs of "
-                               "at most 180 degrees (or lines) that stay within tol of the chain, in place.", "shape"))
+           FitArcsDoc("Shape", "Replaces chains of at least three lines of one part by arcs of at most 180 degrees (or "
+                               "lines) that stay within tol of the chain, in place.", "shape"))
         .def("Simplify", [](Shape &s, EXPORT_PARAMS) -> Shape & { return s.Simplify(EXPORT_OPTIONS); }, EXPORT_ARGS, ref,
              ExportDoc("Simplify", "Shape",
-                       "Defeatures all edges at once in place as the OCC exports do: gaps closed, collinear lines merged, "
-                       "arcs and splines fitted, small edges removed, as enabled.\n\n"
+                       "Defeatures all edges at once in place as the OCC exports do: gaps closed, arcs fitted, collinear lines "
+                       "merged, splines fitted, small edges removed; then thin parts merged, small holes filled and "
+                       "small faces removed, and the edges cleaned once more; each as enabled.\n\n"
                        "Free edges are removed from the faces only.", "shape", false))
         .def("Simplified", [](const Shape &s, EXPORT_PARAMS) { return Shape(s).Simplify(EXPORT_OPTIONS); }, EXPORT_ARGS,
              ExportDoc("Simplified", "Shape", "A copy defeatured as Simplify does it; this shape is not changed.", "shape", false));
@@ -203,7 +197,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         return Shape(f);
     });
     shape.def("Contains", [](const Shape &s, const py::object &other, bool boundary) {
-        return ContainsAny(Planar{FaceRegion(s), Wire(s.Axes())}, s.Axes(), other, boundary,
+        return ContainsAny(Planar{s.FaceRegion(), Wire(s.Axes())}, s.Axes(), other, boundary,
                            [&] { return ShapeOperand(s, "Contains"); });
     }, py::arg("other"), py::pos_only(), py::arg("boundary") = true,
               ContainsDoc("shape", "a face"));
@@ -211,15 +205,15 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         CheckSampleTol("Polylines", tol);
         py::list out;
         for (const Face &f : s.Faces())
-            AddFaceLoops(f.Edges(), tol, out);
+            AddArrays(FacePolylinesOf(f.Edges(), tol), out);
         for (const Wire &w : s.WireParts())
-            AddWireLoops(w, tol, out);
+            AddArrays(PolylinesOf(w, tol), out);
         return out;
     }, py::arg("tol"), PolylinesDoc("shape"));
     shape.def("Split", [](const Shape &s, const py::object &cutter) { return SplitShape(s, CutterIn(s.Axes(), cutter)); },
               py::arg("cutter"), py::pos_only(), SplitDoc("shape"))
         .def("Trim", [](const Shape &s, TRIM_PARAMS) {
-            return TrimShape(s, CutterIn(s.Axes(), cutter), RuleOf(s.Axes(), kc, rc, kl, ks, kleft, kright));
+            return TrimmedShape(s, CutterIn(s.Axes(), cutter), RuleOf(s.Axes(), kc, rc, kl, ks, kleft, kright));
         }, TRIM_ARGS, TrimDoc("shape"));
     BindRelations<Shape>(shape, [](const Shape &s) { return ShapeOperand(s, "Relate"); });
     BindMeasures<Shape>(shape, [](const Shape &s) { return ThingOf(s); },
@@ -303,12 +297,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
         std::optional<AxisSystem> axes;
         const EdgeList list = EdgesArg(edges, "EnclosingRectangle", axes);
         const EnclosingRectangle r = EnclosingRectangleOf(ConvexHullOf(list).Boundary(axes.value_or(AxisSystem())));
-        const Vertex a = UnitVector(r.angle) * (0.5 * r.length), b = UnitVector(r.angle + 0.5 * std::numbers::pi) * (0.5 * r.width);
-        const std::array<Vertex, 4> corner{r.center - a - b, r.center + a - b, r.center + a + b, r.center - a + b};
-        Wire w(axes.value_or(AxisSystem()));
-        for (size_t k = 0; k < 4; ++k)
-            w.Add(Line(corner[k], corner[(k + 1) % 4]));
-        return py::make_tuple(Face(std::move(w)), Tuple2(r.center), Degrees(r.angle), r.length, r.width);
+        return py::make_tuple(Face(r.Boundary(axes.value_or(AxisSystem()))), Tuple2(r.center), Degrees(r.angle), r.length, r.width);
     }, py::arg("edges"),
           "for px.measurements.EnclosingRectangle: (the rectangle, its center (h, v), the direction of its longer side "
           "in degrees, its length, its width)");
@@ -422,7 +411,7 @@ void BindShape(py::module_ &m, py::class_<Shape> &shape, py::class_<Face> &face,
                                       "px.Offset(face.wires, d) takes both sides of their outlines");
             ShapeList grown;
             for (const Shape &s : faces)
-                grown.push_back(OffsetFaces(s, d, CornersOf(corners)));
+                grown.push_back(OffsetFacesOf(s, d, corners));
             return py::cast(Combined(std::move(grown), &Unify, false));
         }
         std::erase_if(wires, [](const Wire &w) { return w.Empty(); });

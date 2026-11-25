@@ -477,10 +477,10 @@
   "Scaled(point: Point3, /, factor: float, scale_maxh: bool = False, scale_minh: bool = False, *, id: str | None = None) -> Face"
  ],
  "px.Face.Simplified": [
-  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, *, id: str | None = None) -> Face"
+  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> Face"
  ],
  "px.Face.Simplify": [
-  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> Face"
+  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> Face"
  ],
  "px.Face.SmallEdges": [
   "SmallEdges(tol: float) -> list[int]"
@@ -493,16 +493,16 @@
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
  "px.Face.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Face.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Face.ToOCCWire": [
-  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Face.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Face.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
@@ -706,7 +706,7 @@
   "Scaled(point: Point3, /, factor: float, scale_maxh: bool = False, scale_minh: bool = False) -> Face"
  ],
  "px.FaceView.Simplified": [
-  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> Face"
+  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> Face"
  ],
  "px.FaceView.Simplify": [
   "(self, *args, **kwargs)"
@@ -722,16 +722,16 @@
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
  "px.FaceView.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.FaceView.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.FaceView.ToOCCWire": [
-  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.FaceView.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.FaceView.ToSVG": [
   "(self, *args, **kwargs)"
@@ -839,7 +839,7 @@
   "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Face | Wire]"
  ],
  "px.FromKiCad": [
-  "(path: str | os.PathLike, /, layer: str | list[str] | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = 5e-08, merge_small_faces_instead: bool | None = True, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
+  "(path: str | os.PathLike, /, layer: str | list[str] | list[float] | dict | Any | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any"
  ],
  "px.FromLevelSet": [
   "(field: Any, /, edge_length: float | None, inside: str = 'positive', name: str = 'interface', project: bool = True, subdivide: int | Auto = px.Auto, plane: Plane | None = None, periodic: bool = True, *, id: str | None = None) -> Shape"
@@ -912,10 +912,10 @@
   "Move(h: float, v: float, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, auto_constraint: bool | dict | None = None, error_on_branch_change: bool | Auto = px.Auto, mode: str = \"normal\", id: str | None = None) -> Sketch | QuickSketch"
  ],
  "px.OCCGeometry": [
-  "OCCGeometry(face: Face, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
-  "OCCGeometry(wire: Wire, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
-  "OCCGeometry(shape: Shape, /, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry",
-  "OCCGeometry(sketch: Sketch | QuickSketch, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.OCCGeometry"
+  "OCCGeometry(face: Face, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.OCCGeometry",
+  "OCCGeometry(wire: Wire, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.OCCGeometry",
+  "OCCGeometry(shape: Shape, /, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.OCCGeometry",
+  "OCCGeometry(sketch: Sketch | QuickSketch, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.OCCGeometry"
  ],
  "px.Offset": [
   "Offset(parts: list[Wire] | list[Face | Shape], /, d: float, both_sides: bool | Auto = px.Auto, ends: OffsetForm = px.Round, corners: OffsetForm = px.Round) -> list[Wire] | Shape"
@@ -1197,16 +1197,16 @@
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
  "px.QuickSketch.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.Face | occ.Compound"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.Face | occ.Compound"
  ],
  "px.QuickSketch.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.Face | occ.Compound"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.Face | occ.Compound"
  ],
  "px.QuickSketch.ToOCCWire": [
-  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, unify: bool = True) -> occ.Wire"
+  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, unify: bool = True) -> occ.Wire"
  ],
  "px.QuickSketch.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, unify: bool = True) -> occ.Compound"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, unify: bool = True) -> occ.Compound"
  ],
  "px.QuickSketch.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
@@ -1456,10 +1456,10 @@
   "Scaled(point: Point3, /, factor: float, scale_maxh: bool = False, scale_minh: bool = False, *, id: str | None = None) -> Shape"
  ],
  "px.Shape.Simplified": [
-  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, *, id: str | None = None) -> Shape"
+  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> Shape"
  ],
  "px.Shape.Simplify": [
-  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> Shape"
+  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> Shape"
  ],
  "px.Shape.Split": [
   "Split(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, /, *, id: str | None = None) -> list[Shape]"
@@ -1469,13 +1469,13 @@
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
  "px.Shape.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Shape.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Shape.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Shape.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
@@ -1804,16 +1804,16 @@
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
  ],
  "px.Sketch.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.Face | occ.Compound"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.Face | occ.Compound"
  ],
  "px.Sketch.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> occ.Face | occ.Compound"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> occ.Face | occ.Compound"
  ],
  "px.Sketch.ToOCCWire": [
-  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, unify: bool = True) -> occ.Wire"
+  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, unify: bool = True) -> occ.Wire"
  ],
  "px.Sketch.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, unify: bool = True) -> occ.Compound"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, unify: bool = True) -> occ.Compound"
  ],
  "px.Sketch.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
@@ -2143,10 +2143,10 @@
   "Scaled(point: Point3, /, factor: float, scale_maxh: bool = False, scale_minh: bool = False, *, id: str | None = None) -> Wire"
  ],
  "px.Wire.Simplified": [
-  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, *, id: str | None = None) -> Wire"
+  "Simplified(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> Wire"
  ],
  "px.Wire.Simplify": [
-  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> Wire"
+  "Simplify(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> Wire"
  ],
  "px.Wire.SmallEdges": [
   "SmallEdges(tol: float) -> list[int]"
@@ -2162,16 +2162,16 @@
   "ToNumpy() -> dict"
  ],
  "px.Wire.ToOCCFace": [
-  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCFace(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Wire.ToOCCShape": [
-  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCShape(fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Wire.ToOCCWire": [
-  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWire(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Wire.ToOCCWires": [
-  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None) -> TopoDS_Shape"
+  "ToOCCWires(approximation: bool = False, fit_splines: bool | dict | None = None, remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None, merge_collinear_closer: float | None = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None, fit_arcs: bool | dict | None = None, remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None) -> TopoDS_Shape"
  ],
  "px.Wire.ToPolyline": [
   "ToPolyline(tol: float) -> np.ndarray"

@@ -15,12 +15,12 @@
 #include <gp_Vec.hxx>
 
 // netgen's headers (through occprops.hpp) before binding.hpp's using namespace planex2d: both have a Timer
-#include "integrations/netgenocc/convert.hpp"
-#include "integrations/netgenocc/measure.hpp"
-#include "integrations/netgenocc/plane.hpp"
-#include "integrations/netgenocc/project.hpp"
-#include "integrations/netgenocc/shapeexport.hpp"
-#include "integrations/netgenocc/silhouette.hpp"
+#include "planex/integrations/netgenocc/convert.hpp"
+#include "planex/integrations/netgenocc/measure.hpp"
+#include "planex/integrations/netgenocc/plane.hpp"
+#include "planex/integrations/netgenocc/project.hpp"
+#include "planex/integrations/netgenocc/shapeexport.hpp"
+#include "planex/integrations/netgenocc/silhouette.hpp"
 
 #include "binding.hpp"
 
@@ -33,7 +33,6 @@ inline TopoDS_Compound CompoundOf(const Handle(TopTools_HSequenceOfShape) &wires
     return compound;
 }
 
-// an OCC shape, or a list or tuple of them as one compound
 inline TopoDS_Shape ShapeArg(const py::handle &h, const std::string &call) {
     const auto shape = [&](const py::handle &x) {
         try {
@@ -52,7 +51,6 @@ inline TopoDS_Shape ShapeArg(const py::handle &h, const std::string &call) {
     return compound;
 }
 
-// the shape as netgen's class of its type (Face, Solid, Compound)
 inline py::object TypedShape(const TopoDS_Shape &s) {
     if (s.ShapeType() == TopAbs_FACE)
         return py::cast(TopoDS::Face(s));
@@ -71,7 +69,6 @@ inline Wire ProjectedWire(const TopoDS_Shape &shape, const AxisSystem &axes) {
     return p.wire;
 }
 
-// the outline of the shadow: each region's outer loop, then its holes
 inline WireList ShadowWires(const TopoDS_Shape &shape, const AxisSystem &axes) {
     WireList out;
     for (const Face &f : Shadow(shape, axes).Faces()) {

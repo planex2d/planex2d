@@ -4,7 +4,7 @@
 #include "binding_occ.hpp"
 #include "binding_sketch.hpp"
 #ifdef PLANEX_CONSTRAINTS
-#include "constraint_sketch/constraintsketch.hpp"
+#include "planex/constraint_sketch/constraintsketch.hpp"
 #endif
 
 namespace {
@@ -60,7 +60,9 @@ PYBIND11_MODULE(_planex_occ, m) {
     config::state = core.attr("_state").cast<py::capsule>().get_pointer<config::State>();
     occHooks = core.attr("_occ_hooks").cast<py::capsule>().get_pointer<OCCHooks>();
     const auto *services = core.attr("_services").cast<py::capsule>().get_pointer<CoreServices>();
+#ifdef PLANEX_THREADS
     executorOf = services->executor;
+#endif
     Profiler::of = services->profiler;
     py::module_::import("netgen.occ");
     ShadowCore(m, core);

@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_sketch.hpp"
-#include "constraint_sketch/constraintsketch.hpp"
+#include "planex/constraint_sketch/constraintsketch.hpp"
 
-// prints as the arguments of the Constrain call that made it
 struct ConstraintText {
     std::string text;
 };
@@ -18,57 +17,18 @@ static py::dict SolveDict(const SolveResult &r, const cs::System &s) {
     return out;
 }
 
-// what the constraint sketch adds: constraints, dimensions, expressions, the analysis
-// the expression parsed by planex._expressions against the sketch's names: its text, nodes, names and what it drives
 static py::object ParsedExpression(ConstraintSketch &s, const std::string &text, const std::optional<std::string> &rhs) {
-    const cs::ExpressionNames names = s.ExpressionNames();
-    py::dict dimensions, elements, others;
-    for (const auto &[name, turn] : names.dimensions)
-        dimensions[py::str(name)] = turn ? "angle" : "length";
-    for (const auto &[name, kind] : names.others)
-        others[py::str(name)] = kind;
-    for (const auto &[kind, ids] : s.Elements())
-        for (const std::string &e : ids)
-            elements[py::str(e)] = kind;
-    const py::cpp_function ispoint([&s](const std::string &r) {
-        try {
-            return s.RefKind(r) == "point";
-        } catch (const std::invalid_argument &) {
-            return false;
-        }
-    });
+    const py::dict names = ExpressionNamesOf(s);
     static planex2d::Timer timer("planex Expression tree");
     const planex2d::Region region(timer);
-    return py::module_::import("planex._expressions").attr("_Parse")(text, rhs, dimensions, elements, ispoint, others);
-}
-
-// the expression with each id that counts from the end (Chain.-1.length) as the id it counts to, kept so in its text
-static std::string FromEndIn(const ConstraintSketch &s, const std::string &text) {
-    const auto inId = [&](size_t k) { return std::isalnum((unsigned char)text[k]) || text[k] == '_' || text[k] == '.' || text[k] == ' '; };
-    std::string out;
-    size_t done = 0;
-    for (size_t at = text.find(".-"); at != std::string::npos; at = text.find(".-", std::max(at + 2, done))) {
-        size_t start = at, end = at;
-        while (start > done && inId(start - 1))
-            --start;
-        while (end < text.size() && (inId(end) || (text[end] == '-' && end > 0 && text[end - 1] == '.')))
-            ++end;
-        while (start < end && text[start] == ' ')
-            ++start;
-        while (end > start && text[end - 1] == ' ')
-            --end;
-        if (!std::isalpha((unsigned char)text[start]))
-            continue;
-        out += text.substr(done, start - done) + s.FromEnd(text.substr(start, end - start));
-        done = end;
-    }
-    return out + text.substr(done);
+    return py::module_::import("planex._expressions").attr("_Parse")(text, rhs, names["dimensions"], names["elements"], names["ispoint"],
+                                                                      names["others"]);
 }
 
 static ConstraintSketch &AddExpression(ConstraintSketch &s, const std::string &given, const std::optional<std::string> &givenRhs,
                                        const std::optional<std::string> &id) {
-    const std::string text = FromEndIn(s, given);
-    const std::optional<std::string> rhs = givenRhs ? std::optional(FromEndIn(s, *givenRhs)) : std::nullopt;
+    const std::string text = s.Book().FromEndIn(given);
+    const std::optional<std::string> rhs = givenRhs ? std::optional(s.Book().FromEndIn(*givenRhs)) : std::nullopt;
     try {
         UserId(id);
     } catch (const std::invalid_argument &e) {
@@ -86,14 +46,12 @@ static ConstraintSketch &AddExpression(ConstraintSketch &s, const std::string &g
                            leaves, drives.is_none() ? std::nullopt : std::optional<std::string>(drives.cast<std::string>()), id);
 }
 
-// None (rounding) or a length, 0 or more
 static std::optional<double> InferenceTol(const std::optional<double> &tol, const std::string &call) {
     if (tol && !(*tol >= 0.0))
         throw py::value_error(call + "(tol=" + NumberText(*tol) + "): the tolerance is a length, 0 or more (None: to rounding)");
     return tol;
 }
 
-// True: the config's relations, False: none, a dict: the config's with the ones it names switched
 static std::optional<AutoConstraint> GeometricArg(const py::object &o, const std::string &call) {
     if (py::isinstance<py::bool_>(o))
         return o.cast<bool>() ? std::optional(config::state->auto_constraint_options) : std::nullopt;
@@ -118,7 +76,6 @@ static py::dict SuggestionDict(const cs::Suggestion &g) {
     return out;
 }
 
-// Constrain's arguments: ids, OCC edges (projected), the kind, a value
 static ConstraintSketch &ConstrainFrom(ConstraintSketch &s, const py::args &args, const std::optional<std::string> &id, bool reference,
                                        bool ownTangents) {
     Prepare(s, args);
@@ -144,22 +101,40 @@ static ConstraintSketch &ConstrainFrom(ConstraintSketch &s, const py::args &args
     return s.Constrain(refs, *kind, value, UserId(id), reference, ownTangents);
 }
 
-static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
-    auto ref = py::return_value_policy::reference_internal;
+static void BindConstraintSettings(py::class_<ConstraintSketch> &sketch) {
     sketch
         .def_property("mode", &ConstraintSketch::Mode, &ConstraintSketch::SetMode,
                       "mode: str\n\nThe mode, 'normal' or 'strict': setting 'strict' also switches error_on_branch_change on (not while "
-                      "the constraints are disabled).")
+                      "the constraints are disabled); back to 'normal' leaves it as it is.")
         .def_property("auto_constraint",
                       [](const ConstraintSketch &s) { return s.autoConstraint ? py::object(AutoConstraintDict(*s.autoConstraint)) : py::object(py::bool_(false)); },
-                      [](ConstraintSketch &s, const py::object &v) { s.SetAutoConstraint(AutoConstraintOf(v, "Sketch.auto_constraint")); },
+                      [](ConstraintSketch &s, const py::object &v) { s.autoConstraint = AutoConstraintOf(v, "Sketch.auto_constraint"); },
                       "auto_constraint: dict | bool\n\nThe relations the next drawing calls find as constraints (see Sketch()): read as False "
                       "or the dict of relations, set as auto_constraint= is (True, False, a dict, None for px.config.auto_constraint), "
                       "taken when set.")
         .def_readwrite("error_on_branch_change", &ConstraintSketch::errorOnBranchChange,
                        "error_on_branch_change: bool\n\nWhether a solve that turns a line round or an arc to its other side (it leaves the branch the sketch "
                        "was drawn in, even in the smallest steps Update takes) is an error that changes nothing, else a "
-                       "warning; on by default in mode='strict'.")
+                       "warning; on by default in mode='strict'.");
+}
+
+static ConstraintSketch &DragPoints(ConstraintSketch &s, const py::object &points, const py::object &to) {
+    if (IsRef(points))
+        return s.Drag({RefIn(s, points, "Drag")}, {PointArg(s.Axes(), to, "Drag")});
+    const std::vector<std::string> ids = RefsIn(s, points, "Drag");
+    if (!py::isinstance<py::sequence>(to) || IsPointLike(to))
+        throw py::type_error("Drag: " + py::repr(to).cast<std::string>() + " is no list of places, one per point");
+    std::vector<Vertex> places;
+    for (const py::handle &h : to)
+        places.push_back(PointArg(s.Axes(), h, "Drag"));
+    if (places.size() != ids.size())
+        throw py::value_error("Drag: " + std::to_string(ids.size()) + " points, " + std::to_string(places.size()) + " places");
+    return s.Drag(ids, places);
+}
+
+static void BindConstraintChanges(py::class_<ConstraintSketch> &sketch) {
+    auto ref = py::return_value_policy::reference_internal;
+    sketch
         .def("Constrain", NamingIds("Constrain", +[](ConstraintSketch &s, const py::args &args, const std::optional<std::string> &id, bool reference) -> ConstraintSketch & {
             return ConstrainFrom(s, args, id, reference, false);
         }), py::arg("id") = py::none(), py::arg("reference") = false, ref,
@@ -228,19 +203,7 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "Examples:\n"
              "    sk.Update()\n"
              "    sk.Update({\"w\": 12, \"phi\": 30}, steps=10)")
-        .def("Drag", NamingIds("Drag", +[](ConstraintSketch &s, const py::object &points, const py::object &to) -> ConstraintSketch & {
-            if (IsRef(points))
-                return s.Drag({RefIn(s, points, "Drag")}, {PointArg(s.Axes(), to, "Drag")});
-            const std::vector<std::string> ids = RefsIn(s, points, "Drag");
-            if (!py::isinstance<py::sequence>(to) || IsPointLike(to))
-                throw py::type_error("Drag: " + py::repr(to).cast<std::string>() + " is no list of places, one per point");
-            std::vector<Vertex> places;
-            for (const py::handle &h : to)
-                places.push_back(PointArg(s.Axes(), h, "Drag"));
-            if (places.size() != ids.size())
-                throw py::value_error("Drag: " + std::to_string(ids.size()) + " points, " + std::to_string(places.size()) + " places");
-            return s.Drag(ids, places);
-        }), py::arg("points"), py::arg("to"), ref,
+        .def("Drag", NamingIds("Drag", &DragPoints), py::arg("points"), py::arg("to"), ref,
              "Drag(points: Id | Ids, to: Point | list[Point]) -> Sketch\n\n"
              "Move points to new places, as a mouse drag does: each point goes to its place, the elements that end at it "
              "stretch and turn, and the rest moves only where the constraints make it. Where the constraints keep a point "
@@ -314,6 +277,85 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "    id: the expression.\n\n"
              "Examples:\n"
              "    sk.RemoveExpression(\"Expression.1\")")
+        .def("AutoConstrain", [](ConstraintSketch &s, const py::object &geometric, bool dimensional, const std::optional<double> &tol) {
+            return s.AutoConstrain(GeometricArg(geometric, "AutoConstrain"), dimensional, InferenceTol(tol, "AutoConstrain"));
+        }, py::arg("geometric") = true, py::arg("dimensional") = true, py::arg("tol") = py::none(),
+             "AutoConstrain(geometric: bool | dict = True, dimensional: bool = True, tol: float | None = None) -> list[str]\n\n"
+             "Adds the constraints sk.SuggestConstraints suggests and returns their ids; with \"symmetric\" "
+             "also a construction line on each symmetry axis the sketch has no line on, with \"pitch_circle\" a "
+             "construction circle through equal holes equally spaced about a center and a line from it to each hole; "
+             "their ids first.\n\n"
+             "The relations found within tol are solved, which moves the geometry by up to about tol (a warning gives the "
+             "largest move); the dimensions keep the values the geometry has then. A sketch from a DXF or from sk.Add gets "
+             "its relations with sk.AutoConstrain(dimensional=False, tol=...); it is usually not fully defined afterwards. "
+             "The constraints added are ordinary ones (Coincident.N, Distance.N, ...) and can be removed.\n\n"
+             "Args:\n"
+             "    geometric: True: the relations of px.config.auto_constraint_options; a dict switches some of them; False: "
+             "none.\n"
+             "    dimensional: whether to add dimensions.\n"
+             "    tol: how far an end may be from a relation for it to count, a length; None: only relations that hold to "
+             "rounding.\n\n"
+             "Raises:\n"
+             "    TypeError: geometric is not True, False or a dict of relations.\n"
+             "    ValueError: tol is negative; the relations found within tol have no common solution (a smaller tol).\n\n"
+             "Examples:\n"
+             "    sk.AutoConstrain(dimensional=False, tol=1e-6)\n"
+             "    sk.AutoConstrain()");
+}
+
+static auto FreeMotionDicts(ConstraintSketch &s) {
+    py::list out;
+    for (const cs::FreeMotion &m : s.FreeMotions()) {
+        py::dict velocity;
+        for (const auto &[reference, v] : m.points)
+            velocity[py::str(reference)] = py::make_tuple(v.x, v.y);
+        for (const auto &[name, v] : m.values)
+            velocity[py::str(name)] = v;
+        py::dict motion;
+        motion["drag"] = m.drag;
+        motion["moves"] = py::cast(m.moves);
+        motion["velocity"] = velocity;
+        out.append(motion);
+    }
+    return out;
+}
+
+static auto JacobianDict(ConstraintSketch &s) {
+    const cs::SketchJacobian j = s.Jacobian();
+    const auto integers = [](const std::vector<size_t> &v) {
+        py::array_t<std::int64_t> a((py::ssize_t)v.size());
+        std::copy(v.begin(), v.end(), a.mutable_data());
+        return a;
+    };
+    py::list rows, columns;
+    for (const cs::JacobianRow &r : j.rows)
+        if (r.row)
+            rows.append(py::make_tuple(r.id, *r.row));
+        else
+            rows.append(py::make_tuple(r.id, "value"));
+    for (const auto &[reference, coordinate] : j.columns)
+        columns.append(py::make_tuple(reference, coordinate));
+    const py::tuple shape = py::make_tuple(j.rows.size(), j.columns.size());
+    py::object matrix = py::make_tuple(py::array_t<double>((py::ssize_t)j.data.size(), j.data.data()),
+                                       integers(j.indices), integers(j.indptr));
+    try {
+        matrix = py::module_::import("scipy.sparse").attr("csr_array")(matrix, py::arg("shape") = shape);
+    } catch (py::error_already_set &e) {
+        if (!e.matches(PyExc_ImportError))
+            throw;
+    }
+    py::dict out;
+    out["matrix"] = matrix;
+    out["shape"] = shape;
+    out["rows"] = rows;
+    out["columns"] = columns;
+    out["scale"] = py::array_t<double>((py::ssize_t)j.scale.size(), j.scale.data());
+    out["row_scale"] = py::array_t<double>((py::ssize_t)j.row_scale.size(), j.row_scale.data());
+    return out;
+}
+
+static void BindConstraintReports(py::class_<ConstraintSketch> &sketch) {
+    sketch
         .def_property_readonly("constraints", [](const ConstraintSketch &s) {
             py::dict out;
             for (const cs::ConstraintEntry &e : s.Constraints()) {
@@ -335,22 +377,7 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
         }, "dependencies: dict[str, list[str]]\n\nEach constraint in redundant with the ids of the constraints it follows from, such as "
            "{\"Horizontal.1\": [\"Fix.1\"]}; a small set that makes it redundant, not always the smallest.")
         .def_property_readonly("dof", &ConstraintSketch::Dof, "dof: int\n\nHow many ways the geometry can still move.")
-        .def("FreeMotions", [](ConstraintSketch &s) {
-            py::list out;
-            for (const cs::FreeMotion &m : s.FreeMotions()) {
-                py::dict velocity;
-                for (const auto &[reference, v] : m.points)
-                    velocity[py::str(reference)] = py::make_tuple(v.x, v.y);
-                for (const auto &[name, v] : m.values)
-                    velocity[py::str(name)] = v;
-                py::dict motion;
-                motion["drag"] = m.drag;
-                motion["moves"] = py::cast(m.moves);
-                motion["velocity"] = velocity;
-                out.append(motion);
-            }
-            return out;
-        },
+        .def("FreeMotions", &FreeMotionDicts,
              "FreeMotions() -> list[dict]\n\n"
              "The ways the geometry can still move, one per degree of freedom, each led by the value it drags.\n\n"
              "Each motion is a dict: 'drag', the value that leads it ('Line.2.end.h' or 'Line.2.end.v' for a point, "
@@ -365,12 +392,6 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "Examples:\n"
              "    sk.FreeMotions()[0][\"drag\"]\n"
              "    [m[\"drag\"] for m in sk.FreeMotions()]")
-        .def("_UseParameters", [](ConstraintSketch &s, const std::map<std::string, double> &values) -> ConstraintSketch & {
-            return s.UseParameters({values.begin(), values.end()});
-        }, py::arg("values"), ref, "for px.Parameters: the sketch uses these global parameters (sk.Use)")
-        .def("_UpdateParameters", [](ConstraintSketch &s, const std::map<std::string, double> &values) -> ConstraintSketch & {
-            return s.UpdateParameters({values.begin(), values.end()});
-        }, py::arg("values"), ref, "for px.Parameters: its new values, the sketch solved with them (as before if it has no solution)")
         .def("SuggestConstraints", [](ConstraintSketch &s, const py::object &geometric, bool dimensional, const std::optional<double> &tol) {
             py::list out;
             for (const cs::Suggestion &g : s.SuggestConstraints(GeometricArg(geometric, "SuggestConstraints"), dimensional,
@@ -411,63 +432,7 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
              "Examples:\n"
              "    [g[\"call\"] for g in sk.SuggestConstraints()]\n"
              "    sk.SuggestConstraints(dimensional=False, tol=1e-6)")
-        .def("AutoConstrain", [](ConstraintSketch &s, const py::object &geometric, bool dimensional, const std::optional<double> &tol) {
-            return s.AutoConstrain(GeometricArg(geometric, "AutoConstrain"), dimensional, InferenceTol(tol, "AutoConstrain"));
-        }, py::arg("geometric") = true, py::arg("dimensional") = true, py::arg("tol") = py::none(),
-             "AutoConstrain(geometric: bool | dict = True, dimensional: bool = True, tol: float | None = None) -> list[str]\n\n"
-             "Adds the constraints sk.SuggestConstraints suggests and returns their ids; with \"symmetric\" "
-             "also a construction line on each symmetry axis the sketch has no line on, with \"pitch_circle\" a "
-             "construction circle through equal holes equally spaced about a center and a line from it to each hole; "
-             "their ids first.\n\n"
-             "The relations found within tol are solved, which moves the geometry by up to about tol (a warning gives the "
-             "largest move); the dimensions keep the values the geometry has then. A sketch from a DXF or from sk.Add gets "
-             "its relations with sk.AutoConstrain(dimensional=False, tol=...); it is usually not fully defined afterwards. "
-             "The constraints added are ordinary ones (Coincident.N, Distance.N, ...) and can be removed.\n\n"
-             "Args:\n"
-             "    geometric: True: the relations of px.config.auto_constraint_options; a dict switches some of them; False: "
-             "none.\n"
-             "    dimensional: whether to add dimensions.\n"
-             "    tol: how far an end may be from a relation for it to count, a length; None: only relations that hold to "
-             "rounding.\n\n"
-             "Raises:\n"
-             "    TypeError: geometric is not True, False or a dict of relations.\n"
-             "    ValueError: tol is negative; the relations found within tol have no common solution (a smaller tol).\n\n"
-             "Examples:\n"
-             "    sk.AutoConstrain(dimensional=False, tol=1e-6)\n"
-             "    sk.AutoConstrain()")
-        .def_property_readonly("jacobian", [](ConstraintSketch &s) {
-            const cs::SketchJacobian j = s.Jacobian();
-            const auto integers = [](const std::vector<size_t> &v) {
-                py::array_t<std::int64_t> a((py::ssize_t)v.size());
-                std::copy(v.begin(), v.end(), a.mutable_data());
-                return a;
-            };
-            py::list rows, columns;
-            for (const cs::JacobianRow &r : j.rows)
-                if (r.row)
-                    rows.append(py::make_tuple(r.id, *r.row));
-                else
-                    rows.append(py::make_tuple(r.id, "value"));
-            for (const auto &[reference, coordinate] : j.columns)
-                columns.append(py::make_tuple(reference, coordinate));
-            const py::tuple shape = py::make_tuple(j.rows.size(), j.columns.size());
-            py::object matrix = py::make_tuple(py::array_t<double>((py::ssize_t)j.data.size(), j.data.data()),
-                                               integers(j.indices), integers(j.indptr));
-            try {
-                matrix = py::module_::import("scipy.sparse").attr("csr_array")(matrix, py::arg("shape") = shape);
-            } catch (py::error_already_set &e) {
-                if (!e.matches(PyExc_ImportError))
-                    throw;
-            }
-            py::dict out;
-            out["matrix"] = matrix;
-            out["shape"] = shape;
-            out["rows"] = rows;
-            out["columns"] = columns;
-            out["scale"] = py::array_t<double>((py::ssize_t)j.scale.size(), j.scale.data());
-            out["row_scale"] = py::array_t<double>((py::ssize_t)j.row_scale.size(), j.row_scale.data());
-            return out;
-        }, "jacobian: dict\n\nThe solver's Jacobian at the geometry now, as a dict.\n\n"
+        .def_property_readonly("jacobian", &JacobianDict, "jacobian: dict\n\nThe solver's Jacobian at the geometry now, as a dict.\n\n"
            "'matrix': the derivatives of the residuals (rows) with respect to the solver's scaled unknowns (columns), a "
            "scipy.sparse.csr_array when scipy is installed, else its arrays (data, indices, indptr), as "
            "scipy.sparse.csr_array((data, indices, indptr), shape=shape) takes them.\n"
@@ -492,36 +457,56 @@ static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
            "    e = np.zeros(J['shape'][0])\n"
            "    e[i] = J['row_scale'][i]\n"
            "    per_degree = dict(zip(J['columns'], J['scale'] * spsolve(J['matrix'].tocsc(), e)))\n"
-           "    per_degree[('crank.end', 'x')]  # how far crank.end moves in x per degree of phi")
+           "    per_degree[('crank.end', 'x')]  # how far crank.end moves in x per degree of phi");
+}
+
+static auto ConstraintDicts(ConstraintSketch &s) {
+    py::list out;
+    for (const cs::ConstraintInfo &i : s.Infos()) {
+        py::dict d;
+        d["id"] = i.id;
+        d["kind"] = i.kind;
+        d["text"] = i.text;
+        d["refs"] = i.refs;
+        d["value"] = i.value ? py::object(py::float_(*i.value)) : py::object(py::none());
+        d["state"] = i.over ? "over" : i.redundant ? "redundant" : "ok";
+        d["reference"] = i.reference;
+        d["derived"] = i.derived;
+        out.append(d);
+    }
+    return out;
+}
+
+static void BindConstraintHooks(py::class_<ConstraintSketch> &sketch) {
+    auto ref = py::return_value_policy::reference_internal;
+    sketch
         .def("_DrivenDimensions", [](const ConstraintSketch &s) {
             std::vector<std::string> out;
             for (const auto &[id, why] : s.DrivenDimensions())
                 out.push_back(id);
             return out;
         }, "for ReadSpreadsheet: the dimensions that follow the geometry (references) or an expression, not driving it")
-        .def("_Constraints", [](ConstraintSketch &s) {
-            py::list out;
-            for (const cs::ConstraintInfo &i : s.Infos()) {
-                py::dict d;
-                d["id"] = i.id;
-                d["kind"] = i.kind;
-                d["text"] = i.text;
-                d["refs"] = i.refs;
-                d["value"] = i.value ? py::object(py::float_(*i.value)) : py::object(py::none());
-                d["state"] = i.over ? "over" : i.redundant ? "redundant" : "ok";
-                d["reference"] = i.reference;
-                d["derived"] = i.derived;
-                out.append(d);
-            }
-            return out;
-        }, "for the plots: every constraint with the ids it relates, its value and state ('over' if suspended or in the set of one that is, "
+        .def("_Constraints", &ConstraintDicts, "for the plots: every constraint with the ids it relates, its value and state ('over' if suspended or in the set of one that is, "
            "'redundant' if it repeats others)")
         .def("_States", [](ConstraintSketch &s) {
             py::dict out;
             for (const auto &[id, state] : s.States())
                 out[py::str(id)] = state;
             return out;
-        }, "for the plot until step 4: per element 'full', 'under' or 'over'");
+        }, "for the plot until step 4: per element 'full', 'under' or 'over'")
+        .def("_UseParameters", [](ConstraintSketch &s, const std::map<std::string, double> &values) -> ConstraintSketch & {
+            return s.UseParameters({values.begin(), values.end()});
+        }, py::arg("values"), ref, "for px.Parameters: the sketch uses these global parameters (sk.Use)")
+        .def("_UpdateParameters", [](ConstraintSketch &s, const std::map<std::string, double> &values) -> ConstraintSketch & {
+            return s.UpdateParameters({values.begin(), values.end()});
+        }, py::arg("values"), ref, "for px.Parameters: its new values, the sketch solved with them (as before if it has no solution)");
+}
+
+static void BindConstraints(py::class_<ConstraintSketch> &sketch) {
+    BindConstraintSettings(sketch);
+    BindConstraintChanges(sketch);
+    BindConstraintReports(sketch);
+    BindConstraintHooks(sketch);
 }
 
 static py::dict ElementDict(const cs::System &s, size_t element) {
@@ -593,18 +578,16 @@ static py::dict ElementDict(const cs::System &s, size_t element) {
     return out;
 }
 
-// px.Sketch(sketch, copy=True): a copy of a Sketch, the constraint sketch of a QuickSketch
-static ConstraintSketch CopiedConstraintSketch(const py::tuple &args, const py::object &autoConstraint,
-                                               const std::optional<bool> &errorOnBranchChange, const std::string &mode,
-                                               const std::optional<std::string> &id, const py::object &dir) {
-    py::object source = SketchToCopy("Sketch", args, autoConstraint, errorOnBranchChange, mode, dir);
+static ConstraintSketch CopiedConstraintSketch(const py::tuple &args, const SketchSetup &setup) {
+    const py::object &autoConstraint = setup.autoConstraint;
+    py::object source = SketchToCopy("Sketch", args, setup);
     if (!py::isinstance<ConstraintSketch>(source) && !py::isinstance<Sketch>(source))
         source = py::cast(QuickSketchOfObjects(source, "Sketch"));
     ConstraintSketch s = py::isinstance<Sketch>(source) ? ConstraintSketch(source.cast<const Sketch &>(), AutoConstraintOf(autoConstraint, "Sketch"))
                                                        : ConstraintSketch(source.cast<const ConstraintSketch &>());
     if (!autoConstraint.is_none())
         s.autoConstraint = AutoConstraintOf(autoConstraint, "Sketch");
-    GiveId(s, id);
+    GiveId(s, setup.id);
     return s;
 }
 
@@ -615,33 +598,7 @@ static size_t PointOfElement(const cs::System &s, size_t element) {
     return e.Point();
 }
 
-void BindConstraintSketch(py::module_ &m) {
-    py::options options;
-    options.disable_function_signatures();
-    m.def("_EvaluateExpression", [](const std::vector<std::pair<std::string, double>> &nodes, const std::vector<double> &values) {
-        const std::vector<cs::Node> tree = NodesOf(nodes);
-        for (const cs::Node &n : tree)
-            if (n.op == cs::Op::Value && n.unknown >= values.size())
-                throw py::value_error("expression: no value " + std::to_string(n.unknown));
-        if (values.size() > cs::maxLocal)
-            throw py::value_error("expression: more than " + std::to_string(cs::maxLocal) + " values");
-        const double plain = cs::Evaluated<double>(tree, [&](size_t u) { return values[u]; });
-        cs::active = values.size();
-        std::string error;
-        const cs::Dual dual = cs::Evaluated<cs::Dual>(tree, [&](size_t u) {
-            cs::Dual x(values[u]);
-            x.g[u] = 1.0;
-            return x;
-        }, &error);
-        py::dict out;
-        out["value"] = dual.v;
-        out["plain"] = plain;
-        out["gradient"] = std::vector<double>(dual.g.begin(), dual.g.begin() + (std::ptrdiff_t)values.size());
-        out["error"] = error.empty() ? py::object(py::none()) : py::object(py::str(error));
-        return out;
-    }, py::arg("nodes"), py::arg("values"),
-       "test hook: an expression's postfix nodes (as _expressions._Parse gives them, ('val', k) the k-th of values) "
-       "evaluated with derivatives: value, plain (evaluated without them), gradient, error (the first domain error or None)");
+static void BindConstraintSystem(py::module_ &m) {
     py::class_<cs::System>(m, "_ConstraintSystem", "test hook: the elements and constraints of the constraint sketch")
         .def(py::init<>())
         .def("Point", [](cs::System &s, double x, double y, bool fixed) { return s.AddPoint(s.NewPoint({x, y}, fixed)); },
@@ -722,6 +679,36 @@ void BindConstraintSketch(py::module_ &m) {
                               throw py::value_error("one value per unknown");
                           s.values = v;
                       });
+}
+
+void BindConstraintSketch(py::module_ &m) {
+    py::options options;
+    options.disable_function_signatures();
+    m.def("_EvaluateExpression", [](const std::vector<std::pair<std::string, double>> &nodes, const std::vector<double> &values) {
+        const std::vector<cs::Node> tree = NodesOf(nodes);
+        for (const cs::Node &n : tree)
+            if (n.op == cs::Op::Value && n.unknown >= values.size())
+                throw py::value_error("expression: no value " + std::to_string(n.unknown));
+        if (values.size() > cs::maxLocal)
+            throw py::value_error("expression: more than " + std::to_string(cs::maxLocal) + " values");
+        const double plain = cs::Evaluated<double>(tree, [&](size_t u) { return values[u]; });
+        cs::active = values.size();
+        std::string error;
+        const cs::Dual dual = cs::Evaluated<cs::Dual>(tree, [&](size_t u) {
+            cs::Dual x(values[u]);
+            x.g[u] = 1.0;
+            return x;
+        }, &error);
+        py::dict out;
+        out["value"] = dual.v;
+        out["plain"] = plain;
+        out["gradient"] = std::vector<double>(dual.g.begin(), dual.g.begin() + (std::ptrdiff_t)values.size());
+        out["error"] = error.empty() ? py::object(py::none()) : py::object(py::str(error));
+        return out;
+    }, py::arg("nodes"), py::arg("values"),
+       "test hook: an expression's postfix nodes (as _expressions._Parse gives them, ('val', k) the k-th of values) "
+       "evaluated with derivatives: value, plain (evaluated without them), gradient, error (the first domain error or None)");
+    BindConstraintSystem(m);
 
     py::class_<ConstraintText>(m, "ConstraintText")
         .def("__repr__", [](const ConstraintText &t) { return t.text; })
@@ -736,10 +723,10 @@ void BindConstraintSketch(py::module_ &m) {
     sketch
         .def(py::init([](const py::args &args, const py::object &autoConstraint, const py::object &branch,
                          const std::string &mode, const std::optional<std::string> &id, const py::object &dir, bool copy) {
-            const std::optional<bool> errorOnBranchChange = BoolOrAuto(branch, "Sketch", "error_on_branch_change");
+            const SketchSetup setup{autoConstraint, BoolOrAuto(branch, "Sketch", "error_on_branch_change"), mode, id, dir};
             if (copy)
-                return CopiedConstraintSketch(args, autoConstraint, errorOnBranchChange, mode, id, dir);
-            return NewSketch<ConstraintSketch>("Sketch", args, py::none(), autoConstraint, errorOnBranchChange, mode, id, dir);
+                return CopiedConstraintSketch(args, setup);
+            return NewSketch<ConstraintSketch>("Sketch", args, py::none(), setup);
         }), py::arg("auto_constraint") = py::none(), py::arg("error_on_branch_change") = PlainAuto(),
              py::arg("mode") = "normal", py::arg("id") = py::none(), py::arg("dir") = py::none(), py::arg("copy") = false,
              "Sketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, "
@@ -799,8 +786,7 @@ void BindConstraintSketch(py::module_ &m) {
         c.Flush();
         return py::cast(Sketch(c));
     };
-    constraintSketchAt = [](const py::tuple &start, const py::object &axes, const py::object &autoConstraint, const std::optional<bool> &errorOnBranchChange,
-                            const std::string &mode, const std::optional<std::string> &id, const py::object &dir) {
-        return py::cast(NewSketch<ConstraintSketch>("Move", start, axes, autoConstraint, errorOnBranchChange, mode, id, dir));
+    constraintSketchAt = [](const py::tuple &start, const py::object &axes, const SketchSetup &setup) {
+        return py::cast(NewSketch<ConstraintSketch>("Move", start, axes, setup));
     };
 }

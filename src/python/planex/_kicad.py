@@ -17,6 +17,8 @@ import warnings
 import zipfile
 from typing import TYPE_CHECKING, Any, overload
 
+import numpy as np
+
 from . import _planex as px
 from . import stackups
 from ._geom import read_name
@@ -27,9 +29,9 @@ if TYPE_CHECKING:
 
 # KiCad works in millimetres, the results are in metres
 MM = 1e-3
-# an end touches an edge within planex's rounding tolerance for coordinates below 1 m, as the outline's
-# cleaning takes it
-TOUCH = 1e-14
+# an end touches an edge within KiCad's grid: its files keep nanometres, so a point drawn on a slanted edge or an arc
+# lies up to about 0.7 nm off it
+TOUCH = 2e-9
 # KiCad takes outline ends this close as joined (its sources' chaining epsilon, ConvertOutlineToPolygon)
 CHAIN = 0.02 * MM
 _PTH, _NPTH = "pth", "npth"
@@ -747,10 +749,11 @@ class _Board:
             raise ValueError("FromKiCad(%r): the board has no outline on Edge.Cuts" % (self.path,))
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            shape = px._RegionOfEdges(self.outline, chains=False, gaps=CHAIN)
+            outline = _onto_edges(self.outline)
+            shape = px._RegionOfEdges(outline, chains=False, gaps=CHAIN)
         for w in caught:
             opened = re.match(r"open wire with (\d+) open ends", str(w.message))
-            stubs = _stubs(self.outline) if opened else []
+            stubs = _stubs(outline) if opened else []
             if opened and len(stubs) == int(opened.group(1)):
                 warn("FromKiCad: %d line ends on Edge.Cuts run past the outline (%s) and are left out"
                               % (len(stubs), _span_mm(stubs)), px.PlanexWarning)
@@ -762,6 +765,40 @@ class _Board:
         needed = between or (self.copper[0], self.copper[-1])
         holes = [h for h, span in self.holes if all(n in span for n in needed)]
         return shape - px.Unify(holes) if holes else shape
+
+
+def _onto_edges(outline):
+    """the outline with each line or arc end that lies within TOUCH of another edge, off its ends, moved onto that edge:
+    KiCad keeps nanometres, so an end drawn on a slanted edge or an arc is stored off it"""
+    edges = [w.edges[0] for w in outline]
+    ends = [(k, tuple(p)[:2]) for k, e in enumerate(edges) if not isinstance(e.edge, px.CircleEdge)
+            for p in (e.start, e.end)]
+    at = np.array([p for _, p in ends]).reshape(-1, 2)
+    of = np.array([k for k, _ in ends])
+    boxes = np.array([e.bounding_box for e in edges]).reshape(-1, 2, 2)
+    lo, hi = boxes[:, 0] - TOUCH, boxes[:, 1] + TOUCH
+    moved = list(outline)
+    for k, e in enumerate(edges):
+        if not isinstance(e.edge, (px.LineEdge, px.ArcEdge)):
+            continue
+        a, b = tuple(e.start)[:2], tuple(e.end)[:2]
+        a2, b2 = (_onto(p, k, edges, at, of, lo, hi) for p in (a, b))
+        if (a2, b2) == (a, b):
+            continue
+        moved[k] = px.Line(a2, b2) if isinstance(e.edge, px.LineEdge) else _arc(a2, tuple(e.midpoint)[:2], b2)
+    return moved
+
+
+def _onto(p, k, edges, at, of, lo, hi):
+    """p on the nearest edge but edge k within TOUCH; p itself when it lies within CHAIN of another edge's end (the
+    region joins those) or on an edge"""
+    if np.any((np.hypot(at[:, 0] - p[0], at[:, 1] - p[1]) <= CHAIN) & (of != k)):
+        return p
+    near = [(edges[j].Distance(p), j) for j in np.flatnonzero(np.all((lo <= p) & (p <= hi), axis=1)) if j != k]
+    d, j = min(near, default=(math.inf, -1))
+    if d == 0 or d > TOUCH:
+        return p
+    return tuple(edges[j].ClosestPoint(p))[:2]
 
 
 def _stubs(outline):
@@ -987,26 +1024,30 @@ def _placed(shape, angle, center, shift=(0.0, 0.0)):
 # one form per kind of layer, so that a type checker knows the result: every layer or a list of them a dict, one layer a
 # Shape, a stackup the board in 3d (an OCC shape); id= is the id wrapper's (_ids.with_id), declared for type checkers
 @overload
-def FromKiCad(path: str | os.PathLike, /, layer: None | list[str] = None, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+def FromKiCad(path: str | os.PathLike, /, layer: None | list[str] = None, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
               merge_collinear_closer: float | None = None,
-              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape]: ...
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None,
+              remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> dict[str, Shape]: ...
 @overload
-def FromKiCad(path: str | os.PathLike, /, layer: str, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+def FromKiCad(path: str | os.PathLike, /, layer: str, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
               merge_collinear_closer: float | None = None,
-              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> Shape: ...
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None,
+              remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> Shape: ...
 @overload
-def FromKiCad(path: str | os.PathLike, /, layer: list[float] | dict | Any, remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+def FromKiCad(path: str | os.PathLike, /, layer: list[float] | dict | Any, remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None, remove_free_edges: bool | None = None,
               merge_collinear_closer: float | None = None,
-              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> Any: ...
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None,
+              remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> Any: ...
 def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] | dict | Any | None = None,
-              remove_faces_smaller: float | None = 5e-8, merge_small_faces_instead: bool | None = True,
+              remove_faces_smaller: float | None = None, merge_small_faces_instead: bool | None = None,
               remove_edges_smaller: float | None = None, close_gaps_smaller: float | None = None,
               remove_free_edges: bool | None = None,
               merge_collinear_closer: float | None = None,
-              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any:
+              fit_arcs: bool | dict | None = None, fit_splines: bool | dict | None = None,
+              remove_holes_smaller: float | None = None, merge_slivers_thinner: float | None = None, *, id: str | None = None) -> dict[str, Shape] | Shape | Any:
     """Reads a KiCad board (.kicad_pcb, KiCad 9 and later) in meters, y up: its layers as Shapes, or the board in 3d.
 
     A board of another program (a file that is no .kicad_pcb) is converted first with KiCad 10's kicad-cli (pcb
@@ -1035,7 +1076,11 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] |
 
     Only the layers asked for are built. The cleanup options are those of the OCC exports (ToOCCShape): the copper
     layers and the outline are cleaned with them (Simplify), the other layers keep what KiCad prints; the 3d board is
-    built from the cleaned copper layers and outline.
+    built from the cleaned copper layers and outline. The file is read as it is, to KiCad's nanometer; the cleanup's
+    defaults, px.config.pcb_simplify_options (an option None takes its value there), are sizes no board is made with
+    (10 um), so it removes what cannot be etched: a slit a few nanometers wide where two zones of a net meet, a strip
+    of board between a zone fill and the board edge; and it fits arcs within 10 um to the polygons of the zone fills,
+    which KiCad draws within 5 um of their arcs by default.
 
     Args:
         path: the board file.
@@ -1048,19 +1093,21 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] |
             px.stackups.kicad (the stackup in the board file).
         remove_faces_smaller: faces of less area than this (m^2) are united with the neighbor they share the longest
             edge with, such as the slivers a zone fill's polygon leaves next to an exact drill circle (merged, the
-            hole keeps its exact circle); None takes px.config.remove_faces_smaller.
-        merge_small_faces_instead: False throws such faces away instead; None takes
-            px.config.merge_small_faces_instead.
-        remove_edges_smaller: removes lines and arcs no longer than this; None takes px.config.remove_edges_smaller.
-        close_gaps_smaller: closes gaps between ends up to this; None takes px.config.close_gaps_smaller.
-        remove_free_edges: removes the edges that touch no other edge at either end; None takes
-            px.config.remove_free_edges.
-        merge_collinear_closer: merges two lines whose common vertex is this close to the line through their far ends;
-            None takes px.config.merge_collinear_closer.
-        fit_arcs: fits arcs to chains of short edges, such as a zone fill's polygon around a round pad: True, False or
-            a dict of FitArcs' options; None takes px.config.fit_arcs.
+            hole keeps its exact circle).
+        merge_small_faces_instead: False throws such faces away instead.
+        remove_edges_smaller: removes lines and arcs no longer than this (m).
+        close_gaps_smaller: closes gaps between ends up to this (m).
+        remove_free_edges: removes the edges that touch no other edge at either end.
+        merge_collinear_closer: merges two lines whose common vertex is this close (m) to the line through their far
+            ends.
+        fit_arcs: fits arcs to chains of edges within tol of an arc, such as a zone fill's polygon around a round pad:
+            True, False or a dict of FitArcs' options (on top of the defaults' fit).
         fit_splines: fits splines to chains of short edges: True, False or a dict of the fit's options (tol,
-            max_edge_length, max_edge_angle, ignore_edges_smaller); None takes px.config.fit_splines.
+            max_edge_length, max_edge_angle, ignore_edges_smaller).
+        remove_holes_smaller: fills the holes of less area than this (m^2), a hole with a face in it never; the
+            default, a circle of 50 um, is smaller than any drill.
+        merge_slivers_thinner: gives the parts of a face no wider than this (m) to the face beside them and fills the
+            gaps that narrow inside a net's copper; a gap between two nets stays, with a warning.
 
     Returns:
         layer None or a list of names: a dict of Shapes; a layer name: a Shape; a stackup: a netgen.occ shape.
@@ -1077,12 +1124,14 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] |
     Examples:
         px.FromKiCad("board.kicad_pcb", layer="F.Cu")
         px.FromKiCad("board.kicad_pcb", layer=["F.Cu", "B.Cu", "Edge.Cuts"])
-        px.FromKiCad("board.kicad_pcb", layer=px.stackups.jlc7628, fit_arcs=True)
+        px.FromKiCad("board.kicad_pcb", layer=px.stackups.jlc7628, fit_arcs={"tol": 2e-5})
     """
-    cleanup = {"remove_faces_smaller": remove_faces_smaller, "merge_small_faces_instead": merge_small_faces_instead,
-               "remove_edges_smaller": remove_edges_smaller, "close_gaps_smaller": close_gaps_smaller,
-               "remove_free_edges": remove_free_edges, "merge_collinear_closer": merge_collinear_closer,
-               "fit_arcs": fit_arcs, "fit_splines": fit_splines}
+    given = {"remove_faces_smaller": remove_faces_smaller, "merge_small_faces_instead": merge_small_faces_instead,
+             "remove_edges_smaller": remove_edges_smaller, "close_gaps_smaller": close_gaps_smaller,
+             "remove_free_edges": remove_free_edges, "merge_collinear_closer": merge_collinear_closer,
+             "fit_arcs": fit_arcs, "fit_splines": fit_splines, "remove_holes_smaller": remove_holes_smaller,
+             "merge_slivers_thinner": merge_slivers_thinner}
+    cleanup = _pcb_cleanup(given)
     names = [layer] if isinstance(layer, str) else None
     if isinstance(layer, (list, tuple)) and any(isinstance(n, str) for n in layer):
         if not all(isinstance(n, str) for n in layer):
@@ -1141,6 +1190,21 @@ def FromKiCad(path: str | os.PathLike, /, layer: str | list[str] | list[float] |
     return _stackup(board, [float(t) for t in layer], cleanup)
 
 
+def _pcb_cleanup(given):
+    """the cleanup options of a board reader: those given, the others from px.config.pcb_simplify_options; a fit given
+    as True or a dict on top of the defaults' fit"""
+    defaults = px.config.pcb_simplify_options
+    cleanup = {k: defaults[k] if v is None else v for k, v in given.items()}
+    for k in ("fit_arcs", "fit_splines"):
+        fit = defaults[k]
+        on = fit.pop("enabled")
+        if given[k] is False or (given[k] is None and not on):
+            cleanup[k] = False
+        else:
+            cleanup[k] = {**fit, **given[k]} if isinstance(given[k], dict) else fit
+    return cleanup
+
+
 def _stackup(board, thicknesses, cleanup):
     n = len(board.copper)
     if len(thicknesses) != n - 1:
@@ -1156,9 +1220,11 @@ def _stackup(board, thicknesses, cleanup):
         region = board.cleaned("Edge.Cuts", cleanup)
         region.name = None
         interfaces = []
+        # the slivers merge once, in the interfaces, which hold the copper and the board between it
+        unmerged = dict(cleanup, merge_slivers_thinner=0.0)
         for name in board.copper:
             # the copper within the outline: a converted board's edge pads run past it, where no dielectric is
-            copper = board.cleaned(name, cleanup)
+            copper = board.cleaned(name, unmerged)
             if copper.faces:
                 copper = copper * region
             interfaces.append(px.Glue([copper, region]) if copper.faces else region)
