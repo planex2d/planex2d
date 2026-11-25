@@ -338,7 +338,6 @@ namespace planex2d {
 
     Shape Shape::WithoutSmallHoles(double area) const {
         const FaceList faces = Faces();
-        const std::vector<BBox> boxes = faces.Boxes();
         std::vector<std::optional<Vertex>> inner;
         for (const Face &f : faces)
             inner.push_back(f.Edges().InteriorPoint());
@@ -741,13 +740,18 @@ namespace planex2d {
         static Timer t("planex WithoutSlivers");
         Region reg(t);
         SliverRound r{*this, false};
+        bool waiting = false;
         for (bool gaps : {false, true}) {
             if (gaps && keepOutline)
                 break;
             r.deferred = true;
             for (int round = 0; round < 4 && r.deferred; ++round)
                 r = r.shape.SliversMoved({.width = width, .keepOutline = keepOutline, .gaps = gaps, .warn = round == 0});
+            waiting = waiting || r.deferred;
         }
+        if (waiting)
+            Warning() << "merge_slivers_thinner: thin parts that touch each other are left after 4 rounds; the cleanup run again "
+                         "goes on with them";
         return r.shape;
     }
 

@@ -34,6 +34,7 @@ endif()
 option(PLANEX_THREADS "multithreaded=True on a thread pool (needs Taskflow); off runs every call in the calling thread"
        ${planex_threads_default})
 option(PLANEX_CONSTRAINTS "px.Sketch: the constraint sketch and its solver (needs Eigen); off leaves px.QuickSketch" ON)
+option(PLANEX_CHECK_HEADERS "also compile, for every binding header, a source that includes only it: each header stands on its own" OFF)
 # the Python package's build (scikit-build) and planex2d-occ's (PLANEX_CORE=OFF, CMake run directly) make the modules;
 # a C++ project that adds or installs planex builds the libraries alone, without Python or pybind11
 if(SKBUILD OR NOT PLANEX_CORE)
@@ -157,10 +158,14 @@ file(GLOB planex_sources CONFIGURE_DEPENDS src/core/*.cpp src/curves/*.cpp src/w
      src/offset/*.cpp src/io/*.cpp src/sketch/*.cpp)
 if(PLANEX_CONSTRAINTS)
     file(GLOB planex_constraint_sources CONFIGURE_DEPENDS src/constraint_sketch/*.cpp)
-    list(APPEND planex_sources ${planex_constraint_sources})
+else()
+    # the formulas of px.Curve are expressions of the constraint sketch, which the plain sketch evaluates too
+    set(planex_constraint_sources src/constraint_sketch/expression.cpp)
 endif()
+list(APPEND planex_sources ${planex_constraint_sources})
 add_library(planex2d ${planex_library} ${planex_sources})
 add_library(planex2d::planex2d ALIAS planex2d)
+target_compile_features(planex2d PUBLIC cxx_std_20)
 planex_flags(planex2d)
 planex_cpu_flags(planex2d)
 target_include_directories(planex2d PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -199,7 +204,7 @@ endif()
 
 # kind core: pybind11 from pip (any 3.x); kind occ: netgen's pybind11 and the flags of its ngcore, so that the OCC
 # bindings share netgen's type registry. When the core's registry is another one, the core's objects reach the OCC
-# bindings through pybind11's conduit (binding.hpp: IsA, Shadow, ToCore); only the OCC bindings link netgen and OCC
+# bindings through pybind11's conduit (bindingbase.hpp: IsA, Shadow, ToCore); only the OCC bindings link netgen and OCC
 function(planex_module name kind)
     Python3_add_library(${name} MODULE WITH_SOABI ${ARGN})
     planex_flags(${name})
@@ -232,6 +237,21 @@ function(planex_module name kind)
     endif()
 endfunction()
 
+function(planex_check_headers name)
+    if(NOT PLANEX_CHECK_HEADERS)
+        return()
+    endif()
+    target_include_directories(${name} PRIVATE src/python/bindings)
+    foreach(header IN LISTS ARGN)
+        set(source ${CMAKE_CURRENT_BINARY_DIR}/header_check/${name}/${header}.cpp)
+        file(CONFIGURE OUTPUT ${source} CONTENT "#include \"${header}\"\n" @ONLY)
+        target_sources(${name} PRIVATE ${source})
+    endforeach()
+endfunction()
+file(GLOB planex_binding_headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src/python/bindings CONFIGURE_DEPENDS
+     src/python/bindings/*.hpp)
+list(REMOVE_ITEM planex_binding_headers binding_occ.hpp)
+
 if(PLANEX_PYTHON AND PLANEX_CORE)
     planex_module(_planex core
         src/python/bindings/module.cpp
@@ -260,6 +280,7 @@ if(PLANEX_PYTHON AND PLANEX_CORE)
     if(PLANEX_CONSTRAINTS)
         target_sources(_planex PRIVATE src/python/bindings/binding_solver.cpp src/python/bindings/binding_constraintsketch.cpp)
     endif()
+    planex_check_headers(_planex ${planex_binding_headers})
 endif()
 
 if(PLANEX_PYTHON AND PLANEX_WITH_OCC)
@@ -278,6 +299,7 @@ if(PLANEX_PYTHON AND PLANEX_WITH_OCC)
         src/python/bindings/binding_occ.cpp
         src/python/bindings/binding_sketch_occ.cpp
         src/python/bindings/binding_section.cpp)
+    planex_check_headers(_planex_occ binding_occ.hpp)
     target_link_libraries(_planex_occ PRIVATE planex2d_occ)
     set_target_properties(_planex_occ PROPERTIES BUILD_RPATH "${NETGEN_LIBRARY_DIR};${OpenCASCADE_LIBRARY_DIR}")
     if(PLANEX_CORE)

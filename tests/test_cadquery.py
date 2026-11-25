@@ -87,6 +87,8 @@ def test_from_cadquery_rejects():
         px.FromCadQuery(cq.Workplane().cylinder(2, 1).faces("not %PLANE").val())
     with pytest.raises(TypeError, match="no CadQuery shape"):
         px.FromCadQuery(5)
+    with pytest.raises(TypeError, match="Vector is no CadQuery shape"):
+        px.FromCadQuery(cq.Vector(0, 0, 1))
     with pytest.raises(ValueError, match="no shapes"):
         px.FromCadQuery(cq.Workplane())
 

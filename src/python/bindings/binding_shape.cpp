@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingprops.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 
 template <class G>
 static auto GroupsCommon(const Shape &s, G get) {

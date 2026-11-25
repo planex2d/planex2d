@@ -3,6 +3,11 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "bindingbase.hpp"
+
 const char *OffsetDoc(const std::string &cls, const std::string &returns, const std::string &raises, const std::string &x);
 
 const char *FieldDoc(const std::string &field, const std::string &whose);

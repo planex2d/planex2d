@@ -3,6 +3,21 @@
 
 #pragma once
 
+#include <algorithm>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingprops.hpp"
+#include "bindingargs.hpp"
+#include "bindingconstruction.hpp"
+#include "planex/sketch/sketch.hpp"
+
 inline sketch::Kind KindNamed(const std::string &name) {
     for (size_t k = 0; k <= (size_t)sketch::Kind::OnCircle; ++k)
         if (name == sketch::KindName(static_cast<sketch::Kind>(k)))

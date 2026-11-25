@@ -3,6 +3,20 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <numeric>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingdocs.hpp"
+#include "bindingprops.hpp"
+
 inline Wire SingleEdge(Edge e, const AxisSystem &axes) {
     Wire w(axes);
     w.Add(std::move(e));

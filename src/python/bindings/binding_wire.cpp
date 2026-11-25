@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 
 inline py::array_t<double> Rows(const std::vector<double> &values, size_t cols) {
     py::array_t<double> a({(py::ssize_t)(values.size() / cols), (py::ssize_t)cols});

@@ -4,7 +4,8 @@
 # Tests every pull request, once per push to it: compiles planex2d as the installation page describes, in the three
 # installs of publish.yml (with NGSolve and the optional packages, with netgen alone, without netgen) on the oldest and
 # the newest Python planex2d supports, on Linux (GCC) and Windows (MSVC), and the wasm32 wheel for Pyodide, and runs the
-# whole test suite on the pull request merged into its target. Only
+# whole test suite on the pull request merged into its target; and builds planex as a C++ library with a program
+# against it. Only
 # pull requests: main is protected, so every change reaches it through one, and a push to main would only repeat the
 # test. The type stub is tested as it is committed (tests/test_stubs.py fails when it is out of date: python
 # tools/stubgen.py writes it). Nothing is published here; releases go through publish.yml. A newer push to the same pull
@@ -41,11 +42,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       # NGSolve before planex2d: it pins netgen-mesher to its own version, which planex2d is then compiled against
+      # one Linux job also compiles every binding header on its own (PLANEX_CHECK_HEADERS)
       - name: Install, as the installation page describes
         run: |
           case "${{ matrix.install }}" in
             full) python -m pip install ngsolve netgen-mesher netgen-occt-devel scikit-build-core "pybind11>=3.1,<3.2"
-                  python -m pip install --no-build-isolation . ;;
+                  python -m pip install --no-build-isolation ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.14' && '-C cmake.define.PLANEX_CHECK_HEADERS=ON' || '' }} . ;;
             netgen) python -m pip install netgen-mesher netgen-occt-devel scikit-build-core "pybind11>=3.1,<3.2"
                     python -m pip install --no-build-isolation . ;;
             core) python -m pip install . ;;
@@ -56,6 +58,12 @@ jobs:
           python -m pip install pytest hypothesis
           if [ "${{ matrix.install }}" = full ]; then
             python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements openpyxl
+            # CadQuery (OCP 7) and build123d (OCP 8) cannot share an environment: one of them per Python
+            if [ "${{ matrix.python }}" = "3.11" ]; then
+              python -m pip install cadquery
+            else
+              python -m pip install build123d
+            fi
           fi
           python -m pytest tests -q
 
@@ -85,3 +93,61 @@ jobs:
         run: |
           python -m pip install "cibuildwheel>=4.1.1,<5"
           python -m cibuildwheel . --output-dir wheelhouse
+
+  # planex as a C++ library, as the README describes it: the libraries built without Python and installed, then a
+  # small program that sets no C++ standard of its own built against them with find_package and with
+  # add_subdirectory, and run (it unites two squares)
+  cxx:
+    runs-on: ubuntu-latest
+    name: C++ library
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and install the libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libeigen3-dev
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/prefix"
+          cmake --build build
+          cmake --install build
+      - name: A program against the libraries
+        run: |
+          mkdir app
+          cat > app/CMakeLists.txt <<'EOF'
+          cmake_minimum_required(VERSION 3.20)
+          project(app LANGUAGES CXX)
+          if(PLANEX_SOURCE)
+              add_subdirectory(${PLANEX_SOURCE} planex)
+          else()
+              find_package(planex2d REQUIRED)
+          endif()
+          add_executable(app main.cpp)
+          target_link_libraries(app PRIVATE planex2d::planex2d)
+          EOF
+          cat > app/main.cpp <<'EOF'
+          #include <cstdio>
+
+          #include "planex/constraint_sketch/constraintsketch.hpp"
+          #include "planex/shape/shapeops.hpp"
+
+          using namespace planex2d;
+
+          static Shape Square(double x, double y, double side) {
+              const Vertex c[4] = {{x, y}, {x + side, y}, {x + side, y + side}, {x, y + side}};
+              Wire w;
+              for (size_t k = 0; k < 4; ++k)
+                  w.Add(Line(c[k], c[(k + 1) % 4]));
+              return Shape(w, nullptr);
+          }
+
+          int main() {
+              const Shape u = Unify({Square(0, 0, 2), Square(1, 1, 2)});
+              std::printf("area %.6f\n", u.Area());
+              return u.Area() > 6.99 && u.Area() < 7.01 ? 0 : 1;
+          }
+          EOF
+          cmake -S app -B app-installed -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/prefix"
+          cmake --build app-installed
+          ./app-installed/app
+          cmake -S app -B app-sources -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLANEX_SOURCE="$PWD"
+          cmake --build app-sources
+          ./app-sources/app

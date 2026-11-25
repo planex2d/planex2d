@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include "binding.hpp"
 #include "binding_sketch.hpp"
+#include "binding_curve.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingsketchnew.hpp"
+#include "bindingsketchread.hpp"
 #include "planex/constraint_sketch/constraintsketch.hpp"
 
 struct ConstraintText {

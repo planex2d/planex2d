@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding.hpp"
+#include "bindingdocs.hpp"
 
 const char *OffsetDoc(const std::string &cls, const std::string &returns, const std::string &raises, const std::string &x) {
     return Doc("Offset(d: float, inplace: bool = True, corners: OffsetForm = px.Round) -> " + returns + "\n\n"

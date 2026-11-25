@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding_sketch.hpp"
+#include "bindingsketchdocs.hpp"
+#include "bindingbase.hpp"
+#include "bindingdocs.hpp"
 
 const char *SketchCornerDoc(bool chamfer, const std::string &sk, bool constraints) {
     const std::string kind = chamfer ? "Chamfer" : "Fillet";

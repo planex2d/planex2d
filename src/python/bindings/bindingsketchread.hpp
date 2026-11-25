@@ -3,6 +3,20 @@
 
 #pragma once
 
+#include <array>
+#include <cmath>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingprops.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
+#include "planex/sketch/sketch.hpp"
+
 template <class S>
 inline Wire OneSketchWire(S &s, bool unify, const std::string &call) {
     WireList wires = s.Wires(unify, call);

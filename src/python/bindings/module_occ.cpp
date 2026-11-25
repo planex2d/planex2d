@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
-#include "binding_sketch.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
 #ifdef PLANEX_CONSTRAINTS
 #include "planex/constraint_sketch/constraintsketch.hpp"
 #endif
@@ -10,7 +12,7 @@
 namespace {
 
 // every core class the OCC bindings read: shadows in their own registry when the core's is another one, so that
-// pybind11 reads the core's objects through its conduit (binding.hpp Shadow); a shadow Vertex also takes (h, v) as
+// pybind11 reads the core's objects through its conduit (bindingbase.hpp Shadow); a shadow Vertex also takes (h, v) as
 // the core's Vertex does
 void ShadowCore(py::module_ &m, const py::module_ &core) {
     Shadow<Face>(m, core, "Face");

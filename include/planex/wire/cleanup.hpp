@@ -49,6 +49,19 @@ namespace planex2d {
                 return count == 1 ? found : std::nullopt;
             };
             std::vector<bool> removed(n, false);
+            // an edge already runs between the far ends of the two, as near as their join would (a tip cut off within
+            // tol): joined they would be two edges that bound nothing, apart the three stay a thin triangle
+            auto doubles = [&](const Edge &e, size_t i, size_t j) {
+                const Vertex p = planex2d::StartOf(e), q = planex2d::EndOf(e), m = MidPointOf(e);
+                const double tol = planex2d::Tol(LengthScaleOf(e));
+                bool found = false;
+                grid.ForCell(p, [&](size_t k) {
+                    const size_t o = k / 2;
+                    found = found || (o != i && o != j && !removed[o] && pts[k] == p && pts[k ^ 1] == q &&
+                                      MidPointOf(edges[o]).IsClose(m, tol));
+                });
+                return found;
+            };
             for (size_t i = 0; i < n; ++i) {
                 if (removed[i] || !selected[i] || HasPartition(PropsOf(edges[i])))
                     continue;
@@ -63,7 +76,7 @@ namespace planex2d {
                             break;
                         std::optional<Edge> e = std::visit([&](const auto &a, const auto &b) { return Joined(a, b, pts[k]); },
                                                            current, edges[*j / 2]);
-                        if (!e)
+                        if (!e || doubles(*e, i, *j / 2))
                             break;
                         current = std::move(*e);
                         removed[*j / 2] = true;

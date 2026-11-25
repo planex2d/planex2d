@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding.hpp"
+#include "bindingmeasure.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 
 std::optional<Planar> TargetInPlane(const AxisSystem &axes, const py::handle &target, bool project, std::optional<Vertex> &point) {
     if (std::optional<std::vector<double>> p = AsPoint(target)) {

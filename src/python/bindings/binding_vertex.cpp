@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingmotion.hpp"
 
 // a point of a sketch or shape as Vertex() takes it: an object with _hv() (a selected point, Line.1.end), nothing else,
 // so the other overloads convert numbers, tuples and arrays as they did

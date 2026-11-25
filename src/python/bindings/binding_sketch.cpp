@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include "binding.hpp"
 #include "binding_sketch.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingsketchnew.hpp"
+#include "bindingsketchread.hpp"
 
 static Sketch CopiedQuickSketch(const py::tuple &args, const SketchSetup &setup) {
     const py::object source = SketchToCopy("QuickSketch", args, setup);

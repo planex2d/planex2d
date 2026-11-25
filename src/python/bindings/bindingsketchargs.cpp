@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding_sketch.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingargs.hpp"
+#include <iterator>
 
 CallArgs Split(const py::tuple &args, const std::string &call) {
     CallArgs out;

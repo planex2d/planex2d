@@ -3,6 +3,16 @@
 
 #pragma once
 
+#include <array>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingdocs.hpp"
+#include "bindingargs.hpp"
+
 template <class T>
 inline auto &IdOwner(T &t) {
     if constexpr (std::is_same_v<T, Face>)

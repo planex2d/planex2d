@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
 
 // the shortest text of each coordinate that reads back as it (-0 as 0)
 static std::string Text3(const Vector3 &v) {

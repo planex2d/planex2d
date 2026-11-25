@@ -143,6 +143,12 @@ jobs:
           python -m pip install pytest hypothesis
           if [ "${{ matrix.install }}" = full ]; then
             python -m pip install numpy scipy shapely ezdxf matplotlib plotly svgelements openpyxl
+            # CadQuery (OCP 7) and build123d (OCP 8) cannot share an environment: one of them per Python
+            if [ "${{ matrix.python }}" = "3.11" ]; then
+              python -m pip install cadquery
+            else
+              python -m pip install build123d
+            fi
           fi
           python -m pytest unpacked/tests -q
 

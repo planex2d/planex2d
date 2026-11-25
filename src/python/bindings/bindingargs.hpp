@@ -3,6 +3,20 @@
 
 #pragma once
 
+#include <array>
+#include <cmath>
+#include <iomanip>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingviews.hpp"
+
 inline Shape WireShape(const Wire &w) { return Shape(w.Axes(), {}, {w}); }
 
 inline constexpr const char *NoCompoundBooleans = "a Compound has no booleans, merge it first with px.Unify(comp)";

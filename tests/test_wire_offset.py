@@ -85,12 +85,17 @@ def test_the_offset_is_about_as_quick_as_uniting_the_bands_of_its_edges():
         sk.Line(p)
     wires = sk.Wires()
     lines = [px.Face([px.Line(a, b).Offset(0.2)]) for a, b in zip(pts, pts[1:])]
-    start = time.perf_counter()
-    px.Unify(lines)
-    union = time.perf_counter() - start
-    start = time.perf_counter()
-    px.Offset(wires, 0.2, both_sides=True)
-    assert time.perf_counter() - start < 3 * union + 0.05
+
+    def best(call):
+        times = []
+        for _ in range(3):
+            start = time.perf_counter()
+            call()
+            times.append(time.perf_counter() - start)
+        return min(times)
+
+    union = best(lambda: px.Unify(lines))
+    assert best(lambda: px.Offset(wires, 0.2, both_sides=True)) < 3 * union + 0.05
 
 
 def test_the_offset_of_several_wires_takes_both_sides_of_closed_ones_too():

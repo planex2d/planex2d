@@ -3,6 +3,19 @@
 
 #pragma once
 
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingdocs.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+
 // f(state, i) for every row i < n, without the GIL; many rows on the executor's threads, each with its own copy of state
 template <class S, class F>
 inline void ForRows(size_t n, S &state, F f) {

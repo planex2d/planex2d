@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
+#include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 #include <BRepAdaptor_Surface.hxx>
 #include <TopAbs.hxx>
 

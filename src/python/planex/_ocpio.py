@@ -137,10 +137,12 @@ def _from_ocp(shapes, scale, call):
 
 def _wrapped(items, kind, call):
     """the OCP shapes of a library's shapes"""
+    from OCP.TopoDS import TopoDS_Shape
+
     if not items:
         raise ValueError(f"{call}: no shapes")
     for x in items:
-        if not hasattr(x, "wrapped"):
+        if not isinstance(getattr(x, "wrapped", None), TopoDS_Shape):
             raise TypeError(f"{call}: {type(x).__name__} is no {kind} shape")
     return [x.wrapped for x in items]
 
@@ -177,8 +179,8 @@ def ToBuild123d(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, s
 
     The shape goes over in memory as BREP, which OCP reads as px.WriteBrep writes it, on its plane in 3d, without names
     or other properties; a Wire whose edges make no single wire comes as a Compound of them. The export cleans the edges
-    as obj.ToOCCShape does with the same options. The numbers come as they are, times scale. With planex2d-occ installed, import build123d before planex: netgen's OpenCASCADE loaded
-    before OCP 8 crashes the process.
+    as obj.ToOCCShape does with the same options. The numbers come as they are, times scale. With planex2d-occ
+    installed, import build123d before planex: netgen's OpenCASCADE loaded before OCP 8 crashes the process.
 
     Args:
         obj: the Face, Shape, Wire, sketch or Compound to convert.

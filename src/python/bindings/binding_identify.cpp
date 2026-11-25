@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
 #include "planex/shape/identification.hpp"
 
 static Affine2 AffineOf(const std::array<std::array<double, 2>, 2> &m, const std::array<double, 2> &v) {

@@ -63,5 +63,7 @@ def test_from_build123d_rejects():
         px.FromBuild123d(bd.Box(1, 1, 1))
     with pytest.raises(TypeError, match="no build123d shape"):
         px.FromBuild123d([5])
+    with pytest.raises(TypeError, match="Vector is no build123d shape"):
+        px.FromBuild123d([bd.Vector(0, 0, 1)])
     with pytest.raises(ValueError, match="no shapes"):
         px.FromBuild123d([])

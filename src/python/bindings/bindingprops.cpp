@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding.hpp"
+#include "bindingprops.hpp"
 
 Properties Props(const Name &name, const Size &maxh, const Col &col, const Size &minh, const Size &hpref, const Layer &layer, const Partition &partition) {
     return ChangedProperties(nullptr, [&](ShapeProperties &p) {

@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding.hpp"
+#include "bindingmotion.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 
 void AddCorners(const Wire &w, const py::handle &at, const std::string &call, std::vector<Vertex> &out) {
     if (py::isinstance<py::str>(at)) {

@@ -74,6 +74,15 @@ def test_a_gap_between_two_names_stays_with_a_warning():
     assert area(kept) == pytest.approx(2, rel=1e-12)
 
 
+def test_thin_faces_side_by_side_still_waiting_after_the_last_round_warn():
+    strips = px.Glue([rect(0, 0, 10, 10)] + [rect(0.05 * k, 10, 0.05, 1) for k in range(6)])
+    with pytest.warns(px.PlanexWarning, match="left after 4 rounds"):
+        once = strips.Simplified(merge_slivers_thinner=0.2)
+    assert len(once.faces) == 3
+    again = once.Simplified(merge_slivers_thinner=0.2)
+    assert len(again.faces) == 2 and area(again) == pytest.approx(100.3, rel=1e-12)
+
+
 def test_corners_are_no_slivers():
     square = rect(0, 0, 10, 10, "plate") - rect(2, 2, 2, 2)
     same = square.Simplified(merge_slivers_thinner=0.5)

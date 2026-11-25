@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding_sketch.hpp"
+#include "bindingsketchnew.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 
 py::object SketchToCopy(const std::string &call, const py::tuple &args, const SketchSetup &setup) {
     const auto &[autoConstraint, errorOnBranchChange, mode, id, dir] = setup;

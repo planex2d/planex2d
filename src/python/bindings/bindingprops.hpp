@@ -3,6 +3,16 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "bindingbase.hpp"
+
 using Name = std::optional<std::string>;
 using Size = std::optional<double>;
 using Layer = std::optional<int>;

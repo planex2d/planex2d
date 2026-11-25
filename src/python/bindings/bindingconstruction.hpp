@@ -3,6 +3,16 @@
 
 #pragma once
 
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <variant>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+
 template <class S>
 inline void CheckPlane(const S &s, const Wire &w, const std::string &call) {
     if (!s.Axes().IsClose(w.Axes()))

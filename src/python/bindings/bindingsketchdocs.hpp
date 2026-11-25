@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <string>
+
 const char *SketchCornerDoc(bool chamfer, const std::string &sk, bool constraints);
 
 const char *ConnectDoc(const std::string &sk, bool constraints);

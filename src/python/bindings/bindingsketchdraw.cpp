@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "binding_sketch.hpp"
+#include "bindingsketchdraw.hpp"
+#include "bindingargs.hpp"
+#include "bindingconstruction.hpp"
+#include "bindingsketchargs.hpp"
 
 std::string HelpedCall(const std::string &call, const std::vector<py::object> &ends, const std::vector<double> &numbers, const py::dict &helpers) {
     std::vector<py::object> values(ends.begin(), ends.end());

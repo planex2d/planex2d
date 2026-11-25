@@ -75,8 +75,11 @@ namespace planex2d {
         AddEndpointsOn(a, b, tol, c);
         double outer = std::abs(d - (ra + rb));
         double inner = std::abs(d - std::abs(ra - rb));
-        double l = ((ra - rb) * (ra + rb) + d * d) / (2.0 * d);
-        double h2 = (ra - l) * (ra + l);
+        // ra - l without cancellation, as in Decide
+        const double reach = d - ra;
+        const double depth = (rb - reach) * (rb + reach) / (2.0 * d);
+        double l = ra - depth;
+        double h2 = depth * (ra + l);
         // nearly touching: the touch point, also next to endpoints within tol of both circles that lie off one of the
         // arcs. Where it lies off an arc itself, the arcs may still cross nearby (the circles within tol of each other
         // far along them): then the crossings. Not for circles that nearly coincide (centres a few tol apart), where
@@ -239,8 +242,13 @@ namespace planex2d {
             AddMeeting(d, a, b, {a.LengthScale() <= b.LengthScale() ? onA : onB}, nullptr, PairKind::Touch, tol);
             return d;
         }
-        const double l = ((ra - rb) * (ra + rb) + dd * dd) / (2.0 * dd);
-        const double h2 = (ra - l) * (ra + l);
+        // ra - l from how far b's circle reaches into a's: as ra minus l it cancels where b is far smaller than a (a
+        // corner rounded with radius 1e-9 on a circle of radius 0.25: the half chord came out 0 or five times too long,
+        // and the pair untouched)
+        const double reach = dd - ra;
+        const double depth = (rb - reach) * (rb + reach) / (2.0 * dd);
+        const double l = ra - depth;
+        const double h2 = depth * (ra + l);
         const Vertex f = a.Center() + u * l;
         if (h2 <= 0.0) {
             AddMeeting(d, a, b, {f}, nullptr, PairKind::Touch, tol);

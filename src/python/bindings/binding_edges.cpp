@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingprops.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 #include "binding_curve.hpp"
 #include "planex/curves/ellipse.hpp"
 

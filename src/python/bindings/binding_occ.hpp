@@ -14,7 +14,12 @@
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
-// netgen's headers (through occprops.hpp) before binding.hpp's using namespace planex2d: both have a Timer
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+// netgen's headers (through occprops.hpp) before bindingbase.hpp's using namespace planex2d: both have a Timer
 #include "planex/integrations/netgenocc/convert.hpp"
 #include "planex/integrations/netgenocc/measure.hpp"
 #include "planex/integrations/netgenocc/plane.hpp"
@@ -22,7 +27,8 @@
 #include "planex/integrations/netgenocc/shapeexport.hpp"
 #include "planex/integrations/netgenocc/silhouette.hpp"
 
-#include "binding.hpp"
+#include "bindingbase.hpp"
+#include "bindingargs.hpp"
 
 inline TopoDS_Compound CompoundOf(const Handle(TopTools_HSequenceOfShape) &wires) {
     BRep_Builder builder;

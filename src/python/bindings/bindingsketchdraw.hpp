@@ -3,6 +3,19 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingargs.hpp"
+#include "bindingconstruction.hpp"
+#include "bindingsketchargs.hpp"
+
 template <class S>
 inline py::object ForHelpers(S &s, const py::handle &h) {
     if (IsA<SketchAxis>(h) && h.cast<SketchAxis>() == SketchAxis::Origin)

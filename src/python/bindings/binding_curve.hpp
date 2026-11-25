@@ -10,7 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include "binding.hpp"
+#include "bindingbase.hpp"
+#include "bindingargs.hpp"
 #include "planex/constraint_sketch/expression.hpp"
 #include "planex/curves/parametricfit.hpp"
 #include "planex/sketch/curveformula.hpp"

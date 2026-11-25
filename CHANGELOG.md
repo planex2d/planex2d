@@ -104,6 +104,12 @@
   coordinates round by more than the tolerance they were tested with, so `face.Contains(plane.ToXYZ((0.5, 0.5)))`
   could be `False` and `Relate` raise "the point lies off the plane". A 3d point is on the plane within the rounding
   of its own coordinates now, as a sketch's point arguments test it.
+- A boolean could lose nearly all of its area where an arc crossed an arc of a far smaller circle, such as a corner
+  rounded with a radius of 1e-9 by a hair-wide offset: the crossing was not found, and the union of two faces of area
+  2.7 came out with 0.1, without a warning. The crossing is found now.
+- A boolean could return two identical edges that bound nothing where a corner of one face reached past an edge of
+  the other by about the tolerance: the cut-off tip collapsed into them, and `px.Glue` of the result had two edges
+  fewer. The tip stays a thin triangle now.
 - `sk.Trim` and `sk.Split` of an open spline: when the search for the exact cut point stepped past the spline's end,
   it went on from the spline's start. It goes on along the curve continued past its end now. No sketch is known where
   this gave a wrong cut.

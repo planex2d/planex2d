@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
+#include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingsketchread.hpp"
 #include <gp_Ax2d.hxx>
 
-#include "binding_sketch.hpp"
 #include "planex/integrations/netgenocc/section.hpp"
 #ifdef PLANEX_CONSTRAINTS
 #include "planex/constraint_sketch/constraintsketch.hpp"

@@ -3,8 +3,17 @@
 
 #pragma once
 
+#include <map>
+#include <optional>
 #include <set>
-#include "binding.hpp"
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 #include "binding_curve.hpp"
 #include "planex/curves/interpolate.hpp"
 #include "planex/sketch/sketch.hpp"

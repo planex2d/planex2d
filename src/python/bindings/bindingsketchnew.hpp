@@ -3,6 +3,15 @@
 
 #pragma once
 
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "bindingbase.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
+#include "planex/sketch/sketch.hpp"
+
 struct SketchSetup {
     py::object autoConstraint;
     std::optional<bool> errorOnBranchChange;

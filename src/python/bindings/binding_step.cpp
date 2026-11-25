@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 #include "planex/io/brepread.hpp"
 #include "planex/io/brepwrite.hpp"
 #include "planex/io/stepread.hpp"
