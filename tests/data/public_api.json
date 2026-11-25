@@ -104,6 +104,12 @@
  "px.Compound.Scaled": [
   "(self, *args: Any, **kwargs: Any) -> Compound"
  ],
+ "px.Compound.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.Compound.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
  "px.Compound.ToOCCShape": [
   "(self, **options: Any) -> Any"
  ],
@@ -488,6 +494,12 @@
  "px.Face.Split": [
   "Split(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, /, *, id: str | None = None) -> list[Shape]"
  ],
+ "px.Face.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.Face.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
  "px.Face.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
@@ -717,6 +729,12 @@
  "px.FaceView.Split": [
   "Split(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, /) -> list[Shape]"
  ],
+ "px.FaceView.ToBuild123d": [
+  "(self, *args, **kwargs)"
+ ],
+ "px.FaceView.ToCadQuery": [
+  "(self, *args, **kwargs)"
+ ],
  "px.FaceView.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
@@ -832,8 +850,14 @@
  "px.FromBrep": [
   "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> Face | Shape | Wire | Compound"
  ],
+ "px.FromBuild123d": [
+  "(obj: Any, /, scale: float | Auto = px.Auto, *, id: str | None = None) -> Face | Shape | Wire"
+ ],
  "px.FromCATPart": [
   "(path: str | os.PathLike, /, scale: float | Auto = px.Auto) -> dict"
+ ],
+ "px.FromCadQuery": [
+  "(obj: Any, /, scale: float | Auto = px.Auto, *, id: str | None = None) -> Face | Shape | Wire"
  ],
  "px.FromDXF": [
   "(path: str | os.PathLike, /, tol: float = 1e-07, layers: list[str] | None = None, unit: float | Auto = px.Auto, scale: float | Auto = px.Auto, plane: Plane | None = None, *, id: str | None = None) -> list[Face | Wire]"
@@ -1192,6 +1216,12 @@
  "px.QuickSketch.SymmetryLine": [
   "SymmetryLine(a: Point | Id, b: Point | Id, /, *, reverse: bool = False, id: str | None = None) -> QuickSketch"
  ],
+ "px.QuickSketch.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.QuickSketch.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
  "px.QuickSketch.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
@@ -1463,6 +1493,12 @@
  ],
  "px.Shape.Split": [
   "Split(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, /, *, id: str | None = None) -> list[Shape]"
+ ],
+ "px.Shape.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.Shape.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
  ],
  "px.Shape.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",
@@ -1799,6 +1835,12 @@
  "px.Sketch.SymmetryLine": [
   "SymmetryLine(a: Point | Id, b: Point | Id, /, *, reverse: bool = False, id: str | None = None) -> Sketch"
  ],
+ "px.Sketch.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.Sketch.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
  "px.Sketch.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",
   "ToHV(points: list[Point3], /) -> list[tuple[float, float]]"
@@ -1932,6 +1974,12 @@
   "SymmetricDifference(parts: list[Face | Shape], /, multithreaded: bool = True) -> Shape"
  ],
  "px.Tangent": "value",
+ "px.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
  "px.ToSVG": [
   "(obj: Face | Shape | Wire | Compound | Sketch | QuickSketch | Any, /, size: float = 300, **options: Any) -> str | None"
  ],
@@ -2153,6 +2201,12 @@
  ],
  "px.Wire.Split": [
   "Split(cutter: Wire | EdgeView | Face | Shape | Sketch | QuickSketch | TopoDS_Shape, /) -> list[Shape]"
+ ],
+ "px.Wire.ToBuild123d": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
+ ],
+ "px.Wire.ToCadQuery": [
+  "(obj: Face | Shape | Wire | Sketch | QuickSketch | Compound, /, scale: float | Auto = px.Auto, **options: Any) -> Any"
  ],
  "px.Wire.ToHV": [
   "ToHV(point: Point3, /) -> tuple[float, float]",

@@ -24,7 +24,8 @@ API = json.loads((pathlib.Path(__file__).parent / "data" / "public_api.json").re
 TEMPLATES = pathlib.Path(px.__file__).parent / "templates"
 
 OPTIONAL = {"matplotlib", "plotly", "ezdxf", "svgelements", "shapely", "scipy", "openpyxl", "netgen", "ngsolve",
-            "pyngcore", "webgpu", "ngsolve_webgpu", "webgui_jupyter_widgets", "anywidget", "IPython", "gmsh", "kaleido"}
+            "pyngcore", "webgpu", "ngsolve_webgpu", "webgui_jupyter_widgets", "anywidget", "IPython", "gmsh", "kaleido",
+            "cadquery", "build123d"}
 SOLIDS = {"occ", "box", "solid", "part", "shaft", "occ_shape", "mesh", "gf", "gfu"}
 
 SKIP = {
@@ -121,6 +122,11 @@ CONTEXT = [
     (r"\.RemoveIdentification$", SIDES + "face.Identify('left', 'right')\nshape.Identify('left', 'right')\n"),
     (r"\.RemoveMeasure$", "shape.Measure(px.measurements.MinThickness(), id='gap')\n"),
     (r"px\.Selection\.Distance$", "face.edges[0].name = 'channel'\n"),
+    (r"px\.FromCadQuery$", "import cadquery\nworkplane = cadquery.Workplane().box(10, 20, 5).faces('>Z')\n"
+                            "top_face = workplane.val()\n"),
+    (r"px\.FromBuild123d$", "import build123d\n"
+                             "top_face = build123d.Box(10, 20, 5).faces().sort_by(build123d.Axis.Z)[-1]\n"
+                             "shape_list = [top_face]\n"),
     (r"px\.Find$", "plate = px.Move((0, 0)).Rectangle(10, 5).Face()\nplate.id = 'plate'\n"
                    "both = px.Compound([plate], id='both')\n"),
     (r"px\.ClosedOpenWires$", "outline = px.Move((0, 0)).Rectangle(10, 5).Wire()\n"
