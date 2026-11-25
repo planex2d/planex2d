@@ -315,6 +315,16 @@ def test_the_mode_can_change():
         sk.mode = "lenient"
 
 
+def test_normal_after_strict_leaves_the_branch_error_on():
+    sk = px.Sketch(mode="strict")
+    assert sk.error_on_branch_change
+    sk.mode = "normal"
+    assert sk.mode == "normal" and sk.error_on_branch_change
+    sk.error_on_branch_change = False
+    sk.mode = "normal"
+    assert not sk.error_on_branch_change
+
+
 def recorded_warnings(call):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")

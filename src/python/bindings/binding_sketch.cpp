@@ -1,15 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include "binding.hpp"
 #include "binding_sketch.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingsketchnew.hpp"
+#include "bindingsketchread.hpp"
 
-// px.QuickSketch(sketch, copy=True): a copy of a QuickSketch, the geometry of a Sketch
-static Sketch CopiedQuickSketch(const py::tuple &args, const py::object &autoConstraint, const std::optional<bool> &errorOnBranchChange,
-                                const std::string &mode, const std::optional<std::string> &id, const py::object &dir) {
-    const py::object source = SketchToCopy("QuickSketch", args, autoConstraint, errorOnBranchChange, mode, dir);
+static Sketch CopiedQuickSketch(const py::tuple &args, const SketchSetup &setup) {
+    const py::object source = SketchToCopy("QuickSketch", args, setup);
     py::object quick = py::isinstance<Sketch>(source) ? source : quickOfConstraintSketch(source);
     Sketch s = quick.is_none() ? QuickSketchOfObjects(source, "QuickSketch") : quick.cast<const Sketch &>();
-    GiveId(s, id);
+    GiveId(s, setup.id);
     return s;
 }
 
@@ -83,10 +87,10 @@ void BindSketch(py::module_ &m) {
     BindDrawing(quick);
     quick.def(py::init([](const py::args &args, const py::object &autoConstraint, const py::object &branch,
                           const std::string &mode, const std::optional<std::string> &id, const py::object &dir, bool copy) {
-        const std::optional<bool> errorOnBranchChange = BoolOrAuto(branch, "QuickSketch", "error_on_branch_change");
+        const SketchSetup setup{autoConstraint, BoolOrAuto(branch, "QuickSketch", "error_on_branch_change"), mode, id, dir};
         if (copy)
-            return CopiedQuickSketch(args, autoConstraint, errorOnBranchChange, mode, id, dir);
-        return NewSketch<Sketch>("QuickSketch", args, py::none(), autoConstraint, errorOnBranchChange, mode, id, dir);
+            return CopiedQuickSketch(args, setup);
+        return NewSketch<Sketch>("QuickSketch", args, py::none(), setup);
     }), py::arg("auto_constraint") = false, py::arg("error_on_branch_change") = PlainAuto(),
               py::arg("mode") = "normal", py::arg("id") = py::none(), py::arg("dir") = py::none(), py::arg("copy") = false,
               "QuickSketch(plane: Plane | Axes | Sketch | Shape | Face | Wire | Compound | TopoDS_Shape | list | None = None, /, *, "
@@ -150,7 +154,7 @@ void BindSketch(py::module_ &m) {
     }, py::arg("id"), "for px.Find: the live objects whose id is this (only ids already given)");
     m.def("Move", [](const py::args &args, const py::object &axes, const py::object &autoConstraint, const py::object &branch,
                        const std::string &mode, const std::optional<std::string> &id, const py::object &dir) {
-        const std::optional<bool> errorOnBranchChange = BoolOrAuto(branch, "Move", "error_on_branch_change");
+        const SketchSetup setup{autoConstraint, BoolOrAuto(branch, "Move", "error_on_branch_change"), mode, id, dir};
         py::list items;
         size_t k = 0;
         if (args.size() >= 2 && IsNumber(args[0]) && IsNumber(args[1])) {
@@ -164,8 +168,8 @@ void BindSketch(py::module_ &m) {
             throw py::type_error("Move((h, v)), then flags: a new sketch starts at a point; Sketch(plane) or "
                                  "QuickSketch(plane) draws on a plane, also plane=");
         if (quickSketchDefault)
-            return py::cast(NewSketch<Sketch>("Move", start, axes, autoConstraint, errorOnBranchChange, mode, id, dir));
-        return constraintSketchAt(start, axes, autoConstraint, errorOnBranchChange, mode, id, dir);
+            return py::cast(NewSketch<Sketch>("Move", start, axes, setup));
+        return constraintSketchAt(start, axes, setup);
     }, py::arg("plane") = py::none(), py::arg("auto_constraint") = py::none(), py::arg("error_on_branch_change") = PlainAuto(),
        py::arg("mode") = "normal", py::arg("id") = py::none(), py::arg("dir") = py::none(),
        "Move(start: Point, /, *flags: Constraint, plane: Plane | None = None, dir: tuple[float, float] | None = None, "

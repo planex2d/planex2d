@@ -415,3 +415,15 @@ def test_a_needle_thinner_than_tol_far_out_collapses_and_the_rest_stays():
     assert common.mass + rest.mass == pytest.approx(a.mass, rel=1e-12)
     for r in (union, common, rest, b - a):
         assert len(px.Glue([r]).edges) == len(r.edges)
+
+
+def test_a_tip_cut_off_within_tol_stays_a_thin_triangle():
+    a = px.FromPolyline([(0, 0), (1, 2.5077944533986633e-16), (3.8977774788672046, 0.7764571353075637)], closed=True).Face()
+    b = px.FromPolyline([(0.9318516525791365, 0.5176380902050429), (2.9318516525791365, 0.5176380902050429),
+                         (3.8977774788682047, 0.7764571353075637)], closed=True).Face()
+    cut = a - b
+    spans = [frozenset(((e.start.x, e.start.y), (e.end.x, e.end.y))) for e in cut.edges]
+    assert len(set(spans)) == len(spans) == 7 and len(cut.faces) == 2
+    again = px.Glue([cut])
+    assert len(again.edges) == 7 and len(again.faces) == 2
+    assert cut.mass == pytest.approx(a.mass - (a * b).mass, rel=1e-12)

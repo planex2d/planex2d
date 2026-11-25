@@ -2,17 +2,20 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
+#include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingargs.hpp"
+#include "bindingsketchargs.hpp"
+#include "bindingsketchread.hpp"
 #include <gp_Ax2d.hxx>
 
-#include "binding_sketch.hpp"
-#include "integrations/netgenocc/section.hpp"
+#include "planex/integrations/netgenocc/section.hpp"
 #ifdef PLANEX_CONSTRAINTS
-#include "constraint_sketch/constraintsketch.hpp"
+#include "planex/constraint_sketch/constraintsketch.hpp"
 #endif
 
 namespace {
 
-// px.OCCGeometry of a sketch
 template <class S>
 void BindOCCGeometry(py::module_ &m) {
     m.def("OCCGeometry", [](S &s, EXPORT_PARAMS) {
@@ -23,7 +26,6 @@ void BindOCCGeometry(py::module_ &m) {
     }, py::arg("sketch"), EXPORT_ARGS, "");
 }
 
-// the OCC methods of a sketch class
 template <class S>
 void AddSketchOCCMethods(py::class_<S> sketch) {
     const std::string sk = NameOf(sketch);

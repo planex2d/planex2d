@@ -126,3 +126,12 @@ def test_a_spline_offset_shares_its_joints_and_exports_plainly():
     assert min(math.dist((e.start.x, e.start.y), (e.end.x, e.end.y)) for e in trace.edges) > 1e-3
     face = trace.ToOCCFace()
     assert len(face.faces) == 1
+
+
+def test_an_arc_shrunk_to_a_point_within_rounding_leaves_no_gap():
+    # a half disc of radius 0.005 about (100, 100), offset 7e-13 less than its radius: towards its center the arc's
+    # offset shrinks to a point within tol (about 1e-12 at these coordinates) and its ends lie 1.4e-12 apart
+    r = 0.005
+    w = px.Wire([px.Arc((100 + r, 100), (100 - r, 100), (100, 100)), px.Line((100 - r, 100), (100 + r, 100))])
+    band = px.Shape([w.Offset(r - 7e-13, True)])
+    assert band.mass == pytest.approx((2.5 * math.pi + 2) * r * r, rel=1e-6)

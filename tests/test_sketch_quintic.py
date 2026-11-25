@@ -96,3 +96,18 @@ def test_a_free_quintic_bends_into_an_arc_of_held_radius():
     joint = sk.Location("arc.start")
     assert abs(curvature(sk, joint) - sk.Wire("arc").Measure(at=joint)["curvature"]) < 1e-9
     assert abs(abs(sk.Wire("arc").Measure(at=joint)["curvature"]) - 0.1) < 1e-9
+
+
+@pytest.mark.parametrize("sketch", [px.QuickSketch, px.Sketch], ids=["QuickSketch", "Sketch"])
+def test_a_scale_scales_the_radius_of_curvature_with_the_sketch(sketch):
+    sk = arch(sketch, tangents={1: (1, 0)}, curvature_radii={1: 25})
+    sk.Scale((0, 0), 2.0)
+    assert curvature(sk, (40, 20)) == pytest.approx(1 / 50, rel=1e-9)
+
+
+def test_a_scaled_curvature_radius_stays_the_dimension_the_sketch_holds():
+    sk = arch(tangents={1: (1, 0)}, curvature_radii={1: 25})
+    sk.Scale((0, 0), 2.0)
+    assert sk.dimensions["CurvatureRadius.1"] == pytest.approx(50)
+    sk.Update({"CurvatureRadius.1": 40})
+    assert curvature(sk, (40, 20)) == pytest.approx(1 / 40, rel=1e-9)

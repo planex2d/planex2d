@@ -1,5 +1,119 @@
 # Changelog
 
+## v0.5.0
+
+### Added
+
+- `px.config.pcb_simplify_options`: the defaults of the board readers (`px.FromKiCad`), a dict of `Simplify`'s
+  options. Set it to change them for the session; a dict changes only the options it names.
+- `remove_holes_smaller=` in `Simplify`, `Simplified` and the exports of a Shape: the holes of less area than it
+  are filled, as `remove_faces_smaller=` removes faces; a hole with another face in it stays. Off by default
+  (`px.config.remove_holes_smaller` is 0).
+- `merge_slivers_thinner=` in `Simplify`, `Simplified` and the exports of a Shape: a part of a face no wider than it
+  (a whole thin face, a slit, a strip along an edge, a neck) goes to the face beside it, thrown away when there is
+  none, and a gap that narrow inside the faces' union is filled; a part or gap between faces of different
+  properties stays, with a warning. Corners stay as they are. Off by default (`px.config.merge_slivers_thinner`
+  is 0).
+- The C++ core as libraries for C++ projects: CMake builds `planex2d` (and `planex2d_occ`, the OpenCASCADE part, with
+  netgen) without Python. A project adds them with `add_subdirectory` and `target_link_libraries(<app> PRIVATE
+  planex2d::planex2d)`, or installs them (`cmake --install`) and finds them with `find_package(planex2d)`; an installed
+  planex needs Eigen 3.4 for the constraint sketch. `BUILD_SHARED_LIBS=ON` builds them shared on Linux and macOS. Only
+  the Python API is kept stable: the C++ interface may change with any version.
+- The CMake option `PLANEX_THREADS` (on by default): off, planex builds without Taskflow, and every call runs in the
+  calling thread, `multithreaded=True` included.
+- `ToCadQuery` and `ToBuild123d` on faces, shapes, wires, sketches and Compounds (also `px.ToCadQuery`,
+  `px.ToBuild123d`): the object as a CadQuery or build123d shape on its plane in 3d (a Face as a Face, a Wire as a
+  Wire, anything else as a Compound), handed over in memory through OCP, without names; `scale=` and the export
+  options as for `WriteBrep`. `px.FromCadQuery` and `px.FromBuild123d` read their planar faces, wires and edges as
+  planex objects on the plane a sketch on an OpenCASCADE face gets, so `px.QuickSketch(px.FromCadQuery(face))`
+  sketches on a CadQuery face. CadQuery and build123d are imported only by these calls; neither is a dependency.
+  With planex2d-occ installed, import build123d before planex: netgen's OpenCASCADE loaded before OCP 8 crashes the
+  process.
+
+### Changed
+
+- `px.FromKiCad` cleans with sizes no board is made with and fits arcs: its cleanup options default to None, which
+  takes `px.config.pcb_simplify_options`. `remove_edges_smaller`, `close_gaps_smaller`, `merge_collinear_closer`
+  and the new `merge_slivers_thinner` are 1e-5 there (10 um, before 1e-7 from `px.config`), the new
+  `remove_holes_smaller` 2e-9 (a circle of 50 um, smaller than any drill), and arcs are fitted within 10 um to the
+  polygons of the zone fills (KiCad draws them within 5 um of their arcs by default; before, `px.config.fit_arcs`,
+  off by default). The file is read as it is; the cleanup then removes what cannot be etched, such as a slit a few
+  nanometres wide where two zones of one net meet, or a strip of board half a micrometre wide between a zone fill
+  and the board edge.
+- `fit_arcs=` (in `Simplify`, the exports and `px.FromKiCad`) and `FitArcs` have no length limit by default: a chain
+  of edges becomes an arc wherever it lies within `tol` of the arc and turns at most `max_edge_angle` at each vertex,
+  so a tessellated half or quarter circle is fitted like the whole circle. A `max_edge_length` given stays a limit.
+- A tessellated circle or arc is fitted by `fit_arcs=` and `FitArcs` only where its chords lie within `tol` of it:
+  with a `tol` of 1e-5 a circle of radius 0.001 needs at least 23 sides, of radius 0.01 71. A coarser polygon needs
+  a larger `tol`. The spline fit (`fit_splines=`) is unchanged.
+- The default `tol` and `ignore_edges_smaller` of the arc and spline fits (`px.config.fit_arcs`,
+  `px.config.fit_splines`) are 1e-4 of the diagonal of the bounding box of what is fitted, before an absolute 1e-5:
+  a model drawn in millimetres is fitted as the same model in metres; a board of 100 x 80 mm gets 12.8 um.
+- The default `max_edge_angle` of the arc fit is 60 degrees, before 30: a circle of 8 segments, the coarsest KiCad
+  draws, can be fitted; the corners of squares and hexagons stay corners. The spline fit keeps 30 degrees.
+- The arc fit (`fit_arcs`, `FitArcs`) makes arcs of lines only: an arc already there, drawn or fitted, joins no chain,
+  so a cleanup run again leaves the arcs it fitted instead of fitting them once more and moving them by up to `tol`
+  again. A curve drawn as many tiny arcs is no longer merged into fewer arcs.
+- The edge cleanup fits arcs (`fit_arcs`) before it merges collinear lines (`merge_collinear_closer`): merged first,
+  gently curved stretches of a zone fill became a few longer lines the fit no longer replaced. On one board's top
+  copper (`fit_arcs` tol 2e-5, `merge_collinear_closer` 1e-5), 900 arcs and 2383 lines instead of 695 and 2800.
+- `Simplify` and the exports of a Shape clean the edges first, then merge the slivers (`merge_slivers_thinner`),
+  fill the small holes (`remove_holes_smaller`) and remove the small faces (`remove_faces_smaller`), in that order,
+  and then clean the edges again: the specks a merge leaves at the inner corners of a thin stroke go with the small
+  faces. Before, the small faces went first and the edges were cleaned last.
+- The offset of a wire on both sides (`Wire.Offset`, `px.Offset`, and the band `Face.Offset` and `Shape.Offset` grow
+  and shrink by) is the union of each edge's band and the pieces its corners and ends need, as in v0.2, with the end
+  and corner forms of v0.3: the same results, and a stroke crossing itself 1000 times is offset in 0.08 s, before
+  0.3 s.
+- The C++ sources are split into headers and compiled code: the headers are in `include/planex/<topic>/`
+  (`#include "planex/shape/shape.hpp"`), the definitions in `src/<topic>/*.cpp`, compiled into the static libraries
+  the Python modules link. The Python API and its results are unchanged.
+
+### Fixed
+
+- `fit_arcs=` (in `Simplify`, the exports and `px.FromKiCad`) and `FitArcs` fitted arcs farther than `tol` from the
+  edges they replace where long edges counted as short and turned a little at each joint, as along a large copper
+  zone's outline: by default an edge counts as short below 1/20 of its loop, and an arc could lie millimetres off.
+  On a KiCad board read with `fit_arcs={"tol": 2e-5}` and `merge_collinear_closer=1e-10` a copper zone lost
+  160 mm^2 (an arc 3.1 mm off its outline), and the board in 3d raised "StackedPrisms: a corner of the side walls
+  is no vertex of the interface" or came out invalid. A fitted arc now lies within `tol` of every edge it replaces,
+  as `tol` is documented.
+- `px.FromKiCad` in 3d raised "StackedPrisms: a corner of the side walls is no vertex of the interface" where copper
+  met the board outline nanometres from one of its corners: the export's removal of short edges moved the corner.
+  Such copper vertices now move onto the corner.
+- The board in 3d from `px.FromKiCad` could not be meshed where two zones of one net met along a line, the points
+  of one lying on the other's edge only to within the file's nanometre (a slit nanometres wide in the copper),
+  or where zone fills stopped half a micrometre short of the board edge (a strip of board that thin): the new
+  defaults clean both away.
+- `px.FromKiCad` read a board outline as empty where an Edge.Cuts line or arc ended on a slanted edge or an arc:
+  the file keeps nanometres, so such an end lies a fraction of a nanometre off the edge, and the outline did not
+  close. An end within 2 nm of another outline edge now lies on it, and lines drawn on past such an end are left
+  out with FromKiCad's own warning, as on straight edges.
+- Offsets raised "Offset: internal error, the raw offset path has a gap" where an arc's offset shrank to a point
+  within the rounding, as `merge_slivers_thinner` could on a board drawn in millimetres.
+- Scaling a sketch scaled the radius of curvature given to a spline point (`curvature_radii=`) the wrong way: after
+  `sk.Scale((0, 0), 2)` a radius of 25 read 12.5, so the spline was not the scaled copy of the original. It reads 50
+  now, in `px.QuickSketch` and `px.Sketch`.
+- `px.Rotation` and `px.Translation` accepted an angle or a distance that is nan or infinite and returned a
+  transformation holding it. They raise `ValueError` now, as the other calls do.
+- `px.FromStep` and `px.FromBrep` read the words inf and nan, and a number too large for a double such as 1E999,
+  as numbers. A file with such a number raises `ValueError` now.
+- A vertex took any number as its mesh size: `vertex.maxh = -1` or `vertex.hpref = math.nan` was stored and went
+  into the mesh. They raise `ValueError` now, as on an edge or a face (`maxh` positive and finite, `hpref` at least 0).
+- `Contains` and `Relate` took a 3d point for off the plane where the plane lies far from the origin: the point's
+  coordinates round by more than the tolerance they were tested with, so `face.Contains(plane.ToXYZ((0.5, 0.5)))`
+  could be `False` and `Relate` raise "the point lies off the plane". A 3d point is on the plane within the rounding
+  of its own coordinates now, as a sketch's point arguments test it.
+- A boolean could lose nearly all of its area where an arc crossed an arc of a far smaller circle, such as a corner
+  rounded with a radius of 1e-9 by a hair-wide offset: the crossing was not found, and the union of two faces of area
+  2.7 came out with 0.1, without a warning. The crossing is found now.
+- A boolean could return two identical edges that bound nothing where a corner of one face reached past an edge of
+  the other by about the tolerance: the cut-off tip collapsed into them, and `px.Glue` of the result had two edges
+  fewer. The tip stays a thin triangle now.
+- `sk.Trim` and `sk.Split` of an open spline: when the search for the exact cut point stepped past the spline's end,
+  it went on from the spline's start. It goes on along the curve continued past its end now. No sketch is known where
+  this gave a wrong cut.
+
 ## v0.4.2
 
 ### Added

@@ -185,3 +185,13 @@ def test_lines_at_a_tiny_angle_share_the_stretch_between_their_endpoints():
     assert result == Overlap
     stretch = seg((65.1159010791497, 61.93992268170584), (65.11590100630004, 61.939922409824895))
     assert [seg(*ends(e)) for e in [a, b] + pieces].count(stretch) == 1
+
+
+def test_an_arc_crosses_an_arc_of_a_far_smaller_circle():
+    corner = arc((0.8, -0.000500001), (0.800000001, -0.0005), (0.8, -0.0005))
+    big = arc((0.79999999999, -0.43351270189221935), (0.79999999999, -0.0005000000000000004),
+              (0.67499999999, -0.21700635094610965))
+    result, pieces = big.Cut(corner)
+    assert result == Crossing and len(pieces) == 2
+    assert big.end == corner.end == pieces[0].start == pieces[1].start
+    assert (big.end.x - 0.8, big.end.y + 0.0005) == pytest.approx((8.6351e-10, -5.0432e-10), rel=1e-4)

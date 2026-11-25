@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingprops.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 
 void BindFace(py::class_<Face> &face) {
     py::options options;
@@ -52,7 +58,7 @@ void BindFace(py::class_<Face> &face) {
            "    face.Wire()")
         .def("Offset", [](const py::object &self, double d, bool inplace, OffsetForm corners) -> py::object {
             Face &f = self.cast<Face &>();
-            Shape r = OffsetFaces(Shape(f), d, CornersOf(corners));
+            Shape r = OffsetFacesOf(Shape(f), d, corners);
             if (!inplace)
                 return py::cast(std::move(r));
             FaceList faces = r.Faces();
@@ -70,8 +76,9 @@ void BindFace(py::class_<Face> &face) {
              IntersectionsDoc("face", "its edges"))
         .def("Simplify", [](Face &face, EXPORT_PARAMS) -> Face & { return face.Simplify(EXPORT_OPTIONS); }, EXPORT_ARGS, ref,
              ExportDoc("Simplify", "Face",
-                       "Defeatures the face in place as the OCC exports do: gaps closed, collinear lines merged, arcs and "
-                       "splines fitted, small edges and edges that touch no other edge at either end removed, as enabled.",
+                       "Defeatures the face in place as the OCC exports do: gaps closed, arcs fitted, collinear lines merged, "
+                       "splines fitted, small edges and edges that touch no other edge at either end removed, as enabled.\n\n"
+                       "remove_faces_smaller, remove_holes_smaller and merge_slivers_thinner work on the faces of a Shape and do nothing on a single face; as a Shape the face takes them.",
                        "face", false))
         .def("Simplified", [](const Face &face, EXPORT_PARAMS) { Face r = face; return r.Simplify(EXPORT_OPTIONS), r; }, EXPORT_ARGS,
              ExportDoc("Simplified", "Face", "A copy defeatured as Simplify does it; this face is not changed.", "face", false))
@@ -83,8 +90,8 @@ void BindFace(py::class_<Face> &face) {
         .def("FitArcs", [](Face &f, OptDouble tol, OptDouble l, OptDouble a, OptDouble ig) -> Face & {
             return f.FitArcs(Arcs(true, l, a, tol, ig));
         }, ARCFIT_ARGS, ref,
-           FitArcsDoc("Face", "Replaces chains of at least three edges shorter than max_edge_length by arcs of at most 180 "
-                              "degrees (or lines) that stay within tol of the chain, in place.", "face"));
+           FitArcsDoc("Face", "Replaces chains of at least three lines by arcs of at most 180 degrees (or lines) that stay "
+                              "within tol of the chain, in place.", "face"));
     face.def_property_readonly("outer", &Face::Outer, "outer: Wire\n\nThe outer loop, a Wire, its edges in counterclockwise order.")
         .def_property_readonly("inner", &Face::Holes, "inner: list[Wire]\n\nThe inner loops (the holes), a list of wires, their edges in clockwise order.")
         .def("Contains", [](const Face &f, const py::object &other, bool boundary) {
@@ -94,13 +101,13 @@ void BindFace(py::class_<Face> &face) {
     face.def("Polylines", [](const Face &f, double tol) {
         CheckSampleTol("Polylines", tol);
         py::list out;
-        AddFaceLoops(f.Edges(), tol, out);
+        AddArrays(FacePolylinesOf(f.Edges(), tol), out);
         return out;
     }, py::arg("tol"), PolylinesDoc("face"));
     face.def("Split", [](const Face &f, const py::object &cutter) { return SplitShape(Shape(f), CutterIn(f.Axes(), cutter)); },
              py::arg("cutter"), py::pos_only(), SplitDoc("face"))
         .def("Trim", [](const Face &f, TRIM_PARAMS) {
-            return TrimShape(Shape(f), CutterIn(f.Axes(), cutter), RuleOf(f.Axes(), kc, rc, kl, ks, kleft, kright));
+            return TrimmedShape(Shape(f), CutterIn(f.Axes(), cutter), RuleOf(f.Axes(), kc, rc, kl, ks, kleft, kright));
         }, TRIM_ARGS, TrimDoc("face"));
     BindRelations<Face>(face, [](const Face &f) { return RelateOperand{2, f.Edges(), {}}; });
     BindMeasures<Face>(face, [](const Face &f) { return ThingOf(f); },

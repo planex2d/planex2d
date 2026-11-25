@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingprops.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
+#include "bindingmeasure.hpp"
 #include "binding_curve.hpp"
-#include "curves/ellipse.hpp"
+#include "planex/curves/ellipse.hpp"
 
-// an edge view's motions: the edge as a Wire of its own, moved
 static const char *EdgeMotionDoc(const MotionDoc &d) {
     std::string text;
     for (const std::string &f : d.forms)
@@ -23,6 +28,13 @@ static MotionDoc EdgeTranslateDoc() {
     d.args = "    d: the displacement, (dh, dv) in the plane or (dx, dy, dz) in 3d.\n";
     d.examples = {"((10, 0))", "((0, 0, 5))"};
     return d;
+}
+
+static Wire CurveWire(const Curve<double, Vertex> &curve, const AxisSystem &axes) {
+    Wire w(axes);
+    for (planex2d::Spline &s : planex2d::Spline::FromCurve(curve))
+        w.Add(std::move(s));
+    return w;
 }
 
 void BindEdges(py::module_ &m) {
@@ -100,7 +112,7 @@ void BindEdges(py::module_ &m) {
            "    edge.PointAt(t=0.25)")
         .def("Sample", [](const EdgeView &r, double tol) {
             CheckSampleTol("Sample", tol);
-            return VertexArray(SamplePoints(r.Get(), tol, "Sample"));
+            return VertexArray(PolylineOf(r.Get(), tol, "Sample"));
         }, py::arg("tol"),
            "Sample(tol: float) -> np.ndarray\n\n"
            "An (n, 2) array of points from the start to the end, each chord within tol of the edge.\n\n"
@@ -136,8 +148,8 @@ void BindEdges(py::module_ &m) {
             if (sign)
                 throw py::value_error("Distance(signed=True): an edge has no inside");
             if (std::optional<PointRows> pts = PointBatch(target, "Distance"))
-                return DistancesOf(onCarrier ? CarrierOf(r, *pts) : ThingOf(r.AsWire()), *pts, project, components);
-            return DistanceOf(onCarrier ? CarrierOf(r, target, project) : ThingOf(r.AsWire()), target, project, components);
+                return DistancesOf(onCarrier ? CarrierThing(r, *pts) : ThingOf(r.AsWire()), *pts, project, components);
+            return DistanceOf(onCarrier ? CarrierThing(r, target, project) : ThingOf(r.AsWire()), target, project, components);
         }, py::arg("target"), py::pos_only(), py::arg("project") = false, py::arg("components") = py::none(), py::arg("on_carrier") = false,
            py::arg("signed") = false,
            "Distance(target: np.ndarray | list[tuple[float, float]] | list[tuple[float, float, float]], /, project: bool = False, components: str | None = None, on_carrier: bool = False, "
@@ -368,10 +380,7 @@ void BindEdges(py::module_ &m) {
        "    px.Circle((0, 0), 1)\n"
        "    px.Circle((5, 0), 2, reverse=True).Face()");
     auto ellipse = [](const Vertex &center, const Vertex &major, const Vertex &minor, double t0, double t1, const AxisSystem &axes) {
-        Wire w(axes);
-        for (planex2d::Spline &s : planex2d::Spline::FromCurve(BSplineCurve(EllipseData(center, major, minor, t0, t1), false)))
-            w.Add(std::move(s));
-        return w;
+        return CurveWire(BSplineCurve(EllipseData(center, major, minor, t0, t1), false), axes);
     };
     m.def("Ellipse", [ellipse](const py::object &center, double major, double minor, double angle, bool reverse, const py::object &axes) {
         const AxisSystem a = AxesArg(axes, "Ellipse");
@@ -440,26 +449,10 @@ void BindEdges(py::module_ &m) {
         const PointRows rows = PlaneRows(a, points, "FromPolyline");
         const Properties props = PROPS;
         const double *x = rows.data();
-        std::vector<Vertex> kept;
-        for (py::ssize_t i = 0; i < rows.shape(0); ++i)
-            if (const Vertex p{x[2 * i], x[2 * i + 1]}; kept.empty() || !(p == kept.back()))
-                kept.push_back(p);
-        if (closed && kept.size() > 1 && kept.back() == kept.front())
-            kept.pop_back();
-        if (kept.size() < 2)
-            throw py::value_error("FromPolyline: the points hold " + std::to_string(kept.size()) + " different point(s), a line needs two");
-        Wire w(a);
-        auto add = [&](const Vertex &a, const Vertex &b) {
-            planex2d::Line l(a, b);
-            l.props = props;
-            w.Add(std::move(l));
-        };
-        for (size_t k = 0; k + 1 < kept.size(); ++k)
-            add(kept[k], kept[k + 1]);
-        if (closed)
-            add(kept.back(), kept.front());
-        w.CheckChain("FromPolyline");
-        return w;
+        std::vector<Vertex> all((size_t)rows.shape(0));
+        for (size_t i = 0; i < all.size(); ++i)
+            all[i] = {x[2 * i], x[2 * i + 1]};
+        return WireOfPolyline(all, closed, a, props, "FromPolyline");
     }, py::arg("points"), py::pos_only(), py::arg("closed") = false, py::kw_only(), py::arg("plane") = py::none(), py::arg("name") = py::none(),
        py::arg("maxh") = py::none(), py::arg("col") = py::none(), py::arg("minh") = py::none(), py::arg("hpref") = py::none(),
        py::arg("layer") = py::none(), py::arg("partition") = py::none(),
@@ -545,9 +538,7 @@ void BindEdges(py::module_ &m) {
         if (!IsCurveCallable(point))
             CheckFormulaTol(tol, text);
         const Curve<double, Vertex> shape = IsCurveCallable(point) ? CallableShape(point, range, text, tol) : ParsedCurve(point, range, text, names).Shape({});
-        Wire w(AxesArg(axes, "Curve"));
-        for (planex2d::Spline &s : planex2d::Spline::FromCurve(shape))
-            w.Add(std::move(s));
+        Wire w = CurveWire(shape, AxesArg(axes, "Curve"));
         w.CheckChain("Curve");
         return w;
     }, py::arg("point"), py::arg("range"), py::pos_only(), py::kw_only(), py::arg("plane") = py::none(), py::arg("tol") = py::none(),
@@ -581,10 +572,7 @@ void BindEdges(py::module_ &m) {
         std::vector<Vertex> q = PlanePoints(a, poles, "BSpline");
         const std::vector<double> k = knots ? *knots : UniformKnots(q.size(), (size_t)std::max(degree, 1), periodic);
         BSplineData b{std::move(q), k, weights ? *weights : std::vector<double>{}, degree};
-        Wire w(a);
-        for (planex2d::Spline &s : planex2d::Spline::FromCurve(BSplineCurve(b, periodic)))
-            w.Add(std::move(s));
-        return w;
+        return CurveWire(BSplineCurve(b, periodic), a);
     };
     m.def("_BSpline", bspline, py::arg("poles"), py::arg("knots") = py::none(), py::arg("degree") = 3, py::arg("weights") = py::none(),
           py::arg("periodic") = false, py::arg("plane") = py::none(),

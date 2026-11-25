@@ -29,7 +29,8 @@ FUNCTIONS = ["Line", "Arc", "Circle", "FromPolyline", "Spline", "BSpline", "Curv
              "Move"]
 # the imports: their results count in a kind of their own
 IMPORTS = {"FromDXF": "DXF", "FromKiCad": "KiCad", "FromOCC": "OCC", "Project": "OCC", "Intersect3d": "OCC",
-           "FromShapely": "Shapely", "FromLevelSet": "LevelSet", "FromNACA": "NACA"}
+           "FromShapely": "Shapely", "FromLevelSet": "LevelSet", "FromNACA": "NACA",
+           "FromCadQuery": "CadQuery", "FromBuild123d": "Build123d"}
 
 
 def _each(obj, f):

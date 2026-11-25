@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingviews.hpp"
 
 #include <pybind11/eval.h>
 
@@ -69,7 +70,7 @@ PYBIND11_MODULE(_planex, m) {
 #endif
     BindIdentify(m);
     BindStep(m);
-    // what the OCC bindings made, taken over from their capsule as the core's own object (binding.hpp ToCore); the
+    // what the OCC bindings made, taken over from their capsule as the core's own object (bindingbase.hpp ToCore); the
     // capsule's destructor frees what the move leaves
     py::options options;
     options.disable_function_signatures();

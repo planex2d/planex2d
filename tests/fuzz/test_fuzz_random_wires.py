@@ -43,6 +43,14 @@ FOUND_CURVES = [
                   ("line", "small angle", (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), 11),
                   ("line", "end on", (0.0, -1.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), 25)),
                  id="lines-at-a-small-angle-one-split-pieces-twice"),
+    pytest.param((("line", "free", (0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0), 0),
+                  ("line", "free", (0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0), 0),
+                  ("spline", "free", (1.0, 0.0, -2.0, 1.75, 0.0, 0.8125, 0.0, 0.0), 0)),
+                 id="spline-reaching-far-beyond-its-ends-within-its-own-tolerance"),
+    pytest.param((("line", "free", (0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0), 0),
+                  ("line", "free", (0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0), 0),
+                  ("spline", "free", (1.0, 0.0, -2.0, 1.75, 0.0, 0.875, 0.0, 0.0), 0)),
+                 id="spline-reaching-far-beyond-its-ends-a-piece-within-its-own-tolerance"),
 ]
 
 

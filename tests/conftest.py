@@ -8,6 +8,12 @@ import time
 
 import pytest
 
+# netgen's OpenCASCADE loaded before OCP 8 (build123d) crashes the process: OCP first, where it is installed
+try:
+    import OCP  # noqa: F401
+except ImportError:
+    pass
+
 FUZZ_SECONDS = 120.0
 NETGEN_IMPORT = re.compile(r"^(?:import|from) (?:netgen|ngsolve)\b", re.M)
 

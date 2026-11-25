@@ -19,7 +19,7 @@ PIC = os.path.join(os.path.dirname(__file__), "data", "kicad", "pic_programmer.k
 SHIFT = 2 * math.sqrt(2) * 0.5e-9
 # FromKiCad's cleanup is not idempotent, so a written board is read back without it: what the writer wrote, exactly
 NO_CLEANUP = {"remove_faces_smaller": 0, "remove_edges_smaller": 0, "close_gaps_smaller": 0,
-              "merge_collinear_closer": 0, "remove_free_edges": False}
+              "merge_collinear_closer": 0, "remove_free_edges": False, "fit_arcs": False}
 
 
 def rect(x0, y0, x1, y1):
@@ -44,9 +44,14 @@ def written(tmp_path, layers, **kwargs):
 
 
 def read(path):
+    """the board back with the session's cleanup (px.config), not FromKiCad's 10 um, so the writer's accuracy shows"""
     with warnings.catch_warnings():
         warnings.simplefilter("error", px.PlanexWarning)
-        return px.FromKiCad(path)
+        return px.FromKiCad(path, remove_edges_smaller=px.config.remove_edges_smaller,
+                            close_gaps_smaller=px.config.close_gaps_smaller,
+                            merge_collinear_closer=px.config.merge_collinear_closer,
+                            remove_holes_smaller=px.config.remove_holes_smaller,
+                            merge_slivers_thinner=px.config.merge_slivers_thinner, fit_arcs=False)
 
 
 def test_a_face_with_two_holes_is_one_outline_with_bridges(tmp_path):

@@ -55,6 +55,7 @@ from ._plot import Plot, PlotField, PlotMesh
 from ._plot3d import Plot3d
 from ._workplane import WorkPlane
 from . import _plot_sketch
+from ._ocpio import FromBuild123d, FromCadQuery, ToBuild123d, ToCadQuery
 from ._shapelyio import FromShapely, ToShapely
 from . import _svg
 from ._svg import ToSVG
@@ -71,6 +72,8 @@ for _cls in (Face, Shape, Wire, Compound):
     _cls.WriteSVG = WriteSVG
     _cls.WriteGeo = WriteGeo
     _cls.ToShapely = ToShapely
+    _cls.ToCadQuery = ToCadQuery
+    _cls.ToBuild123d = ToBuild123d
     _cls.ToSVG = ToSVG
     _cls._repr_svg_ = _svg._repr_svg
 del _cls
@@ -89,6 +92,8 @@ for _cls in _sketch_types:
     _cls.WriteSVG = WriteSVG
     _cls.WriteGeo = WriteGeo
     _cls.ToShapely = ToShapely
+    _cls.ToCadQuery = ToCadQuery
+    _cls.ToBuild123d = ToBuild123d
     _cls.Plot = _plot_sketch.Plot
     _cls._repr_svg_ = _svg._repr_svg
     _cls.Polylines = _geom.shape_polylines
@@ -121,12 +126,12 @@ X, Y, Z = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
 # not x, y, z, h, v, X, Y, Z, BSpline and config: a star import after NGSolve's or netgen.occ's keeps theirs
 __all__ = ["Angle", "Arc", "ArcEdge", "Auto", "Bottom", "Chamfer", "Circle", "CircleEdge", "ClosedOpenWires", "Coincident", "Compound", "Concentric", "Constraint", "Curvature", "CurvatureRadius", "Curve",
            "DeformableShape", "Diameter", "Distance", "Drawing", "Edge", "EdgeView",
-           "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FixH", "FixV", "Flat", "FromBrep", "FromCATPart", "FromDXF", "FromKiCad", "FromLevelSet",
+           "EdgesView", "Ellipse", "Equal", "Face", "FaceView", "FacesView", "Find", "Fix", "FixH", "FixV", "Flat", "FromBrep", "FromBuild123d", "FromCATPart", "FromCadQuery", "FromDXF", "FromKiCad", "FromLevelSet",
            "FromNACA", "FromNumpy", "FromOCC", "FromPolyline", "FromSVG", "FromShapely", "FromStep", "Front", "GetTransformation", "Glue", "H", "Horizontal", "Intersect",
            "Intersect3d", "Isometric", "Left", "Line", "LineEdge", "Minimal", "Move", "OCCGeometry", "Offset", "OffsetForm", "Pad", "Parallel", "Parameters", "Perpendicular", "Plane",
            "PlanexWarning", "Plot", "Plot3d", "PlotField", "PlotMesh", "Pocket", "Project", "QuickSketch", "Radius", "Rear", "ResetIdCounters",
            "Right", "RigidGroup", "Rotation", "Round", "Selection", "Shape", "Sharp", "Sheet", "Sketch", "Spline", "SplineEdge", "Square", "Subtract", "Symmetric", "SymmetricDifference",
-           "SymmetricCarriers", "Tangent", "ToSVG", "ToShapely", "Top", "Translation", "Unify", "V", "Vertex", "VertexView",
+           "SymmetricCarriers", "Tangent", "ToBuild123d", "ToCadQuery", "ToSVG", "ToShapely", "Top", "Translation", "Unify", "V", "Vertex", "VertexView",
            "Vertical", "VerticesView", "Wire", "Wires", "WorkPlane", "WriteBrep", "WriteDXF", "WriteGeo", "WriteKiCad",
            "WriteSVG", "WriteStep", "XY", "XZ", "YZ", "ZX", "cm", "inch", "m", "mil", "mm", "origin", "um"]
 

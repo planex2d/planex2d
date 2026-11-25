@@ -1,46 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Sebastian Hirnschall
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#pragma once
+#include "planex/sketch/geometry.hpp"
 
+#include <charconv>
 #include <stdexcept>
-
-#include "sketch/geometry.hpp"
 
 namespace planex2d::sketch {
 
-    inline bool Ref::IsSpline(const Geometry &g) const { return part == Part::Whole && g.elements[element].kind == ElementKind::Spline; }
-    inline bool Ref::IsCurve(const Geometry &g) const {
-        const ElementKind k = g.elements[element].kind;
-        return part == Part::Whole && (k == ElementKind::Spline || k == ElementKind::OffsetCurve);
-    }
-    inline bool Ref::HasPart(const Geometry &g) const {
-        const ElementKind e = g.elements[element].kind;
-        return part == Part::Whole ||
-               ((part == Part::Start || part == Part::End || part == Part::Mid) &&
-                (e == ElementKind::Line || e == ElementKind::Arc || e == ElementKind::Spline || e == ElementKind::OffsetCurve)) ||
-               (part == Part::Center && (e == ElementKind::Circle || e == ElementKind::Arc)) ||
-               ((part == Part::Point || part == Part::Tangent) && e == ElementKind::Spline && !g.elements[element].IsFitted(g) &&
-                index < g.splines[g.elements[element].SplineIndex()].points.size());
-    }
-    inline bool Ref::IsPoint(const Geometry &g) const {
-        return (part != Part::Whole && part != Part::Tangent) || g.elements[element].kind == ElementKind::Point;
-    }
-    inline bool Ref::IsRealPoint(const Geometry &g) const { return IsPoint(g) && part != Part::Mid; }
-    inline bool Ref::IsLine(const Geometry &g) const {
-        const ElementKind k = g.elements[element].kind;
-        return part == Part::Tangent || (part == Part::Whole && (k == ElementKind::Line || k == ElementKind::Axis));
-    }
-    inline bool Ref::IsSegment(const Geometry &g) const { return part == Part::Whole && g.elements[element].kind == ElementKind::Line; }
-    inline bool Ref::IsRound(const Geometry &g) const {
-        const ElementKind k = g.elements[element].kind;
-        return part == Part::Whole && (k == ElementKind::Circle || k == ElementKind::Arc);
-    }
-    inline bool Ref::IsArc(const Geometry &g) const { return part == Part::Whole && g.elements[element].kind == ElementKind::Arc; }
-    inline bool Ref::IsPattern(const Geometry &g) const { return part == Part::Whole && g.elements[element].kind == ElementKind::Pattern; }
-    inline bool Ref::IsOffset(const Geometry &g) const { return part == Part::Whole && g.elements[element].kind == ElementKind::Offset; }
-
-    inline size_t Ref::PointAt(const Geometry &g) const {
+    size_t Ref::PointAt(const Geometry &g) const {
         const Element &e = g.elements[element];
         if (e.kind == ElementKind::Spline)
             return part == Part::Point || part == Part::Tangent ? g.splines[e.SplineIndex()].points[index] : e.Ends(g)[part == Part::End];
@@ -54,7 +22,8 @@ namespace planex2d::sketch {
             return part == Part::End ? e.End() : e.Start();
         return part == Part::Start ? e.Start() : e.End();
     }
-    inline Vertex Ref::PointValue(const Geometry &g) const {
+
+    Vertex Ref::PointValue(const Geometry &g) const {
         if (!IsPoint(g) && part != Part::Tangent)
             throw std::invalid_argument("not a point");
         if (part != Part::Mid)
@@ -78,6 +47,31 @@ namespace planex2d::sketch {
         const Vertex chord = g.Coords(e.End()) - g.Coords(e.Start());
         const Vertex side = e.ccw ? Vertex{chord.y, -chord.x} : Vertex{-chord.y, chord.x};
         return g.Coords(e.Center()) + Normalized(side) * g.values[e.Radius()];
+    }
+
+    std::string Ref::Suffix() const {
+        if (part == Part::Point || part == Part::Tangent)
+            return (part == Part::Point ? ".p" : ".t") + std::to_string(index);
+        constexpr const char *parts[] = {"", ".start", ".end", ".center", ".mid"};
+        return parts[(size_t)part];
+    }
+
+    std::optional<Part> PartOf(const std::string &word) {
+        return word == "start"    ? std::optional(Part::Start)
+               : word == "end"    ? std::optional(Part::End)
+               : word == "center" ? std::optional(Part::Center)
+               : word == "mid"    ? std::optional(Part::Mid)
+                                  : std::nullopt;
+    }
+
+    std::optional<std::pair<Part, size_t>> SplinePart(const std::string &part) {
+        if (part.size() < 2 || (part[0] != 'p' && part[0] != 't'))
+            return std::nullopt;
+        size_t k = 0;
+        const auto [end, error] = std::from_chars(part.data() + 1, part.data() + part.size(), k);
+        if (error != std::errc() || end != part.data() + part.size())
+            return std::nullopt;
+        return std::pair{part[0] == 'p' ? Part::Point : Part::Tangent, k};
     }
 
 }

@@ -88,6 +88,8 @@ class Compound:
     WriteSVG: Callable[..., None]
     WriteGeo: Callable[..., None]
     ToShapely: Callable[..., Any]
+    ToCadQuery: Callable[..., Any]
+    ToBuild123d: Callable[..., Any]
     ToSVG: Callable[..., str]
 
     def __init__(self, parts: Iterable[Face | Shape | Wire | Compound] = (), /, id: str | None = None) -> None:

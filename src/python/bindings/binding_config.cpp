@@ -2,29 +2,92 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingargs.hpp"
+#include <tuple>
 #include <pybind11/eval.h>
 
-// read as a dict with "enabled"; set as the fit_splines= / fit_arcs= keywords, a dict may also give "enabled"
+template <class Fit>
+static py::dict FitDict(const Fit &fit) {
+    return py::dict(py::arg("enabled") = fit.enabled, py::arg("tol") = fit.tol, py::arg("max_edge_length") = fit.max_edge_length,
+                    py::arg("max_edge_angle") = fit.max_edge_angle, py::arg("ignore_edges_smaller") = fit.ignore_edges_smaller);
+}
+
+template <class Fit>
+static Fit FitSet(const py::object &v, const Fit &fit, const std::string &key) {
+    if (v.is_none())
+        throw py::type_error(key + " = None: it is True, False or a dict of the fit's options");
+    if (!py::isinstance<py::dict>(v))
+        return FitOf(v, fit, key);
+    py::dict options = v.attr("copy")();
+    const py::object enabled = options.attr("pop")("enabled", true);
+    Fit f = FitOf(options, fit, key);
+    f.enabled = enabled.cast<bool>();
+    return f;
+}
+
 template <class Fit>
 static void ConfigFit(py::class_<Config> &cls, const char *name, Fit &fit) {
     const std::string key = std::string("config.") + name;
-    cls.def_property_static(name, [&fit](py::object) {
-        return py::dict(py::arg("enabled") = fit.enabled, py::arg("tol") = fit.tol, py::arg("max_edge_length") = fit.max_edge_length,
-                        py::arg("max_edge_angle") = fit.max_edge_angle, py::arg("ignore_edges_smaller") = fit.ignore_edges_smaller);
-    }, [&fit, key](py::object, const py::object &v) {
-        if (v.is_none())
-            throw py::type_error(key + " = None: it is True, False or a dict of the fit's options");
-        if (!py::isinstance<py::dict>(v)) {
-            fit = FitOf(v, fit, key);
-            return;
+    cls.def_property_static(name, [&fit](py::object) { return FitDict(fit); },
+                            [&fit, key](py::object, const py::object &v) { fit = FitSet(v, fit, key); },
+                            Doc(std::string(name) + ": dict\n\nThe export default of " + std::string(name) + "=, read as a dict (enabled, tol, "
+                                "max_edge_length, max_edge_angle, ignore_edges_smaller), set as True, False or such a dict, which changes only "
+                                "the options it names."));
+}
+
+inline constexpr std::pair<const char *, double Cleanup::*> pcbSizes[] = {
+    {"remove_edges_smaller", &Cleanup::remove_edges_smaller}, {"close_gaps_smaller", &Cleanup::close_gaps_smaller},
+    {"merge_collinear_closer", &Cleanup::merge_collinear_closer}, {"remove_faces_smaller", &Cleanup::remove_faces_smaller},
+    {"remove_holes_smaller", &Cleanup::remove_holes_smaller}, {"merge_slivers_thinner", &Cleanup::merge_slivers_thinner}};
+inline constexpr std::pair<const char *, bool Cleanup::*> pcbSwitches[] = {
+    {"remove_free_edges", &Cleanup::remove_free_edges}, {"merge_small_faces_instead", &Cleanup::merge_small_faces_instead}};
+
+static py::dict PcbOptions() {
+    const Cleanup &c = config::state->pcb_cleanup;
+    return py::dict(py::arg("fit_splines") = FitDict(config::state->pcb_spline_fit), py::arg("remove_edges_smaller") = c.remove_edges_smaller,
+                    py::arg("close_gaps_smaller") = c.close_gaps_smaller, py::arg("remove_free_edges") = c.remove_free_edges,
+                    py::arg("merge_collinear_closer") = c.merge_collinear_closer, py::arg("remove_faces_smaller") = c.remove_faces_smaller,
+                    py::arg("merge_small_faces_instead") = c.merge_small_faces_instead, py::arg("fit_arcs") = FitDict(config::state->pcb_arc_fit),
+                    py::arg("remove_holes_smaller") = c.remove_holes_smaller, py::arg("merge_slivers_thinner") = c.merge_slivers_thinner);
+}
+
+static void SetPcbOptions(const py::object &v) {
+    const std::string key = "config.pcb_simplify_options";
+    if (!py::isinstance<py::dict>(v))
+        throw py::type_error(key + ": a dict of Simplify's options, not " + py::repr(v).cast<std::string>());
+    Cleanup c = config::state->pcb_cleanup;
+    ArcFit arcs = config::state->pcb_arc_fit;
+    SplineFit fit = config::state->pcb_spline_fit;
+    for (const auto &[k, item] : v.cast<py::dict>()) {
+        const std::string name = py::str(k);
+        const py::object x = py::reinterpret_borrow<py::object>(item);
+        if (name == "fit_arcs") {
+            arcs = FitSet(x, arcs, key + "[\"fit_arcs\"]");
+            continue;
         }
-        py::dict options = v.attr("copy")();
-        const py::object enabled = options.attr("pop")("enabled", true);
-        Fit f = FitOf(options, fit, key);
-        f.enabled = enabled.cast<bool>();
-        fit = f;
-    }, Doc(std::string(name) + ": dict\n\nThe export default of " + std::string(name) + "=, read as a dict (enabled, tol, max_edge_length, max_edge_angle, "
-           "ignore_edges_smaller), set as True, False or such a dict, which changes only the options it names."));
+        if (name == "fit_splines") {
+            fit = FitSet(x, fit, key + "[\"fit_splines\"]");
+            continue;
+        }
+        bool known = false;
+        for (const auto &[size, member] : pcbSizes)
+            if (name == size) {
+                c.*member = x.cast<double>();
+                known = true;
+            }
+        for (const auto &[on, member] : pcbSwitches)
+            if (name == on) {
+                if (!py::isinstance<py::bool_>(x))
+                    throw py::type_error(key + ": '" + name + "' is True or False, not " + py::repr(x).cast<std::string>());
+                c.*member = x.cast<bool>();
+                known = true;
+            }
+        if (!known)
+            throw py::type_error(key + ": no option '" + name + "' (" + py::str(", ").attr("join")(PcbOptions()).cast<std::string>() + ")");
+    }
+    config::state->pcb_cleanup = c;
+    config::state->pcb_arc_fit = arcs;
+    config::state->pcb_spline_fit = fit;
 }
 
 void BindConfig(py::module_ &m) {
@@ -94,7 +157,6 @@ class ConfigMeta(base):
     auto cfg = py::class_<Config>(m, "config", py::metaclass(scope["ConfigMeta"]),
                                   "The defaults of planex: the absolute tolerance k * eps * S (S the largest coordinate "
                                   "magnitude involved), and the fit and cleanup values the OCC exports take by default.");
-    // the tolerance k * eps * S is positive and finite
     for (auto [name, value, doc] : {std::tuple{"eps", &config::state->eps, "eps: float\n\nThe relative rounding eps of the tolerance k * eps * "
                                                                             "S, positive and finite."},
                                     std::tuple{"k", &config::state->k, "k: float\n\nThe factor k of the tolerance k * eps * S, positive and finite."}})
@@ -142,6 +204,14 @@ class ConfigMeta(base):
                 "max_preview_edges: int\n\nThe most edges a notebook picture of an object draws; above it the object shows its text repr.");
     ConfigFit(cfg, "fit_splines", config::state->spline_fit);
     ConfigFit(cfg, "fit_arcs", config::state->arc_fit);
+    cfg.def_property_static("pcb_simplify_options", [](py::object) { return PcbOptions(); },
+                            [](py::object, const py::object &v) { SetPcbOptions(v); },
+                            "pcb_simplify_options: dict\n\nThe defaults of the board readers (px.FromKiCad): Simplify's options as a dict "
+                            "(fit_splines, remove_edges_smaller, close_gaps_smaller, remove_free_edges, merge_collinear_closer, "
+                            "remove_faces_smaller, merge_small_faces_instead, fit_arcs, remove_holes_smaller, merge_slivers_thinner; the fits "
+                            "as px.config.fit_arcs reads them). Sizes no board is made with: 10 um (1e-5 m) for edges, gaps, collinear "
+                            "points and slivers, 5e-8 m^2 for faces (merged), 2e-9 m^2 for holes, arcs fitted within 10 um (max_edge_angle "
+                            "60), no splines. Set as a dict, which changes only the options it names (a fit as px.config.fit_arcs).");
     ConfigValue(cfg, "remove_edges_smaller", config::state->cleanup.remove_edges_smaller,
                 "remove_edges_smaller: float\n\nThe export default of remove_edges_smaller=: lines and arcs no longer than this are removed.");
     ConfigValue(cfg, "close_gaps_smaller", config::state->cleanup.close_gaps_smaller,
@@ -156,6 +226,12 @@ class ConfigMeta(base):
     ConfigValue(cfg, "merge_small_faces_instead", config::state->cleanup.merge_small_faces_instead,
                 "merge_small_faces_instead: bool\n\nThe export default of merge_small_faces_instead=: True unites such a face with the face it shares the "
                 "longest boundary with instead.");
+    ConfigValue(cfg, "remove_holes_smaller", config::state->cleanup.remove_holes_smaller,
+                "remove_holes_smaller: float\n\nThe export default of remove_holes_smaller=: holes of less area than this are filled, a hole with a "
+                "face in it stays (0: none).");
+    ConfigValue(cfg, "merge_slivers_thinner", config::state->cleanup.merge_slivers_thinner,
+                "merge_slivers_thinner: float\n\nThe export default of merge_slivers_thinner=: parts of a face no wider than this go to the face beside "
+                "them, gaps that narrow inside a face are filled (0: none).");
     ConfigValue(cfg, "sensitivity_warning", config::state->sensitivity_warning,
                 "sensitivity_warning: float\n\nA constraint sketch warns when a small change of its dimensions can move its geometry more than this many "
                 "times as much.");

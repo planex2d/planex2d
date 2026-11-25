@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
-#include "integrations/netgenocc/section.hpp"
+#include "bindingargs.hpp"
+#include "planex/integrations/netgenocc/section.hpp"
 
 void BindSection(py::module_ &m) {
     py::options options;

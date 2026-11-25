@@ -111,8 +111,8 @@ def round_pad_zone(tmp_path):
 
 def test_fit_arcs_fits_a_zone_fill_in_2d_and_before_the_3d_build(tmp_path):
     path = round_pad_zone(tmp_path)
-    assert len(px.FromKiCad(path, "F.Cu").arcs) == 0
-    fitted = px.FromKiCad(path, "F.Cu", fit_arcs=True)
+    assert len(px.FromKiCad(path, "F.Cu", fit_arcs=False).arcs) == 0
+    fitted = px.FromKiCad(path, "F.Cu")
     assert len(fitted.arcs) > 0 and len(fitted.lines) == 0
     # a dict of options crashed the prisms (read without the GIL)
     board = px.FromKiCad(path, [1.5], fit_arcs={"tol": 1e-6})
@@ -129,6 +129,70 @@ def test_copper_meeting_part_of_a_hole_stacks_in_3d(tmp_path):
     board = px.FromKiCad(kicad_board(tmp_path, body), [1.5])
     assert board.solids[0].mass == pytest.approx((60 * 40 - math.pi * 0.25) * 1.5 * 1e-9, rel=1e-9)
     assert any(f.name == "npth" for f in board.faces)
+
+
+def test_copper_nanometres_from_an_outline_corner_stacks_in_3d(tmp_path):
+    # the copper's vertex on the outline 20 nm from its corner: the export's small-edge removal moved the corner
+    body = ('(gr_poly (pts (xy 50 40) (xy 59.99998 40) (xy 55 35)) (stroke (width 0) (type solid)) (fill yes) '
+            '(layer "B.Cu") (net 1))')
+    board = px.FromKiCad(kicad_board(tmp_path, body), [1.5], remove_edges_smaller=1e-7, close_gaps_smaller=1e-7,
+                         merge_collinear_closer=1e-7, merge_slivers_thinner=0)
+    assert px._planex.CheckShape(board)["valid"]
+    assert board.solids[0].mass == pytest.approx(60 * 40 * 1.5 * 1e-9, rel=1e-9)
+
+
+def test_a_slit_nanometres_wide_is_read_and_cleaned_away(tmp_path):
+    body = ('(gr_poly (pts (xy 10 10) (xy 30 10) (xy 30 20) (xy 20.000001 20) (xy 20.000001 12) (xy 20 12) (xy 20 20) '
+            '(xy 10 20)) (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu") (net 1))')
+    path = kicad_board(tmp_path, body)
+    read = px.FromKiCad(path, layer="F.Cu", remove_edges_smaller=0, close_gaps_smaller=0, merge_collinear_closer=0,
+                        merge_slivers_thinner=0)
+    assert sum(f.mass for f in read.faces) / MM2 == pytest.approx(200 - 8e-6, abs=1e-9)
+    cleaned = px.FromKiCad(path, layer="F.Cu")
+    assert [f.name for f in cleaned.faces] == ["A"]
+    assert cleaned.faces[0].mass / MM2 == pytest.approx(200, rel=1e-12)
+
+
+def test_a_zone_half_a_micrometre_short_of_the_board_edge_reaches_it(tmp_path):
+    body = '(gr_rect (start 0.0005 0.0005) (end 59.9995 39.9995) (stroke (width 0) (type solid)) (fill yes) (layer "B.Cu") (net 1))'
+    path = kicad_board(tmp_path, body)
+    bottom = lambda board: {f.name for f in board.faces if abs(f.center.z) < 1e-9}
+    assert bottom(px.FromKiCad(path, [1.53])) == {"A"}
+    assert None in bottom(px.FromKiCad(path, [1.53], merge_slivers_thinner=0))
+
+
+def test_the_cleanup_defaults_are_sizes_no_board_is_made_with():
+    import inspect
+
+    p = inspect.signature(px.FromKiCad).parameters
+    names = ("remove_edges_smaller", "close_gaps_smaller", "merge_collinear_closer", "merge_slivers_thinner",
+             "remove_holes_smaller", "fit_arcs")
+    assert [p[n].default for n in names] == [None] * 6
+    o = px.config.pcb_simplify_options
+    assert [o[n] for n in names[:-1]] == [1e-5, 1e-5, 1e-5, 1e-5, 2e-9]
+    assert o["fit_arcs"]["enabled"] is True and o["fit_arcs"]["tol"] == 1e-5
+
+
+def test_fromkicad_takes_its_defaults_from_the_board_options(tmp_path):
+    # an outline drawn as a polygon of 128 sides of radius 10 mm: its chords lie 3 um inside the circle
+    pts = " ".join("(xy %.6f %.6f)" % (30 + 10 * math.cos(2 * math.pi * k / 128), 20 + 10 * math.sin(2 * math.pi * k / 128))
+                   for k in range(128))
+    path = tmp_path / "round.kicad_pcb"
+    path.write_text('(kicad_pcb (version 20241229) (generator "t")\n %s\n (setup )\n (net 0 "")\n (gr_poly (pts %s) '
+                    '(stroke (width 0.05) (type default)) (fill no) (layer "Edge.Cuts"))\n)' % (LAYERS % "", pts))
+    saved = px.config.pcb_simplify_options
+
+    def kinds(shape):
+        return {type(e.edge).__name__ for e in shape.edges}
+
+    try:
+        assert kinds(px.FromKiCad(str(path), "Edge.Cuts")) == {"ArcEdge"}
+        px.config.pcb_simplify_options = {"fit_arcs": False}
+        unfitted = px.FromKiCad(str(path), "Edge.Cuts")
+        assert kinds(unfitted) == {"LineEdge"} and len(unfitted.edges) > 60
+        assert kinds(px.FromKiCad(str(path), "Edge.Cuts", fit_arcs=True)) == {"ArcEdge"}
+    finally:
+        px.config.pcb_simplify_options = saved
 
 
 def test_stackup_in_3d():
@@ -853,6 +917,61 @@ def test_outline_lines_running_past_their_corner_arcs_are_left_out_with_a_count(
     assert profile.mass / MM2 == pytest.approx(60 * 40 - 4 * (4 - math.pi), rel=1e-5)
 
 
+def edge_cuts_board(tmp_path, lines, arcs=()):
+    """a board of only Edge.Cuts lines and arcs (start, mid, end), written to KiCad's 1 nm"""
+    def line(a, b):
+        return '(gr_line (start %.6f %.6f) (end %.6f %.6f) (stroke (width 0.05) (type default)) (layer "Edge.Cuts"))' % (a + b)
+
+    def arc(a, m, b):
+        return ('(gr_arc (start %.6f %.6f) (mid %.6f %.6f) (end %.6f %.6f) (stroke (width 0.05) (type default)) '
+                '(layer "Edge.Cuts"))' % (a + m + b))
+
+    items = [line(a, b) for a, b in lines] + [arc(a, m, b) for a, m, b in arcs]
+    path = tmp_path / ("edge_cuts_%d.kicad_pcb" % len(list(tmp_path.iterdir())))
+    path.write_text('(kicad_pcb (version 20241229) (generator "t")\n %s\n (setup )\n (net 0 "")\n %s\n)' %
+                    (LAYERS % "", "\n ".join(items)))
+    return str(path)
+
+
+def read_with_warnings(path):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        profile = px.FromKiCad(path, "Edge.Cuts")
+    return profile, [str(w.message) for w in caught]
+
+
+def test_outline_lines_ending_a_fraction_of_a_nanometre_off_a_slanted_edge_end_on_it(tmp_path):
+    # two 30 degree chamfers drawn 0.3 and 0.5 mm past the sides they end on; at KiCad's 1 nm the sides start 0.30 and
+    # 0.33 nm short of the chamfers
+    def chamfer(t):
+        return (t * math.cos(math.pi / 6), 2 - t * math.sin(math.pi / 6))
+
+    def turned(p):
+        return (60 - p[0], 40 - p[1])
+
+    path = edge_cuts_board(tmp_path, [((0, 40), (0, 2)), (chamfer(4), (60, 0)), ((60, 0), (60, 38)),
+                                      (turned(chamfer(4)), (0, 40)), ((0, 2), chamfer(4.3)),
+                                      ((60, 38), turned(chamfer(4.5)))])
+    profile, texts = read_with_warnings(path)
+    assert "FromKiCad: 2 line ends on Edge.Cuts run past the outline (0.30 to 0.50 mm) and are left out" in texts
+    assert not any("open wire" in t for t in texts)
+    assert profile.mass / MM2 == pytest.approx(2400 - 4 * math.sqrt(3), rel=1e-7)
+
+
+def test_outline_arcs_ending_a_fraction_of_a_nanometre_off_a_slanted_line_end_on_it(tmp_path):
+    # a half disc whose 30 degree diameter runs 0.5 and 0.3 mm past the arc; at KiCad's 1 nm the arc's ends lie 0.15 nm
+    # past the line and 0.19 nm short of it
+    c, r, d = (30, 20), 20, (math.cos(math.pi / 6), math.sin(math.pi / 6))
+    a, b = (c[0] + r * d[0], c[1] + r * d[1]), (c[0] - r * d[0], c[1] - r * d[1])
+    top = (c[0] - r * d[1], c[1] + r * d[0])
+    path = edge_cuts_board(tmp_path, [((b[0] - 0.5 * d[0], b[1] - 0.5 * d[1]), (a[0] + 0.3 * d[0], a[1] + 0.3 * d[1]))],
+                           [(a, top, b)])
+    profile, texts = read_with_warnings(path)
+    assert "FromKiCad: 2 line ends on Edge.Cuts run past the outline (0.30 to 0.50 mm) and are left out" in texts
+    assert not any("open wire" in t for t in texts)
+    assert profile.mass / MM2 == pytest.approx(math.pi * r * r / 2, rel=1e-7)
+
+
 def outline_with_gaps(tmp_path, bottom, right, top):
     """a 60 x 40 mm outline with round corners of 2 mm whose bottom, right and top lines start that far off the arcs"""
     def line(a, b):
@@ -933,3 +1052,22 @@ def test_a_board_without_an_outline_and_a_stackup_of_no_thickness_are_named(tmp_
         px.FromKiCad(str(bare), layer="Edge.Cuts")
     with pytest.raises(ValueError, match="the thicknesses must be positive"):
         px.FromKiCad(kicad_board(tmp_path, ""), layer=[-1.0])
+
+
+def test_a_slit_finer_than_kicads_grid_between_zones_of_one_net_is_read_and_merged_away(tmp_path):
+    # two zones of net A share the edge from (10, 10) to (40, 15); the lower one has a vertex on it at x = 18, where the
+    # edge's y (11.3333...) is stored to the nanometre, 0.33 nm below it: read as it is, a slit that wide stays
+    def zone(pts):
+        ring = " ".join("(xy %.6f %.6f)" % p for p in pts)
+        return ('(zone (net 1) (net_name "A") (layer "F.Cu") (polygon (pts %s))\n'
+                '  (filled_polygon (layer "F.Cu") (pts %s)))' % (ring, ring))
+
+    upper = [(10, 10), (40, 15), (40, 30), (10, 30)]
+    lower = [(10, 10), (10, 2), (40, 2), (40, 15), (18, 10 + 8 * 5 / 30)]
+    path = kicad_board(tmp_path, zone(upper) + "\n " + zone(lower))
+    read = px.FromKiCad(path, "F.Cu", remove_faces_smaller=0, remove_edges_smaller=0, close_gaps_smaller=0,
+                        merge_collinear_closer=0, fit_arcs=False, remove_holes_smaller=0, merge_slivers_thinner=0)
+    assert len(read.faces) == 2
+    face, = px.FromKiCad(path, "F.Cu").faces
+    assert len(face.inner) == 0
+    assert face.mass / MM2 == pytest.approx(30 * 28, rel=1e-9)

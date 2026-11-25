@@ -85,6 +85,19 @@ def test_measurements_agree_with_the_booleans(fuzz_budget):
     fuzzlib.run(fuzzlib.unless_known(fuzzlib.check_measures), fuzzlib.pairs(), fuzz_budget)
 
 
+FOUND_MEASURES = [
+    pytest.param((("sharp", (0.0, 0.0, 1.0, (0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0),
+                             (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0), 1.0), 0.3125), "one point moved",
+                  ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 18),
+                 id="needle-with-a-base-of-1e-8-its-tip-thinner-than-tol-collapses"),
+]
+
+
+@pytest.mark.parametrize("spec", FOUND_MEASURES)
+def test_found_measurement_cases(spec):
+    fuzzlib.check_measures(spec)
+
+
 @pytest.mark.fuzz
 def test_shapes_from_solved_sketches(fuzz_budget):
     fuzzlib.run(fuzzlib.check_sketch_pair, fuzzlib.sketch_pairs(), fuzz_budget)
@@ -320,6 +333,10 @@ FOUND_CHAINS = [
                    ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 38), "free",
                   ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 0),
                  id="corner-1e-13-off-a-corner-union-with-a-third-empty"),
+    pytest.param(((("slotted", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0), (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0), 1.0),
+                    0.5), "offset", ("star", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 62),
+                  "corner on corner", ("rounded", (0.0, 0.0, 0.0, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.0), 0.5), 8),
+                 id="arc-through-a-corner-rounded-by-1e-9-union-loses-its-area"),
 ]
 
 
@@ -379,6 +396,8 @@ FOUND_SKETCHES = [
                  id="rectangle-and-its-copy-moved-by-tol-two-ends-within-tol"),
     pytest.param((("rectangle", 1.0, 1.0), ("sas", 0.5, 4.0, 116.0), "corner on corner", 38),
                  id="rectangle-and-triangle-corner-1e-13-off-a-corner-union-loses-the-triangle"),
+    pytest.param((("sas", 1.0, 3.0, 15.0), ("sas", 2.0, 1.0, 15.0), "corner on corner", 23),
+                 id="triangle-tip-1e-13-past-an-edge-difference-glued-again-loses-two-edges"),
 ]
 
 

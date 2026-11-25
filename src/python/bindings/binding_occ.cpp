@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding_occ.hpp"
+#include "binding.hpp"
+#include "bindingdocs.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
 #include <BRepAdaptor_Surface.hxx>
 #include <TopAbs.hxx>
 
-#include "integrations/netgenocc/chamfers.hpp"
-#include "integrations/netgenocc/prism.hpp"
-#include "integrations/netgenocc/shapecheck.hpp"
-#include "integrations/netgenocc/splinefit.hpp"
-#include "integrations/netgenocc/stack.hpp"
+#include "planex/integrations/netgenocc/chamfers.hpp"
+#include "planex/integrations/netgenocc/prism.hpp"
+#include "planex/integrations/netgenocc/shapecheck.hpp"
+#include "planex/integrations/netgenocc/splinefit.hpp"
+#include "planex/integrations/netgenocc/stack.hpp"
 
 
 namespace {
@@ -68,7 +72,6 @@ PrismEnd PrismEndArg(const py::object &until, const std::string &call) {
                                 "a planex Face, Shape or Sketch");
 }
 
-// the call of Pad or Pocket from its arguments; the target is null for a Pad
 PrismCall PrismCallOf(const std::string &call, const py::object &profile, const std::optional<double> &length, double length2,
                       const py::object &dir, bool reverse, const py::object &until, double offset, const TopoDS_Shape &target) {
     if (!IsProfile(profile))
@@ -107,7 +110,6 @@ const char *prismProperties =
     "start at.";
 
 
-// the OCC methods of the core classes
 void AddOCCMethods(const py::module_ &m) {
     py::class_<Face> face = CoreClass<Face>(m, "Face");
     face
@@ -216,7 +218,7 @@ void BindOCC(py::module_ &m) {
         // the options are Python objects (fit_arcs= a dict): read while the GIL is held
         const ArcFit arcs = FitOf(fa, config::state->arc_fit, "fit_arcs");
         const SplineFit fit = FitOf(fs, config::state->spline_fit, "fit_splines");
-        const Cleanup cleanup = Cleaning(re, cg, rf, mc, rfs, msf);
+        const Cleanup cleanup = Cleaning(re, cg, rf, mc, rfs, msf, rhs, mst);
         TopoDS_Shape stack;
         {
             py::gil_scoped_release release;

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
+#include "bindingargs.hpp"
+#include "bindingmotion.hpp"
 
 void BindDeformable(py::module_ &m) {
     py::options options;

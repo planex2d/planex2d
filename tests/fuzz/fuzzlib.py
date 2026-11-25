@@ -1319,8 +1319,9 @@ def check_loose_curves(spec, again=True):
     curves = loose_curves(spec)
     pieces = [e for w in px.Wires(curves) for e in w.edges]
     tol = tol_of(*curves)
-    splines = any(kind == "spline" for kind, *_ in spec)
-    near = 1e3 * tol + (3 * px.config.spline_tol * size(*curves) if splines else 0.0)
+    # a spline lies within spline_tol x its box diagonal of its curve: the diagonal, not only where its ends are
+    reach = [math.dist(*c.bounding_box) for (kind, *_), c in zip(spec, curves) if kind == "spline"]
+    near = 1e3 * tol + (3 * px.config.spline_tol * max([size(*curves)] + reach) if reach else 0.0)
     lengths = np.array([e.mass for e in pieces])
     assert lengths.min() > tol, ("an edge under tol", lengths.min(), tol)
     mids = np.array([(e.midpoint.x, e.midpoint.y) for e in pieces])
@@ -1372,6 +1373,20 @@ def holey(star, extra):
     return face
 
 
+def sharp_corner(points):
+    """the first corner of at most 90 degrees: its index, the directions and lengths of its two sides, its angle"""
+    n = len(points)
+    for i in range(n):
+        q, r, o = points[i - 1], points[i], points[(i + 1) % n]
+        u1 = (q[0] - r[0], q[1] - r[1])
+        u2 = (o[0] - r[0], o[1] - r[1])
+        l1, l2 = math.hypot(*u1), math.hypot(*u2)
+        angle = math.acos(max(-1.0, min(1.0, (u1[0] * u2[0] + u1[1] * u2[1]) / (l1 * l2))))
+        if angle <= math.pi / 2:
+            return i, u1, u2, l1, l2, angle
+    return None
+
+
 def sharp(star, extra):
     """a star polygon with a spike at its first point, its base 10^-3 ... 10^-12 of its size wide, or with a corner of at
     most 90 degrees cut off by an edge of eight Tol(S), its ends more than five Tol(S) off the neighbouring sides"""
@@ -1382,19 +1397,13 @@ def sharp(star, extra):
     u = ((p[0] - cx) / d, (p[1] - cy) / d)
     t = (-u[1], u[0])
     k = int(extra * 1e4)
-    if k % 2:
-        n = len(points)
-        for i in range(n):
-            q, r, o = points[i - 1], points[i], points[(i + 1) % n]
-            u1 = (q[0] - r[0], q[1] - r[1])
-            u2 = (o[0] - r[0], o[1] - r[1])
-            l1, l2 = math.hypot(*u1), math.hypot(*u2)
-            angle = math.acos(max(-1.0, min(1.0, (u1[0] * u2[0] + u1[1] * u2[1]) / (l1 * l2))))
-            if angle <= math.pi / 2:
-                tol = px.config.k * px.config.eps * max([1.0] + [abs(c) for x in points for c in x])
-                e = 8 * tol / (2 * math.sin(angle / 2))
-                cut = [(r[0] + e * u1[0] / l1, r[1] + e * u1[1] / l1), (r[0] + e * u2[0] / l2, r[1] + e * u2[1] / l2)]
-                return polygon(points[:i] + cut + points[i + 1:])
+    if k % 2 and (corner := sharp_corner(points)):
+        i, u1, u2, l1, l2, angle = corner
+        r = points[i]
+        tol = px.config.k * px.config.eps * max([1.0] + [abs(c) for x in points for c in x])
+        e = 8 * tol / (2 * math.sin(angle / 2))
+        cut = [(r[0] + e * u1[0] / l1, r[1] + e * u1[1] / l1), (r[0] + e * u2[0] / l2, r[1] + e * u2[1] / l2)]
+        return polygon(points[:i] + cut + points[i + 1:])
     w = scale * 10.0 ** -(3 + k % 10)
     tip = (p[0] + 0.6 * d * u[0], p[1] + 0.6 * d * u[1])
     base = [(p[0] - w / 2 * t[0], p[1] - w / 2 * t[1]), tip, (p[0] + w / 2 * t[0], p[1] + w / 2 * t[1])]
@@ -1598,19 +1607,21 @@ def check_wire_cuts(spec):
 
 
 def collapsing(shape, tol):
-    """the length of the spike or slot of a shape spec no wider than a few tol, which may collapse at that tol (a needle
-    thinner than tol collapses, the rest stays), else 0"""
+    """the length of a shape spec's spike or slot that is no wider than a few tol and may collapse at that tol: a slot
+    that narrow as a whole, of a spike the part towards its tip (a needle thinner than tol collapses, the rest stays),
+    else 0. A sharp spec with a corner of at most 90 degrees to cut has no spike"""
     kind, star, extra = shape
     k = int(extra * 1e4)
-    if kind not in ("sharp", "slotted") or (kind == "sharp" and k % 2):
+    if kind not in ("sharp", "slotted"):
         return 0.0
     cx, cy, scale = star[0], star[1], star[5]
-    if scale * 10.0 ** -(3 + k % 10) > 4 * tol:
-        return 0.0
+    w = scale * 10.0 ** -(3 + k % 10)
     if kind == "slotted":
-        return scale * (0.3 + extra)
-    p = star_points(star)[0]
-    return 0.6 * math.hypot(p[0] - cx, p[1] - cy)
+        return scale * (0.3 + extra) if w <= 4 * tol else 0.0
+    points = star_points(star)
+    if k % 2 and sharp_corner(points):
+        return 0.0
+    return 0.6 * math.hypot(points[0][0] - cx, points[0][1] - cy) * min(1.0, 4 * tol / w)
 
 
 def check_measures(spec):

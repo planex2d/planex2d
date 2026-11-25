@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "binding.hpp"
-#include "io/brepread.hpp"
-#include "io/brepwrite.hpp"
-#include "io/stepread.hpp"
-#include "io/stepwrite.hpp"
+#include "bindingviews.hpp"
+#include "bindingargs.hpp"
+#include "planex/io/brepread.hpp"
+#include "planex/io/brepwrite.hpp"
+#include "planex/io/stepread.hpp"
+#include "planex/io/stepwrite.hpp"
 
 namespace {
 
-// the parts of a planex object, a Compound's in turn, path the indices of the part in the nested Compounds; write(shape,
-// kind, path) writes one
 template <class Write>
 void PartsOf(const py::handle &h, const std::string &path, const char *call, Write write) {
     if (py::hasattr(h, "parts") && !py::isinstance<Shape>(h)) {
@@ -75,7 +75,6 @@ void BindStep(py::module_ &m) {
         py::list out;
         for (StepReader::Part &p : reader.Parts()) {
             p.shape = Scaled(p.shape, factor);
-            // a face written as one comes back as one, with the identifications of its part
             if (p.kind == "Face" && p.shape.Faces().size() == 1) {
                 Face f = p.shape.Faces().front();
                 f.Ids() = p.shape.Ids();

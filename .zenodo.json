@@ -1,0 +1,34 @@
+{
+  "title": "planex2d: exact 2D geometry for Python",
+  "upload_type": "software",
+  "description": "<p>planex2d is an open-source 2D geometry kernel for Python with a C++ core. It represents lines, circular arcs and splines as exact curves and keeps them exact through constraint-based sketches, Boolean operations, offsets, defeaturing and measurements, using a documented tolerance model so that shared vertices are computed once and coincide exactly.</p><p>The library is designed for preparing geometry for simulation: faces carry named boundaries through all operations and can be passed to OpenCASCADE, Netgen/NGSolve and Gmsh for meshing, so boundary conditions can be assigned by name. It reads and writes DXF, SVG and STEP, imports sketches from .CATPart files and PCB layouts from KiCad and other EDA tools, and creates dimensioned technical drawings.</p><p>planex2d is distributed as Python wheels for Linux, macOS and Windows and also runs in the browser via Pyodide. Documentation, worked examples verified against analytical and reference results, and practice exercises are available at <a href=\"https://planex2d.org/docs/\">https://planex2d.org/docs/</a>. The source code is available at <a href=\"https://github.com/planex2d/planex2d\">https://github.com/planex2d/planex2d</a>.</p><p>The library is licensed under the GNU Lesser General Public License, version 2.1 or later; example code is licensed under 0BSD.</p>",
+  "creators": [
+    {
+      "name": "Hirnschall, Sebastian"
+    }
+  ],
+  "license": "LGPL-2.1-or-later",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/planex2d/planex2d",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://planex2d.org/docs/",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-other"
+    },
+    {
+      "identifier": "https://pypi.org/project/planex2d/",
+      "relation": "isVariantFormOf",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://www.wikidata.org/wiki/Q142249444",
+      "relation": "isDescribedBy",
+      "resource_type": "other"
+    }
+  ],
+  "language": "eng"
+}

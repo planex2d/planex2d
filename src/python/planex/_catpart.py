@@ -198,7 +198,7 @@ class _Sketch:
 
     def _tie(self):
         """the coincidences the drawing left as two points: a curve's point named by the sketch's origin, and two
-        points coincident in CATIA, each named by a curve"""
+        points coincident in the file, each named by a curve"""
         first = {}
         for point, part in self.drawn:
             first.setdefault(point, part)

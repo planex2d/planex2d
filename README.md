@@ -46,6 +46,10 @@ netgen has wheels), and netgen with it; planex picks the bindings for the instal
 [Installation](https://planex2d.org/docs/core/installation.html) for the optional packages and for building from source
 (a C++20 compiler, CMake; Xcode 16 on macOS, Visual Studio 2022 on Windows).
 
+The C++ core is also a CMake library for C++ projects (`planex2d::planex2d`, with `planex2d::planex2d_occ` for
+OpenCASCADE): add it with `add_subdirectory`, or install it and find it with `find_package(planex2d)`. Only the Python
+API is kept stable; the C++ interface may change with any version, so pin one.
+
 ## A first sketch
 
 A `QuickSketch` draws with a pen: `Line` draws along the current direction, `Turn` changes the direction, `Arc`

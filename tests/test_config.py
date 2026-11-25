@@ -10,7 +10,7 @@ import planex as px
 from helpers import square
 
 EXPORT_DEFAULTS = ["fit_splines", "fit_arcs", "remove_edges_smaller", "close_gaps_smaller", "remove_free_edges",
-                   "merge_collinear_closer"]
+                   "merge_collinear_closer", "pcb_simplify_options"]
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +25,9 @@ def test_config_holds_the_export_defaults():
     assert px.config.remove_edges_smaller == 1e-7
     assert px.config.fit_splines["enabled"] is False
     assert px.config.fit_arcs["enabled"] is False
-    assert px.config.fit_arcs["max_edge_angle"] == 30.0
+    assert px.config.fit_arcs["max_edge_angle"] == 60.0
+    assert px.config.fit_arcs["tol"] is None and px.config.fit_arcs["max_edge_length"] is None
+    assert px.config.fit_splines["max_edge_angle"] == 30.0 and px.config.fit_splines["tol"] is None
 
 
 def test_config_fits_are_one_dict_per_fit():
@@ -47,6 +49,28 @@ def test_config_fits_are_one_dict_per_fit():
     with pytest.raises(TypeError, match="None"):
         px.config.fit_arcs = None
     assert not hasattr(px.config, "max_spline_edge_length") and not hasattr(px.config, "arc_fit_tol")
+
+
+def test_the_board_readers_defaults_are_one_dict_of_simplify_options():
+    o = px.config.pcb_simplify_options
+    assert list(o) == ["fit_splines", "remove_edges_smaller", "close_gaps_smaller", "remove_free_edges",
+                       "merge_collinear_closer", "remove_faces_smaller", "merge_small_faces_instead", "fit_arcs",
+                       "remove_holes_smaller", "merge_slivers_thinner"]
+    assert [o[k] for k in ("remove_edges_smaller", "close_gaps_smaller", "merge_collinear_closer", "merge_slivers_thinner",
+                           "remove_faces_smaller", "remove_holes_smaller")] == [1e-5, 1e-5, 1e-5, 1e-5, 5e-8, 2e-9]
+    assert o["remove_free_edges"] is True and o["merge_small_faces_instead"] is True
+    assert o["fit_arcs"] == {"enabled": True, "tol": 1e-5, "max_edge_length": None, "max_edge_angle": 60.0,
+                             "ignore_edges_smaller": 1e-5}
+    assert o["fit_splines"]["enabled"] is False
+    px.config.pcb_simplify_options = {"fit_arcs": {"tol": 2e-5}, "merge_slivers_thinner": 2e-5}
+    changed = px.config.pcb_simplify_options
+    assert changed["fit_arcs"]["tol"] == 2e-5 and changed["fit_arcs"]["max_edge_angle"] == 60.0
+    assert changed["merge_slivers_thinner"] == 2e-5 and changed["remove_edges_smaller"] == 1e-5
+    with pytest.raises(TypeError, match="no option 'tol'"):
+        px.config.pcb_simplify_options = {"merge_slivers_thinner": 1.0, "tol": 1e-5}
+    with pytest.raises(TypeError, match="True or False"):
+        px.config.pcb_simplify_options = {"remove_free_edges": 1}
+    assert px.config.pcb_simplify_options == changed
 
 
 def test_export_arguments_fall_back_to_config():
